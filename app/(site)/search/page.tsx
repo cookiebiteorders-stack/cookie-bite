@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { SearchPageClient } from "@/src/pages/SearchPage";
+import { Suspense } from "react";
+import { SearchPageClient } from "@/src/components/search/SearchPageClient";
 import { buildPageMetadata, buildBreadcrumbJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -27,7 +28,9 @@ export default function SearchPage() {
           ]),
         }}
       />
-      <SearchPageClient />
+      <Suspense fallback={<div className="cb-gutter py-16 text-cb-text-muted">Loading search...</div>}>
+        <SearchPageClient />
+      </Suspense>
     </>
   );
 }

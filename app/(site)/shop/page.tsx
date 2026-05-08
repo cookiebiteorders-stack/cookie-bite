@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ProductListingPageClient } from "@/src/pages/ProductListingPage";
+import { ProductListingPageClient } from "@/src/components/shop/ProductListingPageClient";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
 

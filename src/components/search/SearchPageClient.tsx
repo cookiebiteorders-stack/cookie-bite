@@ -12,7 +12,10 @@ import { Select } from "@/src/components/ui/Select";
 import { RangeSlider } from "@/src/components/ui/RangeSlider";
 import { Pagination } from "@/src/components/ui/Pagination";
 import { Skeleton } from "@/src/components/ui/Skeleton";
-import { SearchProductCard, SearchProductRow } from "@/src/components/search/ProductCard";
+import {
+  SearchProductCard,
+  SearchProductRow,
+} from "@/src/components/search/ProductCard";
 import { Badge } from "@/src/components/ui/Badge";
 
 const PAGE_SIZE = 9;
@@ -47,7 +50,14 @@ export function SearchPageClient() {
     setLoading(true);
     const id = window.setTimeout(() => setLoading(false), 220);
     return () => window.clearTimeout(id);
-  }, [debouncedQuery, filters.sort, filters.page, filters.minPrice, filters.maxPrice, filters.categories]);
+  }, [
+    debouncedQuery,
+    filters.sort,
+    filters.page,
+    filters.minPrice,
+    filters.maxPrice,
+    filters.categories,
+  ]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -62,7 +72,10 @@ export function SearchPageClient() {
     () => Array.from(new Set(PRODUCTS.map((p) => p.category))),
     [],
   );
-  const brands = useMemo(() => Array.from(new Set(PRODUCTS.map((p) => p.brand))), []);
+  const brands = useMemo(
+    () => Array.from(new Set(PRODUCTS.map((p) => p.brand))),
+    [],
+  );
   const availableSizes = useMemo(
     () => Array.from(new Set(PRODUCTS.flatMap((p) => p.sizes))),
     [],

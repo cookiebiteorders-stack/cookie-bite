@@ -23,7 +23,13 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
     <div className="space-y-8">
       <div className="grid gap-8 lg:grid-cols-2">
         <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-cb-surface">
-          <Image src={product.images[0]} alt={product.name} fill className="object-cover" sizes="(max-width:1024px) 100vw, 50vw" />
+          <Image
+            src={product.images[0]}
+            alt={product.name}
+            fill
+            className="object-cover"
+            sizes="(max-width:1024px) 100vw, 50vw"
+          />
         </div>
         <div>
           <p className="text-xs uppercase tracking-wider text-cb-text-muted">{product.brand}</p>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PRODUCTS } from "@/src/data/products";
-import { ProductDetailPageClient } from "@/src/pages/ProductDetailPage";
+import { ProductDetailPageClient } from "@/src/components/shop/ProductDetailPageClient";
 
 type Props = { params: Promise<{ slug: string }> };
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
