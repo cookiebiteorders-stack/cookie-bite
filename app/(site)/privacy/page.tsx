@@ -1,14 +1,30 @@
 import type { Metadata } from "next";
 import { SectionHeading } from "@/components/sections/section-heading";
+import { buildPageMetadata, buildBreadcrumbJsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Privacy policy",
-  description: "How Cookie Bite collects, uses, and protects your information.",
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: "Privacy Policy",
+  description:
+    "Learn how Cookie Bite collects, stores, and protects account and order data with secure privacy practices.",
+  path: "/privacy",
+  keywords: [
+    "cookie bite privacy policy",
+    "data protection bakery website",
+    "customer data privacy egypt",
+  ],
+});
 
 export default function PrivacyPage() {
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Privacy Policy", path: "/privacy" },
+  ]);
   return (
     <div className="bg-cb-cream pb-24 pt-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }}
+      />
       <div className="mx-auto max-w-3xl px-4 lg:px-6">
         <SectionHeading
           align="left"

@@ -2,10 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ClearCartOnce } from "@/components/checkout/clear-cart-once";
 import { buttonClassName } from "@/components/ui/button";
+import { buildPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Thank you",
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: "Order Confirmation",
+  description: "Cookie Bite order confirmation and payment status page.",
+  path: "/checkout/thank-you",
+  keywords: ["order confirmation", "cookie bite checkout"],
+  noIndex: true,
+});
 
 type Props = {
   searchParams: Promise<{ ref?: string; order?: string; status?: string }>;

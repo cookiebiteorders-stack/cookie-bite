@@ -17,15 +17,22 @@ import {
   User,
 } from "lucide-react";
 import { AccountProfilePanel } from "@/components/account/account-profile-panel";
+import { RedeemPointsCard } from "@/components/account/redeem-points-card";
 import { buttonClassName } from "@/components/ui/button";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { listRecentOrdersForUser } from "@/lib/db/orders";
 import { getUserByClerkId, upsertUserFromClerk } from "@/lib/db/users";
-import { PRODUCTS } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { buildPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "My Account",
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: "My Account Dashboard",
+  description:
+    "Manage your Cookie Bite account, orders, wishlist, addresses, and loyalty rewards from one personalized dashboard.",
+  path: "/account",
+  keywords: ["cookie bite account", "order history", "loyalty points dashboard"],
+  noIndex: true,
+});
 
 const sidebar = [
   { label: "Dashboard", href: "/account", icon: LayoutDashboard, active: true },
@@ -72,6 +79,98 @@ export default async function AccountPage() {
   }
 
   const orders = dbUser ? await listRecentOrdersForUser(dbUser.id, 3) : [];
+
+  const supabase = dbUser ? createSupabaseAdminClient() : null;
+  const [loyaltyAccount, wishlistItems, addressesItems, notificationsItems] = await Promise.all([
+    !supabase
+      ? Promise.resolve(null)
+      : (async () => {
+          const { data } = await supabase
+            .from("loyalty_accounts")
+            .select("*")
+            .eq("user_id", dbUser!.id)
+            .maybeSingle();
+
+          if (data) return data;
+
+          const { data: inserted } = await supabase
+            .from("loyalty_accounts")
+            .upsert(
+              {
+                user_id: dbUser!.id,
+                total_points: 0,
+                lifetime_points: 0,
+                tier: "cookie_lover",
+              },
+              { onConflict: "user_id" },
+            )
+            .select("*")
+            .single();
+
+          return inserted ?? null;
+        })(),
+    !supabase
+      ? Promise.resolve([])
+      : supabase
+          .from("wishlists")
+          .select(
+            "id, created_at, product:products(id,slug,name,title_en,title_ar,price_egp,image_url,images,is_active)",
+          )
+          .eq("user_id", dbUser!.id)
+          .order("created_at", { ascending: false })
+          .limit(6)
+          .then((r) => r.data ?? []),
+    !supabase
+      ? Promise.resolve([])
+      : supabase
+          .from("addresses")
+          .select(
+            "id, label, recipient, phone, city, governorate, street, is_default",
+          )
+          .eq("user_id", dbUser!.id)
+          .order("created_at", { ascending: false })
+          .limit(3)
+          .then((r) => r.data ?? []),
+    !supabase
+      ? Promise.resolve([])
+      : supabase
+          .from("notifications_log")
+          .select("id, title, body, href, created_at")
+          .eq("recipient_user_id", dbUser!.id)
+          .order("created_at", { ascending: false })
+          .limit(3)
+          .then((r) => r.data ?? []),
+  ]);
+
+  const loyaltyPoints = Number(loyaltyAccount?.total_points ?? dbUser?.points ?? 0);
+  const loyaltyTier: string = loyaltyAccount?.tier ?? "cookie_lover";
+  const nextTierPoints =
+    loyaltyTier === "cookie_monster"
+      ? 0
+      : loyaltyTier === "cruncher"
+        ? Math.max(0, 1000 - loyaltyPoints)
+        : Math.max(0, 500 - loyaltyPoints);
+  const loyaltyThreshold =
+    loyaltyTier === "cookie_monster" ? 1 : loyaltyTier === "cruncher" ? 1000 : 500;
+  const loyaltyProgressPercent =
+    loyaltyTier === "cookie_monster"
+      ? 100
+      : Math.min(100, (loyaltyPoints / loyaltyThreshold) * 100);
+
+  const getProductImage = (p: any): string | null => {
+    if (typeof p?.image_url === "string" && p.image_url) return p.image_url;
+    if (Array.isArray(p?.images) && p.images.length > 0 && p.images[0]?.url) {
+      return String(p.images[0].url);
+    }
+    return null;
+  };
+
+  const tierLabel =
+    loyaltyTier === "cookie_monster"
+      ? "Cookie Monster"
+      : loyaltyTier === "cruncher"
+        ? "Cruncher"
+        : "Cookie Lover";
 
   return (
     <div className="bg-cb-cream pb-20 pt-8">
@@ -148,23 +247,26 @@ export default async function AccountPage() {
                   Welcome back, {user.firstName ?? fullName}!
                 </h1>
                 <p className="mt-2 text-cb-text-muted">
-                  Here&apos;s what&apos;s happening with your Cookie Bite orders and rewards.
+                  Here&apos;s what&apos;s happening with your Cookie Bite orders, rewards, and saved items.
                 </p>
                 <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
                   {[
-                    { label: "Orders", value: String(orders.length) },
-                    { label: "Points", value: String(dbUser?.points ?? 0) },
-                    { label: "Addresses", value: "0" },
-                    { label: "Wishlist", value: "0" },
-                  ].map((s) => (
+                    { label: "Orders", value: String(orders.length), icon: Package },
+                    { label: "Points", value: String(loyaltyPoints), icon: Star },
+                    { label: "Addresses", value: String(addressesItems.length), icon: MapPin },
+                    { label: "Wishlist", value: String(wishlistItems.length), icon: Heart },
+                  ].map(({ label, value, icon: Icon }) => (
                     <div
-                      key={s.label}
-                      className="rounded-2xl bg-cb-cream px-3 py-4 text-center"
+                      key={label}
+                      className="rounded-2xl bg-cb-cream px-3 py-4 text-center ring-1 ring-cb-border/40"
                     >
-                      <p className="text-2xl font-bold text-cb-terracotta-dark">
-                        {s.value}
+                      <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-cb-surface shadow-sm ring-1 ring-cb-border/60">
+                        <Icon className="h-4 w-4 text-cb-terracotta-dark" aria-hidden />
+                      </div>
+                      <p className="mt-3 text-2xl font-bold text-cb-terracotta-dark">
+                        {value}
                       </p>
-                      <p className="text-xs text-cb-text-muted">{s.label}</p>
+                      <p className="text-xs text-cb-text-muted">{label}</p>
                     </div>
                   ))}
                 </div>
@@ -186,28 +288,36 @@ export default async function AccountPage() {
               id="orders"
               className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-cb-border"
             >
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="font-semibold text-cb-text-strong">Recent orders</h2>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="font-semibold text-cb-text-strong">Recent orders</h2>
+                  <p className="mt-1 text-xs text-cb-text-muted">
+                    {orders.length
+                      ? `Showing ${orders.length} recent orders`
+                      : "No orders yet"}
+                  </p>
+                </div>
                 <Link
                   href="/shop"
                   className="text-xs font-semibold text-cb-terracotta-dark hover:underline"
                 >
-                  View all
+                  Explore
                 </Link>
               </div>
+
               {orders.length ? (
                 <ul className="space-y-3">
                   {orders.map((o) => (
                     <li
                       key={o.id}
-                      className="flex items-center justify-between rounded-2xl border border-cb-border px-3 py-3"
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-cb-border px-4 py-3"
                     >
-                      <div>
-                        <p className="text-sm font-medium text-cb-text-strong">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-cb-text-strong">
                           Order #{o.order_number}
                         </p>
-                        <p className="text-xs text-cb-text-muted">
-                          {Number(o.total_egp).toFixed(0)} EGP
+                        <p className="mt-1 text-xs text-cb-text-muted">
+                          {Number(o.total_egp).toFixed(0)} EGP · {o.payment_status}
                         </p>
                       </div>
                       <span
@@ -222,9 +332,20 @@ export default async function AccountPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="rounded-2xl bg-cb-cream p-6 text-center text-sm text-cb-text-muted">
-                  No orders yet — explore the shop and your first box will appear here.
-                </p>
+                <div className="rounded-2xl bg-cb-cream p-6 text-center">
+                  <p className="text-sm font-semibold text-cb-text-strong">
+                    No orders yet
+                  </p>
+                  <p className="mt-1 text-xs text-cb-text-muted">
+                    Explore the shop and your first box will appear here.
+                  </p>
+                  <Link
+                    href="/shop"
+                    className={buttonClassName("primary", "mt-4 inline-flex")}
+                  >
+                    Start shopping
+                  </Link>
+                </div>
               )}
             </section>
 
@@ -232,29 +353,211 @@ export default async function AccountPage() {
               id="rewards"
               className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-cb-border"
             >
-              <h2 className="font-semibold text-cb-text-strong">Rewards & points</h2>
-              <p className="mt-4 text-3xl font-bold text-cb-terracotta-dark">
-                {dbUser?.points ?? 0} pts
-              </p>
-              <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-cb-peach">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="font-semibold text-cb-text-strong">
+                    Rewards & points
+                  </h2>
+                  <p className="mt-1 text-xs text-cb-text-muted">
+                    Tier:{" "}
+                    <span className="font-semibold text-cb-terracotta-dark">
+                      {tierLabel}
+                    </span>
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-cb-cream px-3 py-2 ring-1 ring-cb-border/40">
+                  <p className="text-sm font-semibold text-cb-text-muted">
+                    Total
+                  </p>
+                  <p className="text-lg font-bold text-cb-terracotta-dark">
+                    {loyaltyPoints} pts
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-cb-peach">
                 <div
                   className="h-full rounded-full bg-cb-terracotta-dark"
-                  style={{
-                    width: `${Math.min(100, ((dbUser?.points ?? 0) / 1000) * 100)}%`,
-                  }}
+                  style={{ width: `${loyaltyProgressPercent}%` }}
                 />
               </div>
+
               <p className="mt-2 text-xs text-cb-text-muted">
-                {Math.max(0, 1000 - (dbUser?.points ?? 0))} points to your next free dozen.
+                {loyaltyTier === "cookie_monster"
+                  ? "You’re at the top tier."
+                  : `Next tier in ${nextTierPoints} pts`}
               </p>
-              <button
-                type="button"
-                className={buttonClassName("primary", "mt-6 w-full")}
-              >
-                Redeem points
-              </button>
+
+              <RedeemPointsCard points={loyaltyPoints} />
             </section>
           </div>
+
+          <section
+            id="addresses"
+            className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-cb-border"
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="font-semibold text-cb-text-strong">
+                  My addresses
+                </h2>
+                <p className="mt-1 text-xs text-cb-text-muted">
+                  {addressesItems.length
+                    ? `Saved: ${addressesItems.length}`
+                    : "No saved addresses yet"}
+                </p>
+              </div>
+              <Link
+                href="/checkout"
+                className="text-xs font-semibold text-cb-terracotta-dark hover:underline"
+              >
+                Add
+              </Link>
+            </div>
+
+            {addressesItems.length ? (
+              <div className="space-y-3">
+                {addressesItems.map((a: any) => (
+                  <div
+                    key={a.id}
+                    className="rounded-2xl border border-cb-border p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-semibold text-cb-text-strong">
+                        {a.label ?? a.recipient ?? "Address"}
+                      </p>
+                      {a.is_default ? (
+                        <span className="rounded-full bg-cb-peach px-2 py-0.5 text-[10px] font-bold text-cb-terracotta-dark">
+                          Default
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-xs text-cb-text-muted">
+                      {a.recipient} · {a.phone}
+                    </p>
+                    <p className="mt-1 text-xs text-cb-text-muted">
+                      {a.street}, {a.city ?? a.governorate}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl bg-cb-cream p-6 text-center">
+                <p className="text-sm font-semibold text-cb-text-strong">
+                  Ready for delivery?
+                </p>
+                <p className="mt-1 text-xs text-cb-text-muted">
+                  Add your address during checkout to speed up future orders.
+                </p>
+              </div>
+            )}
+          </section>
+
+          <section
+            id="pay"
+            className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-cb-border"
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="font-semibold text-cb-text-strong">
+                  Payment methods
+                </h2>
+                <p className="mt-1 text-xs text-cb-text-muted">
+                  Choose the payment method you prefer at checkout.
+                </p>
+              </div>
+              <Link
+                href="/checkout"
+                className="text-xs font-semibold text-cb-terracotta-dark hover:underline"
+              >
+                Checkout
+              </Link>
+            </div>
+            <div className="rounded-2xl bg-cb-cream p-4 ring-1 ring-cb-border/40">
+              <div className="flex items-start gap-3">
+                <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-xl bg-cb-surface ring-1 ring-cb-border/60">
+                  <CreditCard className="h-5 w-5 text-cb-terracotta-dark" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-cb-text-strong">
+                    Available payments
+                  </p>
+                  <p className="mt-1 text-xs text-cb-text-muted">
+                    Online payments when available, or Cash on Delivery (COD).
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {["card", "wallet", "cod"].map((k) => {
+                      const label = k === "cod" ? "COD" : k.toUpperCase();
+                      return (
+                        <span
+                          key={k}
+                          className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-cb-terracotta-dark ring-1 ring-cb-border/60"
+                        >
+                          {label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section
+            id="notifications"
+            className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-cb-border"
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="font-semibold text-cb-text-strong">
+                  Notifications
+                </h2>
+                <p className="mt-1 text-xs text-cb-text-muted">
+                  {notificationsItems.length
+                    ? `Recent: ${notificationsItems.length}`
+                    : "No notifications yet"}
+                </p>
+              </div>
+              <Link
+                href="/contact"
+                className="text-xs font-semibold text-cb-terracotta-dark hover:underline"
+              >
+                Support
+              </Link>
+            </div>
+
+            {notificationsItems.length ? (
+              <ul className="space-y-3">
+                {notificationsItems.map((n: any) => (
+                  <li
+                    key={n.id}
+                    className="rounded-2xl border border-cb-border p-4"
+                  >
+                    <p className="text-sm font-semibold text-cb-text-strong">
+                      {n.title ?? "Update"}
+                    </p>
+                    <p className="mt-1 text-xs text-cb-text-muted">
+                      {n.body ?? ""}
+                    </p>
+                    <p className="mt-2 text-[11px] text-cb-text-muted">
+                      {n.created_at
+                        ? new Date(n.created_at).toLocaleString()
+                        : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="rounded-2xl bg-cb-cream p-6 text-center">
+                <p className="text-sm font-semibold text-cb-text-strong">
+                  All quiet.
+                </p>
+                <p className="mt-1 text-xs text-cb-text-muted">
+                  We’ll notify you about order updates and loyalty rewards.
+                </p>
+              </div>
+            )}
+          </section>
 
           <section
             id="profile"
@@ -273,26 +576,83 @@ export default async function AccountPage() {
             id="wish"
             className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-cb-border"
           >
-            <h2 className="mb-4 font-semibold text-cb-text-strong">Wishlist</h2>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {PRODUCTS.slice(0, 3).map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-3 rounded-2xl border border-cb-border p-3"
-                >
-                  <div className="relative h-14 w-14 overflow-hidden rounded-xl">
-                    <Image src={p.image} alt={p.name} fill className="object-cover" sizes="56px" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{p.name}</p>
-                    <p className="text-xs font-semibold text-cb-terracotta-dark">
-                      {p.price} EGP
-                    </p>
-                  </div>
-                  <Heart className="h-4 w-4 shrink-0 text-cb-terracotta-dark" />
-                </div>
-              ))}
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="font-semibold text-cb-text-strong">Wishlist</h2>
+                <p className="mt-1 text-xs text-cb-text-muted">
+                  {wishlistItems.length
+                    ? `Saved: ${wishlistItems.length}`
+                    : "Nothing saved yet"}
+                </p>
+              </div>
+              <Link
+                href="/shop"
+                className="text-xs font-semibold text-cb-terracotta-dark hover:underline"
+              >
+                Browse
+              </Link>
             </div>
+
+            {wishlistItems.length ? (
+              <div className="grid gap-4 sm:grid-cols-3">
+                {wishlistItems.map((w: any) => {
+                  const p = w.product;
+                  const img = getProductImage(p);
+                  const title =
+                    p?.title_ar ?? p?.title_en ?? p?.name ?? p?.slug;
+                  const slug = p?.slug;
+                  return (
+                    <Link
+                      key={w.id}
+                      href={slug ? `/shop/${slug}` : "/shop"}
+                      className="group rounded-2xl border border-cb-border p-3 transition hover:-translate-y-0.5"
+                    >
+                      <div className="flex items-center gap-3">
+                        {img ? (
+                          <div className="relative h-14 w-14 overflow-hidden rounded-xl bg-cb-peach/40">
+                            <Image
+                              src={img}
+                              alt={title}
+                              fill
+                              className="object-cover"
+                              sizes="56px"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-cb-peach/40 text-xs font-bold text-cb-terracotta-dark">
+                            CB
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-cb-text-strong">
+                            {title}
+                          </p>
+                          <p className="mt-1 text-xs font-bold text-cb-terracotta-dark">
+                            {p?.price_egp != null ? `${p.price_egp} EGP` : ""}
+                          </p>
+                        </div>
+                        <Heart className="h-4 w-4 shrink-0 text-cb-terracotta-dark" />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl bg-cb-cream p-6 text-center">
+                <p className="text-sm font-semibold text-cb-text-strong">
+                  Save your favorites
+                </p>
+                <p className="mt-1 text-xs text-cb-text-muted">
+                  Tap the heart on products to keep them here.
+                </p>
+                <Link
+                  href="/shop"
+                  className={buttonClassName("primary", "mt-4 inline-flex")}
+                >
+                  Explore products
+                </Link>
+              </div>
+            )}
           </section>
         </div>
       </div>

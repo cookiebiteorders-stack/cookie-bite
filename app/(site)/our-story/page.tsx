@@ -4,10 +4,20 @@ import Link from "next/link";
 import { STORY_SECTIONS } from "@/lib/data";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { buttonClassName } from "@/components/ui/button";
+import { buildPageMetadata, buildBreadcrumbJsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Our Story",
-};
+  description:
+    "Read the Cookie Bite story and discover how our New Cairo kitchen crafts cookies, gift boxes, and memorable moments.",
+  path: "/our-story",
+  keywords: [
+    "cookie bite story",
+    "new cairo bakery story",
+    "handcrafted cookies egypt",
+    "about cookie bite",
+  ],
+});
 
 const stats = [
   { title: "10K+ happy customers", body: "Across Cairo and beyond." },
@@ -17,8 +27,16 @@ const stats = [
 ];
 
 export default function OurStoryPage() {
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Our Story", path: "/our-story" },
+  ]);
   return (
     <div className="bg-cb-cream">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }}
+      />
       <section className="border-b border-cb-peach-deep">
         <div className="mx-auto grid max-w-7xl items-center gap-12 cb-gutter py-16 lg:grid-cols-2 lg:py-24">
           <div className="space-y-6">

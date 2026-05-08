@@ -1,11 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { cookieBiteClerkLocalization } from "@/lib/auth/clerk-auth-localization";
+import { SiteJsonLd } from "@/components/seo/site-jsonld";
+import { GA4Tracker } from "@/components/analytics/ga4-tracker";
 import {
   Allura,
   Cairo,
+  DM_Sans,
   Montserrat,
   Nunito_Sans,
+  Outfit,
   Pacifico,
   Playfair_Display,
   Tajawal,
@@ -62,6 +66,20 @@ const allura = Allura({
   display: "swap",
 });
 
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  display: "swap",
+});
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -73,15 +91,82 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com"),
   title: {
-    default: "Cookie Bite | A bite of happiness",
+    default: "Cookie Bite New Cairo Cookies & Gift Boxes",
     template: "%s | Cookie Bite",
   },
   description:
-    "Handcrafted luxury cookies in New Cairo — gifts, seasonal flavors, and boxes built with love.",
+    "Order handcrafted cookies and gift boxes in New Cairo. Fresh bakes, same-day support, and premium cookie delivery from Cookie Bite.",
+  keywords: [
+    "cookie delivery new cairo",
+    "best cookies in cairo",
+    "cookie gift box egypt",
+    "luxury cookies egypt",
+    "fresh baked cookies cairo",
+    "custom gift box cookies",
+    "dessert delivery new cairo",
+    "cookie bite egypt",
+    "birthday cookie gifts cairo",
+    "online cookie shop egypt",
+  ],
+  authors: [{ name: "Cookie Bite" }],
+  creator: "Cookie Bite",
+  publisher: "Cookie Bite",
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "Cookie Bite",
+    locale: "en_US",
+    title: "Cookie Bite | Fresh Cookies & Gift Boxes in New Cairo",
+    description:
+      "Shop premium handcrafted cookies and gift boxes in New Cairo. Discover bestsellers, seasonal flavors, and same-day support.",
+    images: [
+      {
+        url: "/images/web-logo.png",
+        width: 1200,
+        height: 630,
+        alt: "Cookie Bite handcrafted cookies and gift boxes",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@cookiebite8",
+    creator: "@cookiebite8",
+    title: "Cookie Bite | Fresh Cookies & Gift Boxes in New Cairo",
+    description:
+      "Craving premium cookies in New Cairo? Discover Cookie Bite and build your perfect gift box today.",
+    images: ["/images/web-logo.png"],
+  },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+  },
+  other: {
+    language: "English",
+    "revisit-after": "7 days",
+    author: "Cookie Bite",
+  },
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: [{ url: "/icon.png", type: "image/png" }],
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", type: "image/png" },
+    ],
     shortcut: "/icon.png",
     apple: "/icon.png",
   },
@@ -103,8 +188,17 @@ export default function RootLayout({
       dir="ltr"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={`${playfair.variable} ${montserrat.variable} ${cairo.variable} ${tajawal.variable} ${pacifico.variable} ${nunitoSans.variable} ${allura.variable} h-full antialiased`}
+      className={`${playfair.variable} ${montserrat.variable} ${cairo.variable} ${tajawal.variable} ${pacifico.variable} ${nunitoSans.variable} ${allura.variable} ${outfit.variable} ${dmSans.variable} h-full antialiased`}
     >
+      <head>
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <link rel="dns-prefetch" href="//www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="//www.google-analytics.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+      </head>
       <body className="min-h-full bg-background font-sans text-foreground">
         <ClerkProvider
           localization={cookieBiteClerkLocalization}
@@ -115,6 +209,8 @@ export default function RootLayout({
           signUpFallbackRedirectUrl="/account"
         >
           <ThemeProvider>
+            <SiteJsonLd />
+            <GA4Tracker />
             <ErrorBoundary>{children}</ErrorBoundary>
           </ThemeProvider>
         </ClerkProvider>

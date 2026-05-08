@@ -205,6 +205,8 @@ html {
   --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
   --font-ar: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
   --font-ar-display: var(--font-tajawal), ui-sans-serif, system-ui, sans-serif;
+  --font-layout-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-layout-body: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* تمرير أنحف لنماذج المصادقة الطويلة */
@@ -339,6 +341,14 @@ body {
 
 .font-serif {
   font-family: var(--font-serif);
+}
+
+.font-layout-heading {
+  font-family: var(--font-layout-heading);
+}
+
+.font-layout-body {
+  font-family: var(--font-layout-body);
 }
 
 /* عربي — Master §2.2 */

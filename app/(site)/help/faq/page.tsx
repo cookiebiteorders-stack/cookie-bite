@@ -2,11 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { BRAND } from "@/lib/brand";
+import { buildPageMetadata, buildBreadcrumbJsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "FAQ",
-  description: "Frequently asked questions about Cookie Bite orders, delivery, and gifting.",
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: "FAQ: Orders, Delivery, and Gifting",
+  description:
+    "Get quick answers about Cookie Bite delivery zones, freshness, gift notes, and order tracking in New Cairo.",
+  path: "/help/faq",
+  keywords: [
+    "cookie bite faq",
+    "cookie delivery faq cairo",
+    "gift box questions",
+    "order tracking cookie bite",
+  ],
+});
 
 const faqs = [
   {
@@ -32,8 +41,30 @@ const faqs = [
 ];
 
 export default function FaqPage() {
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Help", path: "/help/faq" },
+    { name: "FAQ", path: "/help/faq" },
+  ]);
+  const faqJsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  });
   return (
     <div className="bg-cb-cream pb-24 pt-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: faqJsonLd }}
+      />
       <div className="mx-auto max-w-3xl px-4 lg:px-6">
         <SectionHeading
           align="left"

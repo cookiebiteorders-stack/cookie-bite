@@ -6,12 +6,20 @@ import { GIFT_BOXES, IMAGES } from "@/lib/data";
 import { ProductCard } from "@/components/product/product-card";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { buttonClassName } from "@/components/ui/button";
+import { buildPageMetadata, buildBreadcrumbJsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Gift Boxes",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Cookie Gift Boxes in New Cairo",
   description:
-    "Luxury cookie gift boxes in New Cairo — occasions, corporate, and build-your-box.",
-};
+    "Explore premium Cookie Bite gift boxes for birthdays, corporate gifting, and celebrations in New Cairo.",
+  path: "/gift-box",
+  keywords: [
+    "cookie gift box cairo",
+    "birthday cookie gifts",
+    "corporate gift box egypt",
+    "premium dessert gifts",
+  ],
+});
 
 const giftCategories = [
   { label: "Birthday Gifts", icon: Cake },
@@ -22,8 +30,16 @@ const giftCategories = [
 ];
 
 export default function GiftBoxPage() {
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Gift Boxes", path: "/gift-box" },
+  ]);
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }}
+      />
       <section className="border-b border-cb-peach-deep bg-cb-cream">
         <div className="mx-auto grid max-w-7xl items-center gap-10 cb-gutter py-16 lg:grid-cols-2 lg:py-24">
           <div className="space-y-6">

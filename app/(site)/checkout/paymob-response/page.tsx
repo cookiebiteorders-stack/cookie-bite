@@ -1,4 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { buildPageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Payment Response",
+  description: "Paymob payment response handler for Cookie Bite checkout.",
+  path: "/checkout/paymob-response",
+  keywords: ["paymob callback", "payment response", "checkout status"],
+  noIndex: true,
+});
 
 function toBool(value: string | undefined): boolean {
   if (!value) return false;

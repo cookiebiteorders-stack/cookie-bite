@@ -1,15 +1,33 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SectionHeading } from "@/components/sections/section-heading";
+import { buildPageMetadata, buildBreadcrumbJsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Returns & refunds",
-  description: "Cookie Bite returns, refunds, and quality guarantee policy.",
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: "Returns and Refunds Policy",
+  description:
+    "Read Cookie Bite returns and refunds policy for perishable goods, wrong items, and approved payment adjustments.",
+  path: "/help/returns",
+  keywords: [
+    "cookie returns policy",
+    "refund policy egypt",
+    "damaged order support",
+    "cookie bite returns",
+  ],
+});
 
 export default function ReturnsPage() {
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Help", path: "/help/faq" },
+    { name: "Returns", path: "/help/returns" },
+  ]);
   return (
     <div className="bg-cb-cream pb-24 pt-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }}
+      />
       <div className="mx-auto max-w-3xl px-4 lg:px-6">
         <SectionHeading
           align="left"

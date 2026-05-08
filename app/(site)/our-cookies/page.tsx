@@ -6,10 +6,20 @@ import { OUR_COOKIE_SECTIONS } from "@/lib/data";
 import { OurCookiesTestimonials } from "@/components/our-cookies/our-cookies-testimonials";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { buttonClassName } from "@/components/ui/button";
+import { buildPageMetadata, buildBreadcrumbJsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Our Cookies",
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: "Our Cookie Flavors",
+  description:
+    "Discover Cookie Bite flavor collections with handcrafted textures, premium ingredients, and seasonal specials in New Cairo.",
+  path: "/our-cookies",
+  keywords: [
+    "cookie flavors cairo",
+    "best cookie menu egypt",
+    "artisan cookies new cairo",
+    "seasonal cookies",
+  ],
+});
 
 const iconMap = {
   cookie: Cookie,
@@ -20,8 +30,16 @@ const iconMap = {
 } as const;
 
 export default function OurCookiesPage() {
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Our Cookies", path: "/our-cookies" },
+  ]);
   return (
     <div className="bg-cb-cream pb-24 pt-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }}
+      />
       <div className="mx-auto max-w-7xl cb-gutter">
         <SectionHeading
           eyebrow="Our menu"

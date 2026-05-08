@@ -1,9 +1,9 @@
-import { PageShell } from "@/components/layout/page-shell";
+import { ResponsiveShell } from "@/components/layout/responsive/responsive-shell";
 
 export default function SiteLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <PageShell>{children}</PageShell>;
+  return <ResponsiveShell>{children}</ResponsiveShell>;
 }

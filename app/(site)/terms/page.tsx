@@ -1,14 +1,30 @@
 import type { Metadata } from "next";
 import { SectionHeading } from "@/components/sections/section-heading";
+import { buildPageMetadata, buildBreadcrumbJsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Terms & conditions",
-  description: "Terms of use for the Cookie Bite website and purchases.",
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: "Terms and Conditions",
+  description:
+    "Review Cookie Bite terms and conditions for website use, order acceptance, pricing, and service policies.",
+  path: "/terms",
+  keywords: [
+    "cookie bite terms",
+    "website terms and conditions egypt",
+    "online order terms",
+  ],
+});
 
 export default function TermsPage() {
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Terms", path: "/terms" },
+  ]);
   return (
     <div className="bg-cb-cream pb-24 pt-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }}
+      />
       <div className="mx-auto max-w-3xl px-4 lg:px-6">
         <SectionHeading
           align="left"
