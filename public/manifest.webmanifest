@@ -1,0 +1,19 @@
+{
+  "name": "Cookie Bite",
+  "short_name": "Cookie Bite",
+  "description": "Handcrafted luxury cookies in New Cairo — a bite of happiness.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8F5EE",
+  "theme_color": "#c1692c",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/brand/cookie-bite-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

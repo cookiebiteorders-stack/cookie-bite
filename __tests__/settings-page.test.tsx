@@ -1,0 +1,46 @@
+import React from "react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import AdminSettingsPage from "@/app/(admin)/admin/settings/page";
+
+const fetchJsonMock = jest.fn();
+
+jest.mock("@/lib/http/fetch-json", () => ({
+  fetchJson: (...args: unknown[]) => fetchJsonMock(...args),
+}));
+
+describe("AdminSettingsPage", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("shows error and retry button, then recovers on retry", async () => {
+    let firstAttempt = true;
+    fetchJsonMock.mockImplementation((url: string) => {
+      if (firstAttempt) {
+        firstAttempt = false;
+        return Promise.reject(new Error("network fail"));
+      }
+      if (url.includes("/api/admin/settings/health")) {
+        return Promise.resolve({
+          canonical_host: "cookie-bite.com",
+          node_env: "development",
+          env: { ok: true, missing: [], warnings: [] },
+        });
+      }
+      if (url.includes("/api/admin/notifications/templates")) {
+        return Promise.resolve({ templates: [] });
+      }
+      return Promise.reject(new Error("unexpected url"));
+    });
+
+    render(<AdminSettingsPage />);
+    await screen.findByText("network fail");
+    const retry = screen.getByRole("button", { name: /retry/i });
+    fireEvent.click(retry);
+
+    await waitFor(() => {
+      expect(screen.getByText("Canonical Host")).toBeInTheDocument();
+    });
+  });
+});
+

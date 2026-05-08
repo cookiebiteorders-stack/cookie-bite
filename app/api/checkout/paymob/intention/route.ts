@@ -1,0 +1,266 @@
+import { auth } from "@clerk/nextjs/server";
+import { z } from "zod";
+import { insertCheckoutOrder } from "@/lib/db/orders";
+import { getUserByClerkId } from "@/lib/db/users";
+import { getProductBySlug } from "@/lib/data";
+import { sendOrderConfirmation } from "@/lib/email/send";
+import {
+  buildPaymobBillingData,
+  buildPaymobLineItems,
+  paymobAuthToken,
+  paymobCreatePaymentKey,
+  paymobIframeUrl,
+  paymobRegisterEcommerceOrder,
+} from "@/lib/paymob/accept";
+
+const BodySchema = z.object({
+  items: z.array(
+    z.object({
+      id: z.string().min(1),
+      quantity: z.number().int().min(1).max(99),
+    }),
+  ),
+  shipping: z.object({
+    name: z.string().min(2),
+    phone: z.string().regex(/^01[0125][0-9]{8}$/),
+    address: z.string().min(5),
+    city: z.string().min(2),
+    notes: z.string().optional(),
+    email: z.union([z.string().email(), z.literal("")]).optional(),
+  }),
+  paymentMethod: z.enum(["card", "wallet", "cod"]),
+});
+
+async function resolveSupabaseUserId(): Promise<string | null> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    return null;
+  }
+  const { userId } = await auth();
+  if (!userId) return null;
+  const row = await getUserByClerkId(userId);
+  return row?.id ?? null;
+}
+
+/**
+ * يعيد المجاميع من السيرفر فقط — لا تثق بأسعار العميل.
+ * COD: حفظ في Supabase عند توفر المفاتيح + بريد تأكيد (اختياري).
+ * Card/Wallet: Accept API + حفظ الطلب مع paymob_accept_order_id.
+ */
+export async function POST(req: Request) {
+  let json: unknown;
+  try {
+    json = await req.json();
+  } catch {
+    return Response.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const parsed = BodySchema.safeParse(json);
+  if (!parsed.success) {
+    return Response.json(
+      { ok: false, error: "Validation failed", issues: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
+
+  const { items, shipping, paymentMethod } = parsed.data;
+  const shippingEmail =
+    shipping.email && shipping.email.length > 0 ? shipping.email : undefined;
+
+  const resolved: { id: string; name: string; unitPrice: number; quantity: number }[] = [];
+  let subtotal = 0;
+  for (const row of items) {
+    const p = getProductBySlug(row.id);
+    if (!p) {
+      return Response.json({ ok: false, error: `Unknown product: ${row.id}` }, { status: 400 });
+    }
+    resolved.push({
+      id: p.id,
+      name: p.name,
+      unitPrice: p.price,
+      quantity: row.quantity,
+    });
+    subtotal += p.price * row.quantity;
+  }
+
+  const threshold = Number(process.env.NEXT_PUBLIC_FREE_DELIVERY_THRESHOLD_EGP ?? 500) || 500;
+  const deliveryFee = subtotal >= threshold ? 0 : 45;
+  const total = subtotal + deliveryFee;
+
+  const apiKey = process.env.PAYMOB_API_KEY?.trim() ?? "";
+  const hmacSecret = process.env.PAYMOB_HMAC_SECRET?.trim() ?? "";
+  const integrationCard = Number(process.env.PAYMOB_INTEGRATION_ID_CARD);
+  const integrationWallet = Number(process.env.PAYMOB_INTEGRATION_ID_WALLET);
+  const hasPaymobAuth = Boolean(apiKey && hmacSecret);
+  const integrationId =
+    paymentMethod === "wallet" ? integrationWallet : integrationCard;
+  const hasPaymobOnline =
+    hasPaymobAuth && Number.isFinite(integrationId) && integrationId > 0;
+
+  const guestRef = `CB-${Date.now().toString(36)}`.toUpperCase();
+  const dbUserId = await resolveSupabaseUserId();
+  const shippingAddress = {
+    name: shipping.name,
+    phone: shipping.phone,
+    address: shipping.address,
+    city: shipping.city,
+    notes: shipping.notes ?? "",
+    email: shippingEmail ?? "",
+    guestRef,
+  };
+
+  if (paymentMethod === "cod") {
+    const inserted = await insertCheckoutOrder({
+      userId: dbUserId,
+      lines: resolved.map((l) => ({
+        slug: l.id,
+        name: l.name,
+        unitPrice: l.unitPrice,
+        quantity: l.quantity,
+      })),
+      subtotalEgp: subtotal,
+      deliveryFeeEgp: deliveryFee,
+      totalEgp: total,
+      paymentMethod: "cod",
+      paymentStatus: "unpaid",
+      shippingAddress,
+      notes: `Web checkout · ${guestRef}`,
+    });
+
+    const orderId = inserted ? String(inserted.orderNumber) : guestRef;
+
+    if (shippingEmail && process.env.RESEND_API_KEY) {
+      try {
+        const itemsHtml = resolved
+          .map(
+            (l) =>
+              `<tr><td style="padding:8px 0;border-bottom:1px solid #F2DDC5">${l.name} × ${l.quantity}</td><td style="padding:8px 0;border-bottom:1px solid #F2DDC5;text-align:right">${(l.unitPrice * l.quantity).toFixed(0)} EGP</td></tr>`,
+          )
+          .join("");
+        const deliveryRow = `<tr><td style="padding:8px 0;border-bottom:1px solid #F2DDC5">Delivery</td><td style="padding:8px 0;border-bottom:1px solid #F2DDC5;text-align:right">${deliveryFee === 0 ? "Free" : `${deliveryFee} EGP`}</td></tr>`;
+        await sendOrderConfirmation({
+          to: shippingEmail,
+          payload: {
+            name: shipping.name,
+            orderId: inserted ? `#${inserted.orderNumber}` : orderId,
+            total,
+            itemsHtml: itemsHtml + deliveryRow,
+          },
+        });
+      } catch (err) {
+        console.error("order confirmation email failed", err);
+      }
+    }
+
+    return Response.json({
+      ok: true,
+      configured: false,
+      paymentMethod: "cod",
+      orderId,
+      persisted: Boolean(inserted),
+      subtotalEgp: subtotal,
+      deliveryFeeEgp: deliveryFee,
+      totalEgp: total,
+      lines: resolved,
+      shipping: { ...shipping, email: shippingEmail ?? "" },
+      message: inserted
+        ? "Order saved. Pay cash on delivery."
+        : "Order recorded in session only — set Supabase service key + run migration 0002 to persist.",
+    });
+  }
+
+  if (!hasPaymobAuth) {
+    return Response.json({
+      ok: true,
+      configured: false,
+      paymentMethod,
+      subtotalEgp: subtotal,
+      deliveryFeeEgp: deliveryFee,
+      totalEgp: total,
+      lines: resolved,
+      shipping,
+      message:
+        "Paymob keys missing. Set PAYMOB_API_KEY and PAYMOB_HMAC_SECRET, plus PAYMOB_INTEGRATION_ID_CARD / WALLET.",
+    });
+  }
+
+  if (!hasPaymobOnline) {
+    return Response.json({
+      ok: false,
+      error:
+        "Paymob integration ID missing for this payment method. Set PAYMOB_INTEGRATION_ID_CARD or PAYMOB_INTEGRATION_ID_WALLET in .env.",
+    }, { status: 400 });
+  }
+
+  const amountCents = Math.round(total * 100);
+  const paymobItems = buildPaymobLineItems(resolved, deliveryFee);
+  const itemsSum = paymobItems.reduce((s, i) => s + i.amount_cents, 0);
+  if (itemsSum !== amountCents) {
+    console.error("Paymob line items sum mismatch", { itemsSum, amountCents });
+    return Response.json({ ok: false, error: "Amount mismatch" }, { status: 500 });
+  }
+
+  try {
+    const token = await paymobAuthToken(apiKey);
+    const paymobOrderId = await paymobRegisterEcommerceOrder(token, amountCents, paymobItems);
+
+    const inserted = await insertCheckoutOrder({
+      userId: dbUserId,
+      lines: resolved.map((l) => ({
+        slug: l.id,
+        name: l.name,
+        unitPrice: l.unitPrice,
+        quantity: l.quantity,
+      })),
+      subtotalEgp: subtotal,
+      deliveryFeeEgp: deliveryFee,
+      totalEgp: total,
+      paymentMethod,
+      paymentStatus: "unpaid",
+      shippingAddress,
+      notes: `Paymob checkout · ${guestRef}`,
+      paymobAcceptOrderId: paymobOrderId,
+    });
+
+    const billing = buildPaymobBillingData({
+      name: shipping.name,
+      email: shippingEmail ?? "",
+      phone: shipping.phone,
+      street: `${shipping.address}, ${shipping.city}`,
+      city: shipping.city,
+    });
+
+    const paymentToken = await paymobCreatePaymentKey(
+      token,
+      amountCents,
+      paymobOrderId,
+      integrationId,
+      billing,
+    );
+
+    const paymentUrl = paymobIframeUrl(paymentToken);
+
+    return Response.json({
+      ok: true,
+      configured: true,
+      paymentMethod,
+      paymentUrl,
+      orderId: inserted ? String(inserted.orderNumber) : guestRef,
+      persisted: Boolean(inserted),
+      paymobOrderId,
+      subtotalEgp: subtotal,
+      deliveryFeeEgp: deliveryFee,
+      totalEgp: total,
+      lines: resolved,
+      shipping: { ...shipping, email: shippingEmail ?? "" },
+    });
+  } catch (err) {
+    console.error("Paymob checkout failed", err);
+    return Response.json(
+      {
+        ok: false,
+        error: err instanceof Error ? err.message : "Paymob request failed",
+      },
+      { status: 502 },
+    );
+  }
+}

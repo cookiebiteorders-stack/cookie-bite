@@ -1,0 +1,88 @@
+import { headers } from "next/headers";
+import { Webhook } from "svix";
+import { deleteUserByClerkId, upsertUserFromClerk } from "@/lib/db/users";
+import { sendWelcomeEmail } from "@/lib/email/send";
+
+type ClerkUserEvent = {
+  type: "user.created" | "user.updated" | "user.deleted";
+  data: {
+    id: string;
+    email_addresses?: Array<{ id: string; email_address: string }>;
+    primary_email_address_id?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    image_url?: string | null;
+    deleted?: boolean;
+  };
+};
+
+function pickPrimaryEmail(data: ClerkUserEvent["data"]): string | null {
+  if (!data.email_addresses?.length) return null;
+  const primaryId = data.primary_email_address_id ?? data.email_addresses[0]?.id;
+  return (
+    data.email_addresses.find((e) => e.id === primaryId)?.email_address ??
+    data.email_addresses[0]?.email_address ??
+    null
+  );
+}
+
+export async function POST(req: Request) {
+  const secret = process.env.CLERK_WEBHOOK_SIGNING_SECRET;
+  if (!secret) {
+    return new Response("Missing CLERK_WEBHOOK_SIGNING_SECRET", { status: 500 });
+  }
+
+  const h = await headers();
+  const svix_id = h.get("svix-id");
+  const svix_timestamp = h.get("svix-timestamp");
+  const svix_signature = h.get("svix-signature");
+
+  if (!svix_id || !svix_timestamp || !svix_signature) {
+    return new Response("Missing Svix headers", { status: 400 });
+  }
+
+  const body = await req.text();
+  let evt: ClerkUserEvent;
+  try {
+    evt = new Webhook(secret).verify(body, {
+      "svix-id": svix_id,
+      "svix-timestamp": svix_timestamp,
+      "svix-signature": svix_signature,
+    }) as ClerkUserEvent;
+  } catch (err) {
+    console.error("Clerk webhook verification failed", err);
+    return new Response("Invalid signature", { status: 400 });
+  }
+
+  if (evt.type === "user.deleted") {
+    if (evt.data.id) await deleteUserByClerkId(evt.data.id);
+    return Response.json({ ok: true });
+  }
+
+  if (evt.type === "user.created" || evt.type === "user.updated") {
+    const email = pickPrimaryEmail(evt.data);
+    if (!email) return Response.json({ ok: false, reason: "no email" });
+
+    const fullName = [evt.data.first_name, evt.data.last_name]
+      .filter(Boolean)
+      .join(" ")
+      .trim() || null;
+
+    await upsertUserFromClerk({
+      clerkUserId: evt.data.id,
+      email,
+      fullName,
+      avatarUrl: evt.data.image_url ?? null,
+    });
+
+    if (evt.type === "user.created") {
+      try {
+        await sendWelcomeEmail({ to: email, name: evt.data.first_name ?? undefined });
+      } catch (err) {
+        console.error("welcome email failed", err);
+      }
+    }
+  }
+
+  return Response.json({ ok: true });
+}

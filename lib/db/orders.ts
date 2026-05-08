@@ -1,0 +1,156 @@
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { OrderItemRow, OrderRow } from "@/lib/db/types";
+
+export type InsertCheckoutOrderInput = {
+  userId: string | null;
+  lines: { slug: string; name: string; unitPrice: number; quantity: number }[];
+  subtotalEgp: number;
+  deliveryFeeEgp: number;
+  totalEgp: number;
+  paymentMethod: string;
+  paymentStatus: OrderRow["payment_status"];
+  shippingAddress: Record<string, unknown>;
+  notes: string | null;
+  paymobAcceptOrderId?: number | null;
+};
+
+/** حفظ طلب + البنود؛ يعيد null إذا لم يُضبط Supabase أو فشل الإدراج. */
+export async function insertCheckoutOrder(
+  params: InsertCheckoutOrderInput,
+): Promise<{ id: string; orderNumber: number } | null> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    console.warn("insertCheckoutOrder: missing Supabase env");
+    return null;
+  }
+
+  const supabase = createSupabaseAdminClient();
+
+  const insertRow: Record<string, unknown> = {
+    user_id: params.userId,
+    status: "pending",
+    payment_status: params.paymentStatus,
+    payment_method: params.paymentMethod,
+    subtotal_egp: params.subtotalEgp,
+    delivery_fee_egp: params.deliveryFeeEgp,
+    total_egp: params.totalEgp,
+    notes: params.notes,
+    shipping_address: params.shippingAddress,
+  };
+  if (params.paymobAcceptOrderId != null) {
+    insertRow.paymob_accept_order_id = params.paymobAcceptOrderId;
+  }
+
+  const { data: orderRow, error: orderErr } = await supabase
+    .from("orders")
+    .insert(insertRow)
+    .select("id, order_number")
+    .single();
+
+  if (orderErr || !orderRow) {
+    console.error("insertCheckoutOrder order error", orderErr);
+    return null;
+  }
+
+  const orderId = orderRow.id as string;
+  const orderNumber = Number(orderRow.order_number);
+
+  const itemRows: {
+    order_id: string;
+    product_id: string | null;
+    product_name: string;
+    unit_price_egp: number;
+    quantity: number;
+  }[] = [];
+
+  for (const line of params.lines) {
+    let productUuid: string | null = null;
+    const { data: prod } = await supabase
+      .from("products")
+      .select("id")
+      .eq("slug", line.slug)
+      .maybeSingle();
+    if (prod && typeof (prod as { id?: string }).id === "string") {
+      productUuid = (prod as { id: string }).id;
+    }
+    itemRows.push({
+      order_id: orderId,
+      product_id: productUuid,
+      product_name: line.name,
+      unit_price_egp: line.unitPrice,
+      quantity: line.quantity,
+    });
+  }
+
+  const { error: itemsErr } = await supabase.from("order_items").insert(itemRows);
+  if (itemsErr) {
+    console.error("insertCheckoutOrder items error", itemsErr);
+    await supabase.from("orders").delete().eq("id", orderId);
+    return null;
+  }
+
+  return { id: orderId, orderNumber };
+}
+
+export async function updateOrderPaymentByPaymobAcceptOrderId(
+  paymobAcceptOrderId: number,
+  patch: Pick<OrderRow, "payment_status"> & Partial<Pick<OrderRow, "status">>,
+) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    return false;
+  }
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      payment_status: patch.payment_status,
+      ...(patch.status ? { status: patch.status } : {}),
+    })
+    .eq("paymob_accept_order_id", paymobAcceptOrderId);
+  if (error) {
+    console.error("updateOrderPaymentByPaymobAcceptOrderId", error);
+    return false;
+  }
+  return true;
+}
+
+export async function listRecentOrdersForUser(userId: string, limit = 5) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error("listRecentOrdersForUser error", error);
+    return [] as OrderRow[];
+  }
+  return (data as OrderRow[]) ?? [];
+}
+
+export async function listAllOrders(limit = 50) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error("listAllOrders error", error);
+    return [] as OrderRow[];
+  }
+  return (data as OrderRow[]) ?? [];
+}
+
+export async function getOrderItems(orderId: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("order_items")
+    .select("*")
+    .eq("order_id", orderId);
+  if (error) {
+    console.error("getOrderItems error", error);
+    return [] as OrderItemRow[];
+  }
+  return (data as OrderItemRow[]) ?? [];
+}

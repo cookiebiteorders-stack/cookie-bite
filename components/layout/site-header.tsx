@@ -1,0 +1,334 @@
+"use client";
+
+import { Show, UserButton } from "@clerk/nextjs";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  Menu,
+  Search,
+  ShoppingBag,
+  UserRound,
+  X,
+} from "lucide-react";
+import {
+  AnimatePresence,
+  motion,
+  useMotionValueEvent,
+  useScroll,
+} from "motion/react";
+import { useEffect, useState } from "react";
+import { SiteLogoLink } from "@/components/brand/site-logo";
+import { NavDropdown } from "@/components/layout/nav-dropdown";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { useCart } from "@/components/providers/cart-provider";
+import { duration, easeSoft, spring } from "@/lib/motion/presets";
+import { cn } from "@/lib/utils";
+
+const DISCOVER_LINKS = [
+  { href: "/our-story", label: "Our story" },
+  { href: "/our-cookies", label: "Our cookies" },
+  { href: "/blog", label: "Blog" },
+];
+
+const HELP_LINKS = [
+  { href: "/contact", label: "Contact" },
+  { href: "/help/faq", label: "FAQ" },
+  { href: "/help/returns", label: "Returns" },
+];
+
+const MOBILE_FULL_LINKS = [
+  { href: "/shop", label: "Shop" },
+  { href: "/gift-box", label: "Gifts" },
+  ...DISCOVER_LINKS,
+  ...HELP_LINKS,
+  { href: "/account", label: "Account" },
+];
+
+const iconBtn =
+  "cb-touch-manipulation inline-flex h-11 min-h-[2.75rem] w-11 min-w-[2.75rem] items-center justify-center rounded-xl text-cb-text transition-[transform,box-shadow,color,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:bg-cb-hover-overlay hover:text-cb-terracotta-dark hover:shadow-sm active:scale-[0.97] dark:hover:bg-cb-peach/15";
+
+export function SiteHeader() {
+  const pathname = usePathname();
+  const { itemCount, openDrawer } = useCart();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { scrollY } = useScroll();
+  const [scrolled, setScrolled] = useState(false);
+
+  useMotionValueEvent(scrollY, "change", (y) => {
+    setScrolled(y > 28);
+  });
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    queueMicrotask(() => setMobileOpen(false));
+  }, [pathname]);
+
+  const linkBase =
+    "text-sm font-medium text-cb-text-strong transition-colors duration-300 hover:text-cb-terracotta-dark dark:hover:text-cb-terracotta";
+
+  const shopActive = pathname.startsWith("/shop");
+  const giftsActive =
+    pathname.startsWith("/gift-box") || pathname.startsWith("/gift-ideas");
+
+  return (
+    <>
+      <header
+        className={cn(
+          "sticky top-0 z-50 w-full border-b transition-[border-color,background-color,box-shadow,backdrop-filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          scrolled
+            ? "border-cb-border/90 bg-[color:var(--cb-nav-blur-scrolled)] shadow-[0_12px_40px_-16px_rgba(40,28,20,0.14)] backdrop-blur-xl supports-[backdrop-filter]:bg-[color:var(--cb-nav-blur-scrolled)] dark:shadow-[0_16px_48px_-12px_rgba(0,0,0,0.45)]"
+            : "border-cb-peach-deep/45 bg-[color:var(--cb-nav-blur)] backdrop-blur-md supports-[backdrop-filter]:bg-[color:var(--cb-nav-blur)] dark:border-cb-border/30",
+        )}
+      >
+        <div className="mx-auto w-full max-w-7xl cb-gutter">
+          <div
+            className={cn(
+              "flex items-center justify-between gap-3 transition-[min-height] duration-500",
+              scrolled ? "min-h-14 py-1.5" : "min-h-16 py-2",
+            )}
+          >
+            <div className="flex min-w-0 items-center gap-2 lg:gap-3">
+              <button
+                type="button"
+                className={cn(iconBtn, "lg:hidden")}
+                aria-expanded={mobileOpen}
+                aria-controls="site-mobile-nav"
+                onClick={() => setMobileOpen((v) => !v)}
+                aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              >
+                {mobileOpen ? (
+                  <X className="h-5 w-5" aria-hidden />
+                ) : (
+                  <Menu className="h-5 w-5" aria-hidden />
+                )}
+              </button>
+              <SiteLogoLink />
+            </div>
+
+            <nav
+              className="hidden items-center gap-8 lg:flex"
+              aria-label="Primary"
+            >
+              <Link
+                href="/shop"
+                className={cn(
+                  linkBase,
+                  shopActive &&
+                    "text-cb-text-strong underline decoration-[1.5px] underline-offset-[10px] decoration-cb-terracotta-dark/80 dark:decoration-cb-terracotta/70",
+                )}
+              >
+                Shop
+              </Link>
+              <Link
+                href="/gift-box"
+                className={cn(
+                  linkBase,
+                  giftsActive &&
+                    "text-cb-text-strong underline decoration-[1.5px] underline-offset-[10px] decoration-cb-terracotta-dark/80 dark:decoration-cb-terracotta/70",
+                )}
+              >
+                Gifts
+              </Link>
+              <NavDropdown label="Discover" items={DISCOVER_LINKS} />
+              <NavDropdown label="Help" items={HELP_LINKS} />
+            </nav>
+
+            <div className="flex items-center gap-1 sm:gap-2">
+              <ThemeToggle className="inline-flex" />
+              <Link
+                href="/search"
+                className={iconBtn}
+                aria-label="Search"
+              >
+                <Search className="h-5 w-5" aria-hidden />
+              </Link>
+
+              <Show when="signed-out">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <div
+                    className={cn(
+                      "hidden items-center gap-3 sm:flex",
+                      "text-[11px] font-bold uppercase tracking-wide",
+                    )}
+                  >
+                    <Link
+                      href="/sign-in"
+                      className="whitespace-nowrap text-cb-text transition-colors duration-300 hover:text-cb-terracotta-dark dark:hover:text-cb-terracotta"
+                    >
+                      Sign in
+                    </Link>
+                    <Link
+                      href="/sign-up"
+                      className="whitespace-nowrap text-cb-terracotta-dark transition-colors duration-300 hover:text-cb-text-strong dark:text-cb-terracotta"
+                    >
+                      Join
+                    </Link>
+                  </div>
+                  <Link
+                    href="/sign-in"
+                    className={cn(iconBtn, "sm:hidden")}
+                    aria-label="Sign in"
+                  >
+                    <UserRound className="h-5 w-5" aria-hidden />
+                  </Link>
+                </div>
+              </Show>
+
+              <Show when="signed-in">
+                <Link
+                  href="/account"
+                  className={cn(iconBtn, "hidden sm:inline-flex")}
+                  aria-label="My account"
+                >
+                  <UserRound className="h-5 w-5" aria-hidden />
+                </Link>
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox:
+                        "h-9 w-9 ring-1 ring-cb-peach-deep dark:ring-cb-border",
+                    },
+                  }}
+                />
+              </Show>
+
+              <button
+                type="button"
+                onClick={openDrawer}
+                className={cn(iconBtn, "relative")}
+                aria-label={`Shopping cart${itemCount ? `, ${itemCount} items` : ""}`}
+              >
+                <ShoppingBag className="h-5 w-5" aria-hidden />
+                {itemCount > 0 ? (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-cb-terracotta-dark px-1 text-[10px] font-bold text-white dark:bg-cb-terracotta dark:text-cb-cream-2">
+                    {itemCount > 99 ? "99+" : itemCount}
+                  </span>
+                ) : null}
+              </button>
+            </div>
+          </div>
+
+          <div className="scrollbar-hide -mx-1 overflow-x-auto overscroll-x-contain pb-3 pt-1 lg:hidden">
+            <div className="flex min-w-max snap-x snap-mandatory gap-2 px-1">
+              {[
+                { href: "/", label: "Home", match: (p: string) => p === "/" },
+                {
+                  href: "/shop",
+                  label: "Shop",
+                  match: (p: string) => p.startsWith("/shop"),
+                },
+                {
+                  href: "/gift-box",
+                  label: "Gifts",
+                  match: (p: string) => p.startsWith("/gift"),
+                },
+                {
+                  href: "/our-story",
+                  label: "Story",
+                  match: (p: string) => p.startsWith("/our-story"),
+                },
+                {
+                  href: "/help/faq",
+                  label: "FAQ",
+                  match: (p: string) => p.startsWith("/help"),
+                },
+                {
+                  href: "/contact",
+                  label: "Contact",
+                  match: (p: string) => p.startsWith("/contact"),
+                },
+              ].map((link) => {
+                const active = link.match(pathname);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cn(
+                      "cb-touch-manipulation inline-flex min-h-[2.75rem] snap-start items-center justify-center whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium transition-[transform,background-color,color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                      active
+                        ? "bg-cb-terracotta-dark text-white shadow-md dark:bg-cb-terracotta dark:text-cb-cream-2"
+                        : "bg-cb-surface/85 text-cb-text-strong shadow-sm hover:-translate-y-px hover:bg-cb-surface-elevated hover:text-cb-terracotta-dark dark:bg-cb-surface-2/90 dark:hover:bg-cb-peach/25",
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <AnimatePresence>
+        {mobileOpen ? (
+          <motion.div
+            id="site-mobile-nav"
+            key="mobile-nav"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Site navigation"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: duration.short, ease: easeSoft }}
+            className="fixed inset-0 z-[60] lg:hidden"
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-cb-scrim-strong/65 backdrop-blur-[2px] dark:bg-black/60 max-sm:bg-cb-scrim-strong/75 max-sm:backdrop-blur-none"
+              aria-label="Close menu"
+              onClick={() => setMobileOpen(false)}
+            />
+            <motion.nav
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={spring.snappy}
+              className="absolute inset-y-0 right-0 flex w-[min(100vw-0.5rem,22rem)] max-w-[calc(100vw-env(safe-area-inset-left))] flex-col border-l border-cb-border bg-cb-surface/98 py-6 shadow-2xl backdrop-blur-xl dark:bg-cb-surface-2/98 max-sm:backdrop-blur-md"
+              style={{
+                paddingTop: "max(1.25rem, env(safe-area-inset-top))",
+                paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+              }}
+            >
+              <div className="flex items-center justify-between border-b border-cb-border px-5 pb-4">
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-cb-text-muted">
+                  Menu
+                </span>
+                <ThemeToggle />
+              </div>
+              <ul className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 pt-4">
+                {MOBILE_FULL_LINKS.map((item, i) => (
+                  <motion.li
+                    key={item.href}
+                    initial={{ opacity: 0, x: 16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{
+                      ...spring.gentle,
+                      delay: 0.04 + i * 0.045,
+                    }}
+                  >
+                    <Link
+                      href={item.href}
+                      className="cb-touch-manipulation flex min-h-[2.75rem] items-center rounded-xl px-4 py-3 text-base font-semibold text-cb-text-strong transition-colors hover:bg-cb-peach/50 active:bg-cb-peach/60 dark:hover:bg-cb-peach/20"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {item.label}
+                    </Link>
+                  </motion.li>
+                ))}
+              </ul>
+            </motion.nav>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </>
+  );
+}

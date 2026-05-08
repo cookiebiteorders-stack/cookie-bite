@@ -1,0 +1,334 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getUserByClerkId } from "@/lib/db/users";
+import { checkoutSchema, bilingualError } from "@/lib/validations";
+
+type ProductForCheckout = {
+  id: string;
+  slug: string;
+  name: string;
+  title_en: string | null;
+  title_ar: string | null;
+  price_egp: number;
+  stock: number;
+  image_url: string | null;
+  images: unknown;
+};
+
+const FREE_DELIVERY_THRESHOLD = Number(
+  process.env.NEXT_PUBLIC_FREE_DELIVERY_THRESHOLD_EGP ?? 500,
+);
+const DELIVERY_FEE = 50;
+const GIFT_WRAP_FEE = 30;
+
+// ---------------------------------------------------------------------------
+// POST — إنشاء طلب جديد (Checkout)
+// ---------------------------------------------------------------------------
+export async function POST(req: NextRequest) {
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json(
+      bilingualError("Invalid JSON", "صيغة غير صالحة"),
+      { status: 400 },
+    );
+  }
+
+  const parsed = checkoutSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        ...bilingualError("Validation failed", "فشل التحقق"),
+        details: parsed.error.flatten(),
+      },
+      { status: 400 },
+    );
+  }
+
+  const data = parsed.data;
+  const supabase = createSupabaseAdminClient();
+
+  // 1) المنتجات والمخزون
+  const productIds = data.cart_items.map((i) => i.product_id);
+  const { data: rawProducts, error: pErr } = await supabase
+    .from("products")
+    .select(
+      "id, slug, name, title_en, title_ar, price_egp, stock, image_url, images",
+    )
+    .in("id", productIds)
+    .eq("is_active", true);
+
+  if (pErr) {
+    console.error("orders products lookup", pErr);
+    return NextResponse.json(
+      bilingualError("Database error", "خطأ في قاعدة البيانات"),
+      { status: 500 },
+    );
+  }
+  const products = (rawProducts ?? []) as ProductForCheckout[];
+
+  for (const item of data.cart_items) {
+    const product = products.find((p) => p.id === item.product_id);
+    if (!product) {
+      return NextResponse.json(
+        bilingualError(
+          `Product not found: ${item.product_id}`,
+          "المنتج غير موجود",
+        ),
+        { status: 400 },
+      );
+    }
+    if (product.stock < item.quantity) {
+      return NextResponse.json(
+        {
+          error: {
+            en: `${product.title_en ?? product.name} is out of stock`,
+            ar: `${product.title_ar ?? product.name} غير متاح`,
+          },
+        },
+        { status: 400 },
+      );
+    }
+  }
+
+  // 2) المجاميع
+  let subtotal = 0;
+  const orderLines = data.cart_items.map((item) => {
+    const product = products.find((p) => p.id === item.product_id)!;
+    const unit_price = Number(product.price_egp);
+    const total_price = unit_price * item.quantity;
+    subtotal += total_price;
+    return {
+      product_id: product.id,
+      product_snapshot: product,
+      quantity: item.quantity,
+      unit_price_egp: unit_price,
+      total_price_egp: total_price,
+      product_name: product.title_en ?? product.name,
+    };
+  });
+
+  // 3) Promo
+  let discount_amount = 0;
+  let promoIdToIncrement: string | null = null;
+  if (data.promo_code) {
+    const { data: promo } = await supabase
+      .from("promo_codes")
+      .select(
+        "id, type, value, min_order_amount_egp, max_uses, used_count, valid_from, valid_until",
+      )
+      .eq("code", data.promo_code.toUpperCase())
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (promo) {
+      const now = new Date();
+      const expired = promo.valid_until && new Date(promo.valid_until) < now;
+      const notStarted =
+        promo.valid_from && new Date(promo.valid_from) > now;
+      const limitReached =
+        promo.max_uses !== null && promo.used_count >= promo.max_uses;
+      const meetsMin = subtotal >= Number(promo.min_order_amount_egp);
+
+      if (!expired && !notStarted && !limitReached && meetsMin) {
+        discount_amount =
+          promo.type === "percent"
+            ? Math.round(((subtotal * Number(promo.value)) / 100) * 100) / 100
+            : Number(promo.value);
+        discount_amount = Math.min(discount_amount, subtotal);
+        promoIdToIncrement = promo.id;
+      }
+    }
+  }
+
+  const delivery_fee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+  const gift_wrapping_fee = data.is_gift ? GIFT_WRAP_FEE : 0;
+  const total = Math.max(
+    0,
+    subtotal - discount_amount + delivery_fee + gift_wrapping_fee,
+  );
+
+  // 4) العنوان
+  let shipping_address: Record<string, unknown> | null = null;
+  if (data.address_id) {
+    const { data: addr } = await supabase
+      .from("addresses")
+      .select("*")
+      .eq("id", data.address_id)
+      .maybeSingle();
+    if (addr) shipping_address = addr;
+  }
+  shipping_address = shipping_address ?? data.address ?? null;
+  if (!shipping_address) {
+    return NextResponse.json(
+      bilingualError("Missing address", "العنوان مفقود"),
+      { status: 400 },
+    );
+  }
+
+  // 5) المستخدم
+  const { userId } = await auth();
+  let user_id: string | null = null;
+  if (userId) {
+    const profile = await getUserByClerkId(userId);
+    user_id = profile?.id ?? null;
+  }
+
+  // 6) إنشاء الطلب
+  const status = data.payment_method === "cod" ? "processing" : "pending";
+  const payment_status = "unpaid";
+
+  const { data: order, error: oErr } = await supabase
+    .from("orders")
+    .insert({
+      user_id,
+      guest_email: userId ? null : data.guest_email ?? null,
+      status,
+      payment_status,
+      payment_method: data.payment_method,
+      subtotal_egp: subtotal,
+      delivery_fee_egp: delivery_fee,
+      discount_amount_egp: discount_amount,
+      gift_wrapping_fee_egp: gift_wrapping_fee,
+      total_egp: total,
+      promo_code: promoIdToIncrement ? data.promo_code?.toUpperCase() : null,
+      delivery_slot: data.delivery_slot ?? null,
+      gift_message: data.gift_message ?? null,
+      is_gift: data.is_gift,
+      language: data.language,
+      shipping_address,
+    })
+    .select("id, order_code, order_number, total_egp")
+    .single();
+
+  if (oErr || !order) {
+    console.error("orders insert error", oErr);
+    return NextResponse.json(
+      bilingualError("Failed to create order", "فشل إنشاء الطلب"),
+      { status: 500 },
+    );
+  }
+
+  // 7) عناصر الطلب
+  const itemsForInsert = orderLines.map((l) => ({
+    order_id: order.id,
+    product_id: l.product_id,
+    product_name: l.product_name,
+    product_snapshot: l.product_snapshot,
+    unit_price_egp: l.unit_price_egp,
+    total_price_egp: l.total_price_egp,
+    quantity: l.quantity,
+  }));
+
+  const { error: itemsErr } = await supabase
+    .from("order_items")
+    .insert(itemsForInsert);
+
+  if (itemsErr) {
+    console.error("order_items insert error", itemsErr);
+    await supabase.from("orders").delete().eq("id", order.id);
+    return NextResponse.json(
+      bilingualError("Failed to save items", "فشل حفظ العناصر"),
+      { status: 500 },
+    );
+  }
+
+  // 8) خصم المخزون
+  for (const item of data.cart_items) {
+    const { error: stockErr } = await supabase.rpc(
+      "decrement_product_stock",
+      { p_id: item.product_id, qty: item.quantity },
+    );
+    if (stockErr) {
+      console.error("stock decrement failed (non-fatal)", stockErr);
+    }
+  }
+
+  // 9) إحصاء استخدام promo
+  if (promoIdToIncrement) {
+    await supabase.from("promo_code_uses").insert({
+      promo_code_id: promoIdToIncrement,
+      user_id,
+      order_id: order.id,
+    });
+    await supabase
+      .from("promo_codes")
+      .update({ used_count: (await getPromoUsedCount(supabase, promoIdToIncrement)) + 1 })
+      .eq("id", promoIdToIncrement);
+  }
+
+  return NextResponse.json({
+    ok: true,
+    order_id: order.id,
+    order_code: order.order_code ?? `#${order.order_number}`,
+    order_number: order.order_number,
+    subtotal_egp: subtotal,
+    discount_amount_egp: discount_amount,
+    delivery_fee_egp: delivery_fee,
+    gift_wrapping_fee_egp: gift_wrapping_fee,
+    total_egp: total,
+    payment_method: data.payment_method,
+  });
+}
+
+async function getPromoUsedCount(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  id: string,
+): Promise<number> {
+  const { data } = await supabase
+    .from("promo_codes")
+    .select("used_count")
+    .eq("id", id)
+    .maybeSingle<{ used_count: number }>();
+  return data?.used_count ?? 0;
+}
+
+// ---------------------------------------------------------------------------
+// GET — قائمة طلبات المستخدم الحالي
+// ---------------------------------------------------------------------------
+export async function GET(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json(
+      bilingualError("Unauthorized", "غير مصرح"),
+      { status: 401 },
+    );
+  }
+
+  const profile = await getUserByClerkId(userId);
+  if (!profile) {
+    return NextResponse.json(
+      bilingualError("Profile not found", "الملف غير موجود"),
+      { status: 404 },
+    );
+  }
+
+  const limit = Math.min(
+    Number(req.nextUrl.searchParams.get("limit") ?? 20),
+    50,
+  );
+
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("orders")
+    .select(
+      "id, order_code, order_number, status, payment_status, payment_method, subtotal_egp, delivery_fee_egp, discount_amount_egp, total_egp, language, created_at",
+    )
+    .eq("user_id", profile.id)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("/api/orders GET error", error);
+    return NextResponse.json(
+      bilingualError("Database error", "خطأ في قاعدة البيانات"),
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({ orders: data ?? [] });
+}
+
+export const dynamic = "force-dynamic";

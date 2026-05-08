@@ -1,0 +1,2 @@
+-- Intentionally left empty for production.
+-- Products are created and managed by admin/owner from the dashboard.
