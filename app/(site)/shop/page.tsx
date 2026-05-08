@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ProductListingPageClient } from "@/src/components/shop/ProductListingPageClient";
+import { ShopClient } from "@/components/shop/shop-client";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
 
@@ -24,5 +24,5 @@ export const metadata: Metadata = {
 };
 
 export default function ShopPage() {
-  return <ProductListingPageClient />;
+  return <ShopClient />;
 }
