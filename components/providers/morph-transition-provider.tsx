@@ -53,8 +53,26 @@ function unlockScroll() {
 
 const CAPTURE_SCALE = 0.42;
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const id = window.setTimeout(() => reject(new Error(`${label} (${ms}ms)`)), ms);
+    promise.then(
+      (v) => {
+        window.clearTimeout(id);
+        resolve(v);
+      },
+      (e) => {
+        window.clearTimeout(id);
+        reject(e);
+      },
+    );
+  });
+}
+
 export function MorphTransitionProvider({ children }: { children: React.ReactNode }) {
   const { lang, setLanguage } = useLanguage();
+  const langRef = useRef(lang);
+  langRef.current = lang;
   const [session, setSession] = useState<Session | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -75,10 +93,20 @@ export function MorphTransitionProvider({ children }: { children: React.ReactNod
     busy.current = false;
   }, []);
 
+  useEffect(() => {
+    if (!session) return;
+    const id = window.setTimeout(() => {
+      endMorph();
+    }, 25_000);
+    return () => window.clearTimeout(id);
+  }, [session, endMorph]);
+
   const morphToLanguage = useCallback(
     async (target: Lang, originNorm?: { x: number; y: number }) => {
-      if (target === lang || busy.current) return;
+      const fromLang = langRef.current;
+      if (target === fromLang || busy.current) return;
       busy.current = true;
+      let switchedForMorph = false;
 
       if (reducedMotion) {
         const root = document.documentElement;
@@ -108,62 +136,67 @@ export function MorphTransitionProvider({ children }: { children: React.ReactNod
       const scrollY = window.scrollY;
       lockScroll(scrollY);
 
+      const captureOpts = {
+        scale: CAPTURE_SCALE,
+        useCORS: true,
+        /** مهم: allowTaint يلوّث الـ canvas فيفشل toDataURL في كثير من المتصفحات */
+        allowTaint: false,
+        logging: false,
+        backgroundColor: null,
+        ignoreElements: (el: Element) => el.closest("[data-morph-skip-capture]") !== null,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        windowWidth: window.innerWidth,
+        windowHeight: window.innerHeight,
+        x: 0,
+        y: 0,
+        scrollX: 0,
+        scrollY: 0,
+      };
+
       try {
-        const canvasA = await html2canvas(document.body, {
-          scale: CAPTURE_SCALE,
-          useCORS: true,
-          allowTaint: true,
-          logging: false,
-          backgroundColor: null,
-          ignoreElements: (el) => el.closest("[data-morph-skip-capture]") !== null,
-          width: window.innerWidth,
-          height: window.innerHeight,
-          x: 0,
-          y: 0,
-          scrollX: 0,
-          scrollY: 0,
-        });
-        const dataUrlA = canvasA.toDataURL("image/jpeg", 0.82);
+        const canvasA = await withTimeout(html2canvas(document.body, captureOpts), 15_000, "html2canvas A");
+        let dataUrlA: string;
+        try {
+          dataUrlA = canvasA.toDataURL("image/jpeg", 0.82);
+        } catch {
+          dataUrlA = canvasA.toDataURL("image/png");
+        }
         setPreviewUrl(dataUrlA);
 
         setLanguage(target);
+        switchedForMorph = true;
 
         await new Promise<void>((r) => {
           requestAnimationFrame(() => requestAnimationFrame(() => r()));
         });
         await new Promise<void>((r) => setTimeout(r, 120));
 
-        const canvasB = await html2canvas(document.body, {
-          scale: CAPTURE_SCALE,
-          useCORS: true,
-          allowTaint: true,
-          logging: false,
-          backgroundColor: null,
-          ignoreElements: (el) => el.closest("[data-morph-skip-capture]") !== null,
-          width: window.innerWidth,
-          height: window.innerHeight,
-          x: 0,
-          y: 0,
-          scrollX: 0,
-          scrollY: 0,
-        });
-        const dataUrlB = canvasB.toDataURL("image/jpeg", 0.82);
+        const canvasB = await withTimeout(html2canvas(document.body, captureOpts), 15_000, "html2canvas B");
+        let dataUrlB: string;
+        try {
+          dataUrlB = canvasB.toDataURL("image/jpeg", 0.82);
+        } catch {
+          dataUrlB = canvasB.toDataURL("image/png");
+        }
 
         const direction: MorphDirection = target === "ar" ? 1 : -1;
 
-        const ox = originNorm?.x ?? (lang === "ar" ? 0.9 : 0.1);
+        const ox = originNorm?.x ?? (fromLang === "ar" ? 0.9 : 0.1);
         const oy = originNorm?.y ?? 0.08;
 
         setPreviewUrl(null);
         setSession({ dataUrlA, dataUrlB, direction, originNorm: { x: ox, y: oy } });
-      } catch {
+      } catch (err) {
+        console.error("[morph-transition]", err);
+        if (!switchedForMorph) setLanguage(target);
         setPreviewUrl(null);
         setSession(null);
         unlockScroll();
         busy.current = false;
       }
     },
-    [lang, reducedMotion, setLanguage],
+    [reducedMotion, setLanguage],
   );
 
   const value = useMemo<MorphTransitionContextValue>(
