@@ -109,8 +109,8 @@ function computeSmartPanelPlacement(r: DOMRect): PanelPlacement {
   const fabCx = r.left + r.width / 2;
   const fabCy = r.top + r.height / 2;
 
-  let spaceBelow = vh - r.bottom - gap - safeBottom;
-  let spaceAbove = r.top - gap - safeTop;
+  const spaceBelow = vh - r.bottom - gap - safeBottom;
+  const spaceAbove = r.top - gap - safeTop;
 
   const preferBelow = fabCy < vh * 0.5;
   let useBelow: boolean;
@@ -132,9 +132,9 @@ function computeSmartPanelPlacement(r: DOMRect): PanelPlacement {
   let bottom: number | undefined;
   
   // Make the panel much taller by default, but bounded by vh
-  const heightCap = Math.min(850, Math.floor(vh * 0.92));
+  const heightCap = Math.min(DEFAULT_PANEL_MAX_H, Math.floor(vh * 0.92));
   // Force a minimum height of 650px so the content is always visible
-  let maxH = Math.min(heightCap, Math.max(650, space), vh - safeTop - safeBottom);
+  const maxH = Math.min(heightCap, Math.max(650, space), vh - safeTop - safeBottom);
 
   if (useBelow) {
     top = Math.round(r.bottom + gap);
@@ -195,9 +195,16 @@ export function MrBrownieChat() {
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  const [fabPos, setFabPos] = useState<MrBrownieFabPosition>(() =>
-    defaultFabPosition(false),
-  );
+  const [fabPos, setFabPos] = useState<MrBrownieFabPosition>(() => {
+    if (typeof window === "undefined") return defaultFabPosition(false);
+    const mobile = isMobileViewport();
+    const saved = loadFabPosition();
+    if (!saved) return defaultFabPosition(mobile);
+    return {
+      ...saved,
+      bottomPx: clampFabBottom(saved.bottomPx, window.innerHeight, mobile),
+    };
+  });
   const [dragPx, setDragPx] = useState<{ left: number; top: number } | null>(null);
   const [settling, setSettling] = useState<{ left: number; top: number } | null>(
     null,
@@ -297,19 +304,6 @@ export function MrBrownieChat() {
       cancelSettleRaf();
     };
   }, [cancelDragRaf, cancelSettleRaf]);
-
-  useEffect(() => {
-    const saved = loadFabPosition();
-    const mobile = isMobileViewport();
-    if (saved) {
-      setFabPos({
-        ...saved,
-        bottomPx: clampFabBottom(saved.bottomPx, window.innerHeight, mobile),
-      });
-    } else {
-      setFabPos(defaultFabPosition(mobile));
-    }
-  }, []);
 
   useEffect(() => {
     const onResize = () => {
@@ -504,8 +498,6 @@ export function MrBrownieChat() {
     setDragPx(null);
   };
 
-  const pillPos = dragPx ?? settling;
-
   /* موضع الـ FAB عبر DOM API بدل style في JSX — useLayoutEffect يمنع وميض الموضع */
   useLayoutEffect(() => {
     const el = fabRef.current;
@@ -593,6 +585,7 @@ export function MrBrownieChat() {
         )}
         aria-label="Mr. Brownie — اسحب للجانب للتثبيت، أو اضغط لفتح المحادثة"
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={MR_BROWNIE_MASCOT_SRC}
           alt=""
@@ -623,6 +616,7 @@ export function MrBrownieChat() {
           >
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-cb-border/60 bg-gradient-to-l from-cb-peach/85 via-cb-cream/50 to-cb-peach/40 px-4 py-3.5 dark:from-cb-peach-deep/35 dark:via-cb-surface-2/40 dark:to-cb-peach-deep/25">
               <div className="flex min-w-0 flex-1 items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={MR_BROWNIE_MASCOT_SRC}
                   alt="Mr. Brownie"

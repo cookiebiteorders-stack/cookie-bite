@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PRODUCTS, type Product } from "@/lib/data";
 import { ProductCard } from "@/components/product/product-card";
@@ -25,13 +25,11 @@ function isShopCategory(v: string): v is ShopCategory {
 
 export function ShopClient() {
   const searchParams = useSearchParams();
-  const [cat, setCat] = useState<ShopCategory>("All");
-  const [onlyBest, setOnlyBest] = useState(false);
-
-  useEffect(() => {
+  const [cat, setCat] = useState<ShopCategory>(() => {
     const raw = searchParams.get("cat");
-    if (raw && isShopCategory(raw)) setCat(raw);
-  }, [searchParams]);
+    return raw && isShopCategory(raw) ? raw : "All";
+  });
+  const [onlyBest, setOnlyBest] = useState(false);
 
   const filtered = useMemo(() => {
     let list: Product[] = PRODUCTS;

@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Plus, Heart } from "lucide-react";
 import { OUR_COOKIE_SECTIONS } from "@/lib/data";
-import { cn } from "@/lib/utils";
 
 export function MobileOurCookiesView() {
   return (

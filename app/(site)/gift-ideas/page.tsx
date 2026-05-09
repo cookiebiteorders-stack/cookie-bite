@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MobileGiftView } from "@/components/sections/mobile-gift-view";
 import { buttonClassName } from "@/components/ui/button";
 import { buildPageMetadata } from "@/lib/seo";
 

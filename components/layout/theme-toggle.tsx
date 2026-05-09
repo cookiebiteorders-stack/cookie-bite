@@ -1,7 +1,7 @@
 "use client";
 
-import { Moon, Sun, UserRound } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { Moon, Sun } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { useTheme } from "@/components/providers/theme-provider";
@@ -91,16 +91,13 @@ function LiquidOverlay({
   origin: ClickOrigin;
   targetTheme: "dark" | "light";
 }) {
-  const [maxRadius, setMaxRadius] = useState(0);
-
-  useEffect(() => {
+  const maxRadius = useMemo(() => {
     const w = window.innerWidth;
     const h = window.innerHeight;
-    const maxDist = Math.hypot(
+    return Math.hypot(
       Math.max(origin.x, w - origin.x),
-      Math.max(origin.y, h - origin.y)
+      Math.max(origin.y, h - origin.y),
     );
-    setMaxRadius(maxDist);
   }, [origin]);
 
   if (maxRadius === 0) return null;

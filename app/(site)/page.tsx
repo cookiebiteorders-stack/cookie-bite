@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { ExploreCategories } from "@/components/sections/explore-categories";
 import { HomeStorySnippet } from "@/components/sections/home-story-snippet";
 import { TrustBar } from "@/components/sections/trust-bar";
-import { MobileHomeSections } from "@/components/sections/mobile-home-sections";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
 

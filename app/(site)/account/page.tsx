@@ -20,7 +20,6 @@ import {
 
 import { AccountTestimonialForm } from "@/components/account/account-testimonial-form";
 import { RedeemPointsCard } from "@/components/account/redeem-points-card";
-import { MobileAccountView } from "@/components/account/mobile-account-view";
 import { buttonClassName } from "@/components/ui/button";
 import { getAccessibleAdminConsoleNav } from "@/lib/admin/admin-console-nav";
 import { getAdminNavIcon } from "@/lib/admin/admin-console-nav-icons";

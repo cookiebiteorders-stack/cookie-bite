@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { Heart, Plus, Star } from "lucide-react";
+import { Heart, Plus } from "lucide-react";
 import { PRODUCTS, type Product } from "@/lib/data";
 import { cn } from "@/lib/utils";
 

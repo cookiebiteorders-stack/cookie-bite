@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { STORY_SECTIONS } from "@/lib/data";
 import { SectionHeading } from "@/components/sections/section-heading";
-import { MobileStoryView } from "@/components/sections/mobile-story-view";
 import { buttonClassName } from "@/components/ui/button";
 import { buildPageMetadata, buildBreadcrumbJsonLd } from "@/lib/seo";
 

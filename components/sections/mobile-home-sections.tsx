@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronDown, Mail, Sparkles, Heart, Truck, Star, Plus, ArrowRight } from "lucide-react";
+import { ChevronDown, Mail, Sparkles, Heart, Truck, Star, ArrowRight } from "lucide-react";
 import { CATEGORY_CARDS, IMAGES, INSTAGRAM_GRID, TESTIMONIALS, SITE } from "@/lib/data";
 import { BRAND } from "@/lib/brand";
 
