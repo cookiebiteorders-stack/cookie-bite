@@ -27,7 +27,7 @@ export function CartDrawer() {
         onClick={closeDrawer}
       />
       <aside
-        className="relative flex h-full max-h-[100dvh] w-full max-w-md flex-col border-l border-cb-border bg-cb-cream shadow-2xl dark:bg-cb-cream-2"
+        className="relative flex h-full max-h-[100dvh] w-full max-w-md flex-col border-s border-cb-border bg-cb-cream shadow-2xl dark:bg-cb-cream-2"
         role="dialog"
         aria-modal="true"
         aria-labelledby="cart-drawer-title"

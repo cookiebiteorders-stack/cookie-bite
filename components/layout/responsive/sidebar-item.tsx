@@ -17,7 +17,7 @@ export function SidebarItem({ href, label, icon: Icon, active, collapsed }: Prop
       href={href}
       className={cn(
         "group relative flex min-h-[48px] items-center gap-3 rounded-lg px-3 text-sm font-medium text-cb-text transition",
-        "before:absolute before:left-0 before:top-1/2 before:h-0 before:w-0.5 before:-translate-y-1/2 before:bg-cb-terracotta-dark before:transition-all group-hover:before:h-6",
+        "before:absolute before:start-0 before:top-1/2 before:h-0 before:w-0.5 before:-translate-y-1/2 before:bg-cb-terracotta-dark before:transition-all group-hover:before:h-6",
         active && "bg-cb-peach/60 text-cb-text-strong before:h-7",
         collapsed && "justify-center px-2",
       )}

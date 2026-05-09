@@ -864,7 +864,7 @@ export function MrBrownieChat() {
               className="flex h-full min-h-0 flex-col gap-3 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4 sm:px-5"
             >
               {messages.length === 0 ? (
-                <p className="mr-auto max-w-[92%] rounded-2xl bg-gradient-to-br from-cb-cream to-cb-peach/40 px-3.5 py-2.5 text-sm leading-relaxed text-cb-text-strong shadow-[var(--shadow-card)] ring-1 ring-cb-border/50 dark:from-cb-surface-2 dark:to-cb-peach-deep/20">
+                <p className="me-auto max-w-[92%] rounded-2xl bg-gradient-to-br from-cb-cream to-cb-peach/40 px-3.5 py-2.5 text-sm leading-relaxed text-cb-text-strong shadow-[var(--shadow-card)] ring-1 ring-cb-border/50 dark:from-cb-surface-2 dark:to-cb-peach-deep/20">
                   مرحباً — أنا Mr. Brownie. اسأل عن النكهات، الهدايا، أو التوصيل.
                   اسحب الدبّ للأعلى أو الأسفل واليمين أو اليسار: النافذة تفتح من
                   الناحية المناسبة عشان ما تغطّيك ✨
@@ -876,8 +876,8 @@ export function MrBrownieChat() {
                   className={cn(
                     "max-w-[92%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm",
                     m.role === "user"
-                      ? "ml-auto bg-gradient-to-br from-cb-terracotta-dark to-cb-terracotta text-white shadow-[var(--shadow-card)]"
-                      : "mr-auto bg-cb-cream/95 text-cb-text-strong ring-1 ring-cb-border/55 dark:bg-cb-surface-2",
+                      ? "ms-auto bg-gradient-to-br from-cb-terracotta-dark to-cb-terracotta text-white shadow-[var(--shadow-card)]"
+                      : "me-auto bg-cb-cream/95 text-cb-text-strong ring-1 ring-cb-border/55 dark:bg-cb-surface-2",
                   )}
                 >
                   {m.content}

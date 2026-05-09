@@ -104,7 +104,7 @@ export function SiteFooter() {
             <LogoMark className="h-10 w-10 text-cb-brand-logo" title={SITE.name} />
           </span>
         </Link>
-        <p className="max-w-2xl bg-transparent text-center text-xs leading-relaxed text-cb-text md:text-left md:text-sm">
+        <p className="max-w-2xl bg-transparent text-center text-xs leading-relaxed text-cb-text md:text-start md:text-sm">
           {t("footer.blurb")}
         </p>
       </div>

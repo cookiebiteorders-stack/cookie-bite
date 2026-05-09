@@ -43,13 +43,13 @@ export function ProductCard({ product, layout = "grid", className }: Props) {
         </Link>
         <button
           type="button"
-          className="absolute right-3 top-3 z-10 rounded-full border border-cb-peach-deep/60 bg-cb-cream/95 p-2 text-cb-terracotta-dark shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md"
+          className="absolute end-3 top-3 z-10 rounded-full border border-cb-peach-deep/60 bg-cb-cream/95 p-2 text-cb-terracotta-dark shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md"
           aria-label={t("product.favoritesAria")}
         >
           <Heart className="h-4 w-4" />
         </button>
         {product.badges?.length ? (
-          <div className="pointer-events-none absolute left-3 top-3 z-10 flex flex-wrap gap-1">
+          <div className="pointer-events-none absolute start-3 top-3 z-10 flex flex-wrap gap-1">
             {product.badges.map((b) => (
               <span
                 key={b}

@@ -59,7 +59,7 @@ export function Navbar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative py-2 text-sm font-medium text-cb-text transition after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-cb-terracotta-dark after:transition-all hover:text-cb-text-strong hover:after:w-full",
+                  "relative py-2 text-sm font-medium text-cb-text transition after:absolute after:bottom-0 after:start-0 after:h-0.5 after:w-0 after:bg-cb-terracotta-dark after:transition-all hover:text-cb-text-strong hover:after:w-full",
                   active && "text-cb-text-strong after:w-full",
                 )}
               >

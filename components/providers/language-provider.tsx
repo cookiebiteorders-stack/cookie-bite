@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useState,
@@ -57,10 +56,13 @@ type LanguageProviderProps = {
 export function LanguageProvider({ children, initialLang }: LanguageProviderProps) {
   const [lang, setLang] = useState<Lang>(() => initialLang);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "en" || stored === "ar") {
-      if (stored !== initialLang) setLang(stored);
+    if (
+      (stored === "en" || stored === "ar") &&
+      stored !== initialLang
+    ) {
+      setLang(stored);
     }
   }, [initialLang]);
 

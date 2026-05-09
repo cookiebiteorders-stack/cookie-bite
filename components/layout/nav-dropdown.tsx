@@ -46,7 +46,7 @@ export function NavDropdown({ label, items, className }: NavDropdownProps) {
       {open && (
         <div
           role="menu"
-          className="absolute left-0 top-full z-50 mt-2 min-w-[200px] rounded-2xl border border-cb-border bg-cb-surface py-2 shadow-lg ring-1 ring-cb-peach-deep/30"
+          className="absolute start-0 top-full z-50 mt-2 min-w-[200px] rounded-2xl border border-cb-border bg-cb-surface py-2 shadow-lg ring-1 ring-cb-peach-deep/30"
         >
           {items.map((item) => (
             <Link

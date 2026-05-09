@@ -95,7 +95,7 @@ export function GiftBoxClient() {
       </section>
 
       <section className="bg-cb-peach/70 py-16">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-8 cb-gutter text-center lg:flex-row lg:justify-between lg:text-left">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-8 cb-gutter text-center lg:flex-row lg:justify-between lg:text-start">
           <div className="relative h-48 w-full max-w-sm overflow-hidden rounded-3xl shadow-md ring-1 ring-cb-border lg:h-56">
             <Image
               src={IMAGES.heroStack}

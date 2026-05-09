@@ -12,6 +12,15 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
     {
+      urlPattern: /\/_next\/static\/.*/i,
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "next-static-chunks",
+        networkTimeoutSeconds: 4,
+        expiration: { maxEntries: 200, maxAgeSeconds: 24 * 60 * 60 },
+      },
+    },
+    {
       urlPattern: /^\/_next\/image\?url=.*/i,
       handler: "StaleWhileRevalidate",
       options: {

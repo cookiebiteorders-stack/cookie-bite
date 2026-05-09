@@ -58,7 +58,7 @@ export function HeroSection5() {
         </div>
 
         <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-7xl flex-col cb-gutter pb-[max(4rem,env(safe-area-inset-bottom))] pt-[max(4.5rem,env(safe-area-inset-top))] md:pb-28 md:pt-24 lg:block lg:pb-36 lg:pt-28">
-          <div className="relative mx-auto max-w-lg text-center lg:ms-4 lg:me-auto lg:max-w-2xl lg:text-left">
+          <div className="relative mx-auto max-w-lg text-center lg:ms-4 lg:me-auto lg:max-w-2xl lg:text-start">
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -113,7 +113,7 @@ export function HeroSection5() {
                 )}
               >
                 <span className="text-center sm:text-nowrap">{t("hero.ctaShop")}</span>
-                <ChevronRight className="ms-0.5 h-5 w-5 shrink-0" />
+                <ChevronRight className="ms-0.5 h-5 w-5 shrink-0 rtl:rotate-180" />
               </Link>
               <Link
                 href="/gift-box"
@@ -128,7 +128,7 @@ export function HeroSection5() {
 
             <p
               className={cn(
-                "mt-10 hidden max-w-xs text-left text-xs leading-relaxed text-cb-text-muted lg:block",
+                "mt-10 hidden max-w-xs text-start text-xs leading-relaxed text-cb-text-muted lg:block",
                 "border-s-2 border-cb-pink/80 ps-4",
               )}
             >
@@ -161,8 +161,8 @@ export function HeroSection5() {
                     </div>
                   ))}
                 </InfiniteSlider>
-                <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-cb-cream to-transparent" />
-                <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-cb-cream to-transparent" />
+                <div className="pointer-events-none absolute inset-y-0 start-0 w-16 bg-gradient-to-r from-cb-cream to-transparent rtl:bg-gradient-to-l" />
+                <div className="pointer-events-none absolute inset-y-0 end-0 w-16 bg-gradient-to-l from-cb-cream to-transparent rtl:bg-gradient-to-r" />
               </div>
             </div>
           </div>

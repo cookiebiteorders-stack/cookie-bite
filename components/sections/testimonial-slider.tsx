@@ -74,15 +74,15 @@ export function TestimonialSlider() {
               className="relative overflow-hidden rounded-2xl border border-cb-peach-deep bg-cb-surface cb-shadow-editorial"
             >
               <div
-                className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-cb-mint via-cb-pink to-cb-terracotta-soft"
+                className="absolute start-0 top-0 h-full w-1.5 bg-gradient-to-b from-cb-mint via-cb-pink to-cb-terracotta-soft"
                 aria-hidden
               />
               <Quote
-                className="absolute right-6 top-6 h-14 w-14 text-cb-peach-deep/40"
+                className="absolute end-6 top-6 h-14 w-14 text-cb-peach-deep/40"
                 strokeWidth={1}
                 aria-hidden
               />
-              <div className="p-8 sm:p-10 sm:pl-12">
+              <div className="p-8 sm:p-10 sm:ps-12">
                 <div
                   className="mb-6 flex gap-1 text-cb-terracotta-dark"
                   aria-label={t("testimonials.ratedStars")}

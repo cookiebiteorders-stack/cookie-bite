@@ -107,7 +107,6 @@ export function SiteHeader() {
           <div
             className={cn(
               "flex items-center justify-between gap-3 transition-[min-height] duration-500",
-              isRtl && "flex-row-reverse",
               scrolled ? "min-h-14 py-1.5" : "min-h-16 py-2",
             )}
           >
@@ -214,7 +213,7 @@ export function SiteHeader() {
               >
                 <ShoppingBag className="h-5 w-5" aria-hidden />
                 {itemCount > 0 ? (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-cb-terracotta-dark px-1 text-[10px] font-bold text-white dark:bg-cb-terracotta dark:text-cb-cream-2">
+                  <span className="absolute -end-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-cb-terracotta-dark px-1 text-[10px] font-bold text-white dark:bg-cb-terracotta dark:text-cb-cream-2">
                     {itemCount > 99 ? "99+" : itemCount}
                   </span>
                 ) : null}
@@ -246,13 +245,12 @@ export function SiteHeader() {
               onClick={() => setMobileOpen(false)}
             />
             <motion.nav
-              initial={{ x: isRtl ? "-100%" : "100%" }}
+              initial={{ x: isRtl ? "100%" : "-100%" }}
               animate={{ x: 0 }}
-              exit={{ x: isRtl ? "-100%" : "100%" }}
+              exit={{ x: isRtl ? "100%" : "-100%" }}
               transition={spring.snappy}
               className={cn(
-                "absolute inset-y-0 flex w-[min(100vw-0.5rem,22rem)] max-w-[calc(100vw-env(safe-area-inset-left))] flex-col border-cb-border bg-cb-surface/98 py-6 shadow-2xl backdrop-blur-xl dark:bg-cb-surface-2/98 max-sm:backdrop-blur-md",
-                isRtl ? "left-0 border-r" : "right-0 border-l",
+                "absolute inset-y-0 start-0 flex w-[min(100vw-0.5rem,22rem)] max-w-[calc(100vw-env(safe-area-inset-left))] flex-col border-e border-cb-border bg-cb-surface/98 py-6 shadow-2xl backdrop-blur-xl dark:bg-cb-surface-2/98 max-sm:backdrop-blur-md",
               )}
               style={{
                 paddingTop: "max(1.25rem, env(safe-area-inset-top))",

@@ -279,7 +279,7 @@ export function ShopClient() {
       <div className="mx-auto max-w-7xl cb-gutter">
         <SectionHeading
           align="left"
-          className="mb-8 text-left"
+          className="mb-8 text-start"
           eyebrow={t("pages.shop.eyebrow")}
           title={t("pages.shop.title")}
           subtitle={t("pages.shop.subtitle")}
