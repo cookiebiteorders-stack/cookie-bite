@@ -58,6 +58,7 @@ export function MobileGiftView() {
           className="object-cover opacity-30"
           sizes="100vw"
           priority
+          fetchPriority="high"
         />
         <div className="mobile-hero__content">
           <h1 className="mobile-hero__h1">

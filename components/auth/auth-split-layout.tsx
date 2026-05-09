@@ -46,6 +46,7 @@ export function AuthSplitLayout({
             className={imageClassName}
             sizes="(min-width: 768px) min(336px, 44vw), 0px"
             priority
+            fetchPriority="high"
           />
           <div
             className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"
@@ -77,6 +78,7 @@ export function AuthSplitLayout({
                 className={imageClassName}
                 sizes="(max-width: 640px) calc(100vw - 2rem), 23.5rem"
                 priority
+                fetchPriority="high"
               />
             </div>
           ) : null}

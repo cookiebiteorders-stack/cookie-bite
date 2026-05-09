@@ -16,6 +16,8 @@ import {
 } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { LokiBootstrap } from "@/components/effects/loki-bootstrap";
+import { LokiSvgFilters } from "@/components/effects/loki-svg-filters";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -191,6 +193,11 @@ export default function RootLayout({
       className={`${playfair.variable} ${montserrat.variable} ${cairo.variable} ${tajawal.variable} ${pacifico.variable} ${nunitoSans.variable} ${allura.variable} ${outfit.variable} ${dmSans.variable} h-full antialiased`}
     >
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var key="cookie-bite-theme";var s=localStorage.getItem(key);var t=(s==="dark"||s==="light")?s:(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");var r=document.documentElement;r.setAttribute("data-theme",t);r.style.colorScheme=t;if(t==="dark"){r.classList.add("dark")}else{r.classList.remove("dark")}}catch(_){}})();`,
+          }}
+        />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -200,6 +207,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       </head>
       <body className="min-h-full bg-background font-sans text-foreground">
+        <LokiSvgFilters />
         <ClerkProvider
           localization={cookieBiteClerkLocalization}
           signInUrl="/sign-in"
@@ -209,6 +217,7 @@ export default function RootLayout({
           signUpFallbackRedirectUrl="/account"
         >
           <ThemeProvider>
+            <LokiBootstrap />
             <SiteJsonLd />
             <GA4Tracker />
             <ErrorBoundary>{children}</ErrorBoundary>

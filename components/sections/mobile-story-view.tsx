@@ -22,6 +22,7 @@ export function MobileStoryView() {
           className="mobile-story-hero__img"
           sizes="100vw"
           priority
+          fetchPriority="high"
         />
         <div className="mobile-story-hero__overlay" />
         <div className="mobile-story-hero__content">

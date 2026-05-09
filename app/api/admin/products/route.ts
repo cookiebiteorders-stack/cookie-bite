@@ -21,10 +21,19 @@ const bulkPatchSchema = z.object({
   ids: z.array(z.string().uuid()).min(1),
   patch: z
     .object({
+      name: z.string().min(2).max(160).optional(),
+      title_en: z.string().max(160).nullable().optional(),
+      title_ar: z.string().max(160).nullable().optional(),
+      description_en: z.string().max(3000).nullable().optional(),
+      description_ar: z.string().max(3000).nullable().optional(),
+      description: z.string().max(3000).nullable().optional(),
       price_egp: z.number().positive().optional(),
       stock: z.number().int().min(0).optional(),
       is_active: z.boolean().optional(),
-      category: z.string().max(100).optional(),
+      category: z.string().max(100).nullable().optional(),
+      sku: z.string().max(80).nullable().optional(),
+      image_url: z.string().url().nullable().optional(),
+      dietary: z.array(z.string().max(120)).optional(),
     })
     .refine((v) => Object.keys(v).length > 0, {
       message: "patch is required",
@@ -44,6 +53,7 @@ const createProductSchema = z.object({
   stock: z.number().int().min(0).default(0),
   is_active: z.boolean().default(true),
   image_url: z.string().url().optional().nullable(),
+  dietary: z.array(z.string().max(120)).optional(),
 });
 
 const deleteSchema = z.object({
@@ -141,6 +151,7 @@ export async function POST(req: NextRequest) {
     stock: payload.stock,
     is_active: payload.is_active,
     image_url: payload.image_url ?? null,
+    dietary: payload.dietary ?? [],
   };
 
   const supabase = createSupabaseAdminClient();

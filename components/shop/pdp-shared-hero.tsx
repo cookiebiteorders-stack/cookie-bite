@@ -21,6 +21,7 @@ export function PdpSharedHero({ productId, src, alt, sizes }: Props) {
       alt={alt}
       fill
       priority
+      fetchPriority="high"
       className="object-cover"
       sizes={sizes}
     />

@@ -20,6 +20,7 @@ const badgeLabel: Record<NonNullable<Product["badges"]>[number], string> = {
 export function ProductCard({ product, layout = "grid", className }: Props) {
   return (
     <article
+      data-loki="hover"
       className={cn(
         "group flex flex-col overflow-hidden rounded-2xl border border-cb-peach-deep/70 bg-cb-surface shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-cb-border-strong hover:shadow-md",
         className,

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ContactForm } from "@/components/contact/contact-form";
 import { SectionHeading } from "@/components/sections/section-heading";
+import { BRAND } from "@/lib/brand";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
 
@@ -25,6 +26,8 @@ export const metadata: Metadata = {
 };
 
 export default function ContactPage() {
+  const phoneHref = `+${BRAND.whatsappE164}`;
+
   return (
     <div className="bg-cb-cream pb-24 pt-12">
       <div className="mx-auto grid max-w-7xl gap-12 cb-gutter lg:grid-cols-2">
@@ -39,21 +42,21 @@ export default function ContactPage() {
           <ul className="mt-8 space-y-3 text-cb-text font-medium">
             <li>
               <a
-                href="mailto:hello@cookie-bite.com"
+                href={`mailto:${BRAND.ordersEmail}`}
                 className="hover:text-cb-terracotta-dark hover:underline"
               >
-                hello@cookie-bite.com
+                {BRAND.ordersEmail}
               </a>
             </li>
             <li>
               <a
-                href="tel:+201000000000"
+                href={`tel:${phoneHref}`}
                 className="hover:text-cb-terracotta-dark hover:underline"
               >
-                +20 100 000 0000
+                {BRAND.phoneDisplay}
               </a>
             </li>
-            <li>New Cairo, Egypt</li>
+            <li>{BRAND.location}</li>
           </ul>
         </div>
         <ContactForm />

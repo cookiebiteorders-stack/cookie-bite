@@ -19,6 +19,7 @@ import {
 } from "@/src/components/search/ProductCard";
 import { Badge } from "@/src/components/ui/Badge";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
+import { fetchJson } from "@/lib/http/fetch-json";
 
 const PAGE_SIZE = 9;
 
@@ -92,14 +93,15 @@ async function fetchAllProducts(): Promise<Product[]> {
       limit: String(limit),
       sort: "newest",
     });
-    const res = await fetch(`/api/products?${params.toString()}`, { cache: "no-store" });
-    if (!res.ok) {
-      throw new Error("Failed to load products from API");
-    }
-    const payload = (await res.json()) as {
+    const payload = await fetchJson<{
       products?: ApiProduct[];
       total_pages?: number;
-    };
+    }>(`/api/products?${params.toString()}`, {
+      cache: "no-store",
+      timeoutMs: 12000,
+      retries: 1,
+      retryDelayMs: 350,
+    });
     const batch = (payload.products ?? []).map(normalizeProduct);
     all.push(...batch);
     totalPages = Math.max(1, Number(payload.total_pages ?? 1));
@@ -157,7 +159,13 @@ export function SearchPageClient() {
           const rows = await fetchAllProducts();
           setCatalog(rows);
         } catch (e) {
-          setCatalogError(e instanceof Error ? e.message : "Search data failed to load");
+          const message =
+            e instanceof TypeError && /failed to fetch/i.test(e.message)
+              ? "Network issue while loading search data. Please retry."
+              : e instanceof Error
+                ? e.message
+                : "Search data failed to load";
+          setCatalogError(message);
           setCatalog([]);
         } finally {
           setCatalogLoading(false);

@@ -16,6 +16,7 @@ function MobileHero() {
         className="mobile-hero__image object-cover opacity-30"
         sizes="100vw"
         priority
+        fetchPriority="high"
       />
       <div className="mobile-hero__content">
         <p className="mobile-hero__eyebrow">A bite of happiness</p>

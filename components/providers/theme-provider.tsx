@@ -30,6 +30,8 @@ function getSystemTheme(): "light" | "dark" {
 function applyThemeClass(theme: "light" | "dark") {
   const root = document.documentElement;
   root.classList.toggle("dark", theme === "dark");
+  root.setAttribute("data-theme", theme);
+  root.style.colorScheme = theme;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

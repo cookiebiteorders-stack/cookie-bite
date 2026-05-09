@@ -72,6 +72,7 @@ export default function GiftBoxPage() {
               fill
               className="object-cover"
               priority
+              fetchPriority="high"
               sizes="(max-width:1024px) 100vw, 50vw"
             />
           </div>

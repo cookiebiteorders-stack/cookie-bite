@@ -7,10 +7,16 @@ type Product = {
   id: string;
   name: string;
   title_en: string | null;
+  title_ar?: string | null;
+  description_en?: string | null;
+  description_ar?: string | null;
+  dietary?: string[] | null;
+  category?: string | null;
   sku: string | null;
   stock: number;
   price_egp: number;
   is_active: boolean;
+  image_url?: string | null;
 };
 
 type ProductsResponse = {
@@ -30,6 +36,9 @@ type ProductForm = {
   name: string;
   title_en: string;
   title_ar: string;
+  description_en: string;
+  description_ar: string;
+  ingredients: string;
   category: string;
   sku: string;
   price_egp: string;
@@ -38,10 +47,15 @@ type ProductForm = {
   is_active: boolean;
 };
 
+type FormErrors = Partial<Record<keyof ProductForm, string>>;
+
 const EMPTY_FORM: ProductForm = {
   name: "",
   title_en: "",
   title_ar: "",
+  description_en: "",
+  description_ar: "",
+  ingredients: "",
   category: "",
   sku: "",
   price_egp: "",
@@ -66,6 +80,9 @@ export default function AdminProductsPage() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
   const limit = 20;
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / limit)), [total]);
 
@@ -130,6 +147,8 @@ export default function AdminProductsPage() {
   function openCreateForm() {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setUploadError(null);
+    setFormStep(1);
     setShowForm(true);
   }
 
@@ -138,26 +157,131 @@ export default function AdminProductsPage() {
     setForm({
       name: item.name ?? "",
       title_en: item.title_en ?? "",
-      title_ar: "",
-      category: "",
+      title_ar: item.title_ar ?? "",
+      description_en: item.description_en ?? "",
+      description_ar: item.description_ar ?? "",
+      ingredients: (item.dietary ?? []).join(", "),
+      category: item.category ?? "",
       sku: item.sku ?? "",
       price_egp: String(item.price_egp ?? ""),
       stock: String(item.stock ?? 0),
-      image_url: "",
+      image_url: item.image_url ?? "",
       is_active: item.is_active,
     });
+    setUploadError(null);
+    setFormStep(1);
     setShowForm(true);
+  }
+
+  const formErrors = useMemo<FormErrors>(() => {
+    const errors: FormErrors = {};
+    if (form.name.trim().length < 2) errors.name = "Name must be at least 2 characters.";
+    const price = Number(form.price_egp);
+    if (!Number.isFinite(price) || price <= 0) errors.price_egp = "Valid price is required.";
+    const stock = Number(form.stock);
+    if (!Number.isFinite(stock) || stock < 0) errors.stock = "Stock must be 0 or greater.";
+    if (form.image_url.trim()) {
+      try {
+        // URL validation for manual image field.
+        // eslint-disable-next-line no-new
+        new URL(form.image_url.trim());
+      } catch {
+        errors.image_url = "Image URL must be a valid link.";
+      }
+    }
+    if (form.description_en.length > 3000) errors.description_en = "Max 3000 chars.";
+    if (form.description_ar.length > 3000) errors.description_ar = "Max 3000 chars.";
+    return errors;
+  }, [form]);
+
+  const hasBlockingErrors =
+    Boolean(formErrors.name) ||
+    Boolean(formErrors.price_egp) ||
+    Boolean(formErrors.stock) ||
+    Boolean(formErrors.image_url) ||
+    Boolean(formErrors.description_en) ||
+    Boolean(formErrors.description_ar);
+
+  const stepDone = useMemo(
+    () => ({
+      1:
+        form.name.trim().length >= 2 &&
+        !formErrors.name &&
+        (!form.sku.trim() || form.sku.trim().length >= 2),
+      2:
+        !formErrors.description_en &&
+        !formErrors.description_ar &&
+        (form.description_en.trim().length > 0 || form.description_ar.trim().length > 0),
+      3:
+        !formErrors.price_egp &&
+        !formErrors.stock &&
+        !formErrors.image_url &&
+        Number(form.price_egp) > 0 &&
+        Number(form.stock) >= 0,
+    }),
+    [form, formErrors],
+  );
+
+  const canEnterStep = useMemo(
+    () => ({
+      1: true,
+      2: stepDone[1],
+      3: stepDone[1] && stepDone[2],
+    }),
+    [stepDone],
+  );
+
+  async function handleImageUpload(file: File | null) {
+    if (!file || !canWrite) return;
+    setUploadingImage(true);
+    setUploadError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/products/upload-image", {
+        method: "POST",
+        body: fd,
+      });
+      const data = (await res.json().catch(() => null)) as
+        | {
+            image?: { url?: string };
+            error?: { en?: string };
+          }
+        | null;
+      if (!res.ok || !data?.image?.url) {
+        throw new Error(data?.error?.en || "Image upload failed");
+      }
+      setForm((f) => ({ ...f, image_url: data.image?.url ?? "" }));
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : "Image upload failed");
+    } finally {
+      setUploadingImage(false);
+    }
   }
 
   async function submitForm() {
     if (!canWrite || saving) return;
+    if (hasBlockingErrors) {
+      setError("Please fix highlighted fields before saving.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
+      const ingredientsList = form.ingredients
+        .split(/[\n,]/g)
+        .map((x) => x.trim())
+        .filter(Boolean);
+
       const payload = {
         name: form.name.trim(),
         title_en: form.title_en.trim() || null,
         title_ar: form.title_ar.trim() || null,
+        description_en: form.description_en.trim() || null,
+        description_ar: form.description_ar.trim() || null,
+        description:
+          form.description_en.trim() || form.description_ar.trim() || null,
+        dietary: ingredientsList,
         category: form.category.trim() || null,
         sku: form.sku.trim() || null,
         price_egp: Number(form.price_egp),
@@ -443,25 +567,209 @@ export default function AdminProductsPage() {
             <p className="mt-1 text-sm text-cb-text-muted">
               Owner/Admin can add and update product data shown across the website.
             </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <input className="rounded-xl border border-cb-border px-3 py-2 text-sm" placeholder="Name *" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-              <input className="rounded-xl border border-cb-border px-3 py-2 text-sm" placeholder="SKU" value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))} />
-              <input className="rounded-xl border border-cb-border px-3 py-2 text-sm" placeholder="Title EN" value={form.title_en} onChange={(e) => setForm((f) => ({ ...f, title_en: e.target.value }))} />
-              <input className="rounded-xl border border-cb-border px-3 py-2 text-sm" placeholder="Title AR" value={form.title_ar} onChange={(e) => setForm((f) => ({ ...f, title_ar: e.target.value }))} />
-              <input className="rounded-xl border border-cb-border px-3 py-2 text-sm" placeholder="Category" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} />
-              <input className="rounded-xl border border-cb-border px-3 py-2 text-sm" placeholder="Image URL" value={form.image_url} onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))} />
-              <input className="rounded-xl border border-cb-border px-3 py-2 text-sm" type="number" min="0.01" step="0.01" placeholder="Price EGP *" value={form.price_egp} onChange={(e) => setForm((f) => ({ ...f, price_egp: e.target.value }))} />
-              <input className="rounded-xl border border-cb-border px-3 py-2 text-sm" type="number" min="0" step="1" placeholder="Stock" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))} />
-              <label className="inline-flex items-center gap-2 rounded-xl border border-cb-border px-3 py-2 text-sm">
+            <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl border border-cb-border bg-cb-surface p-2 text-xs font-semibold">
+              {[
+                { id: 1, label: "Step 1: Basic" },
+                { id: 2, label: "Step 2: Content" },
+                { id: 3, label: "Step 3: Media & Pricing" },
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => {
+                    const target = s.id as 1 | 2 | 3;
+                    if (!canEnterStep[target]) return;
+                    setFormStep(target);
+                  }}
+                  disabled={!canEnterStep[s.id as 1 | 2 | 3]}
+                  className={`inline-flex items-center justify-center gap-1 rounded-lg px-2 py-2 transition ${
+                    formStep === s.id
+                      ? "bg-cb-terracotta-dark text-white"
+                      : canEnterStep[s.id as 1 | 2 | 3]
+                        ? "text-cb-text hover:bg-cb-surface-2"
+                        : "cursor-not-allowed text-cb-text-muted/60"
+                  }`}
+                >
+                  {stepDone[s.id as 1 | 2 | 3] ? (
+                    <span
+                      className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${
+                        formStep === s.id
+                          ? "bg-white/25 text-white"
+                          : "bg-emerald-100 text-emerald-700"
+                      }`}
+                      aria-hidden
+                    >
+                      ✓
+                    </span>
+                  ) : (
+                    <span
+                      className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${
+                        formStep === s.id
+                          ? "bg-white/20 text-white"
+                          : "bg-cb-surface-2 text-cb-text-muted"
+                      }`}
+                      aria-hidden
+                    >
+                      {s.id}
+                    </span>
+                  )}
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className={`space-y-1 ${formStep === 1 ? "" : "hidden"}`}>
+                <span className="text-xs font-semibold text-cb-text-muted">Product name * (الاسم الكامل للمنتج)</span>
+                <div className="grid grid-cols-2 text-[11px] text-cb-text-muted">
+                  <span className="text-left">Write clear public product name.</span>
+                  <span className="text-right">اكتب اسم المنتج كامل وواضح للعميل.</span>
+                </div>
+                <input className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm" placeholder="e.g. Double Choco Chip" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+                {formErrors.name ? <p className="text-xs text-red-600">{formErrors.name}</p> : null}
+              </label>
+              <label className={`space-y-1 ${formStep === 1 ? "" : "hidden"}`}>
+                <span className="text-xs font-semibold text-cb-text-muted">Stock Keeping Unit (SKU)</span>
+                <div className="grid grid-cols-2 text-[11px] text-cb-text-muted">
+                  <span className="text-left">Internal unique stock code.</span>
+                  <span className="text-right">كود داخلي فريد للمخزون.</span>
+                </div>
+                <input className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm" placeholder="Unique stock code" value={form.sku} onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))} />
+              </label>
+              <label className={`space-y-1 ${formStep === 1 ? "" : "hidden"}`}>
+                <span className="text-xs font-semibold text-cb-text-muted">Title EN</span>
+                <div className="grid grid-cols-2 text-[11px] text-cb-text-muted">
+                  <span className="text-left">English title shown on storefront.</span>
+                  <span className="text-right">العنوان الإنجليزي الظاهر في الموقع.</span>
+                </div>
+                <input className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm" placeholder="Public title in English" value={form.title_en} onChange={(e) => setForm((f) => ({ ...f, title_en: e.target.value }))} />
+              </label>
+              <label className={`space-y-1 ${formStep === 1 ? "" : "hidden"}`}>
+                <span className="text-xs font-semibold text-cb-text-muted">Title AR</span>
+                <div className="grid grid-cols-2 text-[11px] text-cb-text-muted">
+                  <span className="text-left">Arabic title shown on storefront.</span>
+                  <span className="text-right">العنوان العربي الظاهر في الموقع.</span>
+                </div>
+                <input className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm" placeholder="Public title in Arabic" value={form.title_ar} onChange={(e) => setForm((f) => ({ ...f, title_ar: e.target.value }))} />
+              </label>
+              <label className={`space-y-1 sm:col-span-2 ${formStep === 2 ? "" : "hidden"}`}>
+                <span className="text-xs font-semibold text-cb-text-muted">Description EN</span>
+                <div className="grid grid-cols-2 text-[11px] text-cb-text-muted">
+                  <span className="text-left">Marketing/product description in English.</span>
+                  <span className="text-right">الوصف التسويقي للمنتج باللغة الإنجليزية.</span>
+                </div>
+                <textarea className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm min-h-20" placeholder="Rich cookie description in English..." value={form.description_en} onChange={(e) => setForm((f) => ({ ...f, description_en: e.target.value }))} />
+                {formErrors.description_en ? <p className="text-xs text-red-600">{formErrors.description_en}</p> : null}
+              </label>
+              <label className={`space-y-1 sm:col-span-2 ${formStep === 2 ? "" : "hidden"}`}>
+                <span className="text-xs font-semibold text-cb-text-muted">Description AR</span>
+                <div className="grid grid-cols-2 text-[11px] text-cb-text-muted">
+                  <span className="text-left">Marketing/product description in Arabic.</span>
+                  <span className="text-right">الوصف التسويقي للمنتج باللغة العربية.</span>
+                </div>
+                <textarea className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm min-h-20" placeholder="وصف جذاب للمنتج بالعربية..." value={form.description_ar} onChange={(e) => setForm((f) => ({ ...f, description_ar: e.target.value }))} />
+                {formErrors.description_ar ? <p className="text-xs text-red-600">{formErrors.description_ar}</p> : null}
+              </label>
+              <label className={`space-y-1 sm:col-span-2 ${formStep === 2 ? "" : "hidden"}`}>
+                <span className="text-xs font-semibold text-cb-text-muted">Ingredients (المكونات)</span>
+                <div className="grid grid-cols-2 text-[11px] text-cb-text-muted">
+                  <span className="text-left">Comma-separated, e.g. Flour, Butter, Chocolate.</span>
+                  <span className="text-right">اكتب المكونات مفصولة بفاصلة مثل: دقيق، زبدة، شيكولاتة.</span>
+                </div>
+                <textarea className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm min-h-20" placeholder="Flour, Butter, Sugar, Chocolate..." value={form.ingredients} onChange={(e) => setForm((f) => ({ ...f, ingredients: e.target.value }))} />
+              </label>
+              <label className={`space-y-1 ${formStep === 3 ? "" : "hidden"}`}>
+                <span className="text-xs font-semibold text-cb-text-muted">Category</span>
+                <div className="grid grid-cols-2 text-[11px] text-cb-text-muted">
+                  <span className="text-left">Group for filtering in shop/search.</span>
+                  <span className="text-right">تصنيف المنتج للفلترة في المتجر والبحث.</span>
+                </div>
+                <input className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm" placeholder="Classic / Seasonal / Gift..." value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} />
+              </label>
+              <label className={`space-y-1 ${formStep === 3 ? "" : "hidden"}`}>
+                <span className="text-xs font-semibold text-cb-text-muted">Price EGP *</span>
+                <div className="grid grid-cols-2 text-[11px] text-cb-text-muted">
+                  <span className="text-left">Customer selling price in EGP.</span>
+                  <span className="text-right">سعر البيع للعميل بالجنيه المصري.</span>
+                </div>
+                <input className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm" type="number" min="0.01" step="0.01" placeholder="0.00" value={form.price_egp} onChange={(e) => setForm((f) => ({ ...f, price_egp: e.target.value }))} />
+                {formErrors.price_egp ? <p className="text-xs text-red-600">{formErrors.price_egp}</p> : null}
+              </label>
+              <label className={`space-y-1 ${formStep === 3 ? "" : "hidden"}`}>
+                <span className="text-xs font-semibold text-cb-text-muted">Stock</span>
+                <div className="grid grid-cols-2 text-[11px] text-cb-text-muted">
+                  <span className="text-left">Available quantity in inventory.</span>
+                  <span className="text-right">الكمية المتاحة حاليًا في المخزون.</span>
+                </div>
+                <input className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm" type="number" min="0" step="1" placeholder="0" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))} />
+                {formErrors.stock ? <p className="text-xs text-red-600">{formErrors.stock}</p> : null}
+              </label>
+              <label className={`inline-flex items-center gap-2 rounded-xl border border-cb-border px-3 py-2 text-sm ${formStep === 3 ? "" : "hidden"}`}>
                 <input type="checkbox" checked={form.is_active} onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))} />
-                Active
+                Active (visible to customers)
               </label>
             </div>
+
+            <div className={`mt-4 rounded-xl border border-cb-border bg-cb-surface p-3 ${formStep === 3 ? "" : "hidden"}`}>
+              <p className="text-xs font-semibold text-cb-text-muted">Product image</p>
+              <p className="mt-1 text-xs text-cb-text-muted">
+                Upload from your device (JPG, PNG, WEBP, GIF up to 6MB), or paste image URL manually.
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
+                <input
+                  className="rounded-xl border border-cb-border px-3 py-2 text-sm"
+                  placeholder="https://..."
+                  value={form.image_url}
+                  onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
+                />
+                <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-cb-border px-4 py-2 text-sm font-semibold hover:bg-cb-surface-2">
+                  {uploadingImage ? "Uploading..." : "Upload from device"}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    className="hidden"
+                    disabled={uploadingImage || !canWrite}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      void handleImageUpload(file);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+              {uploadError ? <p className="mt-2 text-xs text-red-600">{uploadError}</p> : null}
+              {formErrors.image_url ? <p className="mt-2 text-xs text-red-600">{formErrors.image_url}</p> : null}
+              {form.image_url ? (
+                <div className="mt-3 overflow-hidden rounded-xl border border-cb-border">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={form.image_url}
+                    alt="Product preview"
+                    className="h-36 w-full object-cover"
+                  />
+                </div>
+              ) : null}
+            </div>
             <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-xl border border-cb-border px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                disabled={formStep === 1}
+                onClick={() => setFormStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s))}
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                className="rounded-xl border border-cb-border px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                disabled={formStep === 3 || !stepDone[formStep]}
+                onClick={() => setFormStep((s) => (s < 3 ? ((s + 1) as 1 | 2 | 3) : s))}
+              >
+                Next
+              </button>
               <button type="button" className="rounded-xl border border-cb-border px-4 py-2 text-sm font-semibold" onClick={() => setShowForm(false)}>
                 Cancel
               </button>
-              <button type="button" disabled={saving || !canWrite} className="rounded-xl bg-cb-terracotta-dark px-4 py-2 text-sm font-bold text-white disabled:opacity-50" onClick={() => void submitForm()}>
+              <button type="button" disabled={saving || !canWrite || hasBlockingErrors} className="rounded-xl bg-cb-terracotta-dark px-4 py-2 text-sm font-bold text-white disabled:opacity-50" onClick={() => void submitForm()}>
                 {saving ? "Saving..." : editing ? "Update" : "Create"}
               </button>
             </div>

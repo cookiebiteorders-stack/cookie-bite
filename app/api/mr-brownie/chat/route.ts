@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
     });
 
     let reply = "";
-    let usedModel = process.env.MR_BROWNIE_GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+    let usedModel = process.env.MR_BROWNIE_GEMINI_MODEL?.trim() || "gemini-flash-latest";
 
     try {
       reply = await runMrBrownieGemini({

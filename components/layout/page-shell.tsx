@@ -39,6 +39,7 @@ export function PageShell({
         <div className="desktop-header">
           <SiteHeader />
         </div>
+        <div className="hidden h-16 lg:block" aria-hidden />
 
         {/* Mobile header */}
         <MobileHeader />

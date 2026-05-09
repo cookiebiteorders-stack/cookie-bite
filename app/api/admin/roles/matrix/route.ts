@@ -6,21 +6,32 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { bilingualError } from "@/lib/validations";
 
 const assignRoleSchema = z.object({
-  email: z.string().email(),
+  user_id: z.string().uuid().optional(),
+  email: z.string().email().optional(),
   role: z.enum(["owner", "admin", "staff", "customer"]),
 });
 
 export async function GET() {
   await requireAdminAccess("roles");
   const supabase = createSupabaseAdminClient();
-  const { data } = await supabase
+  const { data: assignments } = await supabase
     .from("users")
     .select("id, email, role, full_name")
     .in("role", ["owner", "admin", "staff"])
     .order("updated_at", { ascending: false })
     .limit(100);
 
-  return NextResponse.json({ role_matrix: roleMatrix, assignments: data ?? [] });
+  const { data: users } = await supabase
+    .from("users")
+    .select("id, email, full_name, role")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  return NextResponse.json({
+    role_matrix: roleMatrix,
+    assignments: assignments ?? [],
+    users: users ?? [],
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -40,15 +51,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const email = parsed.data.email.trim().toLowerCase();
+  const userId = parsed.data.user_id?.trim();
+  const email = parsed.data.email?.trim().toLowerCase();
   const nextRole = parsed.data.role;
   const supabase = createSupabaseAdminClient();
+  if (!userId && !email) {
+    return NextResponse.json(
+      bilingualError("User is required", "المستخدم مطلوب"),
+      { status: 400 },
+    );
+  }
 
-  const { data: existing, error: lookupError } = await supabase
-    .from("users")
-    .select("id, email, role")
-    .ilike("email", email)
-    .maybeSingle();
+  let lookup = supabase.from("users").select("id, email, role").limit(1);
+  if (userId) lookup = lookup.eq("id", userId);
+  else lookup = lookup.ilike("email", email!);
+  const { data: existing, error: lookupError } = await lookup.maybeSingle();
 
   if (lookupError) {
     return NextResponse.json(

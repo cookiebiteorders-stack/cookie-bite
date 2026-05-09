@@ -11,6 +11,12 @@ type Assignment = {
   role: UserRole;
   full_name?: string | null;
 };
+type UserOption = {
+  id: string;
+  email: string;
+  full_name?: string | null;
+  role?: UserRole;
+};
 
 const modules: ModuleKey[] = [
   "dashboard",
@@ -35,7 +41,8 @@ const roles: UserRole[] = ["owner", "admin", "staff", "customer"];
 export default function AdminRolesPage() {
   const [matrix, setMatrix] = useState<Matrix | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [email, setEmail] = useState("");
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [role, setRole] = useState<UserRole>("staff");
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -52,12 +59,14 @@ export default function AdminRolesPage() {
         const d = (await res.json()) as {
           role_matrix?: Matrix;
           assignments?: Assignment[];
+          users?: UserOption[];
           error?: { en?: string };
         };
         if (!res.ok) throw new Error(d.error?.en ?? "Failed to load roles");
         if (!cancelled) {
           setMatrix(d.role_matrix ?? null);
           setAssignments(d.assignments ?? []);
+          setUsers(d.users ?? []);
         }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Unknown error");
@@ -82,7 +91,7 @@ export default function AdminRolesPage() {
       const res = await fetch("/api/admin/roles/matrix", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role }),
+        body: JSON.stringify({ user_id: selectedUserId || undefined, role }),
       });
       const data = (await res.json()) as {
         ok?: boolean;
@@ -93,7 +102,7 @@ export default function AdminRolesPage() {
         throw new Error(data.error?.en ?? "Failed to assign role");
       }
       setNotice("Role assigned successfully.");
-      setEmail("");
+      setSelectedUserId("");
       const updated = data.assignment;
       if (updated) {
         setAssignments((prev) => {
@@ -106,6 +115,11 @@ export default function AdminRolesPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function userDisplayName(u: UserOption) {
+    const fallback = u.email.split("@")[0];
+    return u.full_name?.trim() || fallback;
   }
 
   return (
@@ -121,19 +135,25 @@ export default function AdminRolesPage() {
 
       <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
         <h2 className="font-serif text-xl font-bold text-cb-text-strong">
-          Assign Role by Email
+          Assign Role by User
         </h2>
         <p className="mt-1 text-sm text-cb-text-muted">
-          Owner can assign or update role for registered users.
+          Owner can pick any registered user (name + email) and assign a role.
         </p>
         <div className="mt-4 grid gap-3 md:grid-cols-[1.5fr_0.8fr_auto]">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="user@example.com"
+          <select
+            value={selectedUserId}
+            onChange={(e) => setSelectedUserId(e.target.value)}
+            aria-label="Select registered user"
             className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
-          />
+          >
+            <option value="">Select user (email + username)</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {userDisplayName(u)} — {u.email}
+              </option>
+            ))}
+          </select>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole)}
@@ -147,7 +167,7 @@ export default function AdminRolesPage() {
           </select>
           <button
             type="button"
-            disabled={saving || !email.trim()}
+            disabled={saving || !selectedUserId}
             onClick={() => void assignRole()}
             className="rounded-xl border border-cb-border px-4 py-2 text-sm font-semibold disabled:opacity-50"
           >

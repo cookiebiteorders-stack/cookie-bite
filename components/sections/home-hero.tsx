@@ -80,6 +80,7 @@ export function HomeHero() {
               alt="صندوق كوكيز فاخر"
               fill
               priority
+              fetchPriority="high"
               className="object-cover"
               sizes="(max-width:1024px) 100vw, 50vw"
             />

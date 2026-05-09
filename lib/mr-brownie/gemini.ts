@@ -13,7 +13,7 @@ export async function runMrBrownieGemini(params: {
   }
 
   const modelId =
-    process.env.MR_BROWNIE_GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+    process.env.MR_BROWNIE_GEMINI_MODEL?.trim() || "gemini-flash-latest";
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({

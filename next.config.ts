@@ -12,11 +12,27 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
     {
+      urlPattern: /^\/_next\/image\?url=.*/i,
+      handler: "StaleWhileRevalidate",
+      options: {
+        cacheName: "next-image-optimizer",
+        expiration: { maxEntries: 240, maxAgeSeconds: 30 * 24 * 60 * 60 },
+      },
+    },
+    {
       urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/i,
       handler: "CacheFirst",
       options: {
         cacheName: "cloudinary-images",
         expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 },
+      },
+    },
+    {
+      urlPattern: /^https:\/\/images\.unsplash\.com\/.*/i,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "unsplash-images",
+        expiration: { maxEntries: 120, maxAgeSeconds: 14 * 24 * 60 * 60 },
       },
     },
     {
@@ -52,7 +68,7 @@ const PRODUCTION_SECURITY_HEADERS = [
   {
     key: "Content-Security-Policy",
     value:
-      "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net https://*.clerk.accounts.dev https://*.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com https://cdn.sanity.io https://images.unsplash.com https://img.clerk.com https://images.clerk.dev; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.clerk.com wss://*.clerk.com; font-src 'self' https://fonts.gstatic.com;",
+      "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net https://*.clerk.accounts.dev https://*.clerk.com https://*.clerk.dev https://*.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com https://cdn.sanity.io https://images.unsplash.com https://img.clerk.com https://images.clerk.dev; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.clerk.accounts.dev wss://*.clerk.accounts.dev https://*.clerk.com wss://*.clerk.com https://*.clerk.dev wss://*.clerk.dev; font-src 'self' https://fonts.gstatic.com;",
   },
   {
     key: "Permissions-Policy",
@@ -83,6 +99,8 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       {
         protocol: "https",
@@ -111,7 +129,18 @@ const nextConfig: NextConfig = {
       process.env.NODE_ENV === "development"
         ? DEVELOPMENT_BASIC_HEADERS
         : PRODUCTION_SECURITY_HEADERS;
-    return [{ source: "/(.*)", headers }];
+    return [
+      {
+        source: "/:path*\\.(jpg|jpeg|png|webp|avif|gif|svg|ico)$",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      { source: "/(.*)", headers },
+    ];
   },
 };
 
