@@ -16,7 +16,8 @@
     "test": "jest",
     "test:ci": "jest --ci --coverage=false",
     "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "deploy:github": "node scripts/git-sync.mjs"
   },
   "dependencies": {
     "@clerk/localizations": "^4.6.0",

@@ -13,6 +13,14 @@ import { THEME_COOKIE, writeClientPrefCookie } from "@/lib/preferences/client-co
 
 type Theme = "light" | "dark" | "system";
 
+type ThemeProviderProps = {
+  children: ReactNode;
+  /** من كوكي `cookie-bite-theme` — يطابق ما رسمه الخادم على `<html>` */
+  initialPreference: Theme;
+  /** الحلّ الفعلي فاتح/داكن كما في الخادم (مهم عندما initialPreference === "system") */
+  initialResolved: "light" | "dark";
+};
+
 type ThemeContextValue = {
   theme: Theme;
   resolvedTheme: "light" | "dark";
@@ -36,17 +44,26 @@ function applyThemeClass(theme: "light" | "dark") {
   root.style.colorScheme = theme;
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "system";
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    return saved === "light" || saved === "dark" || saved === "system"
-      ? saved
-      : "system";
-  });
+export function ThemeProvider({
+  children,
+  initialPreference,
+  initialResolved,
+}: ThemeProviderProps) {
+  const [theme, setThemeState] = useState<Theme>(() => initialPreference);
   const [systemTheme, setSystemTheme] = useState<"light" | "dark">(() =>
-    getSystemTheme(),
+    initialPreference === "system" ? initialResolved : initialPreference === "dark" ? "dark" : "light",
   );
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    if (saved === "light" || saved === "dark" || saved === "system") {
+      if (saved !== initialPreference) setThemeState(saved);
+    }
+  }, [initialPreference]);
+
+  useEffect(() => {
+    setSystemTheme(getSystemTheme());
+  }, []);
   const resolvedTheme: "light" | "dark" =
     theme === "system" ? systemTheme : theme;
 

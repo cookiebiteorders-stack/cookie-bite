@@ -195,6 +195,8 @@ export default async function RootLayout({
   const themeRaw = store.get(THEME_COOKIE)?.value;
   const serverResolvedLightDark: "light" | "dark" =
     themeRaw === "dark" ? "dark" : themeRaw === "light" ? "light" : "light";
+  const themePreference: "light" | "dark" | "system" =
+    themeRaw === "light" || themeRaw === "dark" || themeRaw === "system" ? themeRaw : "system";
 
   return (
     <html
@@ -238,8 +240,8 @@ export default async function RootLayout({
           signInFallbackRedirectUrl="/account"
           signUpFallbackRedirectUrl="/account"
         >
-          <ThemeProvider>
-            <LanguageProvider>
+          <ThemeProvider initialPreference={themePreference} initialResolved={serverResolvedLightDark}>
+            <LanguageProvider initialLang={lang}>
               <MorphTransitionProvider>
                 <LokiBootstrap />
                 <SiteJsonLd />
