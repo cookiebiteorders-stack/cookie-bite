@@ -31,22 +31,16 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
   const isLg = useMediaQuery(BREAKPOINTS.lg);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsedState] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  const [isSidebarCollapsed, setIsSidebarCollapsedState] = useState(() => {
+    if (typeof window === "undefined") return false;
     try {
-      const raw = window.localStorage.getItem(SIDEBAR_STORAGE_KEY);
-      if (raw === "1") setIsSidebarCollapsedState(true);
-      if (raw === "0") setIsSidebarCollapsedState(false);
+      return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "1";
     } catch {
+      return false;
     }
-    setHydrated(true);
-  }, []);
+  });
 
   useEffect(() => {
-    if (!hydrated) return;
     if (typeof window === "undefined") return;
     try {
       window.localStorage.setItem(
@@ -55,14 +49,21 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
       );
     } catch {
     }
-  }, [isSidebarCollapsed, hydrated]);
+  }, [isSidebarCollapsed]);
 
   useEffect(() => {
-    setIsMobileMenuOpen(false);
+    const id = window.setTimeout(() => {
+      setIsMobileMenuOpen(false);
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [pathname]);
 
   useEffect(() => {
-    if (isLg) setIsMobileMenuOpen(false);
+    if (!isLg) return;
+    const id = window.setTimeout(() => {
+      setIsMobileMenuOpen(false);
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [isLg]);
 
   const toggleMobileMenu = useCallback(() => {

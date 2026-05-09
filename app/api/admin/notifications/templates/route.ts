@@ -25,6 +25,16 @@ export async function GET() {
     .select("*")
     .order("updated_at", { ascending: false });
   if (error) {
+    // بعض البيئات القديمة لا تحتوي table notification_templates بعد.
+    if (error.code === "42P01") {
+      return NextResponse.json({
+        templates: [],
+        warning: {
+          en: "notification_templates table is missing. Run latest migrations.",
+          ar: "جدول notification_templates غير موجود. شغّل أحدث migrations.",
+        },
+      });
+    }
     return NextResponse.json(
       bilingualError("Database error", "خطأ في قاعدة البيانات"),
       { status: 500 },
@@ -53,6 +63,15 @@ export async function POST(req: NextRequest) {
     .select("*")
     .single();
   if (error || !data) {
+    if (error?.code === "42P01") {
+      return NextResponse.json(
+        bilingualError(
+          "notification_templates table is missing. Run latest migrations first.",
+          "جدول notification_templates غير موجود. شغّل أحدث migrations أولاً.",
+        ),
+        { status: 500 },
+      );
+    }
     return NextResponse.json(
       bilingualError("Failed to upsert template", "فشل حفظ القالب"),
       { status: 500 },

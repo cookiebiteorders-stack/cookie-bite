@@ -58,8 +58,8 @@ const linkSections = [
     items: [
       { href: "/contact", label: "Sun–Thu · 10am – 8pm" },
       {
-        href: `mailto:${process.env.OWNER_BOOTSTRAP_EMAIL ?? "cookie.bite.orders@gmail.com"}`,
-        label: "Orders email",
+        href: `mailto:${BRAND.ordersEmail}`,
+        label: BRAND.ordersEmail,
       },
       {
         href: `tel:+${siteConfig.whatsappNumber || BRAND.whatsappE164}`,
@@ -126,7 +126,7 @@ export function SiteFooter() {
       <div className="flex flex-wrap justify-center gap-y-8 cb-gutter pb-6 pt-2">
         <div className="flex flex-wrap items-center justify-center gap-4 gap-y-4">
           <a
-            href={`mailto:${process.env.OWNER_BOOTSTRAP_EMAIL ?? "cookie.bite.orders@gmail.com"}`}
+            href={`mailto:${BRAND.email}`}
             className={cn(socialUnderline)}
             aria-label="Email"
           >

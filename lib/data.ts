@@ -106,6 +106,8 @@ export const OUR_COOKIE_SECTIONS = [
   {
     id: "classic",
     title: "Classic Collection",
+    /** يطابق `Product.category` ومرشح المتجر */
+    shopCategory: "Classic" as const,
     description: "Soft, buttery bases with familiar flavors perfected over hundreds of test bakes.",
     icon: "cookie" as const,
     items: PRODUCTS.filter((p) => p.category === "Classic"),
@@ -113,6 +115,7 @@ export const OUR_COOKIE_SECTIONS = [
   {
     id: "chocolate",
     title: "Chocolate Lovers",
+    shopCategory: "Chocolate Lovers" as const,
     description: "Deeper cocoa, molten chips, and bold contrast in every bite.",
     icon: "heart" as const,
     items: PRODUCTS.filter((p) => p.category === "Chocolate Lovers"),
@@ -120,6 +123,7 @@ export const OUR_COOKIE_SECTIONS = [
   {
     id: "stuffed",
     title: "Stuffed Cookies",
+    shopCategory: "Stuffed" as const,
     description: "Crisp outside, molten centers — made to share (or not).",
     icon: "sparkles" as const,
     items: PRODUCTS.filter((p) => p.category === "Stuffed"),
@@ -127,6 +131,7 @@ export const OUR_COOKIE_SECTIONS = [
   {
     id: "premium",
     title: "Premium Specials",
+    shopCategory: "Premium" as const,
     description: "Small-batch ingredients and pastry-chef finishes.",
     icon: "star" as const,
     items: PRODUCTS.filter((p) => p.category === "Premium"),
@@ -134,11 +139,12 @@ export const OUR_COOKIE_SECTIONS = [
   {
     id: "seasonal",
     title: "Seasonal Flavors",
+    shopCategory: "Seasonal" as const,
     description: "Rotating menu inspired by the season in New Cairo.",
     icon: "leaf" as const,
     items: PRODUCTS.filter((p) => p.category === "Seasonal"),
   },
-];
+] as const;
 
 export const TESTIMONIALS = [
   {

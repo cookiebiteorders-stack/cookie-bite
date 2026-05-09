@@ -30,15 +30,20 @@ export function LayoutProvider({ children }: { children: React.ReactNode }) {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   useEffect(() => {
-    setIsMobileMenuOpen(false);
-    setIsMdSidebarOpen(false);
-    setIsCommandPaletteOpen(false);
+    const id = window.setTimeout(() => {
+      setIsMobileMenuOpen(false);
+      setIsMdSidebarOpen(false);
+      setIsCommandPaletteOpen(false);
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [pathname]);
 
   useEffect(() => {
-    if (isBelowLg) {
+    if (!isBelowLg) return;
+    const id = window.setTimeout(() => {
       setIsSidebarCollapsed(true);
-    }
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [isBelowLg]);
 
   useEffect(() => {

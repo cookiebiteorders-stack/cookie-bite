@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   requireAdminAccess,
+  requireFullPermission,
   requireWritePermission,
 } from "@/lib/admin/require-admin";
 import { writeAuditLog } from "@/lib/admin/audit";
@@ -30,8 +31,37 @@ const bulkPatchSchema = z.object({
     }),
 });
 
+const createProductSchema = z.object({
+  name: z.string().min(2).max(160),
+  title_en: z.string().max(160).optional().nullable(),
+  title_ar: z.string().max(160).optional().nullable(),
+  slug: z.string().min(2).max(180).optional(),
+  description_en: z.string().max(3000).optional().nullable(),
+  description_ar: z.string().max(3000).optional().nullable(),
+  category: z.string().max(100).optional().nullable(),
+  sku: z.string().max(80).optional().nullable(),
+  price_egp: z.number().positive(),
+  stock: z.number().int().min(0).default(0),
+  is_active: z.boolean().default(true),
+  image_url: z.string().url().optional().nullable(),
+});
+
+const deleteSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1),
+});
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 export async function GET(req: NextRequest) {
-  await requireAdminAccess("products");
+  const actor = await requireAdminAccess("products");
   const parsed = querySchema.safeParse(Object.fromEntries(req.nextUrl.searchParams));
   if (!parsed.success) {
     return NextResponse.json(bilingualError("Invalid query", "بارامترات غير صالحة"), {
@@ -67,7 +97,76 @@ export async function GET(req: NextRequest) {
     total: count ?? 0,
     page,
     limit,
+    meta: {
+      role: actor.role,
+      permission: actor.permission,
+      can_write: actor.permission === "full" || actor.permission === "limited",
+      can_delete: actor.permission === "full",
+    },
   });
+}
+
+export async function POST(req: NextRequest) {
+  const actor = await requireAdminAccess("products");
+  requireWritePermission(actor);
+
+  const parsed = createProductSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json(
+      bilingualError("Invalid payload", "بيانات غير صالحة"),
+      { status: 400 },
+    );
+  }
+
+  const payload = parsed.data;
+  const slug = slugify(payload.slug?.trim() || payload.name);
+  if (!slug) {
+    return NextResponse.json(
+      bilingualError("Invalid slug", "Slug غير صالح"),
+      { status: 400 },
+    );
+  }
+
+  const row = {
+    slug,
+    name: payload.name.trim(),
+    title_en: payload.title_en ?? null,
+    title_ar: payload.title_ar ?? null,
+    description_en: payload.description_en ?? null,
+    description_ar: payload.description_ar ?? null,
+    description: payload.description_en ?? payload.description_ar ?? null,
+    category: payload.category ?? null,
+    sku: payload.sku ?? null,
+    price_egp: payload.price_egp,
+    stock: payload.stock,
+    is_active: payload.is_active,
+    image_url: payload.image_url ?? null,
+  };
+
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase.from("products").insert(row).select("*").single();
+  if (error) {
+    const code = String(error.code ?? "");
+    const status = code === "23505" ? 409 : 500;
+    return NextResponse.json(
+      bilingualError(
+        code === "23505" ? "Slug or SKU already exists" : "Failed to create product",
+        code === "23505" ? "الـ Slug أو SKU مستخدم بالفعل" : "فشل إضافة المنتج",
+      ),
+      { status },
+    );
+  }
+
+  await writeAuditLog({
+    actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
+    action: "products.create",
+    module: "products",
+    metadata: { product_id: data.id, slug: data.slug },
+    after: data,
+    request: req,
+  });
+
+  return NextResponse.json({ ok: true, product: data }, { status: 201 });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -109,5 +208,40 @@ export async function PATCH(req: NextRequest) {
   });
 
   return NextResponse.json({ ok: true, updated: data ?? [] });
+}
+
+export async function DELETE(req: NextRequest) {
+  const actor = await requireAdminAccess("products");
+  requireFullPermission(actor);
+
+  const parsed = deleteSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json(
+      bilingualError("Invalid payload", "بيانات غير صالحة"),
+      { status: 400 },
+    );
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const ids = parsed.data.ids;
+  const { data: before } = await supabase.from("products").select("*").in("id", ids);
+  const { error } = await supabase.from("products").delete().in("id", ids);
+  if (error) {
+    return NextResponse.json(
+      bilingualError("Failed to delete products", "فشل حذف المنتجات"),
+      { status: 500 },
+    );
+  }
+
+  await writeAuditLog({
+    actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
+    action: "products.delete",
+    module: "products",
+    metadata: { ids, deleted_count: before?.length ?? 0 },
+    before: before ?? null,
+    request: req,
+  });
+
+  return NextResponse.json({ ok: true, deleted: ids.length });
 }
 

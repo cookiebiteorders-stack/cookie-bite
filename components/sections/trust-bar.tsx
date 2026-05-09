@@ -54,7 +54,7 @@ export function TrustBar() {
               variant={item.reveal}
               staggerIndex={i}
               className={cn(
-                "relative flex gap-4",
+                "relative flex justify-center",
                 i === 1 && "sm:translate-y-1 lg:translate-y-3",
                 i === 3 && "lg:-translate-y-2",
               )}
@@ -66,7 +66,7 @@ export function TrustBar() {
                 )}
                 aria-hidden
               />
-              <div className="relative flex gap-4">
+              <div className="relative flex flex-col items-center gap-4 text-center">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-cb-peach-deep/80 bg-cb-cream/90 text-cb-terracotta-dark cb-shadow-editorial transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 dark:border-cb-border dark:bg-cb-surface-elevated dark:text-cb-terracotta">
                   <item.icon className="h-5 w-5" aria-hidden />
                 </div>

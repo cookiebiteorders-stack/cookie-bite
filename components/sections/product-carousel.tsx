@@ -39,12 +39,12 @@ export function ProductCarousel() {
     <section className="relative border-y border-cb-peach-deep bg-gradient-to-b from-cb-surface via-cb-cream-2 to-cb-surface py-16 md:py-24 dark:border-cb-border/50 dark:from-cb-surface dark:via-cb-surface-2 dark:to-cb-surface">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cb-terracotta-soft/40 to-transparent dark:via-cb-terracotta/25" />
       <div className="relative mx-auto max-w-7xl cb-gutter">
-        <div className="mb-12 flex flex-col gap-8 md:flex-row md:items-end md:justify-between lg:mb-14">
-          <ViewReveal variant="tilt-up" className="mb-0 max-w-xl text-left">
+        <div className="mb-12 flex flex-col items-center gap-8 lg:mb-14">
+          <ViewReveal variant="tilt-up" className="mb-0 max-w-xl text-center">
             <SectionHeading
-              align="left"
+              align="center"
               variant="editorial"
-              className="mb-0 max-w-xl text-left"
+              className="mb-0 max-w-xl text-center"
               eyebrow="The counter"
               title={
                 <>
@@ -58,7 +58,7 @@ export function ProductCarousel() {
               subtitle="Not a carousel of everything — just the ones we’d slide across the table first."
             />
           </ViewReveal>
-          <div className="flex gap-2 self-start md:self-end">
+          <div className="flex gap-2">
             <button
               type="button"
               onClick={prev}
@@ -109,7 +109,7 @@ export function ProductCarousel() {
                     sizes="(max-width:1024px) 100vw, 25vw"
                   />
                 </div>
-                <div className="space-y-1 px-5 pb-6 pt-5 text-center lg:text-left">
+                <div className="space-y-1 px-5 pb-6 pt-5 text-center">
                   <h3 className="font-serif text-lg font-semibold text-cb-text-strong">
                     {product.name}
                   </h3>
@@ -120,7 +120,7 @@ export function ProductCarousel() {
               </motion.article>
             ))}
           </AnimatePresence>
-          <div className="flex flex-col justify-center rounded-2xl border-2 border-dashed border-cb-terracotta-dark/35 bg-gradient-to-br from-cb-mint/40 via-cb-cream to-cb-peach/50 p-8 lg:min-h-[min(100%,22rem)]">
+          <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-cb-terracotta-dark/35 bg-gradient-to-br from-cb-mint/40 via-cb-cream to-cb-peach/50 p-8 text-center lg:min-h-[min(100%,22rem)]">
             <p className="font-serif text-2xl font-semibold leading-snug text-cb-text-strong">
               Still warm on some days — always honest on the label.
             </p>

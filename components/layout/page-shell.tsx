@@ -2,9 +2,13 @@
 
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
+import { MobileFooter } from "@/components/layout/mobile-footer";
+import { MobileHeader } from "@/components/layout/mobile-header";
+import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { WhatsAppFab } from "@/components/layout/whatsapp-fab";
+import { MrBrownieChat } from "@/components/mr-brownie/mr-brownie-chat";
 import { PageTransition } from "@/components/motion/page-transition";
 import { CartProvider } from "@/components/providers/cart-provider";
 import { LayoutGroup } from "motion/react";
@@ -18,14 +22,34 @@ export function PageShell({ children }: { children: React.ReactNode }) {
           Skip to main content
         </a>
         <AnnouncementBar />
-        <SiteHeader />
+
+        {/* Desktop header */}
+        <div className="desktop-header">
+          <SiteHeader />
+        </div>
+
+        {/* Mobile header */}
+        <MobileHeader />
+
         <main id="main-content" className="relative flex-1">
           <LayoutGroup id="storefront-shared">
             <PageTransition>{children}</PageTransition>
           </LayoutGroup>
         </main>
-        <SiteFooter />
-        <WhatsAppFab />
+
+        {/* Desktop footer */}
+        <div className="desktop-footer">
+          <SiteFooter />
+        </div>
+
+        {/* Mobile footer + tab bar */}
+        <MobileFooter />
+        <MobileTabBar />
+
+        <div className="desktop-whatsapp-fab">
+          <WhatsAppFab />
+        </div>
+        <MrBrownieChat />
         <CartDrawer />
       </div>
     </CartProvider>

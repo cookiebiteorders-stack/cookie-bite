@@ -16,21 +16,21 @@ export function HomeHero() {
         </span>
       </div>
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-10 cb-gutter py-16 lg:grid-cols-2 lg:gap-16 lg:py-24">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-8 cb-gutter py-10 lg:grid-cols-2 lg:gap-12 lg:py-14">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="relative z-10 space-y-8"
+          className="relative z-10 space-y-6"
         >
           <p className="font-serif text-lg font-semibold italic text-cb-terracotta-dark">
             A bite of happiness
           </p>
-          <h1 className="font-serif text-4xl font-semibold leading-tight text-cb-text-strong sm:text-5xl lg:text-6xl">
+          <h1 className="font-serif text-3xl font-semibold leading-tight text-cb-text-strong sm:text-4xl lg:text-5xl">
             Where every{" "}
             <span className="text-cb-terracotta-dark">bite</span> tells a story
           </h1>
-          <p className="max-w-xl text-lg text-cb-text">
+          <p className="max-w-xl text-base text-cb-text lg:text-lg">
             Handcrafted luxury cookies, delivered fresh in New Cairo — baked in
             small batches with real butter, Belgian chocolate, and a little
             extra love.
@@ -83,9 +83,13 @@ export function HomeHero() {
               className="object-cover"
               sizes="(max-width:1024px) 100vw, 50vw"
             />
+            <div
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(28,14,6,0.46)] via-[rgba(28,14,6,0.14)] to-transparent dark:from-[rgba(0,0,0,0.62)] dark:via-[rgba(0,0,0,0.24)] dark:to-transparent"
+              aria-hidden
+            />
             <button
               type="button"
-              className="absolute bottom-6 right-6 inline-flex items-center gap-2 rounded-full bg-cb-surface px-4 py-2 text-sm font-bold text-cb-text-strong shadow-lg ring-1 ring-cb-border backdrop-blur hover:bg-cb-cream"
+              className="absolute bottom-6 right-6 inline-flex items-center gap-2 rounded-full bg-cb-surface/95 px-4 py-2 text-sm font-bold text-cb-text-strong shadow-lg ring-1 ring-cb-border backdrop-blur hover:bg-cb-cream dark:bg-cb-surface-elevated/92"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-cb-terracotta-dark text-white">
                 <Play className="h-4 w-4 fill-current" aria-hidden />
@@ -96,7 +100,7 @@ export function HomeHero() {
         </motion.div>
       </div>
 
-      <div className="relative z-10 flex justify-center pb-8 text-xs font-bold uppercase tracking-[0.3em] text-cb-text">
+      <div className="relative z-10 flex justify-center pb-4 text-xs font-bold uppercase tracking-[0.3em] text-cb-text">
         <span className="flex flex-col items-center gap-2">
           Scroll
           <span

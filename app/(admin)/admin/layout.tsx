@@ -1,6 +1,7 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { AdminShell } from "@/components/admin/admin-shell";
-import { resolveStaffRoleFromEmail } from "@/lib/admin/auth-role";
+import { resolveStaffRole } from "@/lib/admin/auth-role";
+import { PageShell } from "@/components/layout/page-shell";
 
 export default async function AdminLayout({
   children,
@@ -9,7 +10,11 @@ export default async function AdminLayout({
 }) {
   const user = await currentUser();
   const email = user?.primaryEmailAddress?.emailAddress ?? null;
-  const role = resolveStaffRoleFromEmail(email);
+  const role = await resolveStaffRole({ email, clerkUserId: user?.id ?? null });
 
-  return <AdminShell role={role}>{children}</AdminShell>;
+  return (
+    <PageShell>
+      <AdminShell role={role}>{children}</AdminShell>
+    </PageShell>
+  );
 }

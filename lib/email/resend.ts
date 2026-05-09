@@ -11,6 +11,6 @@ export function getResend() {
 }
 
 export const EMAIL_CONFIG = {
-  from: process.env.RESEND_FROM_EMAIL ?? "Cookie Bite <onboarding@resend.dev>",
+  from: process.env.RESEND_FROM_EMAIL ?? "Cookie Bite <cookie-bite@cookie-bite.com>",
   replyTo: process.env.RESEND_REPLY_TO,
 } as const;

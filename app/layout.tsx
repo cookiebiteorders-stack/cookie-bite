@@ -93,7 +93,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com"),
   title: {
-    default: "Cookie Bite New Cairo Cookies & Gift Boxes",
+    default: "Cookie Bite Store",
     template: "%s | Cookie Bite",
   },
   description:

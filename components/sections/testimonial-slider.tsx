@@ -23,8 +23,8 @@ export function TestimonialSlider() {
     <section className="relative bg-cb-peach/45 py-16 md:py-24 dark:bg-cb-peach/12">
       <div className="cb-grain pointer-events-none absolute inset-0 opacity-80 dark:opacity-50" />
       <div className="relative mx-auto max-w-7xl cb-gutter">
-        <div className="mb-10 flex flex-col gap-3 md:mb-14 md:flex-row md:items-end md:justify-between">
-          <ViewReveal variant="slide-left" className="max-w-lg text-left">
+        <div className="mb-10 flex flex-col items-center gap-3 md:mb-14">
+          <ViewReveal variant="slide-left" className="max-w-2xl text-center">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-cb-terracotta-dark dark:text-cb-terracotta">
               Voices, not widgets
             </p>
@@ -36,7 +36,7 @@ export function TestimonialSlider() {
               .
             </h2>
           </ViewReveal>
-          <div className="flex gap-2 md:pb-1">
+          <div className="flex justify-center gap-2 md:pb-1">
             <button
               type="button"
               onClick={prev}
@@ -56,7 +56,7 @@ export function TestimonialSlider() {
           </div>
         </div>
 
-        <div className="relative mx-auto max-w-4xl lg:ms-0 lg:max-w-5xl">
+        <div className="relative mx-auto max-w-5xl">
           <AnimatePresence mode="wait">
             <motion.div
               key={t.name}

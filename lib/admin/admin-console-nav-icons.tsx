@@ -1,0 +1,37 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  BarChart3,
+  BadgePercent,
+  Boxes,
+  CreditCard,
+  FileText,
+  LayoutDashboard,
+  Receipt,
+  Settings,
+  Shield,
+  ShoppingCart,
+  Truck,
+  Users,
+  Wallet,
+} from "lucide-react";
+import type { AdminConsoleNavItem } from "@/lib/admin/admin-console-nav";
+
+const iconByHref: Record<string, LucideIcon> = {
+  "/admin": LayoutDashboard,
+  "/admin/products": Boxes,
+  "/admin/orders": ShoppingCart,
+  "/admin/customers": Users,
+  "/admin/discounts": BadgePercent,
+  "/admin/reports": BarChart3,
+  "/admin/financial": Wallet,
+  "/admin/invoices": Receipt,
+  "/admin/payments": CreditCard,
+  "/admin/roles": Shield,
+  "/admin/shipping": Truck,
+  "/admin/audit-logs": FileText,
+  "/admin/settings": Settings,
+};
+
+export function getAdminNavIcon(item: AdminConsoleNavItem): LucideIcon {
+  return iconByHref[item.href] ?? LayoutDashboard;
+}

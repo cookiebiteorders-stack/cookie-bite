@@ -1,4 +1,5 @@
 import type { UserRole } from "@/lib/admin/rbac";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const DEFAULT_OWNER_EMAIL = "cookie.bite.orders@gmail.com";
 
@@ -10,10 +11,7 @@ function parseCsv(input?: string) {
     .filter(Boolean);
 }
 
-/**
- * يحدد دور الموظف من البريد فقط (مصدر موثوق مثل Clerk على السيرفر).
- * لا تمرّر بريداً من العميل دون تحقق.
- */
+/** دور مبدئي من متغيرات البيئة (fallback). */
 export function resolveStaffRoleFromEmail(email: string | null | undefined): UserRole {
   const normalized = (email ?? "").trim().toLowerCase();
   if (!normalized) return "customer";
@@ -28,4 +26,39 @@ export function resolveStaffRoleFromEmail(email: string | null | undefined): Use
   if (staffEmails.includes(normalized)) return "staff";
 
   return "customer";
+}
+
+/**
+ * يحدد الدور من قاعدة البيانات أولاً، ثم fallback لمتغيرات البيئة.
+ * يُستخدم في السيرفر فقط لأنّه يعتمد على service-role.
+ */
+export async function resolveStaffRole(params: {
+  email: string | null | undefined;
+  clerkUserId?: string | null;
+}): Promise<UserRole> {
+  const normalizedEmail = (params.email ?? "").trim().toLowerCase();
+  const clerkUserId = (params.clerkUserId ?? "").trim();
+
+  try {
+    const supabase = createSupabaseAdminClient();
+    let query = supabase.from("users").select("role").limit(1);
+
+    if (clerkUserId) {
+      query = query.eq("clerk_user_id", clerkUserId);
+    } else if (normalizedEmail) {
+      query = query.ilike("email", normalizedEmail);
+    } else {
+      return "customer";
+    }
+
+    const { data } = await query.maybeSingle();
+    const role = (data?.role ?? "").toString() as UserRole;
+    if (role === "owner" || role === "admin" || role === "staff" || role === "customer") {
+      return role;
+    }
+  } catch {
+    // fallback below
+  }
+
+  return resolveStaffRoleFromEmail(normalizedEmail);
 }

@@ -16,7 +16,7 @@ import {
   useMotionValueEvent,
   useScroll,
 } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { SiteLogoLink } from "@/components/brand/site-logo";
 import { NavDropdown } from "@/components/layout/nav-dropdown";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -51,8 +51,22 @@ export function SiteHeader() {
   const pathname = usePathname();
   const { itemCount, openDrawer } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileMenuToggleRef = useRef<HTMLButtonElement>(null);
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
+
+  /** قيم ثابتة في DOM لتمرير axe / Edge Tools (لا تعابير JSX على aria-expanded / aria-controls) */
+  useLayoutEffect(() => {
+    const el = mobileMenuToggleRef.current;
+    if (!el) return;
+    if (mobileOpen) {
+      el.setAttribute("aria-expanded", "true");
+      el.setAttribute("aria-controls", "site-mobile-nav");
+    } else {
+      el.setAttribute("aria-expanded", "false");
+      el.removeAttribute("aria-controls");
+    }
+  }, [mobileOpen]);
 
   useMotionValueEvent(scrollY, "change", (y) => {
     setScrolled(y > 28);
@@ -97,10 +111,10 @@ export function SiteHeader() {
           >
             <div className="flex min-w-0 items-center gap-2 lg:gap-3">
               <button
+                ref={mobileMenuToggleRef}
                 type="button"
                 className={cn(iconBtn, "lg:hidden")}
-                aria-expanded={mobileOpen}
-                aria-controls="site-mobile-nav"
+                aria-haspopup="dialog"
                 onClick={() => setMobileOpen((v) => !v)}
                 aria-label={mobileOpen ? "Close menu" : "Open menu"}
               >
@@ -152,52 +166,37 @@ export function SiteHeader() {
               </Link>
 
               <Show when="signed-out">
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <div
-                    className={cn(
-                      "hidden items-center gap-3 sm:flex",
-                      "text-[11px] font-bold uppercase tracking-wide",
-                    )}
-                  >
-                    <Link
-                      href="/sign-in"
-                      className="whitespace-nowrap text-cb-text transition-colors duration-300 hover:text-cb-terracotta-dark dark:hover:text-cb-terracotta"
-                    >
-                      Sign in
-                    </Link>
-                    <Link
-                      href="/sign-up"
-                      className="whitespace-nowrap text-cb-terracotta-dark transition-colors duration-300 hover:text-cb-text-strong dark:text-cb-terracotta"
-                    >
-                      Join
-                    </Link>
-                  </div>
-                  <Link
-                    href="/sign-in"
-                    className={cn(iconBtn, "sm:hidden")}
-                    aria-label="Sign in"
-                  >
-                    <UserRound className="h-5 w-5" aria-hidden />
-                  </Link>
-                </div>
-              </Show>
-
-              <Show when="signed-in">
                 <Link
-                  href="/account"
-                  className={cn(iconBtn, "hidden sm:inline-flex")}
-                  aria-label="My account"
+                  href="/sign-in"
+                  className={iconBtn}
+                  aria-label="Sign in"
                 >
                   <UserRound className="h-5 w-5" aria-hidden />
                 </Link>
-                <UserButton
-                  appearance={{
-                    elements: {
-                      avatarBox:
-                        "h-9 w-9 ring-1 ring-cb-peach-deep dark:ring-cb-border",
-                    },
-                  }}
-                />
+              </Show>
+
+              <Show when="signed-in">
+                <div className="flex items-center justify-center h-11 w-11">
+                  <UserButton
+                    userProfileUrl="/account/settings"
+                    userProfileMode="navigation"
+                    appearance={{
+                      elements: {
+                        avatarBox:
+                          "h-[2.15rem] w-[2.15rem] ring-2 ring-cb-peach-deep dark:ring-cb-border transition-transform hover:scale-105",
+                      },
+                    }}
+                  >
+                    <UserButton.MenuItems>
+                      <UserButton.Link
+                        label="Dashboard / Account"
+                        labelIcon={<UserRound className="h-4 w-4" />}
+                        href="/account"
+                      />
+                      <UserButton.Action label="manageAccount" />
+                    </UserButton.MenuItems>
+                  </UserButton>
+                </div>
               </Show>
 
               <button
@@ -216,54 +215,6 @@ export function SiteHeader() {
             </div>
           </div>
 
-          <div className="scrollbar-hide -mx-1 overflow-x-auto overscroll-x-contain pb-3 pt-1 lg:hidden">
-            <div className="flex min-w-max snap-x snap-mandatory gap-2 px-1">
-              {[
-                { href: "/", label: "Home", match: (p: string) => p === "/" },
-                {
-                  href: "/shop",
-                  label: "Shop",
-                  match: (p: string) => p.startsWith("/shop"),
-                },
-                {
-                  href: "/gift-box",
-                  label: "Gifts",
-                  match: (p: string) => p.startsWith("/gift"),
-                },
-                {
-                  href: "/our-story",
-                  label: "Story",
-                  match: (p: string) => p.startsWith("/our-story"),
-                },
-                {
-                  href: "/help/faq",
-                  label: "FAQ",
-                  match: (p: string) => p.startsWith("/help"),
-                },
-                {
-                  href: "/contact",
-                  label: "Contact",
-                  match: (p: string) => p.startsWith("/contact"),
-                },
-              ].map((link) => {
-                const active = link.match(pathname);
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                      "cb-touch-manipulation inline-flex min-h-[2.75rem] snap-start items-center justify-center whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium transition-[transform,background-color,color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                      active
-                        ? "bg-cb-terracotta-dark text-white shadow-md dark:bg-cb-terracotta dark:text-cb-cream-2"
-                        : "bg-cb-surface/85 text-cb-text-strong shadow-sm hover:-translate-y-px hover:bg-cb-surface-elevated hover:text-cb-terracotta-dark dark:bg-cb-surface-2/90 dark:hover:bg-cb-peach/25",
-                    )}
-                  >
-                    {link.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
         </div>
       </header>
 

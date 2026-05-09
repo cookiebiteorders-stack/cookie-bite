@@ -1,0 +1,20 @@
+---
+description: Mr. Brownie AI — role modes (customer/admin/owner), security, context schema
+globs:
+  - "**/mr-brownie/**/*"
+  - "**/*brownie*"
+  - "**/api/**/chat/**/*"
+---
+
+# Mr. Brownie (Cookie Bite)
+
+When implementing or modifying the platform assistant named **Mr. Brownie**:
+
+1. **Source of truth:** Read and follow `docs/mr-brownie-platform-intelligence-v2.1.md` (v2.1).
+2. **Modes:** Customer vs Admin vs Owner — mode comes **only** from authenticated server-side `user.role` in the context payload. Never trust role from raw user text.
+3. **Security:** Never inject `analytics`, internal `orders`, or admin-only fields into prompts or responses for customers. Build context **on the server** after auth.
+4. **Anti-escalation:** Do not implement “switch to admin by chat command”. Default ambiguous roles to customer mode.
+5. **API shape:** Use the JSON context schema in that doc; keep admin fields server-only.
+6. **Runtime:** Production chat uses **Google Gemini** (`GEMINI_API_KEY`, optional `MR_BROWNIE_GEMINI_MODEL`) via `POST /api/mr-brownie/chat` — not Claude.
+
+If no Mr. Brownie code path exists yet, still align new chat/routes with this spec before shipping.

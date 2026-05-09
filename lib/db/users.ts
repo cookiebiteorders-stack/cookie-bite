@@ -1,4 +1,4 @@
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 import { resolveStaffRoleFromEmail } from "@/lib/admin/auth-role";
 import type { UserRow } from "@/lib/db/types";
 
@@ -10,7 +10,8 @@ type UpsertInput = {
 };
 
 export async function upsertUserFromClerk(input: UpsertInput): Promise<UserRow | null> {
-  const supabase = createSupabaseAdminClient();
+  const supabase = tryCreateSupabaseAdminClient();
+  if (!supabase) return null;
   const role = resolveStaffRoleFromEmail(input.email);
 
   const { data, error } = await supabase
@@ -36,7 +37,8 @@ export async function upsertUserFromClerk(input: UpsertInput): Promise<UserRow |
 }
 
 export async function deleteUserByClerkId(clerkUserId: string) {
-  const supabase = createSupabaseAdminClient();
+  const supabase = tryCreateSupabaseAdminClient();
+  if (!supabase) return;
   const { error } = await supabase
     .from("users")
     .delete()
@@ -45,7 +47,8 @@ export async function deleteUserByClerkId(clerkUserId: string) {
 }
 
 export async function getUserByClerkId(clerkUserId: string): Promise<UserRow | null> {
-  const supabase = createSupabaseAdminClient();
+  const supabase = tryCreateSupabaseAdminClient();
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from("users")
     .select("*")

@@ -1,3 +1,5 @@
+import Script from "next/script";
+
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
 
 export function SiteJsonLd() {
@@ -36,14 +38,20 @@ export function SiteJsonLd() {
 
   return (
     <>
-      <script
+      <Script
+        id="cookie-bite-org-jsonld"
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }}
-      />
-      <script
+        strategy="afterInteractive"
+      >
+        {JSON.stringify(organization)}
+      </Script>
+      <Script
+        id="cookie-bite-website-jsonld"
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(website) }}
-      />
+        strategy="afterInteractive"
+      >
+        {JSON.stringify(website)}
+      </Script>
     </>
   );
 }

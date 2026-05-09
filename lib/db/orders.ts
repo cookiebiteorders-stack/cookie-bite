@@ -1,4 +1,7 @@
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import {
+  createSupabaseAdminClient,
+  tryCreateSupabaseAdminClient,
+} from "@/lib/supabase/admin";
 import type { OrderItemRow, OrderRow } from "@/lib/db/types";
 
 export type InsertCheckoutOrderInput = {
@@ -114,7 +117,8 @@ export async function updateOrderPaymentByPaymobAcceptOrderId(
 }
 
 export async function listRecentOrdersForUser(userId: string, limit = 5) {
-  const supabase = createSupabaseAdminClient();
+  const supabase = tryCreateSupabaseAdminClient();
+  if (!supabase) return [] as OrderRow[];
   const { data, error } = await supabase
     .from("orders")
     .select("*")

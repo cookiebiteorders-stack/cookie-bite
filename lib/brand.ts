@@ -12,5 +12,7 @@ export const BRAND = {
     tiktok: "https://www.tiktok.com/@cookie_bite01",
     instagram: "https://www.instagram.com/cookiebite8",
   },
+  email: "cookie-bite@cookie-bite.com",
+  ordersEmail: "cookie-bite@cookie-bite.com",
   freeDeliveryThresholdEgp: 500,
 } as const;

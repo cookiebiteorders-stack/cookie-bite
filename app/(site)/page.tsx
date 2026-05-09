@@ -3,11 +3,12 @@ import type { Metadata } from "next";
 import { ExploreCategories } from "@/components/sections/explore-categories";
 import { HomeStorySnippet } from "@/components/sections/home-story-snippet";
 import { TrustBar } from "@/components/sections/trust-bar";
+import { MobileHomeSections } from "@/components/sections/mobile-home-sections";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
 
 export const metadata: Metadata = {
-  title: "Cookie Delivery New Cairo | Cookie Bite",
+  title: "Cookie Bite Store",
   description:
     "Order handcrafted cookies and premium gift boxes in New Cairo. Explore bestselling flavors, seasonal treats, and same-day support.",
   keywords: [

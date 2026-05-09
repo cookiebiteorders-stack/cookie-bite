@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { STORY_SECTIONS } from "@/lib/data";
 import { SectionHeading } from "@/components/sections/section-heading";
+import { MobileStoryView } from "@/components/sections/mobile-story-view";
 import { buttonClassName } from "@/components/ui/button";
 import { buildPageMetadata, buildBreadcrumbJsonLd } from "@/lib/seo";
 
@@ -95,7 +96,7 @@ export default function OurStoryPage() {
         ))}
       </div>
 
-      <section className="bg-white py-20">
+      <section className="bg-cb-surface-elevated py-20">
         <div className="mx-auto max-w-7xl cb-gutter">
           <SectionHeading title="Why people love us" />
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

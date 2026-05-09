@@ -12,14 +12,25 @@ import {
   LayoutDashboard,
   LogOut,
   MapPin,
+  MessageSquare,
   Package,
   Star,
   User,
 } from "lucide-react";
-import { AccountProfilePanel } from "@/components/account/account-profile-panel";
+
+import { AccountTestimonialForm } from "@/components/account/account-testimonial-form";
 import { RedeemPointsCard } from "@/components/account/redeem-points-card";
+import { MobileAccountView } from "@/components/account/mobile-account-view";
 import { buttonClassName } from "@/components/ui/button";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getAccessibleAdminConsoleNav } from "@/lib/admin/admin-console-nav";
+import { getAdminNavIcon } from "@/lib/admin/admin-console-nav-icons";
+import { resolveStaffRole } from "@/lib/admin/auth-role";
+import { getRoleLabel, type UserRole } from "@/lib/admin/rbac";
+import {
+  ACCOUNT_ROLE_DASHBOARD_COPY,
+  accountRoleBadgeClass,
+} from "@/lib/account/account-role-dashboard";
+import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 import { listRecentOrdersForUser } from "@/lib/db/orders";
 import { getUserByClerkId, upsertUserFromClerk } from "@/lib/db/users";
 import { cn } from "@/lib/utils";
@@ -34,17 +45,35 @@ export const metadata: Metadata = buildPageMetadata({
   noIndex: true,
 });
 
-const sidebar = [
-  { label: "Dashboard", href: "/account", icon: LayoutDashboard, active: true },
+const customerNavItems = [
+  { label: "Dashboard", href: "/account", icon: LayoutDashboard },
   { label: "My Orders", href: "/account#orders", icon: Package },
   { label: "My Addresses", href: "/account#addresses", icon: MapPin },
   { label: "Payment Methods", href: "/account#pay", icon: CreditCard },
   { label: "Wishlist", href: "/account#wish", icon: Heart },
   { label: "Rewards & Points", href: "/account#rewards", icon: Star },
   { label: "Profile & security", href: "/account#profile", icon: User },
+  { label: "My comments", href: "/account#feedback", icon: MessageSquare },
   { label: "Notifications", href: "/account#notifications", icon: Bell },
   { label: "Help & Support", href: "/contact", icon: HelpCircle },
-];
+] as const;
+
+function resolveAccountRole(
+  dbUser: { role: UserRole } | null,
+  email: string | null,
+  clerkUserId: string,
+): Promise<UserRole> {
+  if (
+    dbUser &&
+    (dbUser.role === "owner" ||
+      dbUser.role === "admin" ||
+      dbUser.role === "staff" ||
+      dbUser.role === "customer")
+  ) {
+    return Promise.resolve(dbUser.role);
+  }
+  return resolveStaffRole({ email, clerkUserId });
+}
 
 const STATUS_BADGE: Record<string, string> = {
   delivered: "bg-emerald-100 text-emerald-800",
@@ -53,6 +82,44 @@ const STATUS_BADGE: Record<string, string> = {
   pending: "bg-cb-peach text-cb-text-strong",
   cancelled: "bg-red-100 text-red-800",
   refunded: "bg-slate-200 text-slate-800",
+};
+
+type ProductImageItem = { url?: string | null };
+type WishlistProduct = {
+  id?: string;
+  slug?: string | null;
+  name?: string | null;
+  title_en?: string | null;
+  title_ar?: string | null;
+  price_egp?: number | null;
+  image_url?: string | null;
+  images?: ProductImageItem[] | null;
+  is_active?: boolean;
+};
+type WishlistItem = { id: string; product?: WishlistProduct | null };
+type AddressItem = {
+  id: string;
+  label?: string | null;
+  recipient?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  governorate?: string | null;
+  street?: string | null;
+  is_default?: boolean | null;
+};
+type NotificationItem = {
+  id: string;
+  title?: string | null;
+  body?: string | null;
+  href?: string | null;
+  created_at?: string | null;
+};
+type TestimonialItem = {
+  id: string;
+  rating?: number | null;
+  comment?: string | null;
+  status?: string | null;
+  created_at?: string | null;
 };
 
 export default async function AccountPage() {
@@ -78,13 +145,19 @@ export default async function AccountPage() {
     });
   }
 
+  const accountRole = await resolveAccountRole(dbUser, email, user.id);
+  const adminSidebarLinks =
+    accountRole !== "customer" ? getAccessibleAdminConsoleNav(accountRole) : [];
+  const roleCopy = ACCOUNT_ROLE_DASHBOARD_COPY[accountRole];
+
   const orders = dbUser ? await listRecentOrdersForUser(dbUser.id, 3) : [];
 
-  const supabase = dbUser ? createSupabaseAdminClient() : null;
-  const [loyaltyAccount, wishlistItems, addressesItems, notificationsItems] = await Promise.all([
-    !supabase
-      ? Promise.resolve(null)
-      : (async () => {
+  const supabase = dbUser ? tryCreateSupabaseAdminClient() : null;
+  const [loyaltyAccount, wishlistItems, addressesItems, notificationsItems, testimonialItems] =
+    await Promise.all([
+      !supabase
+        ? Promise.resolve(null)
+        : (async () => {
           const { data } = await supabase
             .from("loyalty_accounts")
             .select("*")
@@ -109,9 +182,9 @@ export default async function AccountPage() {
 
           return inserted ?? null;
         })(),
-    !supabase
-      ? Promise.resolve([])
-      : supabase
+      !supabase
+        ? Promise.resolve([])
+        : supabase
           .from("wishlists")
           .select(
             "id, created_at, product:products(id,slug,name,title_en,title_ar,price_egp,image_url,images,is_active)",
@@ -120,9 +193,9 @@ export default async function AccountPage() {
           .order("created_at", { ascending: false })
           .limit(6)
           .then((r) => r.data ?? []),
-    !supabase
-      ? Promise.resolve([])
-      : supabase
+      !supabase
+        ? Promise.resolve([])
+        : supabase
           .from("addresses")
           .select(
             "id, label, recipient, phone, city, governorate, street, is_default",
@@ -131,16 +204,25 @@ export default async function AccountPage() {
           .order("created_at", { ascending: false })
           .limit(3)
           .then((r) => r.data ?? []),
-    !supabase
-      ? Promise.resolve([])
-      : supabase
+      !supabase
+        ? Promise.resolve([])
+        : supabase
           .from("notifications_log")
           .select("id, title, body, href, created_at")
           .eq("recipient_user_id", dbUser!.id)
           .order("created_at", { ascending: false })
           .limit(3)
           .then((r) => r.data ?? []),
-  ]);
+      !supabase
+        ? Promise.resolve([])
+        : supabase
+          .from("customer_testimonials")
+          .select("id, rating, comment, status, created_at")
+          .eq("user_id", dbUser!.id)
+          .order("created_at", { ascending: false })
+          .limit(8)
+          .then((r) => r.data ?? []),
+    ]);
 
   const loyaltyPoints = Number(loyaltyAccount?.total_points ?? dbUser?.points ?? 0);
   const loyaltyTier: string = loyaltyAccount?.tier ?? "cookie_lover";
@@ -157,7 +239,7 @@ export default async function AccountPage() {
       ? 100
       : Math.min(100, (loyaltyPoints / loyaltyThreshold) * 100);
 
-  const getProductImage = (p: any): string | null => {
+  const getProductImage = (p?: WishlistProduct | null): string | null => {
     if (typeof p?.image_url === "string" && p.image_url) return p.image_url;
     if (Array.isArray(p?.images) && p.images.length > 0 && p.images[0]?.url) {
       return String(p.images[0].url);
@@ -179,25 +261,38 @@ export default async function AccountPage() {
           <div className="rounded-3xl bg-cb-surface p-6 shadow-sm ring-1 ring-cb-border">
             <div className="flex items-center gap-4">
               <div className="relative h-14 w-14 overflow-hidden rounded-full bg-cb-peach ring-2 ring-cb-peach-deep">
-                <Image
-                  src={user.imageUrl}
-                  alt={fullName}
-                  fill
-                  unoptimized
-                  className="object-cover"
-                  sizes="56px"
-                />
+                {user.imageUrl ? (
+                  <Image
+                    src={user.imageUrl}
+                    alt={fullName}
+                    fill
+                    unoptimized
+                    className="object-cover"
+                    sizes="56px"
+                  />
+                ) : (
+                  <div
+                    className="flex h-full w-full items-center justify-center text-base font-bold text-cb-terracotta-dark"
+                    aria-hidden
+                  >
+                    {(fullName || email || "?").trim().slice(0, 1).toUpperCase() ||
+                      "?"}
+                  </div>
+                )}
               </div>
               <div className="min-w-0">
                 <p className="truncate font-semibold text-cb-text-strong">{fullName}</p>
                 {email && (
                   <p className="truncate text-xs text-cb-text-muted">{email}</p>
                 )}
-                <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-cb-terracotta-dark px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                <span
+                  className={cn(
+                    "mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                    accountRoleBadgeClass(accountRole),
+                  )}
+                >
                   <Star className="h-3 w-3 fill-current" aria-hidden />
-                  {dbUser && dbUser.role !== "customer"
-                    ? dbUser.role.toUpperCase()
-                    : "Member"}
+                  {accountRole === "customer" ? "Member" : getRoleLabel(accountRole)}
                 </span>
               </div>
             </div>
@@ -207,16 +302,14 @@ export default async function AccountPage() {
             aria-label="Account"
           >
             <ul className="space-y-1">
-              {sidebar.map((item) => (
+              {customerNavItems.map((item) => (
                 <li key={item.label}>
                   <Link
                     href={item.href}
-                    aria-current={item.active ? "page" : undefined}
                     className={cn(
                       "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition",
-                      item.active
-                        ? "border-l-4 border-cb-terracotta-dark bg-cb-peach text-cb-terracotta-dark"
-                        : "text-cb-text hover:bg-cb-peach/60 hover:text-cb-text-strong",
+                      "text-cb-text hover:bg-cb-peach/60 hover:text-cb-text-strong",
+                      "dark:hover:bg-cb-hover-overlay",
                     )}
                   >
                     <item.icon className="h-4 w-4 shrink-0" aria-hidden />
@@ -224,33 +317,105 @@ export default async function AccountPage() {
                   </Link>
                 </li>
               ))}
+              {adminSidebarLinks.length > 0 ? (
+                <>
+                  <li
+                    className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-wider text-cb-text-muted"
+                    aria-hidden
+                  >
+                    Admin / الإدارة
+                  </li>
+                  {adminSidebarLinks.map((navItem) => {
+                    const AdminIcon = getAdminNavIcon(navItem);
+                    return (
+                      <li key={navItem.href}>
+                        <Link
+                          href={navItem.href}
+                          className={cn(
+                            "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition",
+                            "text-cb-text-strong ring-1 ring-cb-border/60 hover:bg-cb-peach/50 hover:ring-cb-border-strong",
+                            "dark:hover:bg-cb-surface-2",
+                          )}
+                        >
+                          <AdminIcon className="h-4 w-4 shrink-0 text-cb-terracotta-dark" aria-hidden />
+                          {navItem.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </>
+              ) : null}
               <li>
-                <SignOutButton
-                  redirectUrl="/"
-                  children={
-                    <button
-                      type="button"
-                      className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-semibold text-red-700 hover:bg-red-50"
-                    >
-                      <LogOut className="h-4 w-4" aria-hidden />
-                      Logout
-                    </button>
-                  }
-                />
+                <SignOutButton redirectUrl="/">
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-semibold text-red-700 hover:bg-red-50"
+                  >
+                    <LogOut className="h-4 w-4" aria-hidden />
+                    Logout
+                  </button>
+                </SignOutButton>
               </li>
             </ul>
           </nav>
         </aside>
 
         <div className="min-w-0 flex-1 space-y-8">
-          <section className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-cb-border">
+          <section
+            className={cn(
+              "rounded-3xl border border-cb-peach-deep/50 bg-gradient-to-br from-cb-surface via-cb-cream to-cb-peach/30 p-6 shadow-sm ring-1 ring-cb-border/50",
+              "dark:from-cb-surface-elevated dark:via-cb-surface dark:to-cb-peach-deep/20",
+            )}
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-cb-terracotta-dark">
+                  {accountRole === "customer" ? "Member" : getRoleLabel(accountRole)}
+                </p>
+                <h2 className="mt-1 font-serif text-xl font-semibold text-cb-text-strong sm:text-2xl">
+                  {roleCopy.titleEn}
+                  <span className="mt-1 block text-base font-normal text-cb-text-muted sm:text-lg">
+                    {roleCopy.titleAr}
+                  </span>
+                </h2>
+              </div>
+              {accountRole !== "customer" ? (
+                <Link
+                  href="/admin"
+                  className={buttonClassName(
+                    "primary",
+                    "shrink-0 self-start rounded-full px-6 py-3 text-sm",
+                  )}
+                >
+                  Admin console / لوحة الإدارة
+                </Link>
+              ) : null}
+            </div>
+            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+              {roleCopy.perksEn.map((en, i) => (
+                <li
+                  key={en}
+                  className="rounded-2xl bg-cb-surface/90 p-4 ring-1 ring-cb-border/50 dark:bg-cb-surface-2/80"
+                >
+                  <p className="text-sm font-medium text-cb-text-strong">{en}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-cb-text-muted">
+                    {roleCopy.perksAr[i] ?? ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="overflow-hidden rounded-3xl bg-cb-surface-elevated shadow-sm ring-1 ring-cb-border">
             <div className="grid gap-6 p-6 lg:grid-cols-2 lg:items-center">
               <div>
                 <h1 className="font-serif text-3xl font-semibold text-cb-text-strong">
                   Welcome back, {user.firstName ?? fullName}!
                 </h1>
                 <p className="mt-2 text-cb-text-muted">
-                  Here&apos;s what&apos;s happening with your Cookie Bite orders, rewards, and saved items.
+                  {accountRole !== "customer"
+                    ? "Your member overview below — use the admin links for store operations."
+                    : "Here's what's happening with your Cookie Bite orders, rewards, and saved items."}
                 </p>
                 <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
                   {[
@@ -289,7 +454,7 @@ export default async function AccountPage() {
           <div className="grid gap-8 lg:grid-cols-2">
             <section
               id="orders"
-              className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-cb-border"
+              className="rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
             >
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
@@ -354,7 +519,7 @@ export default async function AccountPage() {
 
             <section
               id="rewards"
-              className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-cb-border"
+              className="rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -378,10 +543,11 @@ export default async function AccountPage() {
                 </div>
               </div>
 
-              <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-cb-peach">
-                <div
-                  className="h-full rounded-full bg-cb-terracotta-dark"
-                  style={{ width: `${loyaltyProgressPercent}%` }}
+              <div className="mt-5">
+                <progress
+                  className="h-2 w-full overflow-hidden rounded-full [&::-webkit-progress-bar]:bg-cb-peach [&::-webkit-progress-value]:bg-cb-terracotta-dark [&::-moz-progress-bar]:bg-cb-terracotta-dark"
+                  value={Math.round(loyaltyProgressPercent)}
+                  max={100}
                 />
               </div>
 
@@ -397,7 +563,7 @@ export default async function AccountPage() {
 
           <section
             id="addresses"
-            className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-cb-border"
+            className="rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -420,7 +586,7 @@ export default async function AccountPage() {
 
             {addressesItems.length ? (
               <div className="space-y-3">
-                {addressesItems.map((a: any) => (
+                {(addressesItems as AddressItem[]).map((a) => (
                   <div
                     key={a.id}
                     className="rounded-2xl border border-cb-border p-4"
@@ -458,7 +624,7 @@ export default async function AccountPage() {
 
           <section
             id="pay"
-            className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-cb-border"
+            className="rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -494,7 +660,7 @@ export default async function AccountPage() {
                       return (
                         <span
                           key={k}
-                          className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-cb-terracotta-dark ring-1 ring-cb-border/60"
+                          className="rounded-full bg-cb-surface-elevated px-3 py-1 text-[11px] font-semibold text-cb-terracotta-dark ring-1 ring-cb-border/60"
                         >
                           {label}
                         </span>
@@ -508,7 +674,7 @@ export default async function AccountPage() {
 
           <section
             id="notifications"
-            className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-cb-border"
+            className="rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -531,7 +697,7 @@ export default async function AccountPage() {
 
             {notificationsItems.length ? (
               <ul className="space-y-3">
-                {notificationsItems.map((n: any) => (
+                {(notificationsItems as NotificationItem[]).map((n) => (
                   <li
                     key={n.id}
                     className="rounded-2xl border border-cb-border p-4"
@@ -562,22 +728,21 @@ export default async function AccountPage() {
             )}
           </section>
 
-          <section
-            id="profile"
-            className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-cb-border"
-          >
-            <h2 className="mb-4 font-semibold text-cb-text-strong">
-              Profile & security
-            </h2>
-            <p className="mb-6 text-sm text-cb-text-muted">
-              Update your email, password, and connected accounts (managed by Clerk).
-            </p>
-            <AccountProfilePanel />
-          </section>
+
+          <AccountTestimonialForm
+            enabled={Boolean(dbUser)}
+            initialItems={(testimonialItems as TestimonialItem[]).map((t) => ({
+              id: t.id,
+              rating: Number(t.rating ?? 5),
+              comment: t.comment ?? "",
+              status: t.status ?? "pending",
+              created_at: t.created_at ?? null,
+            }))}
+          />
 
           <section
             id="wish"
-            className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-cb-border"
+            className="rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -598,11 +763,11 @@ export default async function AccountPage() {
 
             {wishlistItems.length ? (
               <div className="grid gap-4 sm:grid-cols-3">
-                {wishlistItems.map((w: any) => {
+                {(wishlistItems as WishlistItem[]).map((w) => {
                   const p = w.product;
                   const img = getProductImage(p);
                   const title =
-                    p?.title_ar ?? p?.title_en ?? p?.name ?? p?.slug;
+                    p?.title_ar ?? p?.title_en ?? p?.name ?? p?.slug ?? "Product";
                   const slug = p?.slug;
                   return (
                     <Link

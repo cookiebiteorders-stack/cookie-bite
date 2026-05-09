@@ -72,29 +72,29 @@ export function ExploreCategories() {
                         }
                       />
                       <div
-                        className="absolute inset-0 bg-gradient-to-t from-black/72 via-black/24 to-transparent"
+                        className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/35 to-black/10"
                         aria-hidden
                       />
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 text-white sm:p-6">
-                      <div className="max-w-[min(100%,20rem)]">
-                        <p className="font-serif text-xl font-semibold leading-tight [text-shadow:0_2px_12px_rgba(0,0,0,0.45)] sm:text-2xl">
-                          {card.title}
-                        </p>
-                        <p className="mt-1.5 text-sm font-medium leading-snug text-white/95 [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]">
-                          {card.subtitle}
-                        </p>
+                      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 text-white sm:p-6">
+                        <div className="max-w-[min(100%,20rem)]">
+                          <p className="font-serif text-xl font-semibold leading-tight [text-shadow:0_2px_12px_rgba(0,0,0,0.45)] sm:text-2xl">
+                            {card.title}
+                          </p>
+                          <p className="mt-1.5 text-sm font-medium leading-snug text-white/95 [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]">
+                            {card.subtitle}
+                          </p>
+                        </div>
+                        <motion.span
+                          className="flex h-11 w-11 shrink-0 rotate-3 items-center justify-center rounded-xl border border-white/35 bg-white/95 text-cb-terracotta-dark shadow-md dark:bg-cb-surface-elevated/95 dark:text-cb-terracotta"
+                          whileHover={{ rotate: 0, scale: 1.06 }}
+                          transition={{
+                            duration: duration.short,
+                            ease: easeSoft,
+                          }}
+                        >
+                          <ArrowUpRight className="h-5 w-5" aria-hidden />
+                        </motion.span>
                       </div>
-                      <motion.span
-                        className="flex h-11 w-11 shrink-0 rotate-3 items-center justify-center rounded-xl border border-white/35 bg-cb-surface/95 text-cb-terracotta-dark shadow-md dark:bg-cb-surface-elevated/95 dark:text-cb-terracotta"
-                        whileHover={{ rotate: 0, scale: 1.06 }}
-                        transition={{
-                          duration: duration.short,
-                          ease: easeSoft,
-                        }}
-                      >
-                        <ArrowUpRight className="h-5 w-5" aria-hidden />
-                      </motion.span>
                     </div>
                   </Link>
                 </motion.div>

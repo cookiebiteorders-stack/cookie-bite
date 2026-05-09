@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { PRODUCTS, type Product } from "@/lib/data";
 import { ProductCard } from "@/components/product/product-card";
 import { SectionHeading } from "@/components/sections/section-heading";
@@ -16,9 +17,21 @@ const categories = [
   "Seasonal",
 ] as const;
 
+type ShopCategory = (typeof categories)[number];
+
+function isShopCategory(v: string): v is ShopCategory {
+  return (categories as readonly string[]).includes(v);
+}
+
 export function ShopClient() {
-  const [cat, setCat] = useState<(typeof categories)[number]>("All");
+  const searchParams = useSearchParams();
+  const [cat, setCat] = useState<ShopCategory>("All");
   const [onlyBest, setOnlyBest] = useState(false);
+
+  useEffect(() => {
+    const raw = searchParams.get("cat");
+    if (raw && isShopCategory(raw)) setCat(raw);
+  }, [searchParams]);
 
   const filtered = useMemo(() => {
     let list: Product[] = PRODUCTS;
@@ -42,14 +55,20 @@ export function ShopClient() {
           subtitle="Filter by mood — classic comfort, chocolate depth, or seasonal surprise."
         />
 
-        <div className="mb-6 flex flex-wrap gap-2">
+        <div
+          className={cn(
+            "mb-6 flex gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:thin]",
+            "sm:flex-wrap sm:overflow-visible",
+            "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cb-peach-deep/45",
+          )}
+        >
           {categories.map((c) => (
             <button
               key={c}
               type="button"
               onClick={() => setCat(c)}
               className={cn(
-                "rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cb-focus focus-visible:ring-offset-2 focus-visible:ring-offset-cb-cream",
+                "shrink-0 snap-start rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cb-focus focus-visible:ring-offset-2 focus-visible:ring-offset-cb-cream",
                 cat === c
                   ? "bg-cb-terracotta-dark text-white shadow"
                   : "bg-cb-surface text-cb-text-strong ring-1 ring-cb-border hover:bg-cb-peach hover:ring-cb-border-strong",

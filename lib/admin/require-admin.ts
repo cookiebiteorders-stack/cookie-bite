@@ -1,5 +1,5 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
-import { resolveStaffRoleFromEmail } from "@/lib/admin/auth-role";
+import { resolveStaffRole } from "@/lib/admin/auth-role";
 import { canAccess, type ModuleKey, type PermissionLevel, type UserRole, roleMatrix } from "@/lib/admin/rbac";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -24,7 +24,7 @@ export async function requireAdminAccess(module: ModuleKey): Promise<AdminActor>
   const client = await clerkClient();
   const user = await client.users.getUser(userId);
   const email = user.primaryEmailAddress?.emailAddress ?? null;
-  const role = resolveStaffRoleFromEmail(email);
+  const role = await resolveStaffRole({ email, clerkUserId: userId });
 
   if (!["owner", "admin", "staff"].includes(role)) {
     throw new Response(

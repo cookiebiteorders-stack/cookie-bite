@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { PRODUCTS } from "@/src/data/products";
 import { useDebounce } from "@/src/hooks/useDebounce";
 import { useSearchStore } from "@/src/store/searchStore";
+import type { SearchFilters } from "@/src/types/search";
 import { Input } from "@/src/components/ui/Input";
 import { Select } from "@/src/components/ui/Select";
 import { RangeSlider } from "@/src/components/ui/RangeSlider";
@@ -24,7 +25,6 @@ export function SearchPageClient() {
   const filters = useSearchStore((s) => s.filters);
   const setFilters = useSearchStore((s) => s.setFilters);
   const clearFilters = useSearchStore((s) => s.clearFilters);
-  const [loading, setLoading] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
@@ -36,7 +36,7 @@ export function SearchPageClient() {
   useEffect(() => {
     const q = searchParams.get("q") ?? "";
     const category = searchParams.get("category");
-    const sort = searchParams.get("sort") as typeof filters.sort | null;
+    const sort = searchParams.get("sort") as SearchFilters["sort"] | null;
     const page = Number(searchParams.get("page") ?? 1);
     setFilters({
       query: q,
@@ -45,19 +45,8 @@ export function SearchPageClient() {
       page: Number.isFinite(page) ? page : 1,
     });
   }, [searchParams, setFilters]);
+  const loading = filters.query !== debouncedQuery;
 
-  useEffect(() => {
-    setLoading(true);
-    const id = window.setTimeout(() => setLoading(false), 220);
-    return () => window.clearTimeout(id);
-  }, [
-    debouncedQuery,
-    filters.sort,
-    filters.page,
-    filters.minPrice,
-    filters.maxPrice,
-    filters.categories,
-  ]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -349,7 +338,7 @@ export function SearchPageClient() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="font-layout-heading text-2xl font-semibold text-cb-text-strong">
-              Results for "{filters.query || "all"}"
+              Results for &quot;{filters.query || "all"}&quot;
             </h1>
             <p className="text-sm text-cb-text-muted">{sorted.length} items found</p>
           </div>

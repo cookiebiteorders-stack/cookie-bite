@@ -5,6 +5,12 @@ import type { ModuleKey, PermissionLevel, UserRole } from "@/lib/admin/rbac";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 
 type Matrix = Record<UserRole, Record<ModuleKey, PermissionLevel>>;
+type Assignment = {
+  id: string;
+  email: string;
+  role: UserRole;
+  full_name?: string | null;
+};
 
 const modules: ModuleKey[] = [
   "dashboard",
@@ -28,6 +34,11 @@ const roles: UserRole[] = ["owner", "admin", "staff", "customer"];
 
 export default function AdminRolesPage() {
   const [matrix, setMatrix] = useState<Matrix | null>(null);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<UserRole>("staff");
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,9 +49,16 @@ export default function AdminRolesPage() {
       setError(null);
       try {
         const res = await fetch("/api/admin/roles/matrix", { cache: "no-store" });
-        const d = (await res.json()) as { role_matrix?: Matrix; error?: { en?: string } };
+        const d = (await res.json()) as {
+          role_matrix?: Matrix;
+          assignments?: Assignment[];
+          error?: { en?: string };
+        };
         if (!res.ok) throw new Error(d.error?.en ?? "Failed to load roles");
-        if (!cancelled) setMatrix(d.role_matrix ?? null);
+        if (!cancelled) {
+          setMatrix(d.role_matrix ?? null);
+          setAssignments(d.assignments ?? []);
+        }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
@@ -56,6 +74,40 @@ export default function AdminRolesPage() {
     };
   }, []);
 
+  async function assignRole() {
+    setSaving(true);
+    setNotice(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/roles/matrix", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, role }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        assignment?: Assignment;
+        error?: { en?: string };
+      };
+      if (!res.ok) {
+        throw new Error(data.error?.en ?? "Failed to assign role");
+      }
+      setNotice("Role assigned successfully.");
+      setEmail("");
+      const updated = data.assignment;
+      if (updated) {
+        setAssignments((prev) => {
+          const next = prev.filter((x) => x.id !== updated.id);
+          return [updated, ...next];
+        });
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <section className="space-y-5">
       <header className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
@@ -66,6 +118,76 @@ export default function AdminRolesPage() {
           RBAC matrix visibility for owner governance and permission audits.
         </p>
       </header>
+
+      <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
+        <h2 className="font-serif text-xl font-bold text-cb-text-strong">
+          Assign Role by Email
+        </h2>
+        <p className="mt-1 text-sm text-cb-text-muted">
+          Owner can assign or update role for registered users.
+        </p>
+        <div className="mt-4 grid gap-3 md:grid-cols-[1.5fr_0.8fr_auto]">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="user@example.com"
+            className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
+          />
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value as UserRole)}
+            className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
+          >
+            {roles.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={saving || !email.trim()}
+            onClick={() => void assignRole()}
+            className="rounded-xl border border-cb-border px-4 py-2 text-sm font-semibold disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Assign"}
+          </button>
+        </div>
+        {notice ? <p className="mt-3 text-sm text-emerald-700">{notice}</p> : null}
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-cb-border bg-cb-surface-elevated">
+        <div className="border-b border-cb-border bg-cb-surface-2 px-4 py-3">
+          <h2 className="font-semibold text-cb-text-strong">Current Assignments</h2>
+        </div>
+        <table className="w-full min-w-[760px] text-sm">
+          <thead className="bg-cb-surface-2 text-left text-cb-text-muted">
+            <tr>
+              <th className="px-4 py-3">Name</th>
+              <th className="px-4 py-3">Email</th>
+              <th className="px-4 py-3">Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            {assignments.length === 0 ? (
+              <tr>
+                <td className="px-4 py-3 text-cb-text-muted" colSpan={3}>
+                  No owner/admin/staff users found yet.
+                </td>
+              </tr>
+            ) : (
+              assignments.map((a) => (
+                <tr key={a.id} className="border-t border-cb-border">
+                  <td className="px-4 py-3">{a.full_name ?? "-"}</td>
+                  <td className="px-4 py-3">{a.email}</td>
+                  <td className="px-4 py-3 uppercase">{a.role}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </section>
 
       <div className="overflow-hidden rounded-2xl border border-cb-border bg-cb-surface-elevated">
         <table className="w-full min-w-[900px] text-sm">

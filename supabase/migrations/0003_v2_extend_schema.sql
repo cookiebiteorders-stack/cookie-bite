@@ -144,6 +144,31 @@ create table if not exists public.reviews (
   created_at  timestamptz not null default now()
 );
 
+-- في بعض قواعد البيانات القديمة كان العمود product_slug موجودًا بدل product_id.
+-- نضيف product_id بشكل متوافق مع الإصدار الحالي إن لم يكن موجودًا.
+alter table public.reviews
+  add column if not exists product_id uuid references public.products(id) on delete cascade;
+
+alter table public.reviews
+  add column if not exists is_approved boolean not null default false,
+  add column if not exists is_featured boolean not null default false;
+
+-- محاولة تعبئة product_id من slug إن كانت البيانات القديمة تعتمد product_slug.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema='public' and table_name='reviews' and column_name='product_slug'
+  ) then
+    update public.reviews r
+    set product_id = p.id
+    from public.products p
+    where r.product_id is null
+      and r.product_slug = p.slug;
+  end if;
+end$$;
+
 create index if not exists reviews_product_idx on public.reviews (product_id);
 
 alter table public.reviews enable row level security;

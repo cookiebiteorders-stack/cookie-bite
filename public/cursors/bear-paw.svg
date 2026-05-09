@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+  <!-- مخلب دب — نقطة الضغط عند طرف الإصبع الأوسط العلوي (~12,6) -->
+  <g fill="none">
+    <path
+      fill="#4a2c1a"
+      stroke="#2a1408"
+      stroke-width="1"
+      stroke-linejoin="round"
+      d="M15.5 5.2c.8-.4 1.8-.1 2.3.7.3.5.4 1.1.2 1.7l-.1.3c.9-.5 2-.2 2.6.6.5.7.5 1.6.1 2.3l.2-.1c1-.4 2.1.1 2.6 1.1.4.8.2 1.8-.4 2.4l2.3 6.8c.9 2.6-.5 5.4-3.1 6.2l-8.4 2.8c-2.4.8-5-1-5-3.6v-.2c0-1.1.4-2.1 1.2-2.9l-1.1-1.4c-.6-.8-.7-1.9-.2-2.8l-.3.2c-.9.5-2 .2-2.6-.6-.6-.8-.5-2 .2-2.7l-.2.1c-.9.4-1.9 0-2.4-.9-.5-.9-.2-2 .7-2.5l3.5-2.1c.4-1.5 1.6-2.6 3.2-2.8z"
+    />
+    <ellipse cx="16" cy="21" fill="#6b4530" rx="6.5" ry="5.2" />
+    <ellipse cx="16" cy="21" fill="#8f6b4a" opacity="0.45" rx="3" ry="2.2" />
+    <circle cx="9.5" cy="13" r="3.2" fill="#5c3824" stroke="#3d2418" stroke-width="0.6" />
+    <circle cx="14" cy="9" r="2.8" fill="#5c3824" stroke="#3d2418" stroke-width="0.6" />
+    <circle cx="19.5" cy="8.8" r="2.8" fill="#5c3824" stroke="#3d2418" stroke-width="0.6" />
+    <circle cx="24.5" cy="12.5" r="3" fill="#5c3824" stroke="#3d2418" stroke-width="0.6" />
+  </g>
+</svg>
