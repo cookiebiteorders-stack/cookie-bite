@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { SignOutButton } from "@clerk/nextjs";
 import {
   Bell,
@@ -122,29 +122,36 @@ type TestimonialItem = {
 };
 
 export default async function AccountPage() {
-  const user = await currentUser();
-  if (!user) {
+  const { userId } = await auth();
+  if (!userId) {
     redirect("/sign-in?redirect_url=/account");
   }
 
-  const email = user.primaryEmailAddress?.emailAddress ?? null;
+  let user: Awaited<ReturnType<typeof currentUser>> = null;
+  try {
+    user = await currentUser();
+  } catch (e) {
+    console.error("AccountPage currentUser failed:", e);
+  }
+
+  const email = user?.primaryEmailAddress?.emailAddress ?? null;
   const fullName =
-    [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
-    user.username ||
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+    user?.username ||
     email ||
     "Cookie Bite friend";
 
-  let dbUser = email ? await getUserByClerkId(user.id) : null;
+  let dbUser = await getUserByClerkId(userId);
   if (!dbUser && email) {
     dbUser = await upsertUserFromClerk({
-      clerkUserId: user.id,
+      clerkUserId: userId,
       email,
       fullName,
-      avatarUrl: user.imageUrl,
+      avatarUrl: user?.imageUrl ?? null,
     });
   }
 
-  const accountRole = await resolveAccountRole(dbUser, email, user.id);
+  const accountRole = await resolveAccountRole(dbUser, email, userId);
   const adminSidebarLinks =
     accountRole !== "customer" ? getAccessibleAdminConsoleNav(accountRole) : [];
   const roleCopy = ACCOUNT_ROLE_DASHBOARD_COPY[accountRole];
@@ -260,7 +267,7 @@ export default async function AccountPage() {
           <div className="rounded-3xl bg-cb-surface p-6 shadow-sm ring-1 ring-cb-border">
             <div className="flex items-center gap-4">
               <div className="relative h-14 w-14 overflow-hidden rounded-full bg-cb-peach ring-2 ring-cb-peach-deep">
-                {user.imageUrl ? (
+                {user?.imageUrl ? (
                   <Image
                     src={user.imageUrl}
                     alt={fullName}
@@ -409,7 +416,7 @@ export default async function AccountPage() {
             <div className="grid gap-6 p-6 lg:grid-cols-2 lg:items-center">
               <div>
                 <h1 className="font-serif text-3xl font-semibold text-cb-text-strong">
-                  Welcome back, {user.firstName ?? fullName}!
+                  Welcome back, {user?.firstName ?? fullName}!
                 </h1>
                 <p className="mt-2 text-cb-text-muted">
                   {accountRole !== "customer"
