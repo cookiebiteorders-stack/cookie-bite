@@ -1,4 +1,8 @@
+"use client";
+
 import { Clock, Heart, Leaf, Phone, Truck } from "lucide-react";
+import { useLanguage } from "@/components/providers/language-provider";
+import { BRAND } from "@/lib/brand";
 import { ANNOUNCEMENT_ITEMS } from "@/lib/data";
 
 const iconMap = {
@@ -10,6 +14,7 @@ const iconMap = {
 } as const;
 
 export function AnnouncementBar() {
+  const { t } = useLanguage();
   const tickerItems = ANNOUNCEMENT_ITEMS.filter((item) => item.icon !== "truck");
 
   return (
@@ -28,7 +33,17 @@ export function AnnouncementBar() {
                     className="h-3 w-3 shrink-0 text-cb-terracotta-dark dark:text-cb-terracotta"
                     aria-hidden
                   />
-                  {item.text}
+                  {item.icon === "clock"
+                    ? t("announcement.freshBaked")
+                    : item.icon === "heart"
+                      ? t("announcement.giftWrapping")
+                      : item.icon === "leaf"
+                        ? t("announcement.naturalIngredients")
+                        : item.icon === "phone"
+                          ? t("announcement.whatsapp", {
+                              phone: BRAND.phoneDisplay,
+                            })
+                          : ""}
                 </span>
               );
             })}

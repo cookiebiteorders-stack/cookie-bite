@@ -1,9 +1,13 @@
+"use client";
+
 import { Instagram, Facebook, MessageCircle, Heart } from "lucide-react";
+import { useLanguage } from "@/components/providers/language-provider";
 import { BRAND } from "@/lib/brand";
 import { SITE } from "@/lib/data";
 
 export function MobileFooter() {
   const wa = BRAND.whatsappE164;
+  const { t } = useLanguage();
 
   return (
     <footer className="mobile-footer">
@@ -14,7 +18,7 @@ export function MobileFooter() {
           target="_blank"
           rel="noreferrer"
           className="mobile-footer__social-btn"
-          aria-label="Instagram"
+          aria-label={t("footer.instagram")}
         >
           <Instagram className="h-5 w-5" />
         </a>
@@ -23,7 +27,7 @@ export function MobileFooter() {
           target="_blank"
           rel="noreferrer"
           className="mobile-footer__social-btn"
-          aria-label="Facebook"
+          aria-label={t("footer.facebook")}
         >
           <Facebook className="h-5 w-5" />
         </a>
@@ -32,7 +36,7 @@ export function MobileFooter() {
           target="_blank"
           rel="noreferrer"
           className="mobile-footer__social-btn"
-          aria-label="TikTok"
+          aria-label={t("footer.tiktok")}
         >
           <span className="text-xs font-bold">TT</span>
         </a>
@@ -41,7 +45,7 @@ export function MobileFooter() {
           target="_blank"
           rel="noreferrer"
           className="mobile-footer__social-btn"
-          aria-label="WhatsApp"
+          aria-label={t("footer.whatsapp")}
         >
           <MessageCircle className="h-5 w-5" />
         </a>
@@ -51,7 +55,9 @@ export function MobileFooter() {
       <div className="mobile-footer__copyright">
         <span>© {new Date().getFullYear()} {SITE.name}</span>
         <span className="mobile-footer__heart-row">
-          Made with <Heart className="h-3 w-3 text-cb-terracotta-dark" aria-hidden /> in Cairo
+          {t("footer.madeWith")}{" "}
+          <Heart className="h-3 w-3 text-cb-terracotta-dark" aria-hidden />{" "}
+          {t("footer.inLocation", { location: "Cairo" })}
         </span>
       </div>
     </footer>

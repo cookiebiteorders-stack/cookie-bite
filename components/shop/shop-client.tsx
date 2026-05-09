@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PRODUCTS, type Product } from "@/lib/data";
 import { ProductCard } from "@/components/product/product-card";
 import { SectionHeading } from "@/components/sections/section-heading";
+import { useLanguage } from "@/components/providers/language-provider";
 import { buttonClassName } from "@/components/ui/button";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { cn } from "@/lib/utils";
@@ -44,9 +45,10 @@ type ShopProduct = Product & {
   createdAt: string;
 };
 
-function normalizeProduct(p: ApiProduct): ShopProduct {
+function normalizeProduct(p: ApiProduct, descFallback: string): ShopProduct {
   const title = p.title_en || p.title_ar || p.name;
-  const description = p.description_en || p.description_ar || p.description || "Cookie Bite product";
+  const description =
+    p.description_en || p.description_ar || p.description || descFallback;
   const mainImage =
     p.images?.find((img) => typeof img?.url === "string" && img.url)?.url ||
     p.image_url ||
@@ -96,6 +98,7 @@ async function fetchAllProducts(): Promise<ApiProduct[]> {
 }
 
 export function ShopClient() {
+  const { t } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -129,7 +132,9 @@ export function ShopClient() {
         setError(null);
         const rows = await fetchAllProducts();
         if (!active) return;
-        const normalized = rows.map(normalizeProduct);
+        const normalized = rows.map((row) =>
+          normalizeProduct(row, t("product.fallbackDescription")),
+        );
         setCatalog(normalized);
         const minParam = Number(searchParams.get("min"));
         const maxParam = Number(searchParams.get("max"));
@@ -139,10 +144,10 @@ export function ShopClient() {
         if (!active) return;
         const message =
           e instanceof TypeError && /failed to fetch/i.test(e.message)
-            ? "Network issue while loading products. Please retry."
+            ? t("pages.shop.errorNetwork")
             : e instanceof Error
               ? e.message
-              : "Failed to load products";
+              : t("pages.shop.errorLoad");
         setError(message);
         setCatalog([]);
       } finally {
@@ -154,7 +159,7 @@ export function ShopClient() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [t]);
 
   const availableCategories = useMemo(
     () =>
@@ -275,9 +280,9 @@ export function ShopClient() {
         <SectionHeading
           align="left"
           className="mb-8 text-left"
-          eyebrow="Shop"
-          title="Find your perfect bite"
-          subtitle="Smart filters: category, search, price range, badges, and sort — all in one place."
+          eyebrow={t("pages.shop.eyebrow")}
+          title={t("pages.shop.title")}
+          subtitle={t("pages.shop.subtitle")}
         />
 
         <div className="mb-5 grid gap-3 rounded-2xl bg-cb-surface-elevated p-4 ring-1 ring-cb-border shadow-sm dark:bg-cb-surface-2 dark:ring-cb-border/80 sm:grid-cols-2 lg:grid-cols-4">
@@ -285,7 +290,7 @@ export function ShopClient() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search cookies..."
+            placeholder={t("pages.shop.searchPlaceholder")}
             className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm text-cb-text-strong outline-none ring-cb-focus placeholder:text-cb-text-muted/90 focus:ring-2 dark:border-cb-border-strong dark:bg-cb-cream-2 dark:text-cb-text-strong dark:placeholder:text-cb-text-muted"
           />
           <select
@@ -293,10 +298,10 @@ export function ShopClient() {
             onChange={(e) => setSort((e.target.value as SortMode) || "newest")}
             className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm text-cb-text-strong outline-none focus:ring-2 focus:ring-cb-focus dark:border-cb-border-strong dark:bg-cb-cream-2 dark:text-cb-text-strong"
           >
-            <option value="newest">Newest</option>
-            <option value="popular">Popular</option>
-            <option value="price_asc">Price: Low to High</option>
-            <option value="price_desc">Price: High to Low</option>
+            <option value="newest">{t("pages.shop.sortNewest")}</option>
+            <option value="popular">{t("pages.shop.sortPopular")}</option>
+            <option value="price_asc">{t("pages.shop.sortPriceAsc")}</option>
+            <option value="price_desc">{t("pages.shop.sortPriceDesc")}</option>
           </select>
           <div className="flex items-center gap-2">
             <input
@@ -305,7 +310,7 @@ export function ShopClient() {
               max={priceBounds.max}
               value={minPrice ?? ""}
               onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : null)}
-              placeholder="Min EGP"
+              placeholder={t("pages.shop.minEgp")}
               className="w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm text-cb-text-strong outline-none focus:ring-2 focus:ring-cb-focus dark:border-cb-border-strong dark:bg-cb-cream-2 dark:text-cb-text-strong dark:placeholder:text-cb-text-muted"
             />
             <input
@@ -314,12 +319,12 @@ export function ShopClient() {
               max={priceBounds.max}
               value={maxPrice ?? ""}
               onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : null)}
-              placeholder="Max EGP"
+              placeholder={t("pages.shop.maxEgp")}
               className="w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm text-cb-text-strong outline-none focus:ring-2 focus:ring-cb-focus dark:border-cb-border-strong dark:bg-cb-cream-2 dark:text-cb-text-strong dark:placeholder:text-cb-text-muted"
             />
           </div>
           <button type="button" onClick={clearAll} className={buttonClassName("outline", "w-full")}>
-            Reset filters
+            {t("pages.shop.resetFilters")}
           </button>
         </div>
 
@@ -342,7 +347,7 @@ export function ShopClient() {
                   : "bg-cb-surface text-cb-text-strong ring-1 ring-cb-border hover:bg-cb-peach hover:ring-cb-border-strong",
               )}
             >
-              {c}
+              {c === "All" ? t("pages.shop.categoryAll") : c}
             </button>
           ))}
         </div>
@@ -350,11 +355,11 @@ export function ShopClient() {
         <div className="mb-10 rounded-2xl bg-cb-surface p-4 ring-1 ring-cb-border/80">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-semibold text-cb-text-strong">
-              Showing {filtered.length} of {catalog.length} products
+              {t("pages.shop.showing", { filtered: filtered.length, total: catalog.length })}
             </p>
             <div className="flex items-center gap-2">
               <span className="rounded-full bg-cb-peach px-2.5 py-1 text-xs font-bold text-cb-text-strong ring-1 ring-cb-border">
-                {activeFilterCount} active
+                {t("pages.shop.activeCount", { count: activeFilterCount })}
               </span>
               {activeFilterCount > 0 ? (
                 <button
@@ -362,7 +367,7 @@ export function ShopClient() {
                   onClick={clearAll}
                   className="rounded-full px-2.5 py-1 text-xs font-bold text-cb-terracotta-dark ring-1 ring-cb-border transition hover:bg-cb-peach"
                 >
-                  Clear all
+                  {t("pages.shop.clearAll")}
                 </button>
               ) : null}
             </div>
@@ -379,7 +384,7 @@ export function ShopClient() {
                   : "bg-cb-surface text-cb-text-strong ring-cb-border hover:bg-cb-peach",
               )}
             >
-              Best sellers only
+              {t("pages.shop.bestSellersOnly")}
             </button>
             <button
               type="button"
@@ -391,7 +396,7 @@ export function ShopClient() {
                   : "bg-cb-surface text-cb-text-strong ring-cb-border hover:bg-cb-peach",
               )}
             >
-              In stock only
+              {t("pages.shop.inStockOnly")}
             </button>
             <div className="h-5 w-px bg-cb-border/70" aria-hidden />
             {(["all", "bestseller", "new", "trending"] as const).map((b) => (
@@ -406,13 +411,21 @@ export function ShopClient() {
                     : "bg-cb-surface text-cb-text-strong ring-cb-border hover:bg-cb-peach",
                 )}
               >
-                {b === "all" ? "All badges" : b}
+                {b === "all"
+                  ? t("pages.shop.allBadges")
+                  : b === "bestseller"
+                    ? t("product.badgeBestseller")
+                    : b === "new"
+                      ? t("product.badgeNew")
+                      : t("product.badgeTrending")}
               </button>
             ))}
           </div>
         </div>
 
-        {loading ? <p className="py-12 text-center text-cb-text-muted">Loading cookies...</p> : null}
+        {loading ? (
+          <p className="py-12 text-center text-cb-text-muted">{t("pages.shop.loadingCookies")}</p>
+        ) : null}
         {error ? <p className="py-4 text-center text-sm text-red-600">{error}</p> : null}
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -423,7 +436,7 @@ export function ShopClient() {
 
         {!loading && filtered.length === 0 ? (
           <p className="py-16 text-center text-cb-text">
-            No cookies match these filters — try another category.
+            {t("pages.shop.noMatch")}
           </p>
         ) : null}
 

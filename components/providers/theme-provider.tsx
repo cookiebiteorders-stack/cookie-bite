@@ -4,10 +4,12 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
+import { THEME_COOKIE, writeClientPrefCookie } from "@/lib/preferences/client-cookies";
 
 type Theme = "light" | "dark" | "system";
 
@@ -48,9 +50,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const resolvedTheme: "light" | "dark" =
     theme === "system" ? systemTheme : theme;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     applyThemeClass(resolvedTheme);
-  }, [resolvedTheme]);
+    writeClientPrefCookie(THEME_COOKIE, theme);
+  }, [resolvedTheme, theme]);
 
   useEffect(() => {
     if (theme !== "system") return;

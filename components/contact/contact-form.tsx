@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/components/providers/language-provider";
 
 const inputClasses =
   "w-full rounded-2xl border-2 border-cb-border bg-cb-surface px-4 py-3.5 text-base text-cb-text placeholder:text-cb-text-muted/70 outline-none transition-colors focus-visible:border-cb-terracotta-dark focus-visible:ring-2 focus-visible:ring-cb-focus focus-visible:ring-offset-2 focus-visible:ring-offset-background min-h-[2.75rem]";
@@ -12,6 +13,7 @@ const textareaClasses =
 type FormStatus = "idle" | "loading" | "sent" | "error";
 
 export function ContactForm() {
+  const { t } = useLanguage();
   const [status, setStatus] = useState<FormStatus>("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -36,22 +38,22 @@ export function ContactForm() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.ok === false) {
-        throw new Error(data.error ?? "Could not send message");
+        throw new Error(data.error ?? t("pages.contactForm.errorGeneric"));
       }
       setStatus("sent");
       e.currentTarget.reset();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Network error");
+      setError(err instanceof Error ? err.message : t("pages.contactForm.errorNetwork"));
       setStatus("error");
     }
   }
 
   const buttonLabel =
     status === "loading"
-      ? "Sending…"
+      ? t("pages.contactForm.sending")
       : status === "sent"
-        ? "Sent — thank you!"
-        : "Send message";
+        ? t("pages.contactForm.sent")
+        : t("pages.contactForm.send");
 
   return (
     <form
@@ -64,13 +66,13 @@ export function ContactForm() {
             htmlFor="contact-name"
             className="mb-1.5 block text-sm font-semibold text-cb-text-strong"
           >
-            Name
+            {t("pages.contactForm.name")}
           </label>
           <input
             id="contact-name"
             required
             name="name"
-            placeholder="Your full name"
+            placeholder={t("pages.contactForm.namePh")}
             className={inputClasses}
           />
         </div>
@@ -79,14 +81,14 @@ export function ContactForm() {
             htmlFor="contact-email"
             className="mb-1.5 block text-sm font-semibold text-cb-text-strong"
           >
-            Email
+            {t("pages.contactForm.email")}
           </label>
           <input
             id="contact-email"
             required
             type="email"
             name="email"
-            placeholder="you@example.com"
+            placeholder={t("pages.contactForm.emailPh")}
             className={inputClasses}
           />
         </div>
@@ -96,13 +98,13 @@ export function ContactForm() {
           htmlFor="contact-subject"
           className="mb-1.5 block text-sm font-semibold text-cb-text-strong"
         >
-          Subject
+          {t("pages.contactForm.subject")}
         </label>
         <input
           id="contact-subject"
           required
           name="subject"
-          placeholder="How can we help?"
+          placeholder={t("pages.contactForm.subjectPh")}
           className={inputClasses}
         />
       </div>
@@ -111,14 +113,14 @@ export function ContactForm() {
           htmlFor="contact-message"
           className="mb-1.5 block text-sm font-semibold text-cb-text-strong"
         >
-          Message
+          {t("pages.contactForm.message")}
         </label>
         <textarea
           id="contact-message"
           required
           name="message"
           rows={5}
-          placeholder="Tell us a little about your order, gift, or question…"
+          placeholder={t("pages.contactForm.messagePh")}
           className={textareaClasses}
         />
       </div>

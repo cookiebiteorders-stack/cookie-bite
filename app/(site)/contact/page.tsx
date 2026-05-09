@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { ContactForm } from "@/components/contact/contact-form";
-import { SectionHeading } from "@/components/sections/section-heading";
-import { BRAND } from "@/lib/brand";
+import { ContactPageBody } from "@/components/pages/contact-page-body";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
 
@@ -26,41 +24,5 @@ export const metadata: Metadata = {
 };
 
 export default function ContactPage() {
-  const phoneHref = `+${BRAND.whatsappE164}`;
-
-  return (
-    <div className="bg-cb-cream pb-24 pt-12">
-      <div className="mx-auto grid max-w-7xl gap-12 cb-gutter lg:grid-cols-2">
-        <div>
-          <SectionHeading
-            align="left"
-            className="text-left"
-            eyebrow="Contact"
-            title="We’d love to hear from you"
-            subtitle="Questions about gifting, wholesale, or a custom order? Send a note — our team replies within one business day."
-          />
-          <ul className="mt-8 space-y-3 text-cb-text font-medium">
-            <li>
-              <a
-                href={`mailto:${BRAND.ordersEmail}`}
-                className="hover:text-cb-terracotta-dark hover:underline"
-              >
-                {BRAND.ordersEmail}
-              </a>
-            </li>
-            <li>
-              <a
-                href={`tel:${phoneHref}`}
-                className="hover:text-cb-terracotta-dark hover:underline"
-              >
-                {BRAND.phoneDisplay}
-              </a>
-            </li>
-            <li>{BRAND.location}</li>
-          </ul>
-        </div>
-        <ContactForm />
-      </div>
-    </div>
-  );
+  return <ContactPageBody />;
 }

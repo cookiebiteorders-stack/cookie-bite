@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { Mail } from "lucide-react";
 import { motion } from "motion/react";
+import { useLanguage } from "@/components/providers/language-provider";
 import { spring } from "@/lib/motion/presets";
 
 type Status = "idle" | "loading" | "sent" | "error";
 
 export function NewsletterBanner() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
 
@@ -30,12 +32,12 @@ export function NewsletterBanner() {
 
   const buttonLabel =
     status === "loading"
-      ? "…"
+      ? t("newsletter.loading")
       : status === "sent"
-        ? "You’re in"
+        ? t("newsletter.sent")
         : status === "error"
-          ? "Try again"
-          : "Subscribe";
+          ? t("newsletter.errorRetry")
+          : t("newsletter.subscribe");
 
   return (
     <section className="mx-auto max-w-7xl cb-gutter pb-16 lg:pb-20">
@@ -63,11 +65,10 @@ export function NewsletterBanner() {
               </span>
               <div>
                 <h2 className="font-serif text-2xl font-semibold leading-tight sm:text-3xl">
-                  Letters from the oven — not a sales funnel.
+                  {t("newsletter.title")}
                 </h2>
                 <p className="mt-3 text-sm leading-relaxed text-white/85 sm:text-base">
-                  New flavors, pop-up collabs, and the occasional “we stayed late
-                  for this batch” story. Unsubscribe anytime; we’ll still like you.
+                  {t("newsletter.body")}
                 </p>
               </div>
             </div>
@@ -77,7 +78,7 @@ export function NewsletterBanner() {
             className="flex w-full flex-col gap-3 sm:flex-row sm:items-stretch lg:flex-col xl:flex-row xl:items-center"
           >
             <label htmlFor="newsletter-email" className="sr-only">
-              البريد الإلكتروني
+              {t("newsletter.emailLabel")}
             </label>
             <input
               id="newsletter-email"
@@ -85,7 +86,7 @@ export function NewsletterBanner() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t("newsletter.placeholder")}
               className="cb-touch-manipulation min-h-[3rem] w-full flex-1 rounded-xl border border-white/35 bg-white/12 px-4 text-base text-white placeholder:text-white/70 outline-none transition duration-300 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-cb-terracotta-dark"
             />
             <motion.button

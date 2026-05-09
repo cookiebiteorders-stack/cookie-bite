@@ -3,6 +3,7 @@
 import { Moon, Sun } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTheme } from "@/components/providers/theme-provider";
+import { useLanguage } from "@/components/providers/language-provider";
 import { LokiLensEngine } from "@/lib/effects/loki-lens";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +12,7 @@ const btn =
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
+  const { t } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [running, setRunning] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -56,7 +58,7 @@ export function ThemeToggle({ className }: { className?: string }) {
         data-loki-skip-init="true"
         onClick={handleToggle}
         disabled={running}
-        aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        aria-label={isDark ? t("actions.themeToLight") : t("actions.themeToDark")}
       >
         {isDark ? (
           <Sun className="h-[1.15rem] w-[1.15rem]" aria-hidden />

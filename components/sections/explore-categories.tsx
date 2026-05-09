@@ -7,31 +7,40 @@ import { motion } from "motion/react";
 import { CATEGORY_CARDS } from "@/lib/data";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { ViewReveal } from "@/components/motion/view-reveal";
+import { useLanguage } from "@/components/providers/language-provider";
 import { duration, easeSoft, spring } from "@/lib/motion/presets";
 import { cn } from "@/lib/utils";
 
 const cardVariants = ["fade-up", "slide-right", "zoom-soft", "tilt-up"] as const;
 
+/** ترتيب يطابق `CATEGORY_CARDS` في `lib/data` */
+const EXPLORE_CARD_KEYS = ["classic", "seasonal", "gifts", "bites"] as const;
+
 export function ExploreCategories() {
+  const { t } = useLanguage();
+
   return (
     <section className="cb-grain relative bg-cb-cream py-16 md:py-24 lg:py-28">
       <div className="relative mx-auto max-w-7xl cb-gutter">
         <ViewReveal variant="fade" className="block">
           <SectionHeading
             variant="editorial"
-            eyebrow="Collections"
-            title="Four doors in. One kitchen out back."
-            subtitle="Each link opens a different mood — classic comfort, seasonal surprise, or a box that says everything without a speech."
+            eyebrow={t("explore.eyebrow")}
+            title={t("explore.title")}
+            subtitle={t("explore.subtitle")}
           />
         </ViewReveal>
         <div className="grid auto-rows-auto gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-6">
           {CATEGORY_CARDS.map((card, i) => {
+            const cardKey = EXPLORE_CARD_KEYS[i];
+            const title = t(`explore.cards.${cardKey}.title`);
+            const subtitle = t(`explore.cards.${cardKey}.subtitle`);
             const lead = i === 0;
             const wide = i === 3;
             const reveal = cardVariants[i % cardVariants.length];
             return (
               <ViewReveal
-                key={card.title}
+                key={card.href}
                 variant={reveal}
                 staggerIndex={i}
                 className={cn(
@@ -62,7 +71,7 @@ export function ExploreCategories() {
                     >
                       <Image
                         src={card.image}
-                        alt={card.title}
+                        alt={title}
                         fill
                         className="object-cover transition-transform duration-[680ms] ease-[cubic-bezier(0.33,1,0.68,1)] group-hover:scale-[1.05]"
                         sizes={
@@ -78,10 +87,10 @@ export function ExploreCategories() {
                       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 text-white sm:p-6">
                         <div className="max-w-[min(100%,20rem)]">
                           <p className="font-serif text-xl font-semibold leading-tight [text-shadow:0_2px_12px_rgba(0,0,0,0.45)] sm:text-2xl">
-                            {card.title}
+                            {title}
                           </p>
                           <p className="mt-1.5 text-sm font-medium leading-snug text-white/95 [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]">
-                            {card.subtitle}
+                            {subtitle}
                           </p>
                         </div>
                         <motion.span

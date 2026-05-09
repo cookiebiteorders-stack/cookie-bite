@@ -2,33 +2,34 @@
 
 import { Leaf, ShieldCheck, Sparkles, Truck } from "lucide-react";
 import { ViewReveal } from "@/components/motion/view-reveal";
+import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 
-const items = [
+const itemDefs = [
   {
-    title: "Premium ingredients",
-    body: "Real butter, couverture chocolate, and no shortcuts.",
+    titleKey: "trustBar.ingredientsTitle",
+    bodyKey: "trustBar.ingredientsBody",
     icon: Leaf,
     accent: "from-cb-mint/35 to-transparent dark:from-cb-mint/25",
     reveal: "fade-up" as const,
   },
   {
-    title: "Baked with love",
-    body: "Small batches, careful timing, human eyes on every tray.",
+    titleKey: "trustBar.bakedTitle",
+    bodyKey: "trustBar.bakedBody",
     icon: Sparkles,
     accent: "from-cb-pink/40 to-transparent dark:from-cb-pink/25",
     reveal: "slide-left" as const,
   },
   {
-    title: "Delivered fresh",
-    body: "Packed the same day with insulated options in season.",
+    titleKey: "trustBar.deliveredTitle",
+    bodyKey: "trustBar.deliveredBody",
     icon: Truck,
     accent: "from-cb-peach to-transparent dark:from-cb-peach-deep/80",
     reveal: "zoom-soft" as const,
   },
   {
-    title: "Trusted quality",
-    body: "Consistent recipes, transparent sourcing, happy repeats.",
+    titleKey: "trustBar.qualityTitle",
+    bodyKey: "trustBar.qualityBody",
     icon: ShieldCheck,
     accent: "from-cb-mint/25 to-transparent dark:from-cb-mint/20",
     reveal: "tilt-up" as const,
@@ -36,6 +37,8 @@ const items = [
 ];
 
 export function TrustBar() {
+  const { t } = useLanguage();
+
   return (
     <section className="relative border-y border-cb-peach-deep bg-cb-surface-2 py-12 md:py-16 dark:border-cb-border/50">
       <div
@@ -48,9 +51,9 @@ export function TrustBar() {
       />
       <div className="relative mx-auto max-w-7xl cb-gutter">
         <div className="grid gap-y-10 sm:grid-cols-2 sm:gap-x-8 lg:grid-cols-4 lg:gap-x-6">
-          {items.map((item, i) => (
+          {itemDefs.map((item, i) => (
             <ViewReveal
-              key={item.title}
+              key={item.titleKey}
               variant={item.reveal}
               staggerIndex={i}
               className={cn(
@@ -72,10 +75,10 @@ export function TrustBar() {
                 </div>
                 <div className="min-w-0 pt-0.5">
                   <p className="font-semibold leading-snug text-cb-text-strong">
-                    {item.title}
+                    {t(item.titleKey)}
                   </p>
                   <p className="mt-2 text-sm leading-relaxed text-cb-text-muted">
-                    {item.body}
+                    {t(item.bodyKey)}
                   </p>
                 </div>
               </div>

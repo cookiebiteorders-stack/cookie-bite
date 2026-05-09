@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export type NavDropdownItem = { href: string; label: string };
 
 type NavDropdownProps = {
-  label: string;
+  label: ReactNode;
   items: NavDropdownItem[];
   className?: string;
 };

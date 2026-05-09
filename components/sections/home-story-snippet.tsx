@@ -7,10 +7,13 @@ import { motion } from "motion/react";
 import { IMAGES } from "@/lib/data";
 import { buttonClassName } from "@/components/ui/button";
 import { ViewReveal } from "@/components/motion/view-reveal";
+import { useLanguage } from "@/components/providers/language-provider";
 import { duration, easeSoft, spring } from "@/lib/motion/presets";
 import { cn } from "@/lib/utils";
 
 export function HomeStorySnippet() {
+  const { t } = useLanguage();
+
   return (
     <section className="relative overflow-hidden bg-cb-surface py-16 md:py-20 lg:py-24 dark:bg-cb-surface-2">
       <div
@@ -40,7 +43,7 @@ export function HomeStorySnippet() {
               >
                 <Image
                   src={IMAGES.storyMug}
-                  alt="Cookies served alongside coffee"
+                  alt={t("homeStory.imageAlt")}
                   fill
                   className="object-cover"
                   sizes="(max-width:1024px) 100vw, 42vw"
@@ -53,24 +56,22 @@ export function HomeStorySnippet() {
             <ViewReveal variant="fade-up" delay={0.05}>
               <p className="inline-flex max-w-full flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-cb-terracotta-dark dark:text-cb-terracotta">
                 <span className="rounded-full bg-cb-peach/90 px-3 py-1 ring-1 ring-cb-peach-deep/50 dark:bg-cb-peach/25 dark:ring-cb-border">
-                  Kitchen notes
+                  {t("homeStory.badge")}
                 </span>
-                <span className="text-cb-text-muted">New Cairo</span>
+                <span className="text-cb-text-muted">{t("homeStory.location")}</span>
               </p>
             </ViewReveal>
             <ViewReveal variant="slide-left" delay={0.1}>
               <h2 className="max-w-xl font-serif text-[2.1rem] font-semibold leading-[1.08] text-cb-text-strong sm:text-4xl lg:text-[2.65rem]">
-                We don’t rush the dough.
+                {t("homeStory.titleMain")}
                 <span className="mt-2 block text-[1.65rem] font-normal italic text-cb-terracotta-dark sm:text-3xl dark:text-cb-terracotta">
-                  We rush to the door when it’s ready.
+                  {t("homeStory.titleItalic")}
                 </span>
               </h2>
             </ViewReveal>
             <ViewReveal variant="fade" delay={0.15}>
               <p className="max-w-lg text-base leading-relaxed text-cb-text sm:text-lg">
-                Every box is taped by hand, every ribbon tucked like we’re sending
-                something we’d want to open ourselves. If it isn’t good enough for
-                our table, it doesn’t leave the counter.
+                {t("homeStory.body")}
               </p>
             </ViewReveal>
             <ViewReveal variant="fade-up" delay={0.2}>
@@ -86,7 +87,7 @@ export function HomeStorySnippet() {
                     "inline-flex w-fit items-center gap-2 border-b-2 border-cb-terracotta-dark/30 px-0 pb-1 text-cb-terracotta-dark hover:translate-x-0.5 hover:border-cb-terracotta-dark hover:bg-transparent dark:border-cb-terracotta/35 dark:text-cb-terracotta",
                   )}
                 >
-                  Read how we work
+                  {t("homeStory.cta")}
                   <ChevronRight className="h-4 w-4" aria-hidden />
                 </Link>
               </motion.div>

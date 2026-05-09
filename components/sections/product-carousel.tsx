@@ -9,11 +9,13 @@ import { ViewReveal } from "@/components/motion/view-reveal";
 import { PRODUCTS } from "@/lib/data";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { buttonClassName } from "@/components/ui/button";
+import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 
 const featured = PRODUCTS;
 
 export function ProductCarousel() {
+  const { t } = useLanguage();
   const [index, setIndex] = useState(0);
   const hasFeatured = featured.length > 0;
 
@@ -45,17 +47,17 @@ export function ProductCarousel() {
               align="center"
               variant="editorial"
               className="mb-0 max-w-xl text-center"
-              eyebrow="The counter"
+              eyebrow={t("carousel.eyebrow")}
               title={
                 <>
-                  Flavors people{" "}
+                  {t("carousel.titleBefore")}
                   <span className="italic text-cb-terracotta-dark dark:text-cb-terracotta">
-                    steal from the box
+                    {t("carousel.titleAccent")}
                   </span>
-                  .
+                  {t("carousel.titleAfter")}
                 </>
               }
-              subtitle="Not a carousel of everything — just the ones we’d slide across the table first."
+              subtitle={t("carousel.subtitle")}
             />
           </ViewReveal>
           <div className="flex gap-2">
@@ -64,7 +66,7 @@ export function ProductCarousel() {
               onClick={prev}
               disabled={!hasFeatured}
               className="cb-touch-manipulation flex h-11 w-11 items-center justify-center rounded-lg border border-cb-peach-deep text-cb-terracotta-dark transition-all duration-300 ease-[cubic-bezier(0.33,1,0.68,1)] hover:-translate-y-px hover:bg-cb-peach/70 hover:shadow-sm dark:border-cb-border dark:text-cb-terracotta dark:hover:bg-cb-peach/20"
-              aria-label="Previous"
+              aria-label={t("actionsPrevNext.previous")}
             >
               <ChevronLeft className="h-5 w-5" aria-hidden />
             </button>
@@ -73,7 +75,7 @@ export function ProductCarousel() {
               onClick={next}
               disabled={!hasFeatured}
               className="cb-touch-manipulation flex h-11 w-11 items-center justify-center rounded-lg border border-cb-peach-deep text-cb-terracotta-dark transition-all duration-300 ease-[cubic-bezier(0.33,1,0.68,1)] hover:-translate-y-px hover:bg-cb-peach/70 hover:shadow-sm dark:border-cb-border dark:text-cb-terracotta dark:hover:bg-cb-peach/20"
-              aria-label="Next"
+              aria-label={t("actionsPrevNext.next")}
             >
               <ChevronRight className="h-5 w-5" aria-hidden />
             </button>
@@ -122,11 +124,10 @@ export function ProductCarousel() {
           </AnimatePresence>
           <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-cb-terracotta-dark/35 bg-gradient-to-br from-cb-mint/40 via-cb-cream to-cb-peach/50 p-8 text-center lg:min-h-[min(100%,22rem)]">
             <p className="font-serif text-2xl font-semibold leading-snug text-cb-text-strong">
-              Still warm on some days — always honest on the label.
+              {t("carousel.sideTitle")}
             </p>
             <p className="mt-4 text-sm leading-relaxed text-cb-text">
-              Start with what people reorder, then wander the menu when you’re
-              feeling brave.
+              {t("carousel.sideBody")}
             </p>
             <Link
               href="/shop"
@@ -135,7 +136,7 @@ export function ProductCarousel() {
                 "mt-8 justify-center cb-shadow-editorial-hover",
               )}
             >
-              Browse the full lineup
+              {t("carousel.cta")}
             </Link>
           </div>
         </div>

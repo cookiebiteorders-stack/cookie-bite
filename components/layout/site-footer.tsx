@@ -1,79 +1,96 @@
+"use client";
+
 import Link from "next/link";
 import { Facebook, Heart, Instagram, Mail, MessageCircle } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { FooterToolbar } from "@/components/ui/footer-toolbar";
+import { useLanguage } from "@/components/providers/language-provider";
 import { BRAND } from "@/lib/brand";
 import { NAV_LINKS, SITE } from "@/lib/data";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
-
-const FOOTER_BLURB =
-  "Cookie Bite bakes small-batch cookies in Fifth Settlement, New Cairo — real butter, quality chocolate, and packaging made for gifting. Every box is assembled by hand so your moments taste as good as they feel.";
-
-const linkSections = [
-  {
-    id: "shop",
-    title: "Shop",
-    items: NAV_LINKS.filter((l) =>
-      ["/", "/shop", "/our-cookies", "/gift-box"].includes(l.href),
-    ),
-  },
-  {
-    id: "company",
-    title: "Company",
-    items: NAV_LINKS.filter((l) => ["/our-story", "/contact"].includes(l.href)),
-  },
-  {
-    id: "support",
-    title: "Customer care",
-    items: [
-      { href: "/help/faq", label: "FAQ" },
-      { href: "/contact", label: "Contact & shipping" },
-      { href: "/help/returns", label: "Returns & refunds" },
-      { href: "/privacy", label: "Privacy policy" },
-      { href: "/terms", label: "Terms & conditions" },
-    ],
-  },
-  {
-    id: "account",
-    title: "Account",
-    items: [
-      { href: "/account", label: "Dashboard" },
-      { href: "/sign-in", label: "Sign in" },
-      { href: "/sign-up", label: "Create account" },
-    ],
-  },
-  {
-    id: "visit",
-    title: "Visit",
-    items: [
-      { href: "/shop", label: "New arrivals" },
-      { href: "/gift-box", label: "Gift boxes" },
-      { href: "/our-cookies", label: "All flavors" },
-    ],
-  },
-  {
-    id: "hours",
-    title: "Hours",
-    items: [
-      { href: "/contact", label: "Sun–Thu · 10am – 8pm" },
-      {
-        href: `mailto:${BRAND.ordersEmail}`,
-        label: BRAND.ordersEmail,
-      },
-      {
-        href: `tel:+${siteConfig.whatsappNumber || BRAND.whatsappE164}`,
-        label: `+${siteConfig.whatsappNumber || BRAND.whatsappE164}`,
-      },
-    ],
-  },
-];
 
 const socialUnderline =
   "cb-touch-manipulation flex h-11 w-11 items-center justify-center rounded-lg border border-cb-peach-deep/80 bg-cb-cream/80 text-cb-terracotta-dark transition-all duration-200 hover:-translate-y-px hover:border-cb-terracotta-dark/50 hover:bg-cb-cream hover:shadow-sm dark:border-cb-border dark:bg-cb-surface-2/80 dark:text-cb-terracotta";
 
 export function SiteFooter() {
   const wa = siteConfig.whatsappNumber || BRAND.whatsappE164;
+  const { t } = useLanguage();
+  const linkSections = [
+    {
+      id: "shop",
+      title: t("footer.shop"),
+      items: NAV_LINKS.filter((l) =>
+        ["/", "/shop", "/our-cookies", "/gift-box"].includes(l.href),
+      ).map((link) => ({
+        ...link,
+        label:
+          link.label === "Home"
+            ? t("tabs.home")
+            : link.label === "Shop"
+              ? t("tabs.shop")
+              : link.label === "Gifts"
+                ? t("tabs.gifts")
+                : link.label === "Our Cookies"
+                  ? t("nav.ourCookies")
+                  : link.label,
+      })),
+    },
+    {
+      id: "company",
+      title: t("footer.company"),
+      items: NAV_LINKS.filter((l) => ["/our-story", "/contact"].includes(l.href)).map(
+        (link) => ({
+          ...link,
+          label: link.label === "Our Story" ? t("footer.ourStory") : t("nav.contact"),
+        }),
+      ),
+    },
+    {
+      id: "support",
+      title: t("footer.customerCare"),
+      items: [
+        { href: "/help/faq", label: t("nav.faq") },
+        { href: "/contact", label: t("footer.contactShipping") },
+        { href: "/help/returns", label: t("footer.returnsRefunds") },
+        { href: "/privacy", label: t("footer.privacyPolicy") },
+        { href: "/terms", label: t("footer.termsConditions") },
+      ],
+    },
+    {
+      id: "account",
+      title: t("footer.account"),
+      items: [
+        { href: "/account", label: t("footer.dashboard") },
+        { href: "/sign-in", label: t("actions.signIn") },
+        { href: "/sign-up", label: t("footer.createAccount") },
+      ],
+    },
+    {
+      id: "visit",
+      title: t("footer.visit"),
+      items: [
+        { href: "/shop", label: t("footer.newArrivals") },
+        { href: "/gift-box", label: t("footer.giftBoxes") },
+        { href: "/our-cookies", label: t("footer.allFlavors") },
+      ],
+    },
+    {
+      id: "hours",
+      title: t("footer.hours"),
+      items: [
+        { href: "/contact", label: t("footer.hoursLine") },
+        {
+          href: `mailto:${BRAND.ordersEmail}`,
+          label: BRAND.ordersEmail,
+        },
+        {
+          href: `tel:+${siteConfig.whatsappNumber || BRAND.whatsappE164}`,
+          label: `+${siteConfig.whatsappNumber || BRAND.whatsappE164}`,
+        },
+      ],
+    },
+  ];
 
   return (
     <footer className="mt-auto w-full border-t border-cb-peach-deep bg-cb-peach/50 dark:border-cb-border/50 dark:bg-cb-surface-2/80">
@@ -81,14 +98,14 @@ export function SiteFooter() {
         <Link
           href="/"
           className="flex shrink-0 justify-center md:justify-start"
-          aria-label={`${SITE.name} home`}
+          aria-label={`${SITE.name} ${t("tabs.home")}`}
         >
           <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-cb-peach-deep bg-cb-cream shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md dark:border-cb-border dark:bg-cb-surface-elevated">
             <LogoMark className="h-10 w-10 text-cb-brand-logo" title={SITE.name} />
           </span>
         </Link>
         <p className="max-w-2xl bg-transparent text-center text-xs leading-relaxed text-cb-text md:text-left md:text-sm">
-          {FOOTER_BLURB}
+          {t("footer.blurb")}
         </p>
       </div>
 
@@ -128,7 +145,7 @@ export function SiteFooter() {
           <a
             href={`mailto:${BRAND.email}`}
             className={cn(socialUnderline)}
-            aria-label="Email"
+            aria-label={t("footer.email")}
           >
             <Mail className="h-5 w-5" strokeWidth={1.5} />
           </a>
@@ -137,7 +154,7 @@ export function SiteFooter() {
             target="_blank"
             rel="noreferrer"
             className={socialUnderline}
-            aria-label="Instagram"
+            aria-label={t("footer.instagram")}
           >
             <Instagram className="h-5 w-5" />
           </a>
@@ -146,7 +163,7 @@ export function SiteFooter() {
             target="_blank"
             rel="noreferrer"
             className={socialUnderline}
-            aria-label="Facebook"
+            aria-label={t("footer.facebook")}
           >
             <Facebook className="h-5 w-5" />
           </a>
@@ -155,7 +172,7 @@ export function SiteFooter() {
             target="_blank"
             rel="noreferrer"
             className={socialUnderline}
-            aria-label="TikTok"
+            aria-label={t("footer.tiktok")}
           >
             <span className="text-xs font-bold">TT</span>
           </a>
@@ -164,7 +181,7 @@ export function SiteFooter() {
             target="_blank"
             rel="noreferrer"
             className={socialUnderline}
-            aria-label="WhatsApp"
+            aria-label={t("footer.whatsapp")}
           >
             <MessageCircle className="h-5 w-5" />
           </a>
@@ -177,17 +194,17 @@ export function SiteFooter() {
           <span>©</span>
           <span>{new Date().getFullYear()}</span>
           <span>{SITE.name}.</span>
-          <span>Made with</span>
+          <span>{t("footer.madeWith")}</span>
           <Heart
             className="mx-1 h-4 w-4 animate-pulse text-cb-terracotta-dark"
             aria-hidden
           />
-          <span>in {BRAND.location}.</span>
+          <span>{t("footer.inLocation", { location: BRAND.location })}</span>
           <Link
             href="/our-story"
             className="ms-1 font-bold text-cb-text-strong hover:text-cb-terracotta-dark"
           >
-            Our story
+            {t("footer.ourStory")}
           </Link>
         </div>
       </div>

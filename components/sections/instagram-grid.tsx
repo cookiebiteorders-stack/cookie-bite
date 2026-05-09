@@ -8,26 +8,29 @@ import { BRAND } from "@/lib/brand";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { ViewReveal } from "@/components/motion/view-reveal";
 import { buttonClassName } from "@/components/ui/button";
+import { useLanguage } from "@/components/providers/language-provider";
 import { duration, easeSoft, spring } from "@/lib/motion/presets";
 import { cn } from "@/lib/utils";
 
 export function InstagramGrid() {
+  const { t } = useLanguage();
+
   return (
     <section className="relative bg-cb-cream py-16 md:py-24">
       <div className="relative mx-auto max-w-7xl cb-gutter">
         <ViewReveal variant="fade-up" className="block">
           <SectionHeading
             variant="editorial"
-            eyebrow="Behind the glass"
+            eyebrow={t("instagram.eyebrow")}
             title={
               <span>
-                Crumbs, chaos, and quiet wins on{" "}
+                {t("instagram.titleBefore")}
                 <span className="text-cb-terracotta-dark dark:text-cb-terracotta">
                   {SITE.handle}
                 </span>
               </span>
             }
-            subtitle="A wall of imperfect squares — real batches, real light, the occasional thumbprint we didn’t edit out."
+            subtitle={t("instagram.subtitle")}
           />
         </ViewReveal>
         <div className="columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
@@ -58,7 +61,7 @@ export function InstagramGrid() {
               >
                 <Image
                   src={src}
-                  alt={`Cookie Bite gallery ${i + 1}`}
+                  alt={t("instagram.galleryAlt", { n: i + 1 })}
                   fill
                   className="object-cover transition-transform duration-[550ms] ease-[cubic-bezier(0.33,1,0.68,1)] hover:scale-[1.05]"
                   sizes="(max-width:768px) 50vw, 25vw"
@@ -80,7 +83,7 @@ export function InstagramGrid() {
             whileTap={{ scale: 0.98 }}
           >
             <Instagram className="h-4 w-4" />
-            See the day on Instagram
+            {t("instagram.cta")}
           </motion.a>
         </ViewReveal>
       </div>

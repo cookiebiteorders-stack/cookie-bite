@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, Search, ShoppingBag, Settings, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search, ShoppingBag, Settings, SlidersHorizontal } from "lucide-react";
 import { useMotionValueEvent, useScroll } from "motion/react";
 import { useState } from "react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { useCart } from "@/components/providers/cart-provider";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { LanguageToggle } from "@/components/layout/language-toggle";
+import { useLanguage } from "@/components/providers/language-provider";
 
 type HeaderVariant = "home" | "shop" | "story" | "account" | "default";
 
@@ -42,6 +44,7 @@ const isRootTab = (path: string) =>
 export function MobileHeader() {
   const pathname = usePathname();
   const { itemCount, openDrawer } = useCart();
+  const { t, lang } = useLanguage();
   const variant = getVariant(pathname);
   const title = getTitle(pathname);
   const showBack = !isRootTab(pathname);
@@ -55,6 +58,24 @@ export function MobileHeader() {
 
   const isTransparent =
     (variant === "home" || variant === "story") && !scrolled;
+  const localizedTitle =
+    title === "Shop"
+      ? t("mobileHeader.shop")
+      : title === "Our Cookies"
+        ? t("mobileHeader.ourCookies")
+        : title === "Gift Ideas"
+          ? t("mobileHeader.giftIdeas")
+          : title === "Our Story"
+            ? t("mobileHeader.ourStory")
+            : title === "My Account"
+              ? t("mobileHeader.myAccount")
+              : title === "Gift Box"
+                ? t("mobileHeader.giftBox")
+                : title === "My Cart"
+                  ? t("mobileHeader.myCart")
+                  : title === "Contact"
+                    ? t("mobileHeader.contact")
+                    : title;
 
   return (
     <header
@@ -72,12 +93,16 @@ export function MobileHeader() {
           <Link
             href="/"
             className="mobile-header__icon-btn"
-            aria-label="Go back"
+            aria-label={t("mobileHeader.goBack")}
           >
-            <ArrowLeft className="h-6 w-6" aria-hidden />
+            {lang === "ar" ? (
+              <ArrowRight className="h-6 w-6" aria-hidden />
+            ) : (
+              <ArrowLeft className="h-6 w-6" aria-hidden />
+            )}
           </Link>
         ) : variant === "home" ? (
-          <Link href="/" className="mobile-header__logo" aria-label="Cookie Bite home">
+          <Link href="/" className="mobile-header__logo" aria-label={t("mobileHeader.home")}>
             <LogoMark className="h-8 w-8 text-cb-brand-logo" title="Cookie Bite" />
           </Link>
         ) : null}
@@ -95,7 +120,7 @@ export function MobileHeader() {
             Cookie Bite
           </span>
         ) : (
-          <h1 className="mobile-header__title">{title}</h1>
+          <h1 className="mobile-header__title">{localizedTitle}</h1>
         )}
       </div>
 
@@ -105,7 +130,7 @@ export function MobileHeader() {
           <Link
             href="/account#profile"
             className="mobile-header__icon-btn"
-            aria-label="Settings"
+            aria-label={t("mobileHeader.settings")}
           >
             <Settings className="h-6 w-6" aria-hidden />
           </Link>
@@ -115,16 +140,17 @@ export function MobileHeader() {
               <button
                 type="button"
                 className="mobile-header__icon-btn"
-                aria-label="Filter"
+                aria-label={t("mobileHeader.filter")}
               >
                 <SlidersHorizontal className="h-5 w-5" aria-hidden />
               </button>
             )}
             <ThemeToggle className="mobile-header__icon-btn !p-0 !border-0 !bg-transparent !shadow-none" />
+            <LanguageToggle mobile className="mobile-header__icon-btn !p-0" />
             <Link
               href="/search"
               className="mobile-header__icon-btn"
-              aria-label="Search"
+              aria-label={t("mobileHeader.search")}
             >
               <Search className="h-6 w-6" aria-hidden />
             </Link>
@@ -132,7 +158,11 @@ export function MobileHeader() {
               type="button"
               onClick={openDrawer}
               className="mobile-header__icon-btn mobile-header__cart-btn"
-              aria-label={`Cart${itemCount ? `, ${itemCount} items` : ""}`}
+              aria-label={
+                itemCount
+                  ? t("mobileHeader.cartWithCount", { count: itemCount })
+                  : t("mobileHeader.cart")
+              }
             >
               <ShoppingBag className="h-6 w-6" aria-hidden />
               {itemCount > 0 && (

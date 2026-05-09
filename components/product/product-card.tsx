@@ -1,9 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import { Heart, ShoppingBag } from "lucide-react";
 import type { Product } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { AddToCartButton } from "@/components/product/add-to-cart-button";
 import { ProductSharedImage } from "@/components/product/product-shared-image";
+import { useLanguage } from "@/components/providers/language-provider";
 
 type Props = {
   product: Product;
@@ -11,13 +14,15 @@ type Props = {
   className?: string;
 };
 
-const badgeLabel: Record<NonNullable<Product["badges"]>[number], string> = {
-  bestseller: "Best Seller",
-  new: "New",
-  trending: "Trending",
+const badgeKey: Record<NonNullable<Product["badges"]>[number], string> = {
+  bestseller: "product.badgeBestseller",
+  new: "product.badgeNew",
+  trending: "product.badgeTrending",
 };
 
 export function ProductCard({ product, layout = "grid", className }: Props) {
+  const { t } = useLanguage();
+
   return (
     <article
       data-loki="hover"
@@ -39,7 +44,7 @@ export function ProductCard({ product, layout = "grid", className }: Props) {
         <button
           type="button"
           className="absolute right-3 top-3 z-10 rounded-full border border-cb-peach-deep/60 bg-cb-cream/95 p-2 text-cb-terracotta-dark shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md"
-          aria-label="Add to favorites"
+          aria-label={t("product.favoritesAria")}
         >
           <Heart className="h-4 w-4" />
         </button>
@@ -50,7 +55,7 @@ export function ProductCard({ product, layout = "grid", className }: Props) {
                 key={b}
                 className="rounded-full bg-cb-pink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cb-text-strong shadow-sm"
               >
-                {badgeLabel[b]}
+                {t(badgeKey[b])}
               </span>
             ))}
           </div>
@@ -78,14 +83,14 @@ export function ProductCard({ product, layout = "grid", className }: Props) {
             className="w-full rounded-full py-3 text-sm"
           >
             <ShoppingBag className="h-4 w-4" aria-hidden />
-            Add to cart
+            {t("product.addToCart")}
           </AddToCartButton>
         ) : (
           <Link
             href={`/shop/${product.id}`}
             className="text-sm font-semibold text-cb-terracotta-dark hover:underline"
           >
-            View details
+            {t("product.viewDetails")}
           </Link>
         )}
       </div>

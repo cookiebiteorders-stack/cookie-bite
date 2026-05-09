@@ -27,7 +27,7 @@
 
 .mobile-header__left { width: 40px; flex-shrink: 0; display: flex; align-items: center; }
 .mobile-header__center { flex: 1; text-align: center; min-width: 0; }
-.mobile-header__right { width: 80px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.mobile-header__right { width: auto; min-width: 124px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
 
 .mobile-header__icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
@@ -125,6 +125,14 @@
   .desktop-whatsapp-fab { display: none !important; }
   body { padding-top: 56px; padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
   html, body { overflow-x: hidden; }
+}
+
+html[dir="rtl"] .mobile-header__left {
+  justify-content: flex-end;
+}
+
+html[dir="rtl"] .mobile-header__right {
+  justify-content: flex-start;
 }
 @media (min-width: 768px) {
   .mobile-header { display: none !important; }

@@ -11,6 +11,7 @@ import { WhatsAppFab } from "@/components/layout/whatsapp-fab";
 import { MrBrownieChat } from "@/components/mr-brownie/mr-brownie-chat";
 import { PageTransition } from "@/components/motion/page-transition";
 import { CartProvider } from "@/components/providers/cart-provider";
+import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 import { LayoutGroup } from "motion/react";
 
@@ -21,6 +22,7 @@ export function PageShell({
   children: React.ReactNode;
   className?: string;
 }) {
+  const { t } = useLanguage();
   return (
     <CartProvider>
       <div
@@ -31,7 +33,7 @@ export function PageShell({
       >
         <div className="cb-ambient-orbs" aria-hidden />
         <a href="#main-content" className="cb-skip-link">
-          Skip to main content
+          {t("actions.skipToMain")}
         </a>
         <AnnouncementBar />
 

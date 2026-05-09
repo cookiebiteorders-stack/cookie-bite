@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { SearchLoadingFallback } from "@/components/i18n/suspense-loading";
+import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { SearchPageClient } from "@/src/components/search/SearchPageClient";
 import { buildPageMetadata, buildBreadcrumbJsonLd } from "@/lib/seo";
 
@@ -19,16 +21,14 @@ export const metadata: Metadata = buildPageMetadata({
 export default function SearchPage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: buildBreadcrumbJsonLd([
-            { name: "Home", path: "/" },
-            { name: "Search", path: "/search" },
-          ]),
-        }}
+      <JsonLdScript
+        id="search-breadcrumb-jsonld"
+        json={buildBreadcrumbJsonLd([
+          { name: "Home", path: "/" },
+          { name: "Search", path: "/search" },
+        ])}
       />
-      <Suspense fallback={<div className="cb-gutter py-16 text-cb-text-muted">Loading search...</div>}>
+      <Suspense fallback={<SearchLoadingFallback />}>
         <SearchPageClient />
       </Suspense>
     </>

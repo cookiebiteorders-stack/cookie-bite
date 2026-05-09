@@ -1,4 +1,4 @@
-export const MR_BROWNIE_FAB_STORAGE_KEY = "mr-brownie-fab-v1";
+export const MR_BROWNIE_FAB_STORAGE_KEY = "mr-brownie-fab-v2";
 
 export type MrBrownieFabPosition = {
   side: "left" | "right";
@@ -6,7 +6,18 @@ export type MrBrownieFabPosition = {
   bottomPx: number;
 };
 
-const FAB_SIZE = 56;
+/** موبايل: حجم مريح ولا يغطي المحتوى — يطابق `(max-width: 639px)` في الواجهة */
+export const FAB_SIZE_MOBILE_PX = 78;
+/** سطح المكتب / تابلت: أوضح على الصفحة */
+export const FAB_SIZE_DESKTOP_PX = 92;
+
+export function fabSizePx(isMobile: boolean): number {
+  return isMobile ? FAB_SIZE_MOBILE_PX : FAB_SIZE_DESKTOP_PX;
+}
+
+/** @deprecated استخدم fabSizePx(isMobile) — يبقى للتوافق مع أي استيراد قديم */
+export const FAB_SIZE_PX = FAB_SIZE_DESKTOP_PX;
+
 const EDGE_INSET = 16;
 
 export function defaultFabPosition(isMobile: boolean): MrBrownieFabPosition {
@@ -19,7 +30,7 @@ export function defaultFabPosition(isMobile: boolean): MrBrownieFabPosition {
 export function loadFabPosition(): MrBrownieFabPosition | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(MR_BROWNIE_FAB_STORAGE_KEY);
+    const raw = sessionStorage.getItem(MR_BROWNIE_FAB_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
     if (
@@ -44,7 +55,7 @@ export function loadFabPosition(): MrBrownieFabPosition | null {
 
 export function saveFabPosition(pos: MrBrownieFabPosition): void {
   try {
-    localStorage.setItem(MR_BROWNIE_FAB_STORAGE_KEY, JSON.stringify(pos));
+    sessionStorage.setItem(MR_BROWNIE_FAB_STORAGE_KEY, JSON.stringify(pos));
   } catch {
     /* ignore */
   }
@@ -58,7 +69,8 @@ export function clampFabBottom(
 ): number {
   const safeBottom = isMobile ? 88 : 24;
   const safeTop = 72;
-  const maxBottom = viewportH - safeTop - FAB_SIZE;
+  const size = fabSizePx(isMobile);
+  const maxBottom = viewportH - safeTop - size;
   const minBottom = safeBottom;
   const v = Number.isFinite(bottomPx) ? bottomPx : minBottom;
   return Math.round(Math.min(maxBottom, Math.max(minBottom, v)));
@@ -92,17 +104,17 @@ export function fabInsetPx(): number {
   return EDGE_INSET;
 }
 
-export const FAB_SIZE_PX = FAB_SIZE;
-
 /** موضع الزاوية العلوية اليسرى للزر الثابت من قيمة محفوظة (للمزامنة البصرية والأنيميشن). */
 export function fabTopLeftFromStored(
   pos: MrBrownieFabPosition,
   viewportW: number,
   viewportH: number,
+  isMobile: boolean,
 ): { left: number; top: number } {
   const inset = fabInsetPx();
+  const size = fabSizePx(isMobile);
   const left =
-    pos.side === "left" ? inset : viewportW - inset - FAB_SIZE;
-  const top = viewportH - pos.bottomPx - FAB_SIZE;
+    pos.side === "left" ? inset : viewportW - inset - size;
+  const top = viewportH - pos.bottomPx - size;
   return { left, top };
 }

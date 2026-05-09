@@ -3,7 +3,7 @@
 @keyframes mr-brownie-panel-in {
   from {
     opacity: 0;
-    transform: scale(0.94) translateY(8px);
+    transform: scale(0.96) translateY(10px);
   }
   to {
     opacity: 1;
@@ -12,7 +12,24 @@
 }
 
 .mr-brownie-panel-animate {
-  animation: mr-brownie-panel-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: mr-brownie-panel-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* فقاعة الرسالة العشوائية — ذيل يشير للأعلى نحو الأيقونة */
+.mr-brownie-ambient-bubble::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% - 5px);
+  left: 50%;
+  z-index: 0;
+  width: 11px;
+  height: 11px;
+  translate: -50% 0;
+  rotate: 45deg;
+  background: color-mix(in oklab, var(--cb-surface-elevated) 95%, transparent);
+  border-left: 1px solid color-mix(in oklab, var(--cb-border) 70%, transparent);
+  border-top: 1px solid color-mix(in oklab, var(--cb-border) 70%, transparent);
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -512,6 +529,16 @@ body {
   cursor: inherit;
 }
 
+html[dir="rtl"] body {
+  font-family: var(--font-ar);
+}
+
+html[dir="rtl"] .cb-skip-link {
+  left: auto;
+  right: 0;
+  border-radius: 0 0 0 0.5rem;
+}
+
 /* عناصر تفاعلية: المخلب كـ pointer — :where يحافظ على فوز cursor-grab / cursor-not-allowed من Tailwind */
 :where(
   a[href],
@@ -792,6 +819,20 @@ textarea,
     color-mix(in oklab, var(--cb-surface) 8%, transparent) 72%,
     transparent 100%
   );
+}
+
+@keyframes morph-dust {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale(0.6);
+  }
+  35% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -28px, 0) scale(1.15);
+  }
 }
 
 @keyframes cb-marquee {

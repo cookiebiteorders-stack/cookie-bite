@@ -11,6 +11,7 @@ import {
   User,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 
 type MobileTab = {
@@ -58,14 +59,22 @@ const tabs: MobileTab[] = [
 
 export function MobileTabBar() {
   const pathname = usePathname();
+  const { t } = useLanguage();
+  const localizedTabs: MobileTab[] = [
+    { ...tabs[0], label: t("tabs.home") },
+    { ...tabs[1], label: t("tabs.shop") },
+    { ...tabs[2], label: t("tabs.gifts") },
+    { ...tabs[3], label: t("tabs.saved") },
+    { ...tabs[4], label: t("tabs.account") },
+  ];
 
   return (
     <nav
       className="mobile-tab-bar"
-      aria-label="Main navigation"
+      aria-label={t("tabs.mainNavigation")}
     >
       <div className="mobile-tab-bar__inner">
-        {tabs.map((tab) => {
+        {localizedTabs.map((tab) => {
           const active = tab.match(pathname);
           const Icon = tab.Icon;
 

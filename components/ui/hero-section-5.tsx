@@ -6,21 +6,23 @@ import { ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import { InfiniteSlider } from "@/components/ui/infinite-slider";
 import { buttonClassName } from "@/components/ui/button";
+import { useLanguage } from "@/components/providers/language-provider";
 import { HERO_FALLBACK_IMAGE, HERO_VIDEO_SRC } from "@/lib/site-media";
 import { cn } from "@/lib/utils";
 
-const TRUST_LABELS = [
-  "Real butter",
-  "Belgian chocolate",
-  "New Cairo",
-  "Small batches",
-  "Gift-ready boxes",
-  "Same-day options",
-  "10K+ lovers",
-  "Hand-packed",
-];
+const TRUST_KEYS = [
+  "hero.trust0",
+  "hero.trust1",
+  "hero.trust2",
+  "hero.trust3",
+  "hero.trust4",
+  "hero.trust5",
+  "hero.trust6",
+  "hero.trust7",
+] as const;
 
 export function HeroSection5() {
+  const { t } = useLanguage();
   const soft = [0.33, 1, 0.68, 1] as const;
 
   return (
@@ -64,10 +66,10 @@ export function HeroSection5() {
               className="inline-flex rotate-[-0.8deg] flex-col gap-1"
             >
               <span className="text-[max(10px,0.65rem)] font-bold uppercase tracking-[0.22em] text-cb-terracotta-dark sm:tracking-[0.28em] dark:text-cb-terracotta">
-                Since our first tray
+                {t("hero.kicker")}
               </span>
               <span className="font-playful text-[clamp(1rem,3.5vw,1.35rem)] text-cb-terracotta md:text-xl">
-                Cookie Bite
+                {t("hero.brand")}
               </span>
             </motion.p>
 
@@ -77,11 +79,14 @@ export function HeroSection5() {
               transition={{ delay: 0.18, duration: 0.75, ease: soft }}
               className="mt-6 max-w-[min(100%,22rem)] text-balance font-serif text-[length:var(--fluid-display)] font-semibold leading-[1.06] text-cb-text-strong sm:mt-7 sm:max-w-3xl lg:mt-12"
             >
-              A bite of{" "}
-              <span className="italic text-cb-terracotta-dark">happiness</span>
-              ,<br className="hidden sm:block" />
+              {t("hero.titleBefore")}
+              <span className="italic text-cb-terracotta-dark">
+                {t("hero.titleAccent")}
+              </span>
+              {t("hero.titleComma")}
+              <br className="hidden sm:block" />
               <span className="mt-1 block sm:mt-0 sm:inline">
-                baked while it still matters.
+                {t("hero.titleLine2")}
               </span>
             </motion.h1>
 
@@ -91,8 +96,7 @@ export function HeroSection5() {
               transition={{ delay: 0.32, duration: 0.72, ease: soft }}
               className="mt-6 max-w-xl text-pretty text-[length:var(--fluid-body)] font-medium leading-relaxed text-cb-text sm:mt-7 sm:text-lg lg:max-w-lg"
             >
-              We time every mix, chill every dough, and pack boxes like we’re
-              sending them to friends — because most of the time, we are.
+              {t("hero.body")}
             </motion.p>
 
             <motion.div
@@ -108,8 +112,8 @@ export function HeroSection5() {
                   "cb-touch-manipulation min-h-[3rem] w-full justify-center rounded-full px-7 py-3 text-base sm:w-auto cb-shadow-editorial-hover",
                 )}
               >
-                <span className="text-center sm:text-nowrap">Shop the counter</span>
-                <ChevronRight className="ml-0.5 h-5 w-5 shrink-0" />
+                <span className="text-center sm:text-nowrap">{t("hero.ctaShop")}</span>
+                <ChevronRight className="ms-0.5 h-5 w-5 shrink-0" />
               </Link>
               <Link
                 href="/gift-box"
@@ -118,7 +122,7 @@ export function HeroSection5() {
                   "cb-touch-manipulation min-h-[3rem] w-full justify-center rounded-full px-7 py-3 text-base transition-transform duration-300 ease-[cubic-bezier(0.33,1,0.68,1)] hover:-translate-y-0.5 sm:w-auto",
                 )}
               >
-                <span className="text-center sm:text-nowrap">Compose a gift box</span>
+                <span className="text-center sm:text-nowrap">{t("hero.ctaGift")}</span>
               </Link>
             </motion.div>
 
@@ -128,8 +132,7 @@ export function HeroSection5() {
                 "border-s-2 border-cb-pink/80 ps-4",
               )}
             >
-              Fifth Settlement kitchen · same-day on select routes · handwritten
-              notes on request.
+              {t("hero.noteDesktop")}
             </p>
           </div>
         </div>
@@ -139,21 +142,21 @@ export function HeroSection5() {
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-10">
               <div className="shrink-0 md:max-w-[10.5rem] md:border-e md:border-cb-peach-deep md:pe-8">
                 <p className="text-center font-serif text-base font-semibold italic text-cb-text-strong md:text-end">
-                  Proof in every batch
+                  {t("hero.proofTitle")}
                 </p>
                 <p className="mt-1 text-center text-[11px] font-medium uppercase tracking-wider text-cb-text-muted md:text-end">
-                  not a slogan — a schedule
+                  {t("hero.proofSubtitle")}
                 </p>
               </div>
               <div className="relative w-full py-1 md:w-[calc(100%-12rem)]">
                 <InfiniteSlider gap={56} durationSec={60}>
-                  {TRUST_LABELS.map((label) => (
+                  {TRUST_KEYS.map((key) => (
                     <div
-                      key={label}
+                      key={key}
                       className="flex shrink-0 items-center justify-center"
                     >
                       <span className="whitespace-nowrap font-serif text-base font-semibold text-cb-text sm:text-lg">
-                        {label}
+                        {t(key)}
                       </span>
                     </div>
                   ))}

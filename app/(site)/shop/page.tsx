@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { ShopLoadingFallback } from "@/components/i18n/suspense-loading";
 import { ShopClient } from "@/components/shop/shop-client";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
 
 export default function ShopPage() {
   return (
-    <Suspense fallback={<div className="cb-gutter py-10 text-sm text-cb-text-muted">Loading shop...</div>}>
+    <Suspense fallback={<ShopLoadingFallback />}>
       <ShopClient />
     </Suspense>
   );

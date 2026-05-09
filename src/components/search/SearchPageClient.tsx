@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/src/components/ui/Badge";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { fetchJson } from "@/lib/http/fetch-json";
+import { useLanguage } from "@/components/providers/language-provider";
 
 const PAGE_SIZE = 9;
 
@@ -43,10 +44,10 @@ type ApiProduct = {
   created_at: string;
 };
 
-function normalizeProduct(p: ApiProduct): Product {
+function normalizeProduct(p: ApiProduct, fallbackDescription: string): Product {
   const title = p.title_en || p.title_ar || p.name;
   const description =
-    p.description_en || p.description_ar || p.description || "Cookie Bite product";
+    p.description_en || p.description_ar || p.description || fallbackDescription;
   const mainImage =
     p.images?.find((img) => typeof img?.url === "string" && img.url)?.url ||
     p.image_url ||
@@ -81,7 +82,7 @@ function normalizeProduct(p: ApiProduct): Product {
   };
 }
 
-async function fetchAllProducts(): Promise<Product[]> {
+async function fetchAllProducts(fallbackDescription: string): Promise<Product[]> {
   const limit = 48;
   let page = 1;
   let totalPages = 1;
@@ -102,7 +103,9 @@ async function fetchAllProducts(): Promise<Product[]> {
       retries: 1,
       retryDelayMs: 350,
     });
-    const batch = (payload.products ?? []).map(normalizeProduct);
+    const batch = (payload.products ?? []).map((p) =>
+      normalizeProduct(p, fallbackDescription),
+    );
     all.push(...batch);
     totalPages = Math.max(1, Number(payload.total_pages ?? 1));
     page += 1;
@@ -112,6 +115,7 @@ async function fetchAllProducts(): Promise<Product[]> {
 }
 
 export function SearchPageClient() {
+  const { t } = useLanguage();
   const filters = useSearchStore((s) => s.filters);
   const setFilters = useSearchStore((s) => s.setFilters);
   const clearFilters = useSearchStore((s) => s.clearFilters);
@@ -156,15 +160,15 @@ export function SearchPageClient() {
         try {
           setCatalogLoading(true);
           setCatalogError(null);
-          const rows = await fetchAllProducts();
+          const rows = await fetchAllProducts(t("product.fallbackDescription"));
           setCatalog(rows);
         } catch (e) {
           const message =
             e instanceof TypeError && /failed to fetch/i.test(e.message)
-              ? "Network issue while loading search data. Please retry."
+              ? t("search.networkError")
               : e instanceof Error
                 ? e.message
-                : "Search data failed to load";
+                : t("search.genericLoadError");
           setCatalogError(message);
           setCatalog([]);
         } finally {
@@ -173,7 +177,7 @@ export function SearchPageClient() {
       })();
     });
     return cancel;
-  }, []);
+  }, [t]);
 
   const categories = useMemo(
     () => Array.from(new Set(catalog.map((p) => p.category))),
@@ -288,12 +292,20 @@ export function SearchPageClient() {
       ),
     ).slice(0, 3);
     return [
-      { title: "Recent", items: q ? recent.filter((i) => i.includes(q)) : recent.slice(0, 4) },
-      { title: "Trending", items: q ? trending.filter((i) => i.includes(q)) : trending },
-      { title: "Products", items: products },
-      { title: "Categories", items: cats },
+      {
+        id: "recent",
+        title: t("search.suggestionRecent"),
+        items: q ? recent.filter((i) => i.includes(q)) : recent.slice(0, 4),
+      },
+      {
+        id: "trending",
+        title: t("search.suggestionTrending"),
+        items: q ? trending.filter((i) => i.includes(q)) : trending,
+      },
+      { id: "products", title: t("search.suggestionProducts"), items: products },
+      { id: "categories", title: t("search.suggestionCategories"), items: cats },
     ].filter((s) => s.items.length > 0);
-  }, [filters.query, catalog]);
+  }, [filters.query, catalog, t]);
 
   const flatSuggestions = useMemo(
     () => suggestionSections.flatMap((s) => s.items),
@@ -306,149 +318,203 @@ export function SearchPageClient() {
     setActiveSuggestionIndex(-1);
   };
 
-  const filterPanel = (
-    <aside className="space-y-5 rounded-xl border border-cb-border bg-cb-surface p-4">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-cb-text-muted">Category</p>
-        <div className="mt-2 space-y-2">
-          {categories.map((cat) => (
-            <label key={cat} className="flex items-center gap-2 text-sm text-cb-text-strong">
-              <input
-                type="checkbox"
-                checked={filters.categories.includes(cat)}
-                onChange={(e) =>
-                  setFilters({
-                    categories: e.target.checked ? [cat] : [],
-                    page: 1,
-                  })
-                }
-              />
-              {cat}
-            </label>
-          ))}
+  const filterPanel = useMemo(
+    () => (
+      <aside className="space-y-5 rounded-xl border border-cb-border bg-cb-surface p-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-cb-text-muted">
+            {t("search.category")}
+          </p>
+          <div className="mt-2 space-y-2">
+            {categories.map((cat) => (
+              <label key={cat} className="flex items-center gap-2 text-sm text-cb-text-strong">
+                <input
+                  type="checkbox"
+                  checked={filters.categories.includes(cat)}
+                  onChange={(e) =>
+                    setFilters({
+                      categories: e.target.checked ? [cat] : [],
+                      page: 1,
+                    })
+                  }
+                />
+                {cat}
+              </label>
+            ))}
+          </div>
         </div>
-      </div>
-      <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-cb-text-muted">Brand</p>
-        <div className="mt-2 max-h-32 space-y-2 overflow-auto">
-          {brands.map((brand) => (
-            <label key={brand} className="flex items-center gap-2 text-sm text-cb-text-strong">
-              <input
-                type="checkbox"
-                checked={filters.brands.includes(brand)}
-                onChange={(e) =>
-                  setFilters({
-                    brands: e.target.checked
-                      ? [...filters.brands, brand]
-                      : filters.brands.filter((b) => b !== brand),
-                    page: 1,
-                  })
-                }
-              />
-              {brand}
-            </label>
-          ))}
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-cb-text-muted">
+            {t("search.brand")}
+          </p>
+          <div className="mt-2 max-h-32 space-y-2 overflow-auto">
+            {brands.map((brand) => (
+              <label key={brand} className="flex items-center gap-2 text-sm text-cb-text-strong">
+                <input
+                  type="checkbox"
+                  checked={filters.brands.includes(brand)}
+                  onChange={(e) =>
+                    setFilters({
+                      brands: e.target.checked
+                        ? [...filters.brands, brand]
+                        : filters.brands.filter((b) => b !== brand),
+                      page: 1,
+                    })
+                  }
+                />
+                {brand}
+              </label>
+            ))}
+          </div>
         </div>
-      </div>
-      <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-cb-text-muted">Price</p>
-        <RangeSlider
-          min={30}
-          max={180}
-          value={[filters.minPrice ?? 30, filters.maxPrice ?? 180]}
-          onChange={([min, max]) => setFilters({ minPrice: min, maxPrice: max, page: 1 })}
-        />
-      </div>
-      <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-cb-text-muted">Rating</p>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          {[4, 3, 2].map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => setFilters({ minRating: filters.minRating === r ? null : r, page: 1 })}
-              className={`rounded-md border px-2 py-1 text-xs ${
-                filters.minRating === r
-                  ? "border-cb-terracotta-dark text-cb-terracotta-dark"
-                  : "border-cb-border text-cb-text-muted"
-              }`}
-            >
-              {r}★ & up
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-cb-text-muted">In Stock</p>
-        <label className="mt-2 flex items-center gap-2 text-sm text-cb-text-strong">
-          <input
-            type="checkbox"
-            checked={filters.inStockOnly}
-            onChange={(e) => setFilters({ inStockOnly: e.target.checked, page: 1 })}
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-cb-text-muted">
+            {t("search.price")}
+          </p>
+          <RangeSlider
+            min={30}
+            max={180}
+            value={[filters.minPrice ?? 30, filters.maxPrice ?? 180]}
+            onChange={([min, max]) => setFilters({ minPrice: min, maxPrice: max, page: 1 })}
           />
-          Available now
-        </label>
-      </div>
-      <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-cb-text-muted">Size</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {availableSizes.map((size) => (
-            <button
-              key={size}
-              type="button"
-              onClick={() =>
-                setFilters({
-                  sizes: filters.sizes.includes(size)
-                    ? filters.sizes.filter((s) => s !== size)
-                    : [...filters.sizes, size],
-                  page: 1,
-                })
-              }
-              className={`rounded-md border px-2 py-1 text-xs ${
-                filters.sizes.includes(size)
-                  ? "border-cb-terracotta-dark text-cb-terracotta-dark"
-                  : "border-cb-border text-cb-text-muted"
-              }`}
-            >
-              {size}
-            </button>
-          ))}
         </div>
-      </div>
-      <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-cb-text-muted">Color</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {availableColors.map((color) => (
-            <button
-              key={color}
-              type="button"
-              onClick={() =>
-                setFilters({
-                  colors: filters.colors.includes(color)
-                    ? filters.colors.filter((c) => c !== color)
-                    : [...filters.colors, color],
-                  page: 1,
-                })
-              }
-              className={`rounded-full border px-3 py-1 text-xs ${
-                filters.colors.includes(color)
-                  ? "border-cb-terracotta-dark text-cb-terracotta-dark"
-                  : "border-cb-border text-cb-text-muted"
-              }`}
-            >
-              {color}
-            </button>
-          ))}
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-cb-text-muted">
+            {t("search.rating")}
+          </p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {[4, 3, 2].map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() =>
+                  setFilters({ minRating: filters.minRating === r ? null : r, page: 1 })
+                }
+                className={`rounded-md border px-2 py-1 text-xs ${
+                  filters.minRating === r
+                    ? "border-cb-terracotta-dark text-cb-terracotta-dark"
+                    : "border-cb-border text-cb-text-muted"
+                }`}
+              >
+                {r}★ {t("search.andUp")}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-      <button
-        type="button"
-        onClick={clearFilters}
-        className="text-sm font-semibold text-cb-terracotta-dark hover:underline"
-      >
-        Clear all filters
-      </button>
-    </aside>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-cb-text-muted">
+            {t("search.inStock")}
+          </p>
+          <label className="mt-2 flex items-center gap-2 text-sm text-cb-text-strong">
+            <input
+              type="checkbox"
+              checked={filters.inStockOnly}
+              onChange={(e) => setFilters({ inStockOnly: e.target.checked, page: 1 })}
+            />
+            {t("search.availableNow")}
+          </label>
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-cb-text-muted">
+            {t("search.size")}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {availableSizes.map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() =>
+                  setFilters({
+                    sizes: filters.sizes.includes(size)
+                      ? filters.sizes.filter((s) => s !== size)
+                      : [...filters.sizes, size],
+                    page: 1,
+                  })
+                }
+                className={`rounded-md border px-2 py-1 text-xs ${
+                  filters.sizes.includes(size)
+                    ? "border-cb-terracotta-dark text-cb-terracotta-dark"
+                    : "border-cb-border text-cb-text-muted"
+                }`}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-cb-text-muted">
+            {t("search.color")}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {availableColors.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() =>
+                  setFilters({
+                    colors: filters.colors.includes(color)
+                      ? filters.colors.filter((c) => c !== color)
+                      : [...filters.colors, color],
+                    page: 1,
+                  })
+                }
+                className={`rounded-full border px-3 py-1 text-xs ${
+                  filters.colors.includes(color)
+                    ? "border-cb-terracotta-dark text-cb-terracotta-dark"
+                    : "border-cb-border text-cb-text-muted"
+                }`}
+              >
+                {color}
+              </button>
+            ))}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={clearFilters}
+          className="text-sm font-semibold text-cb-terracotta-dark hover:underline"
+        >
+          {t("search.clearAllFilters")}
+        </button>
+      </aside>
+    ),
+    [
+      t,
+      categories,
+      brands,
+      filters.categories,
+      filters.brands,
+      filters.minPrice,
+      filters.maxPrice,
+      filters.minRating,
+      filters.inStockOnly,
+      filters.sizes,
+      filters.colors,
+      availableSizes,
+      availableColors,
+      setFilters,
+      clearFilters,
+    ],
+  );
+
+  const sortOptions = useMemo(
+    () => [
+      { value: "popular" as const, label: t("search.sortPopular") },
+      { value: "newest" as const, label: t("search.sortNewest") },
+      { value: "price_asc" as const, label: t("search.sortPriceAsc") },
+      { value: "price_desc" as const, label: t("search.sortPriceDesc") },
+      { value: "rating" as const, label: t("search.sortTopRated") },
+    ],
+    [t],
+  );
+
+  const viewOptions = useMemo(
+    () => [
+      { value: "grid" as const, label: t("search.viewGrid") },
+      { value: "list" as const, label: t("search.viewList") },
+    ],
+    [t],
   );
 
   return (
@@ -457,9 +523,13 @@ export function SearchPageClient() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="font-layout-heading text-2xl font-semibold text-cb-text-strong">
-              Results for &quot;{filters.query || "all"}&quot;
+              {t("search.resultsFor", {
+                q: filters.query || t("search.allLabel"),
+              })}
             </h1>
-            <p className="text-sm text-cb-text-muted">{sorted.length} items found</p>
+            <p className="text-sm text-cb-text-muted">
+              {t("search.itemsFound", { n: sorted.length })}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -468,7 +538,7 @@ export function SearchPageClient() {
               onClick={() => setMobileFiltersOpen((v) => !v)}
             >
               <SlidersHorizontal className="h-4 w-4" />
-              Filters
+              {t("search.filters")}
               {activeFilterCount ? (
                 <span className="rounded-full bg-cb-terracotta-dark px-1.5 py-0.5 text-[10px] font-bold text-white">
                   {activeFilterCount}
@@ -477,21 +547,12 @@ export function SearchPageClient() {
             </button>
             <Select
               value={filters.sort}
-              options={[
-                { value: "popular", label: "Most Popular" },
-                { value: "newest", label: "Newest" },
-                { value: "price_asc", label: "Price: Low to High" },
-                { value: "price_desc", label: "Price: High to Low" },
-                { value: "rating", label: "Top Rated" },
-              ]}
+              options={sortOptions}
               onChange={(value) => setFilters({ sort: value as typeof filters.sort, page: 1 })}
             />
             <Select
               value={filters.view}
-              options={[
-                { value: "grid", label: "Grid View" },
-                { value: "list", label: "List View" },
-              ]}
+              options={viewOptions}
               onChange={(value) => setFilters({ view: value as "grid" | "list" })}
             />
           </div>
@@ -523,7 +584,7 @@ export function SearchPageClient() {
               setSuggestionsOpen(true);
               setActiveSuggestionIndex(-1);
             }}
-            placeholder="Search products, brands, categories..."
+            placeholder={t("search.placeholder")}
           />
           {suggestionsOpen && flatSuggestions.length ? (
             <ul
@@ -533,7 +594,7 @@ export function SearchPageClient() {
               {(() => {
                 let idx = -1;
                 return suggestionSections.map((section) => (
-                  <li key={section.title} className="p-1">
+                  <li key={section.id} className="p-1">
                     <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-cb-text-muted">
                       {section.title}
                     </p>
@@ -542,7 +603,7 @@ export function SearchPageClient() {
                         idx += 1;
                         const current = idx;
                         return (
-                          <li key={`${section.title}-${item}`}>
+                          <li key={`${section.id}-${item}`}>
                             <button
                               type="button"
                               role="option"
@@ -581,11 +642,13 @@ export function SearchPageClient() {
                   {b}
                 </Badge>
               ))}
-              {filters.inStockOnly ? <Badge variant="success">In stock</Badge> : null}
+              {filters.inStockOnly ? (
+                <Badge variant="success">{t("search.inStockBadge")}</Badge>
+              ) : null}
             </div>
             {catalogError ? (
               <div className="rounded-xl border border-red-300 bg-red-50 p-6 text-sm text-red-700">
-                Could not load products automatically. Please check product API.
+                {catalogError}
               </div>
             ) : loading || catalogLoading ? (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -596,11 +659,9 @@ export function SearchPageClient() {
             ) : pageItems.length === 0 ? (
               <div className="rounded-xl border border-cb-border bg-cb-surface p-10 text-center">
                 <p className="text-lg font-semibold text-cb-text-strong">
-                  No results found
+                  {t("search.noResults")}
                 </p>
-                <p className="mt-2 text-sm text-cb-text-muted">
-                  Try broader terms or clear active filters.
-                </p>
+                <p className="mt-2 text-sm text-cb-text-muted">{t("search.noResultsHint")}</p>
               </div>
             ) : filters.view === "grid" ? (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -636,7 +697,7 @@ export function SearchPageClient() {
             <button
               type="button"
               className="absolute inset-0 bg-cb-scrim-strong/65"
-              aria-label="Close filters"
+              aria-label={t("search.closeFilters")}
               onClick={() => setMobileFiltersOpen(false)}
             />
             <motion.div
@@ -647,13 +708,13 @@ export function SearchPageClient() {
               className="absolute bottom-0 left-0 right-0 max-h-[82vh] overflow-y-auto rounded-t-2xl border-t border-cb-border bg-cb-surface p-4"
             >
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-cb-text-strong">Filters</h2>
+                <h2 className="text-sm font-semibold text-cb-text-strong">{t("search.filters")}</h2>
                 <button
                   type="button"
                   onClick={() => setMobileFiltersOpen(false)}
                   className="text-sm font-semibold text-cb-terracotta-dark"
                 >
-                  Done
+                  {t("search.done")}
                 </button>
               </div>
               {filterPanel}

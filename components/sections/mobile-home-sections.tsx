@@ -2,16 +2,30 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronDown, Mail, Sparkles, Heart, Truck, Star, ArrowRight } from "lucide-react";
+import {
+  ChevronDown,
+  Mail,
+  Sparkles,
+  Heart,
+  Truck,
+  Star,
+  ArrowRight,
+  ArrowLeft,
+} from "lucide-react";
 import { CATEGORY_CARDS, IMAGES, INSTAGRAM_GRID, TESTIMONIALS, SITE } from "@/lib/data";
 import { BRAND } from "@/lib/brand";
+import { useLanguage } from "@/components/providers/language-provider";
+
+const EXPLORE_CARD_KEYS = ["classic", "seasonal", "gifts", "bites"] as const;
 
 function MobileHero() {
+  const { t } = useLanguage();
+
   return (
     <section className="mobile-hero">
       <Image
         src={IMAGES.heroStack}
-        alt="Cookie Bite cookies"
+        alt={t("mobileHome.heroAlt")}
         fill
         className="mobile-hero__image object-cover opacity-30"
         sizes="100vw"
@@ -19,50 +33,54 @@ function MobileHero() {
         fetchPriority="high"
       />
       <div className="mobile-hero__content">
-        <p className="mobile-hero__eyebrow">A bite of happiness</p>
+        <p className="mobile-hero__eyebrow">{t("mobileHome.heroEyebrow")}</p>
         <h1 className="mobile-hero__h1">
-          Handcrafted cookies,<br />made to share
+          {t("mobileHome.heroH1Line1")}
+          <br />
+          {t("mobileHome.heroH1Line2")}
         </h1>
-        <p className="mobile-hero__sub">
-          Small-batch baked in New Cairo with real butter and premium ingredients.
-        </p>
+        <p className="mobile-hero__sub">{t("mobileHome.heroSub")}</p>
         <div className="mobile-hero__buttons">
           <Link href="/shop" className="mobile-btn-primary mobile-btn-pill">
-            Shop Now
+            {t("mobileHome.heroShopNow")}
           </Link>
           <Link href="/our-cookies" className="mobile-btn-outline mobile-btn-pill">
-            Our Cookies
+            {t("mobileHome.heroOurCookies")}
           </Link>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-cb-text-muted">
           <div className="flex">
-            {[1,2,3].map(i => (
-              <div key={i} className={`w-6 h-6 rounded-full bg-cb-peach border-2 border-cb-cream ${i > 1 ? '-ml-2' : ''}`} />
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className={`h-6 w-6 rounded-full border-2 border-cb-cream bg-cb-peach ${i > 1 ? "-ms-2" : ""}`}
+              />
             ))}
           </div>
-          <span>10K+ happy customers</span>
+          <span>{t("mobileHome.heroSocialProof")}</span>
         </div>
       </div>
       <div className="mobile-hero__scroll-hint">
-        <ChevronDown className="w-5 h-5 text-cb-text-muted" />
+        <ChevronDown className="h-5 w-5 text-cb-text-muted" aria-hidden />
       </div>
     </section>
   );
 }
 
 function MobileFeaturePills() {
+  const { t } = useLanguage();
   const pills = [
-    { icon: Sparkles, label: "Premium Ingredients" },
-    { icon: Heart, label: "Baked with Love" },
-    { icon: Truck, label: "Fast Delivery" },
-    { icon: Star, label: "100% Satisfaction" },
+    { icon: Sparkles, labelKey: "mobileHome.pillPremium" as const },
+    { icon: Heart, labelKey: "mobileHome.pillBaked" as const },
+    { icon: Truck, labelKey: "mobileHome.pillDelivery" as const },
+    { icon: Star, labelKey: "mobileHome.pillSatisfaction" as const },
   ];
   return (
     <div className="mobile-pills">
-      {pills.map(p => (
-        <div key={p.label} className="mobile-pill">
-          <p.icon className="mobile-pill__icon" />
-          <span>{p.label}</span>
+      {pills.map((p) => (
+        <div key={p.labelKey} className="mobile-pill">
+          <p.icon className="mobile-pill__icon" aria-hidden />
+          <span>{t(p.labelKey)}</span>
         </div>
       ))}
     </div>
@@ -70,90 +88,127 @@ function MobileFeaturePills() {
 }
 
 function MobileCategoryCarousel() {
+  const { t } = useLanguage();
+
   return (
     <section>
       <div className="mobile-section">
-        <p className="mobile-section__eyebrow">Explore Our World</p>
-        <h2 className="mobile-section__h2">Find your perfect treat</h2>
+        <p className="mobile-section__eyebrow">{t("mobileHome.exploreEyebrow")}</p>
+        <h2 className="mobile-section__h2">{t("mobileHome.exploreTitle")}</h2>
       </div>
       <div className="mobile-spacer-sm" />
       <div className="mobile-cat-carousel">
-        {CATEGORY_CARDS.map(c => (
-          <Link key={c.title} href={c.href} className="mobile-cat-card">
-            <Image src={c.image} alt={c.title} width={320} height={234} className="mobile-cat-card__img" />
-            <div className="mobile-cat-card__body">
-              <p className="mobile-cat-card__title">{c.title}</p>
-              <p className="mobile-cat-card__sub">{c.subtitle}</p>
-            </div>
-          </Link>
-        ))}
+        {CATEGORY_CARDS.map((c, i) => {
+          const key = EXPLORE_CARD_KEYS[i];
+          const title = t(`explore.cards.${key}.title`);
+          const subtitle = t(`explore.cards.${key}.subtitle`);
+          return (
+            <Link key={c.href} href={c.href} className="mobile-cat-card">
+              <Image
+                src={c.image}
+                alt={title}
+                width={320}
+                height={234}
+                className="mobile-cat-card__img"
+              />
+              <div className="mobile-cat-card__body">
+                <p className="mobile-cat-card__title">{title}</p>
+                <p className="mobile-cat-card__sub">{subtitle}</p>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
 }
 
 function MobileStorySnippet() {
+  const { t, lang } = useLanguage();
+  const Arrow = lang === "ar" ? ArrowLeft : ArrowRight;
+
   return (
     <section className="mobile-story-card">
       <Image
         src={IMAGES.storyMug}
-        alt="Cookie Bite kitchen"
+        alt={t("mobileHome.storyAlt")}
         width={600}
         height={400}
         className="mobile-story-card__img"
       />
-      <p className="mobile-story-card__eyebrow">Our Story</p>
-      <h2 className="mobile-story-card__h2">Baked with love. Packed with joy.</h2>
-      <p className="mobile-story-card__body">
-        What started as weekend bakes for friends became a small kitchen obsessed with the perfect chew.
-      </p>
-      <Link href="/our-story" className="text-sm font-semibold text-cb-terracotta-dark flex items-center gap-1">
-        Meet our makers <ArrowRight className="w-3.5 h-3.5" />
+      <p className="mobile-story-card__eyebrow">{t("mobileHome.storyEyebrow")}</p>
+      <h2 className="mobile-story-card__h2">{t("mobileHome.storyH2")}</h2>
+      <p className="mobile-story-card__body">{t("mobileHome.storyBody")}</p>
+      <Link
+        href="/our-story"
+        className="flex items-center gap-1 text-sm font-semibold text-cb-terracotta-dark"
+      >
+        {t("mobileHome.storyCta")} <Arrow className="h-3.5 w-3.5" aria-hidden />
       </Link>
     </section>
   );
 }
 
 function MobileReviews() {
+  const { t } = useLanguage();
+
   return (
     <section>
       <div className="mobile-section">
-        <h2 className="mobile-section__h2">Real stories. Real smiles.</h2>
-        <p className="text-center text-[13px] text-cb-text-muted mt-1">
-          What our customers say
+        <h2 className="mobile-section__h2">{t("mobileHome.reviewsH2")}</h2>
+        <p className="mt-1 text-center text-[13px] text-cb-text-muted">
+          {t("mobileHome.reviewsSub")}
         </p>
       </div>
       <div className="mobile-spacer-sm" />
       <div className="mobile-reviews-carousel">
-        {TESTIMONIALS.map(t => (
-          <div key={t.name} className="mobile-review-card">
-            <div className="mobile-review-card__stars">
-              {[1,2,3,4,5].map(s => (
-                <Star key={s} className="w-3.5 h-3.5 fill-[var(--cb-star)] text-[var(--cb-star)]" />
-              ))}
-            </div>
-            <p className="mobile-review-card__quote">&ldquo;{t.quote}&rdquo;</p>
-            <div className="mobile-review-card__author">
-              <div className={`mobile-review-card__avatar ${t.color} w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm text-cb-text-strong`}>
-                {t.initial}
+        {TESTIMONIALS.map((item, idx) => {
+          const key = String(idx) as "0" | "1" | "2";
+          return (
+            <div key={item.name} className="mobile-review-card">
+              <div className="mobile-review-card__stars">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star
+                    key={s}
+                    className="h-3.5 w-3.5 fill-[var(--cb-star)] text-[var(--cb-star)]"
+                    aria-hidden
+                  />
+                ))}
               </div>
-              <div>
-                <p className="mobile-review-card__name">{t.name}</p>
-                <p className="text-[11px] text-cb-text-muted">{t.role}</p>
+              <p className="mobile-review-card__quote">
+                &ldquo;{t(`testimonials.items.${key}.quote`)}&rdquo;
+              </p>
+              <div className="mobile-review-card__author">
+                <div
+                  className={`mobile-review-card__avatar ${item.color} flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-cb-text-strong`}
+                  aria-hidden
+                >
+                  {item.initial}
+                </div>
+                <div>
+                  <p className="mobile-review-card__name">
+                    {t(`testimonials.items.${key}.name`)}
+                  </p>
+                  <p className="text-[11px] text-cb-text-muted">
+                    {t(`testimonials.items.${key}.role`)}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
 }
 
 function MobileInstagramGrid() {
+  const { t } = useLanguage();
+
   return (
     <section>
       <div className="mobile-section">
-        <p className="mobile-section__eyebrow">Follow Our Sweet World</p>
+        <p className="mobile-section__eyebrow">{t("mobileHome.instaEyebrow")}</p>
         <h2 className="text-center text-lg font-semibold text-cb-terracotta-dark">
           {SITE.handle}
         </h2>
@@ -161,17 +216,23 @@ function MobileInstagramGrid() {
       <div className="mobile-spacer-sm" />
       <div className="mobile-insta-grid">
         {INSTAGRAM_GRID.slice(0, 6).map((url, i) => (
-          <Image key={i} src={url} alt="" width={200} height={200} />
+          <Image
+            key={i}
+            src={url}
+            alt={t("instagram.galleryAlt", { n: i + 1 })}
+            width={200}
+            height={200}
+          />
         ))}
       </div>
-      <div className="flex justify-center mt-4">
+      <div className="mt-4 flex justify-center">
         <a
           href={BRAND.social.instagram}
           target="_blank"
           rel="noreferrer"
-          className="mobile-btn-outline mobile-btn-pill text-sm gap-1.5 h-[44px]"
+          className="mobile-btn-outline mobile-btn-pill h-[44px] gap-1.5 text-sm"
         >
-          Follow us on Instagram
+          {t("mobileHome.instaCta")}
         </a>
       </div>
     </section>
@@ -179,21 +240,21 @@ function MobileInstagramGrid() {
 }
 
 function MobileNewsletter() {
+  const { t } = useLanguage();
+
   return (
     <section className="mobile-newsletter">
-      <Mail className="mobile-newsletter__icon" />
-      <h3 className="mobile-newsletter__h3">Get sweet updates</h3>
-      <p className="mobile-newsletter__body">
-        Subscribe for exclusive flavors, early access, and special offers.
-      </p>
+      <Mail className="mobile-newsletter__icon" aria-hidden />
+      <h3 className="mobile-newsletter__h3">{t("mobileHome.newsletterH3")}</h3>
+      <p className="mobile-newsletter__body">{t("mobileHome.newsletterBody")}</p>
       <input
         type="email"
-        placeholder="Enter your email"
+        placeholder={t("mobileHome.newsletterPlaceholder")}
         className="mobile-newsletter__input"
-        aria-label="Email address"
+        aria-label={t("newsletter.emailLabel")}
       />
       <button type="button" className="mobile-newsletter__btn">
-        Subscribe
+        {t("newsletter.subscribe")}
       </button>
     </section>
   );

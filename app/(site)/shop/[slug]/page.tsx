@@ -7,6 +7,7 @@ import { PdpSharedHero } from "@/components/shop/pdp-shared-hero";
 import { PdpActions } from "@/components/shop/pdp-actions";
 import { ProductCard } from "@/components/product/product-card";
 import { buttonClassName } from "@/components/ui/button";
+import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { ShareButtons } from "@/components/seo/share-buttons";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -76,10 +77,7 @@ export default async function ProductPage({ params }: Props) {
   return (
     <div className="bg-cb-cream pb-20 pt-8">
       <div className="mx-auto max-w-7xl cb-gutter">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
-        />
+        <JsonLdScript id={`pdp-product-jsonld-${product.id}`} json={JSON.stringify(productJsonLd)} />
         <Link
           href="/shop"
           className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-cb-terracotta-dark hover:underline"

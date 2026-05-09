@@ -20,29 +20,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { SiteLogoLink } from "@/components/brand/site-logo";
 import { NavDropdown } from "@/components/layout/nav-dropdown";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { LanguageToggle } from "@/components/layout/language-toggle";
 import { useCart } from "@/components/providers/cart-provider";
+import { useLanguage } from "@/components/providers/language-provider";
 import { duration, easeSoft, spring } from "@/lib/motion/presets";
 import { cn } from "@/lib/utils";
-
-const DISCOVER_LINKS = [
-  { href: "/our-story", label: "Our story" },
-  { href: "/our-cookies", label: "Our cookies" },
-  { href: "/blog", label: "Blog" },
-];
-
-const HELP_LINKS = [
-  { href: "/contact", label: "Contact" },
-  { href: "/help/faq", label: "FAQ" },
-  { href: "/help/returns", label: "Returns" },
-];
-
-const MOBILE_FULL_LINKS = [
-  { href: "/shop", label: "Shop" },
-  { href: "/gift-box", label: "Gifts" },
-  ...DISCOVER_LINKS,
-  ...HELP_LINKS,
-  { href: "/account", label: "Account" },
-];
 
 const iconBtn =
   "cb-touch-manipulation inline-flex h-11 min-h-[2.75rem] w-11 min-w-[2.75rem] items-center justify-center rounded-xl text-cb-text transition-[transform,box-shadow,color,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:bg-cb-hover-overlay hover:text-cb-terracotta-dark hover:shadow-sm active:scale-[0.97] dark:hover:bg-cb-peach/15";
@@ -50,6 +32,7 @@ const iconBtn =
 export function SiteHeader() {
   const pathname = usePathname();
   const { itemCount, openDrawer } = useCart();
+  const { t, lang } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuToggleRef = useRef<HTMLButtonElement>(null);
   const { scrollY } = useScroll();
@@ -91,6 +74,24 @@ export function SiteHeader() {
   const shopActive = pathname.startsWith("/shop");
   const giftsActive =
     pathname.startsWith("/gift-box") || pathname.startsWith("/gift-ideas");
+  const isRtl = lang === "ar";
+  const discoverLinks = [
+    { href: "/our-story", label: t("nav.ourStory") },
+    { href: "/our-cookies", label: t("nav.ourCookies") },
+    { href: "/blog", label: t("nav.blog") },
+  ];
+  const helpLinks = [
+    { href: "/contact", label: t("nav.contact") },
+    { href: "/help/faq", label: t("nav.faq") },
+    { href: "/help/returns", label: t("nav.returns") },
+  ];
+  const mobileFullLinks = [
+    { href: "/shop", label: t("nav.shop") },
+    { href: "/gift-box", label: t("nav.gifts") },
+    ...discoverLinks,
+    ...helpLinks,
+    { href: "/account", label: t("nav.account") },
+  ];
 
   return (
     <>
@@ -106,6 +107,7 @@ export function SiteHeader() {
           <div
             className={cn(
               "flex items-center justify-between gap-3 transition-[min-height] duration-500",
+              isRtl && "flex-row-reverse",
               scrolled ? "min-h-14 py-1.5" : "min-h-16 py-2",
             )}
           >
@@ -116,7 +118,7 @@ export function SiteHeader() {
                 className={cn(iconBtn, "lg:hidden")}
                 aria-haspopup="dialog"
                 onClick={() => setMobileOpen((v) => !v)}
-                aria-label={mobileOpen ? "Close menu" : "Open menu"}
+                aria-label={mobileOpen ? t("nav.closeMenu") : t("nav.openMenu")}
               >
                 {mobileOpen ? (
                   <X className="h-5 w-5" aria-hidden />
@@ -129,7 +131,7 @@ export function SiteHeader() {
 
             <nav
               className="hidden items-center gap-8 lg:flex"
-              aria-label="Primary"
+              aria-label={t("nav.primary")}
             >
               <Link
                 href="/shop"
@@ -139,7 +141,7 @@ export function SiteHeader() {
                     "text-cb-text-strong underline decoration-[1.5px] underline-offset-[10px] decoration-cb-terracotta-dark/80 dark:decoration-cb-terracotta/70",
                 )}
               >
-                Shop
+                {t("nav.shop")}
               </Link>
               <Link
                 href="/gift-box"
@@ -149,18 +151,19 @@ export function SiteHeader() {
                     "text-cb-text-strong underline decoration-[1.5px] underline-offset-[10px] decoration-cb-terracotta-dark/80 dark:decoration-cb-terracotta/70",
                 )}
               >
-                Gifts
+                {t("nav.gifts")}
               </Link>
-              <NavDropdown label="Discover" items={DISCOVER_LINKS} />
-              <NavDropdown label="Help" items={HELP_LINKS} />
+              <NavDropdown label={t("nav.discover")} items={discoverLinks} />
+              <NavDropdown label={t("nav.help")} items={helpLinks} />
             </nav>
 
             <div className="flex items-center gap-1 sm:gap-2">
               <ThemeToggle className="inline-flex" />
+              <LanguageToggle className="hidden md:inline-flex" />
               <Link
                 href="/search"
                 className={iconBtn}
-                aria-label="Search"
+                aria-label={t("actions.search")}
               >
                 <Search className="h-5 w-5" aria-hidden />
               </Link>
@@ -169,7 +172,7 @@ export function SiteHeader() {
                 <Link
                   href="/sign-in"
                   className={iconBtn}
-                  aria-label="Sign in"
+                  aria-label={t("actions.signIn")}
                 >
                   <UserRound className="h-5 w-5" aria-hidden />
                 </Link>
@@ -203,7 +206,11 @@ export function SiteHeader() {
                 type="button"
                 onClick={openDrawer}
                 className={cn(iconBtn, "relative")}
-                aria-label={`Shopping cart${itemCount ? `, ${itemCount} items` : ""}`}
+                aria-label={
+                  itemCount
+                    ? t("actions.shoppingCartWithCount", { count: itemCount })
+                    : t("actions.shoppingCart")
+                }
               >
                 <ShoppingBag className="h-5 w-5" aria-hidden />
                 {itemCount > 0 ? (
@@ -225,7 +232,7 @@ export function SiteHeader() {
             key="mobile-nav"
             role="dialog"
             aria-modal="true"
-            aria-label="Site navigation"
+            aria-label={t("nav.siteNavigation")}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -235,15 +242,18 @@ export function SiteHeader() {
             <button
               type="button"
               className="absolute inset-0 bg-cb-scrim-strong/65 backdrop-blur-[2px] dark:bg-black/60 max-sm:bg-cb-scrim-strong/75 max-sm:backdrop-blur-none"
-              aria-label="Close menu"
+              aria-label={t("nav.closeMenu")}
               onClick={() => setMobileOpen(false)}
             />
             <motion.nav
-              initial={{ x: "100%" }}
+              initial={{ x: isRtl ? "-100%" : "100%" }}
               animate={{ x: 0 }}
-              exit={{ x: "100%" }}
+              exit={{ x: isRtl ? "-100%" : "100%" }}
               transition={spring.snappy}
-              className="absolute inset-y-0 right-0 flex w-[min(100vw-0.5rem,22rem)] max-w-[calc(100vw-env(safe-area-inset-left))] flex-col border-l border-cb-border bg-cb-surface/98 py-6 shadow-2xl backdrop-blur-xl dark:bg-cb-surface-2/98 max-sm:backdrop-blur-md"
+              className={cn(
+                "absolute inset-y-0 flex w-[min(100vw-0.5rem,22rem)] max-w-[calc(100vw-env(safe-area-inset-left))] flex-col border-cb-border bg-cb-surface/98 py-6 shadow-2xl backdrop-blur-xl dark:bg-cb-surface-2/98 max-sm:backdrop-blur-md",
+                isRtl ? "left-0 border-r" : "right-0 border-l",
+              )}
               style={{
                 paddingTop: "max(1.25rem, env(safe-area-inset-top))",
                 paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
@@ -251,12 +261,15 @@ export function SiteHeader() {
             >
               <div className="flex items-center justify-between border-b border-cb-border px-5 pb-4">
                 <span className="text-xs font-bold uppercase tracking-[0.2em] text-cb-text-muted">
-                  Menu
+                  {t("nav.menu")}
                 </span>
-                <ThemeToggle />
+                <div className="flex items-center gap-2">
+                  <ThemeToggle />
+                  <LanguageToggle mobile />
+                </div>
               </div>
               <ul className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 pt-4">
-                {MOBILE_FULL_LINKS.map((item, i) => (
+                {mobileFullLinks.map((item, i) => (
                   <motion.li
                     key={item.href}
                     initial={{ opacity: 0, x: 16 }}

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import type { Product } from "@/lib/data";
 import { useCart } from "@/components/providers/cart-provider";
+import { useLanguage } from "@/components/providers/language-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ export function AddToCartButton({
   variant = "primary",
 }: Props) {
   const { addItem } = useCart();
+  const { t } = useLanguage();
 
   return (
     <Button
@@ -30,7 +32,7 @@ export function AddToCartButton({
       className={cn("inline-flex items-center justify-center gap-2", className)}
       onClick={() => addItem(product, quantity)}
     >
-      {children ?? "Add to cart"}
+      {children ?? t("product.addToCart")}
     </Button>
   );
 }

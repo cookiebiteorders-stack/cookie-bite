@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { buttonClassName } from "@/components/ui/button";
+import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { ShareButtons } from "@/components/seo/share-buttons";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
@@ -62,10 +63,7 @@ export default function BlogIndexPage() {
   return (
     <div className="bg-cb-cream pb-24 pt-12">
       <div className="mx-auto max-w-3xl px-4 text-center lg:px-6">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-        />
+        <JsonLdScript id="blog-faq-jsonld" json={JSON.stringify(faqJsonLd)} />
         <SectionHeading
           title="From the kitchen journal"
           subtitle="Seasonal drops, behind-the-scenes bakes, and gifting inspiration — posts will appear here once Sanity content is wired."

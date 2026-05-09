@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { cookieBiteClerkLocalization } from "@/lib/auth/clerk-auth-localization";
 import { SiteJsonLd } from "@/components/seo/site-jsonld";
@@ -15,9 +16,13 @@ import {
   Tajawal,
 } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { LanguageProvider } from "@/components/providers/language-provider";
+import { MorphTransitionProvider } from "@/components/providers/morph-transition-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { LokiBootstrap } from "@/components/effects/loki-bootstrap";
 import { LokiSvgFilters } from "@/components/effects/loki-svg-filters";
+import { LANG_COOKIE, THEME_COOKIE } from "@/lib/preferences/client-cookies";
+import { cn } from "@/lib/utils";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -179,25 +184,42 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const store = await cookies();
+  const lang = store.get(LANG_COOKIE)?.value === "en" ? "en" : "ar";
+  const dir = lang === "ar" ? "rtl" : "ltr";
+  const themeRaw = store.get(THEME_COOKIE)?.value;
+  const serverResolvedLightDark: "light" | "dark" =
+    themeRaw === "dark" ? "dark" : themeRaw === "light" ? "light" : "light";
+
   return (
     <html
-      lang="en"
-      dir="ltr"
+      lang={lang}
+      dir={dir}
+      data-lang={lang}
+      data-theme={serverResolvedLightDark}
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={`${playfair.variable} ${montserrat.variable} ${cairo.variable} ${tajawal.variable} ${pacifico.variable} ${nunitoSans.variable} ${allura.variable} ${outfit.variable} ${dmSans.variable} h-full antialiased`}
+      className={cn(
+        playfair.variable,
+        montserrat.variable,
+        cairo.variable,
+        tajawal.variable,
+        pacifico.variable,
+        nunitoSans.variable,
+        allura.variable,
+        outfit.variable,
+        dmSans.variable,
+        "h-full antialiased",
+        serverResolvedLightDark === "dark" && "dark",
+      )}
+      style={{ colorScheme: serverResolvedLightDark }}
     >
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var key="cookie-bite-theme";var s=localStorage.getItem(key);var t=(s==="dark"||s==="light")?s:(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");var r=document.documentElement;r.setAttribute("data-theme",t);r.style.colorScheme=t;if(t==="dark"){r.classList.add("dark")}else{r.classList.remove("dark")}}catch(_){}})();`,
-          }}
-        />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -217,10 +239,14 @@ export default function RootLayout({
           signUpFallbackRedirectUrl="/account"
         >
           <ThemeProvider>
-            <LokiBootstrap />
-            <SiteJsonLd />
-            <GA4Tracker />
-            <ErrorBoundary>{children}</ErrorBoundary>
+            <LanguageProvider>
+              <MorphTransitionProvider>
+                <LokiBootstrap />
+                <SiteJsonLd />
+                <GA4Tracker />
+                <ErrorBoundary>{children}</ErrorBoundary>
+              </MorphTransitionProvider>
+            </LanguageProvider>
           </ThemeProvider>
         </ClerkProvider>
       </body>

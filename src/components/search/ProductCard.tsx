@@ -11,10 +11,12 @@ import type { Product } from "@/src/types/product";
 import { useCart } from "@/src/hooks/useCart";
 import { useToast } from "@/src/hooks/useToast";
 import { useState } from "react";
+import { useLanguage } from "@/components/providers/language-provider";
 
 export function SearchProductCard({ product }: { product: Product }) {
   const { addItem, openDrawer } = useCart();
   const toast = useToast();
+  const { t } = useLanguage();
   const [quickViewOpen, setQuickViewOpen] = useState(false);
 
   function onAdd() {
@@ -27,7 +29,7 @@ export function SearchProductCard({ product }: { product: Product }) {
       image: product.images[0],
       maxStock: product.stockCount || 1,
     });
-    toast.cart("Added to cart", product.name);
+    toast.cart(t("search.addedToCartToast"), product.name);
     openDrawer();
   }
 
@@ -43,7 +45,7 @@ export function SearchProductCard({ product }: { product: Product }) {
         />
         <button
           type="button"
-          aria-label="Add to wishlist"
+          aria-label={t("product.favoritesAria")}
           className="absolute right-2 top-2 inline-flex h-9 w-9 items-center justify-center rounded-full border border-cb-border bg-cb-surface/85 text-cb-text-strong"
         >
           <Heart className="h-4 w-4" />
@@ -53,7 +55,7 @@ export function SearchProductCard({ product }: { product: Product }) {
           onClick={() => setQuickViewOpen(true)}
           className="absolute bottom-2 right-2 rounded-md border border-cb-border bg-cb-surface/90 px-2 py-1 text-xs font-semibold text-cb-text-strong"
         >
-          Quick View
+          {t("search.quickView")}
         </button>
         {product.discount ? (
           <Badge variant="accent" className="absolute left-2 top-2">
@@ -66,13 +68,17 @@ export function SearchProductCard({ product }: { product: Product }) {
         <h3 className="line-clamp-2 text-sm font-semibold text-cb-text-strong">{product.name}</h3>
         <StarRating rating={product.rating} count={product.reviewCount} />
         <div className="flex items-center gap-2">
-          <span className="text-base font-bold text-cb-text-strong">${product.price}</span>
+          <span className="text-base font-bold text-cb-text-strong">
+            {product.price} EGP
+          </span>
           {product.originalPrice ? (
-            <span className="text-xs text-cb-text-muted line-through">${product.originalPrice}</span>
+            <span className="text-xs text-cb-text-muted line-through">
+              {product.originalPrice} EGP
+            </span>
           ) : null}
         </div>
         <button type="button" onClick={onAdd} className={buttonClassName("primary", "mt-1 w-full rounded-md")}>
-          Add to Cart
+          {t("product.addToCart")}
         </button>
       </div>
       <Modal
@@ -88,7 +94,7 @@ export function SearchProductCard({ product }: { product: Product }) {
             }}
             className={buttonClassName("primary", "w-full rounded-md")}
           >
-            Add to Cart
+            {t("product.addToCart")}
           </button>
         }
       >
@@ -100,7 +106,7 @@ export function SearchProductCard({ product }: { product: Product }) {
             <p className="text-xs uppercase tracking-wide text-cb-text-muted">{product.brand}</p>
             <p className="text-sm text-cb-text-muted">{product.description}</p>
             <StarRating rating={product.rating} count={product.reviewCount} />
-            <p className="text-lg font-bold text-cb-text-strong">${product.price}</p>
+            <p className="text-lg font-bold text-cb-text-strong">{product.price} EGP</p>
           </div>
         </div>
       </Modal>
@@ -111,6 +117,7 @@ export function SearchProductCard({ product }: { product: Product }) {
 export function SearchProductRow({ product }: { product: Product }) {
   const { addItem, openDrawer } = useCart();
   const toast = useToast();
+  const { t } = useLanguage();
 
   function onAdd() {
     addItem({
@@ -122,7 +129,7 @@ export function SearchProductRow({ product }: { product: Product }) {
       image: product.images[0],
       maxStock: product.stockCount || 1,
     });
-    toast.cart("Added to cart", product.name);
+    toast.cart(t("search.addedToCartToast"), product.name);
     openDrawer();
   }
 
@@ -149,15 +156,17 @@ export function SearchProductRow({ product }: { product: Product }) {
           <p className="line-clamp-3 text-sm text-cb-text-muted">{product.description}</p>
           <StarRating rating={product.rating} count={product.reviewCount} />
           <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-cb-text-strong">${product.price}</span>
+            <span className="text-lg font-bold text-cb-text-strong">{product.price} EGP</span>
             {product.originalPrice ? (
-              <span className="text-xs text-cb-text-muted line-through">${product.originalPrice}</span>
+              <span className="text-xs text-cb-text-muted line-through">
+                {product.originalPrice} EGP
+              </span>
             ) : null}
           </div>
         </div>
         <div className="sm:min-w-[140px]">
           <button type="button" onClick={onAdd} className={buttonClassName("primary", "w-full rounded-md")}>
-            Add to Cart
+            {t("product.addToCart")}
           </button>
         </div>
       </div>

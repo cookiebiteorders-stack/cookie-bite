@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SectionHeading } from "@/components/sections/section-heading";
+import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { buildPageMetadata, buildBreadcrumbJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -21,10 +22,7 @@ export default function TermsPage() {
   ]);
   return (
     <div className="bg-cb-cream pb-24 pt-12">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }}
-      />
+      <JsonLdScript id="terms-breadcrumb-jsonld" json={breadcrumbJsonLd} />
       <div className="mx-auto max-w-3xl px-4 lg:px-6">
         <SectionHeading
           align="left"

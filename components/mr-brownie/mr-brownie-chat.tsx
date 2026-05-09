@@ -6,11 +6,12 @@ import { Send, X } from "lucide-react";
 import { useCart } from "@/components/providers/cart-provider";
 import { cn } from "@/lib/utils";
 import { buttonClassName } from "@/components/ui/button";
+import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import {
-  FAB_SIZE_PX,
   clampFabBottom,
   defaultFabPosition,
   fabInsetPx,
+  fabSizePx,
   fabTopLeftFromStored,
   loadFabPosition,
   rectToFabPosition,
@@ -24,7 +25,12 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 const MR_BROWNIE_MASCOT_SRC = "/brand/mr-brownie-mascot.png";
 
 const DRAG_THRESHOLD_PX = 8;
-const SETTLE_MS = 360;
+/** فترة أطول قليلاً من مدة الحركة (~1s) حتى لا يبدأ تجول جديد أثناء الانتقال */
+const ROAM_INTERVAL_MS = 10_000;
+const BUBBLE_INTERVAL_MS = 2 * 60 * 1000;
+const BUBBLE_AUTO_HIDE_MS = 10000;
+const WELCOME_BUBBLE_DELAY_MS = 4000;
+const ROAM_STORAGE_KEY = "mr-brownie-roam-pos-v1";
 
 const ROLE_LABEL_AR: Record<string, string> = {
   guest: "زائر",
@@ -53,6 +59,29 @@ const SUGGESTIONS_EXEC = [
   "إيش أنصح أعمل أولاً كخطوة تشغيلية؟",
 ] as const;
 
+const AMBIENT_MESSAGES_COMMON = [
+  "👋 محتاج مساعدة سريعة؟ أنا معاك.",
+  "💡 أقدر أرشّح لك منتج حسب ذوقك.",
+  "🚚 لو حابب أعرفك على الشحن والتوصيل اكتبلي.",
+  "🎁 أقدر أساعدك تختار هدية مناسبة فوراً.",
+  "✨ عندك هدف معين؟ قولي وأنا أرتّب لك الخطوات.",
+] as const;
+
+const AMBIENT_MESSAGES_SIGNED_OUT = [
+  "🔐 لو سجلت دخولك هقدر أساعدك بشكل أدق.",
+  "🛍️ جرب تسألني عن أفضل المنتجات حالياً.",
+] as const;
+
+const AMBIENT_MESSAGES_SIGNED_IN = [
+  "🤝 أهلاً بيك تاني! جاهز أساعدك فوراً.",
+  "📦 أقدر أجاوبك عن الطلبات والتجهيز حسب السياق.",
+] as const;
+
+const AMBIENT_MESSAGES_WITH_CART = [
+  "🧺 شايف عندك منتجات في السلة — تحب أساعدك تكمل الطلب؟",
+  "💬 أقدر أراجع السلة معاك قبل الدفع.",
+] as const;
+
 function suggestionsForRole(role: string | null): readonly string[] {
   if (role === "staff") return SUGGESTIONS_STAFF;
   if (role === "admin" || role === "owner") return SUGGESTIONS_EXEC;
@@ -71,10 +100,57 @@ function isMobileViewport() {
 
 function clampDragPosition(left: number, top: number, vw: number, vh: number) {
   const inset = fabInsetPx();
+  const mobile = isMobileViewport();
+  const size = fabSizePx(mobile);
   return {
-    left: Math.max(inset, Math.min(vw - FAB_SIZE_PX - inset, left)),
-    top: Math.max(72, Math.min(vh - FAB_SIZE_PX - (isMobileViewport() ? 96 : inset), top)),
+    left: Math.max(inset, Math.min(vw - size - inset, left)),
+    top: Math.max(72, Math.min(vh - size - (mobile ? 96 : inset), top)),
   };
+}
+
+function loadRoamingPosition(): { left: number; top: number } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(ROAM_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      typeof (parsed as { left?: unknown }).left === "number" &&
+      typeof (parsed as { top?: unknown }).top === "number"
+    ) {
+      return {
+        left: (parsed as { left: number }).left,
+        top: (parsed as { top: number }).top,
+      };
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function saveRoamingPosition(pos: { left: number; top: number }): void {
+  try {
+    sessionStorage.setItem(ROAM_STORAGE_KEY, JSON.stringify(pos));
+  } catch {
+    /* ignore */
+  }
+}
+
+function buildAmbientMessages(isSignedIn: boolean, cartLines: number): readonly string[] {
+  const withAuth = isSignedIn
+    ? [...AMBIENT_MESSAGES_COMMON, ...AMBIENT_MESSAGES_SIGNED_IN]
+    : [...AMBIENT_MESSAGES_COMMON, ...AMBIENT_MESSAGES_SIGNED_OUT];
+  if (cartLines > 0) return [...withAuth, ...AMBIENT_MESSAGES_WITH_CART];
+  return withAuth;
+}
+
+function subtotalFromLines(
+  lines: { priceEgp: number; quantity: number }[],
+): number {
+  return lines.reduce((acc, l) => acc + l.priceEgp * l.quantity, 0);
 }
 
 /**
@@ -176,16 +252,6 @@ function computeSmartPanelPlacement(r: DOMRect): PanelPlacement {
   };
 }
 
-function placementFromStoredFab(
-  pos: MrBrownieFabPosition,
-  vw: number,
-  vh: number,
-): PanelPlacement {
-  const { left, top } = fabTopLeftFromStored(pos, vw, vh);
-  const r = new DOMRect(left, top, FAB_SIZE_PX, FAB_SIZE_PX);
-  return computeSmartPanelPlacement(r);
-}
-
 export function MrBrownieChat() {
   const { lines } = useCart();
   const { isSignedIn } = useUser();
@@ -206,9 +272,13 @@ export function MrBrownieChat() {
     };
   });
   const [dragPx, setDragPx] = useState<{ left: number; top: number } | null>(null);
+  const [roamPx, setRoamPx] = useState<{ left: number; top: number } | null>(null);
   const [settling, setSettling] = useState<{ left: number; top: number } | null>(
     null,
   );
+  const [bubbleVisible, setBubbleVisible] = useState(false);
+  const [bubbleText, setBubbleText] = useState("");
+  const [showNotifDot, setShowNotifDot] = useState(true);
   const [sessionRole, setSessionRole] = useState<string | null>(null);
   const [panelPlacement, setPanelPlacement] = useState<PanelPlacement | null>(
     null,
@@ -227,6 +297,8 @@ export function MrBrownieChat() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const bubbleHideTimerRef = useRef<number | null>(null);
+  const lastBubbleIndexRef = useRef(-1);
 
   const flushPendingDrag = useCallback(() => {
     dragFlushRafRef.current = null;
@@ -249,61 +321,153 @@ export function MrBrownieChat() {
     }
   }, []);
 
-  const runSettleAnimation = useCallback(
-    (
-      from: { left: number; top: number },
-      to: { left: number; top: number },
-      nextPos: MrBrownieFabPosition,
-    ) => {
-      cancelSettleRaf();
-      setDragPx(null);
-
-      const snap =
-        prefersReducedMotion() ||
-        (Math.abs(from.left - to.left) < 2 &&
-          Math.abs(from.top - to.top) < 2);
-
-      if (snap) {
-        setFabPos(nextPos);
-        saveFabPosition(nextPos);
-        setSettling(null);
-        return;
-      }
-
-      setSettling({
-        left: Math.round(from.left),
-        top: Math.round(from.top),
-      });
-
-      const start = performance.now();
-      const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
-
-      const step = (now: number) => {
-        const t = Math.min(1, (now - start) / SETTLE_MS);
-        const e = easeOutCubic(t);
-        const left = Math.round(from.left + (to.left - from.left) * e);
-        const top = Math.round(from.top + (to.top - from.top) * e);
-        setSettling({ left, top });
-        if (t < 1) {
-          settleRafRef.current = requestAnimationFrame(step);
-        } else {
-          settleRafRef.current = null;
-          setFabPos(nextPos);
-          saveFabPosition(nextPos);
-          setSettling(null);
-        }
-      };
-      settleRafRef.current = requestAnimationFrame(step);
-    },
-    [cancelSettleRaf],
-  );
-
   useEffect(() => {
     return () => {
       cancelDragRaf();
       cancelSettleRaf();
+      if (bubbleHideTimerRef.current != null) {
+        window.clearTimeout(bubbleHideTimerRef.current);
+        bubbleHideTimerRef.current = null;
+      }
     };
   }, [cancelDragRaf, cancelSettleRaf]);
+
+  const hideBubble = useCallback(() => {
+    setBubbleVisible(false);
+    if (bubbleHideTimerRef.current != null) {
+      window.clearTimeout(bubbleHideTimerRef.current);
+      bubbleHideTimerRef.current = null;
+    }
+  }, []);
+
+  const showBubble = useCallback((text: string) => {
+    setBubbleText(text);
+    setBubbleVisible(true);
+    setShowNotifDot(true);
+    if (bubbleHideTimerRef.current != null) {
+      window.clearTimeout(bubbleHideTimerRef.current);
+    }
+    bubbleHideTimerRef.current = window.setTimeout(() => {
+      setBubbleVisible(false);
+      bubbleHideTimerRef.current = null;
+    }, BUBBLE_AUTO_HIDE_MS);
+  }, []);
+
+  const fetchDynamicAmbientMessage = useCallback(async (): Promise<string | null> => {
+    try {
+      const res = await fetch("/api/mr-brownie/ambient", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cartItems: lines.length,
+          cartSubtotalEgp: subtotalFromLines(lines),
+        }),
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { message?: unknown };
+      return typeof data.message === "string" && data.message.trim().length > 0
+        ? data.message
+        : null;
+    } catch {
+      return null;
+    }
+  }, [lines]);
+
+  const pickRoamingTarget = useCallback(() => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const inset = fabInsetPx();
+    const size = fabSizePx(isMobileViewport());
+    const safeTop = 86;
+    const safeBottom = isMobileViewport() ? 104 : 86;
+    const leftBandMax = Math.floor(vw * 0.34);
+    const rightBandMin = Math.floor(vw * 0.66);
+
+    const zones = [
+      { xMin: inset, xMax: leftBandMax, yMin: safeTop, yMax: Math.floor(vh * 0.46) },
+      { xMin: inset, xMax: leftBandMax, yMin: Math.floor(vh * 0.54), yMax: vh - safeBottom },
+      { xMin: rightBandMin, xMax: vw - size - inset, yMin: safeTop, yMax: Math.floor(vh * 0.46) },
+      { xMin: rightBandMin, xMax: vw - size - inset, yMin: Math.floor(vh * 0.54), yMax: vh - safeBottom },
+    ];
+    const zone = zones[Math.floor(Math.random() * zones.length)];
+    const x = zone.xMin + Math.random() * Math.max(1, zone.xMax - zone.xMin - size);
+    const y = zone.yMin + Math.random() * Math.max(1, zone.yMax - zone.yMin - size);
+    return clampDragPosition(Math.round(x), Math.round(y), vw, vh);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const cancel = scheduleEffectTask(() => {
+      const saved = loadRoamingPosition();
+      if (saved) {
+        const p = clampDragPosition(saved.left, saved.top, window.innerWidth, window.innerHeight);
+        setRoamPx(p);
+        return;
+      }
+      const fallback = fabTopLeftFromStored(
+        fabPos,
+        window.innerWidth,
+        window.innerHeight,
+        isMobileViewport(),
+      );
+      const p = clampDragPosition(fallback.left, fallback.top, window.innerWidth, window.innerHeight);
+      setRoamPx(p);
+      saveRoamingPosition(p);
+    });
+    return cancel;
+  }, [fabPos]);
+
+  useEffect(() => {
+    if (prefersReducedMotion()) return;
+    const tick = () => {
+      if (open || dragSession.current || dragPx || settling) return;
+      const p = pickRoamingTarget();
+      setRoamPx(p);
+      saveRoamingPosition(p);
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const sz = fabSizePx(isMobileViewport());
+      const next = rectToFabPosition(
+        new DOMRect(p.left, p.top, sz, sz),
+        vw,
+        vh,
+        isMobileViewport(),
+      );
+      setFabPos(next);
+      saveFabPosition(next);
+    };
+    const id = window.setInterval(tick, ROAM_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [open, dragPx, settling, pickRoamingTarget]);
+
+  useEffect(() => {
+    const pool = buildAmbientMessages(Boolean(isSignedIn), lines.length);
+    if (pool.length === 0) return;
+    const pickRandom = () => {
+      const options = pool.filter((_, i) => i !== lastBubbleIndexRef.current);
+      const msg = options[Math.floor(Math.random() * options.length)];
+      const idx = pool.indexOf(msg);
+      lastBubbleIndexRef.current = idx;
+      return msg;
+    };
+    const showSmartMessage = async () => {
+      const dynamic = await fetchDynamicAmbientMessage();
+      showBubble(dynamic ?? pickRandom());
+    };
+
+    const welcomeId = window.setTimeout(() => {
+      if (!open) void showSmartMessage();
+    }, WELCOME_BUBBLE_DELAY_MS);
+
+    const periodicId = window.setInterval(() => {
+      if (!open) void showSmartMessage();
+    }, BUBBLE_INTERVAL_MS);
+
+    return () => {
+      window.clearTimeout(welcomeId);
+      window.clearInterval(periodicId);
+    };
+  }, [isSignedIn, lines.length, open, showBubble, fetchDynamicAmbientMessage]);
 
   useEffect(() => {
     const onResize = () => {
@@ -312,6 +476,17 @@ export function MrBrownieChat() {
         ...p,
         bottomPx: clampFabBottom(p.bottomPx, window.innerHeight, mobile),
       }));
+      setRoamPx((p) => {
+        if (!p) return p;
+        const clamped = clampDragPosition(
+          p.left,
+          p.top,
+          window.innerWidth,
+          window.innerHeight,
+        );
+        saveRoamingPosition(clamped);
+        return clamped;
+      });
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -325,14 +500,14 @@ export function MrBrownieChat() {
   useEffect(() => {
     if (!open) return;
     const update = () => {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      setPanelPlacement(placementFromStoredFab(fabPos, vw, vh));
+      const btn = fabRef.current;
+      if (!btn) return;
+      setPanelPlacement(computeSmartPanelPlacement(btn.getBoundingClientRect()));
     };
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
-  }, [open, fabPos]);
+  }, [open, fabPos, roamPx, dragPx, settling]);
 
   /** إغلاق عند الضغط أو اللمس خارج لوحة الشات (أي مكان في الصفحة عدا المحتوى). */
   useEffect(() => {
@@ -456,6 +631,8 @@ export function MrBrownieChat() {
 
     if (!didMove) {
       setDragPx(null);
+      setShowNotifDot(false);
+      hideBubble();
       const fabEl = fabRef.current;
       if (fabEl && typeof window !== "undefined") {
         setPanelPlacement(
@@ -469,19 +646,26 @@ export function MrBrownieChat() {
     if (session) {
       const dx = e.clientX - session.startX;
       const dy = e.clientY - session.startY;
-      const { left, top } = clampDragPosition(
+      const p = clampDragPosition(
         session.originLeft + dx,
         session.originTop + dy,
         window.innerWidth,
         window.innerHeight,
       );
-      const rect = new DOMRect(left, top, FAB_SIZE_PX, FAB_SIZE_PX);
-      const mobile = isMobileViewport();
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const next = rectToFabPosition(rect, vw, vh, mobile);
-      const to = fabTopLeftFromStored(next, vw, vh);
-      runSettleAnimation({ left, top }, to, next);
+      setDragPx(null);
+      setSettling(null);
+      setRoamPx(p);
+      saveRoamingPosition(p);
+      const sz = fabSizePx(isMobileViewport());
+      const rect = new DOMRect(p.left, p.top, sz, sz);
+      const next = rectToFabPosition(
+        rect,
+        window.innerWidth,
+        window.innerHeight,
+        isMobileViewport(),
+      );
+      setFabPos(next);
+      saveFabPosition(next);
       return;
     }
     setDragPx(null);
@@ -505,7 +689,7 @@ export function MrBrownieChat() {
     el.style.setProperty("position", "fixed");
     el.style.setProperty("z-index", "40");
     el.style.setProperty("touch-action", "none");
-    const pos = dragPx ?? settling;
+    const pos = dragPx ?? settling ?? roamPx;
     if (pos) {
       el.style.setProperty("left", `${pos.left}px`);
       el.style.setProperty("top", `${pos.top}px`);
@@ -528,7 +712,7 @@ export function MrBrownieChat() {
       el.style.setProperty("top", "auto");
       el.style.removeProperty("will-change");
     }
-  }, [dragPx, settling, fabPos.side, fabPos.bottomPx]);
+  }, [dragPx, settling, roamPx, fabPos.side, fabPos.bottomPx]);
 
   /* موضع لوحة المحادثة — ديناميكي بدون خاصية style في JSX */
   useLayoutEffect(() => {
@@ -559,7 +743,9 @@ export function MrBrownieChat() {
 
   const idleFab =
     dragPx == null && settling == null && !open;
-
+  /** حركة تجوال ناعمة عبر CSS؛ أثناء السحب يُعطّل الانتقال لاستجابة فورية للمؤشر */
+  const allowSmoothRoamMove =
+    dragPx == null && !open && !prefersReducedMotion();
   return (
     <>
       <button
@@ -570,37 +756,58 @@ export function MrBrownieChat() {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
         className={cn(
-          "relative flex h-14 w-14 cursor-grab select-none items-center justify-center overflow-visible rounded-full bg-transparent shadow-none",
-          "ring-2 ring-cb-terracotta-dark/25 ring-offset-2 ring-offset-[color-mix(in_oklab,var(--background)_92%,transparent)]",
-          "drop-shadow-[0_4px_14px_rgba(42,24,16,0.35)] dark:ring-offset-cb-cream/10",
-          "transition-[transform,box-shadow,left,right,bottom,filter] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:drop-shadow-[0_6px_20px_rgba(232,93,24,0.35)]",
+          "relative flex max-sm:h-[78px] max-sm:w-[78px] sm:h-[92px] sm:w-[92px] cursor-grab select-none items-center justify-center overflow-visible rounded-full bg-transparent shadow-none ring-0",
+          "drop-shadow-[0_4px_14px_rgba(42,24,16,0.35)]",
+          allowSmoothRoamMove &&
+            "motion-safe:transform-gpu motion-safe:transition-[left,top,right,bottom,transform,filter,opacity] motion-safe:duration-[1000ms] motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
+          !allowSmoothRoamMove &&
+            !dragPx &&
+            "transition-[transform,filter,opacity] duration-200 ease-out",
+          "hover:drop-shadow-[0_6px_20px_rgba(232,93,24,0.35)]",
           "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cb-focus",
           "touch-none active:cursor-grabbing",
-          dragPx && "scale-[1.06] ring-cb-focus/50 transition-none",
-          settling && "ring-cb-focus/30 transition-none",
-          idleFab &&
-            !prefersReducedMotion() &&
-            "motion-safe:transform-gpu",
+          dragPx && "!transition-none scale-[1.06] ring-2 ring-cb-focus/50 ring-offset-0",
+          settling && "!transition-none ring-2 ring-cb-focus/30 ring-offset-0",
+          idleFab && !prefersReducedMotion() && "motion-safe:transform-gpu",
           open && "pointer-events-none opacity-0",
         )}
-        aria-label="Mr. Brownie — اسحب للجانب للتثبيت، أو اضغط لفتح المحادثة"
+        aria-label="Mr. Brownie — اسحب لتحريك الأيقونة أو اضغط لفتح المحادثة"
       >
+        {showNotifDot ? (
+          <span className="absolute -right-0.5 -top-0.5 z-[3] h-3.5 w-3.5 rounded-full border-2 border-white bg-rose-500 [animation:ping_2s_ease-in-out_infinite]" />
+        ) : null}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={MR_BROWNIE_MASCOT_SRC}
           alt=""
-          width={56}
-          height={56}
+          width={92}
+          height={92}
           decoding="async"
           draggable={false}
-          className="pointer-events-none h-[52px] w-[52px] object-contain object-center mix-blend-multiply"
+          className="pointer-events-none max-sm:h-[73px] max-sm:w-[73px] sm:h-[87px] sm:w-[87px] object-contain object-center"
         />
+        <div
+          className={cn(
+            "mr-brownie-ambient-bubble pointer-events-auto absolute left-1/2 top-full z-[4] mt-2 w-64 max-w-[min(16rem,calc(100vw-1.5rem))] -translate-x-1/2 rounded-2xl border border-cb-border/70 bg-cb-surface-elevated/95 px-3 py-2 text-xs text-cb-text-strong shadow-[var(--shadow-glow-warm)] backdrop-blur will-change-transform",
+            "origin-top transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+            bubbleVisible
+              ? "translate-y-0 scale-100 opacity-100"
+              : "pointer-events-none -translate-y-1 scale-[0.96] opacity-0",
+          )}
+          role="status"
+          aria-live="polite"
+        >
+          <p className="relative z-[1] leading-relaxed">{bubbleText}</p>
+          <p className="relative z-[1] mt-1 text-[10px] text-cb-text-muted">
+            اضغط على الأيقونة للرد 💬
+          </p>
+        </div>
       </button>
 
       {open && panelPlacement ? (
         <>
           <div
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] transition-opacity duration-200 dark:bg-black/55"
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300 ease-out dark:bg-black/55"
             aria-hidden
             onClick={() => setOpen(false)}
           />
@@ -620,11 +827,11 @@ export function MrBrownieChat() {
                 <img
                   src={MR_BROWNIE_MASCOT_SRC}
                   alt="Mr. Brownie"
-                  width={40}
-                  height={40}
+                  width={56}
+                  height={56}
                   decoding="async"
                   draggable={false}
-                  className="h-10 w-10 shrink-0 rounded-full bg-cb-cream object-cover object-center mix-blend-multiply"
+                  className="max-sm:h-11 max-sm:w-11 sm:h-14 sm:w-14 shrink-0 rounded-full bg-transparent object-contain object-center"
                 />
                 <div className="min-w-0">
                   <p
