@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { PRODUCTS } from "@/src/data/products";
 import { useDebounce } from "@/src/hooks/useDebounce";
 import { useSearchStore } from "@/src/store/searchStore";
 import type { SearchFilters } from "@/src/types/search";
+import type { Product } from "@/src/types/product";
 import { Input } from "@/src/components/ui/Input";
 import { Select } from "@/src/components/ui/Select";
 import { RangeSlider } from "@/src/components/ui/RangeSlider";
@@ -18,8 +18,96 @@ import {
   SearchProductRow,
 } from "@/src/components/search/ProductCard";
 import { Badge } from "@/src/components/ui/Badge";
+import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 
 const PAGE_SIZE = 9;
+
+type ApiProduct = {
+  id: string;
+  slug: string;
+  name: string;
+  title_en: string | null;
+  title_ar: string | null;
+  description: string | null;
+  description_en: string | null;
+  description_ar: string | null;
+  price_egp: number;
+  compare_price_egp: number | null;
+  image_url: string | null;
+  images: Array<{ url?: string | null }> | null;
+  badges: string[] | null;
+  category: string | null;
+  is_active: boolean;
+  stock: number;
+  created_at: string;
+};
+
+function normalizeProduct(p: ApiProduct): Product {
+  const title = p.title_en || p.title_ar || p.name;
+  const description =
+    p.description_en || p.description_ar || p.description || "Cookie Bite product";
+  const mainImage =
+    p.images?.find((img) => typeof img?.url === "string" && img.url)?.url ||
+    p.image_url ||
+    "/images/web-logo.png";
+  const compare = p.compare_price_egp ?? undefined;
+  const discount =
+    compare && compare > p.price_egp
+      ? Math.round(((compare - p.price_egp) / compare) * 100)
+      : undefined;
+
+  return {
+    id: p.id,
+    name: title,
+    brand: "Cookie Bite",
+    category: (p.category || "cookies") as Product["category"],
+    subcategory: p.category || "cookies",
+    price: p.price_egp,
+    originalPrice: compare,
+    discount,
+    rating: 5,
+    reviewCount: 0,
+    images: [mainImage],
+    sizes: [],
+    colors: [],
+    tags: p.badges ?? [],
+    inStock: p.stock > 0,
+    stockCount: p.stock,
+    isNew: Boolean(p.badges?.includes("new")),
+    isFeatured: Boolean(p.badges?.includes("bestseller")),
+    description,
+    createdAt: p.created_at,
+  };
+}
+
+async function fetchAllProducts(): Promise<Product[]> {
+  const limit = 48;
+  let page = 1;
+  let totalPages = 1;
+  const all: Product[] = [];
+
+  while (page <= totalPages) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      sort: "newest",
+    });
+    const res = await fetch(`/api/products?${params.toString()}`, { cache: "no-store" });
+    if (!res.ok) {
+      throw new Error("Failed to load products from API");
+    }
+    const payload = (await res.json()) as {
+      products?: ApiProduct[];
+      total_pages?: number;
+    };
+    const batch = (payload.products ?? []).map(normalizeProduct);
+    all.push(...batch);
+    totalPages = Math.max(1, Number(payload.total_pages ?? 1));
+    page += 1;
+  }
+
+  return all;
+}
 
 export function SearchPageClient() {
   const filters = useSearchStore((s) => s.filters);
@@ -28,6 +116,9 @@ export function SearchPageClient() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const [catalog, setCatalog] = useState<Product[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const debouncedQuery = useDebounce(filters.query, 300);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -57,30 +148,49 @@ export function SearchPageClient() {
     router.replace(params.toString() ? `${pathname}?${params}` : pathname);
   }, [filters.query, filters.categories, filters.sort, filters.page, pathname, router]);
 
+  useEffect(() => {
+    const cancel = scheduleEffectTask(() => {
+      void (async () => {
+        try {
+          setCatalogLoading(true);
+          setCatalogError(null);
+          const rows = await fetchAllProducts();
+          setCatalog(rows);
+        } catch (e) {
+          setCatalogError(e instanceof Error ? e.message : "Search data failed to load");
+          setCatalog([]);
+        } finally {
+          setCatalogLoading(false);
+        }
+      })();
+    });
+    return cancel;
+  }, []);
+
   const categories = useMemo(
-    () => Array.from(new Set(PRODUCTS.map((p) => p.category))),
-    [],
+    () => Array.from(new Set(catalog.map((p) => p.category))),
+    [catalog],
   );
   const brands = useMemo(
-    () => Array.from(new Set(PRODUCTS.map((p) => p.brand))),
-    [],
+    () => Array.from(new Set(catalog.map((p) => p.brand))),
+    [catalog],
   );
   const availableSizes = useMemo(
-    () => Array.from(new Set(PRODUCTS.flatMap((p) => p.sizes))),
-    [],
+    () => Array.from(new Set(catalog.flatMap((p) => p.sizes))),
+    [catalog],
   );
   const availableColors = useMemo(
-    () => Array.from(new Set(PRODUCTS.flatMap((p) => p.colors.map((c) => c.name)))),
-    [],
+    () => Array.from(new Set(catalog.flatMap((p) => p.colors.map((c) => c.name)))),
+    [catalog],
   );
 
   const filtered = useMemo(() => {
-    return PRODUCTS.filter((p) => {
+    return catalog.filter((p) => {
       const q = debouncedQuery.trim().toLowerCase();
       const matchQuery =
         !q ||
         p.name.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
+        (p.brand || "").toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q);
       const matchCategory =
         !filters.categories.length || filters.categories.includes(p.category);
@@ -107,6 +217,7 @@ export function SearchPageClient() {
       );
     });
   }, [
+    catalog,
     debouncedQuery,
     filters.categories,
     filters.minPrice,
@@ -152,18 +263,18 @@ export function SearchPageClient() {
 
   const suggestionSections = useMemo(() => {
     const q = filters.query.trim().toLowerCase();
-    const recent = ["new arrivals", "sneakers", "minimal black", "best rated"];
-    const trending = ["streetwear", "summer fit", "top reviewed"];
+    const recent = ["chocolate chip", "gift box", "stuffed cookies", "bestseller"];
+    const trending = ["new flavors", "premium cookies", "party box"];
     const products = Array.from(
       new Set(
-        PRODUCTS.map((p) => p.name).filter((v) =>
+        catalog.map((p) => p.name).filter((v) =>
           q ? v.toLowerCase().includes(q) : true,
         ),
       ),
     ).slice(0, 4);
     const cats = Array.from(
       new Set(
-        PRODUCTS.map((p) => p.category).filter((v) =>
+        catalog.map((p) => p.category).filter((v) =>
           q ? v.toLowerCase().includes(q) : true,
         ),
       ),
@@ -174,7 +285,7 @@ export function SearchPageClient() {
       { title: "Products", items: products },
       { title: "Categories", items: cats },
     ].filter((s) => s.items.length > 0);
-  }, [filters.query]);
+  }, [filters.query, catalog]);
 
   const flatSuggestions = useMemo(
     () => suggestionSections.flatMap((s) => s.items),
@@ -464,7 +575,11 @@ export function SearchPageClient() {
               ))}
               {filters.inStockOnly ? <Badge variant="success">In stock</Badge> : null}
             </div>
-            {loading ? (
+            {catalogError ? (
+              <div className="rounded-xl border border-red-300 bg-red-50 p-6 text-sm text-red-700">
+                Could not load products automatically. Please check product API.
+              </div>
+            ) : loading || catalogLoading ? (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {Array.from({ length: 9 }).map((_, i) => (
                   <Skeleton key={i} shape="card" />
