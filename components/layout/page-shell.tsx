@@ -11,12 +11,24 @@ import { WhatsAppFab } from "@/components/layout/whatsapp-fab";
 import { MrBrownieChat } from "@/components/mr-brownie/mr-brownie-chat";
 import { PageTransition } from "@/components/motion/page-transition";
 import { CartProvider } from "@/components/providers/cart-provider";
+import { cn } from "@/lib/utils";
 import { LayoutGroup } from "motion/react";
 
-export function PageShell({ children }: { children: React.ReactNode }) {
+export function PageShell({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <CartProvider>
-      <div className="cb-ambient-shell cb-touch-manipulation relative z-[1] flex min-h-screen flex-col overflow-x-clip bg-background text-foreground">
+      <div
+        className={cn(
+          "cb-ambient-shell cb-touch-manipulation relative z-[1] flex min-h-screen flex-col overflow-x-clip bg-background text-foreground",
+          className,
+        )}
+      >
         <div className="cb-ambient-orbs" aria-hidden />
         <a href="#main-content" className="cb-skip-link">
           Skip to main content
