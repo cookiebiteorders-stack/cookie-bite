@@ -230,11 +230,8 @@ export default function AdminDiscountsPage() {
   }, [discounts, query, sortBy, statusFilter]);
 
   const pages = Math.max(1, Math.ceil(rows.length / pageSize));
-  const pagedRows = rows.slice((page - 1) * pageSize, page * pageSize);
-
-  useEffect(() => {
-    if (page > pages) setPage(pages);
-  }, [page, pages]);
+  const activePage = Math.min(page, pages);
+  const pagedRows = rows.slice((activePage - 1) * pageSize, activePage * pageSize);
 
   const previewValue = builderType === "fixed" ? `EGP ${Number(value || 0).toFixed(0)}` : `${Number(value || 0)}%`;
   const previewExpiry = expiry ? new Date(expiry).toLocaleDateString() : "No end date";
@@ -637,7 +634,7 @@ export default function AdminDiscountsPage() {
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs text-stone-700 dark:text-stone-300">
-            Showing {(page - 1) * pageSize + 1} - {Math.min(page * pageSize, rows.length)} of {rows.length}
+            Showing {(activePage - 1) * pageSize + 1} - {Math.min(activePage * pageSize, rows.length)} of {rows.length}
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -648,7 +645,7 @@ export default function AdminDiscountsPage() {
               Prev
             </button>
             <span className="text-xs font-bold text-stone-700 dark:text-stone-300">
-              {page} / {pages}
+              {activePage} / {pages}
             </span>
             <button
               type="button"

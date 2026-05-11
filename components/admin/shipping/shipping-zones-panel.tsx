@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   createColumnHelper,
   flexRender,
@@ -151,7 +151,7 @@ export function ShippingZonesPanel() {
     setDraft({ ...z, cities: [...z.cities] });
   };
 
-  const saveEdit = async () => {
+  const saveEdit = useCallback(async () => {
     if (!editingId || !draft) return;
     const name = (draft.name ?? "").trim();
     const cities = (draft.cities ?? []).map((c) => c.trim()).filter(Boolean);
@@ -181,9 +181,9 @@ export function ShippingZonesPanel() {
     await updateZone(editingId, patch);
     setEditingId(null);
     setDraft(null);
-  };
+  }, [draft, editingId, updateZone]);
 
-  const duplicate = async (z: ShippingZoneRow) => {
+  const duplicate = useCallback(async (z: ShippingZoneRow) => {
     let name = `${z.name} (copy)`;
     let n = 2;
     const currentZones = useShippingOrchestrationStore.getState().zones;
@@ -201,12 +201,12 @@ export function ShippingZonesPanel() {
       eta_max_days: z.eta_max_days,
       is_active: z.is_active,
     });
-  };
+  }, [createZone]);
 
-  const onDelete = async (id: string, name: string) => {
+  const onDelete = useCallback(async (id: string, name: string) => {
     if (!window.confirm(`Delete zone "${name}"? This cannot be undone.`)) return;
     await deleteZone(id);
-  };
+  }, [deleteZone]);
 
   const onDropReorder = (targetId: string, sourceId: string) => {
     if (!reorderUnlocked || sourceId === targetId) return;
@@ -554,9 +554,10 @@ export function ShippingZonesPanel() {
         },
       }),
     ],
-    [editingId, draft, mutating, reorderUnlocked, order, displayZones, rowSelection],
+    [editingId, draft, mutating, reorderUnlocked, duplicate, onDelete, saveEdit, updateZone],
   );
 
+  /* eslint-disable react-hooks/incompatible-library -- TanStack Table returns non-memoizable helpers */
   const table = useReactTable({
     data: displayZones,
     columns,
@@ -566,6 +567,7 @@ export function ShippingZonesPanel() {
     enableRowSelection: true,
     getRowId: (row) => row.id,
   });
+  /* eslint-enable react-hooks/incompatible-library */
 
   const selectedCount = Object.values(rowSelection).filter(Boolean).length;
 

@@ -72,11 +72,14 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 export function MorphTransitionProvider({ children }: { children: React.ReactNode }) {
   const { lang, setLanguage } = useLanguage();
   const langRef = useRef(lang);
-  langRef.current = lang;
   const [session, setSession] = useState<Session | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
   const busy = useRef(false);
+
+  useEffect(() => {
+    langRef.current = lang;
+  }, [lang]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");

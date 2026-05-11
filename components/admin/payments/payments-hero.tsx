@@ -47,12 +47,12 @@ export function PaymentsHero({
             <h1 className="font-serif text-2xl font-bold tracking-tight text-cb-text-strong sm:text-3xl">
               Payments Console
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-800 dark:text-stone-300 sm:text-base">
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cb-text sm:text-base">
               Gateway transaction health, status distribution, and captured value — with safe
               error handling and live refresh.
             </p>
             {lastFetchedAt && (
-              <p className="mt-2 text-xs text-stone-600 dark:text-stone-400">
+              <p className="mt-2 text-xs text-cb-text-muted">
                 Last sync: {new Date(lastFetchedAt).toLocaleString()}
               </p>
             )}

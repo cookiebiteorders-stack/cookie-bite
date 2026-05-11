@@ -1,5 +1,5 @@
 import { SignIn } from "@clerk/nextjs";
-import { AuthSplitLayout } from "@/components/auth/auth-split-layout";
+import { AuthLayout } from "@/components/auth/auth-layout";
 import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
 import { ClerkSmartCaptcha } from "@/components/auth/clerk-smart-captcha";
 import { safeAuthRedirectPath } from "@/lib/auth/safe-redirect";
@@ -14,11 +14,15 @@ export default async function SignInPage({ searchParams }: Props) {
   const afterAuth = safeAuthRedirectPath(redirect_url, "/account");
 
   return (
-    <AuthSplitLayout
+    <AuthLayout
       imageSrc={IMAGES.signIn}
       imageAlt="Cookie Bite — شخصية الكوكيز"
-      showMobileImageStrip
       imageClassName="object-cover object-[center_20%]"
+      title="Welcome Back"
+      subtitle="Sign in quickly to track orders, manage your account, and continue checkout in seconds."
+      switchLabel="New to Cookie Bite?"
+      switchHref="/sign-up"
+      switchCta="Create account"
     >
       <ClerkSmartCaptcha />
       <SignIn
@@ -32,6 +36,6 @@ export default async function SignInPage({ searchParams }: Props) {
         signUpFallbackRedirectUrl={afterAuth}
         signUpForceRedirectUrl={afterAuth}
       />
-    </AuthSplitLayout>
+    </AuthLayout>
   );
 }

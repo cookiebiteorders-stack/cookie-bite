@@ -22,7 +22,6 @@ type LanguageContextValue = {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
-const DEFAULT_LANG: Lang = "ar";
 const STORAGE_KEY = "lang";
 
 function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
@@ -54,17 +53,11 @@ type LanguageProviderProps = {
 };
 
 export function LanguageProvider({ children, initialLang }: LanguageProviderProps) {
-  const [lang, setLang] = useState<Lang>(() => initialLang);
-
-  useLayoutEffect(() => {
+  const [lang, setLang] = useState<Lang>(() => {
+    if (typeof window === "undefined") return initialLang;
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (
-      (stored === "en" || stored === "ar") &&
-      stored !== initialLang
-    ) {
-      setLang(stored);
-    }
-  }, [initialLang]);
+    return stored === "en" || stored === "ar" ? stored : initialLang;
+  });
 
   useLayoutEffect(() => {
     applyLanguageToDocument(lang);

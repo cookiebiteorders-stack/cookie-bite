@@ -159,7 +159,7 @@ export function ShopClient() {
     return () => {
       active = false;
     };
-  }, [t]);
+  }, [searchParams, t]);
 
   const availableCategories = useMemo(
     () =>
@@ -179,12 +179,6 @@ export function ShopClient() {
     }
     return { min, max };
   }, [catalog]);
-
-  useEffect(() => {
-    if (!catalog.length) return;
-    if (minPrice == null) setMinPrice(priceBounds.min);
-    if (maxPrice == null) setMaxPrice(priceBounds.max);
-  }, [catalog, minPrice, maxPrice, priceBounds.min, priceBounds.max]);
 
   useEffect(() => {
     const params = new URLSearchParams();

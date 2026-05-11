@@ -152,10 +152,10 @@ export function ProductManagementDashboard() {
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-900 dark:text-amber-200/95">
             Catalog
           </p>
-          <h2 className="mt-1 font-serif text-xl font-bold text-stone-900 dark:text-stone-50 sm:text-2xl">
+          <h2 className="mt-1 font-serif text-xl font-bold text-cb-text-strong sm:text-2xl">
             إدارة المنتجات
           </h2>
-          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-stone-700 dark:text-stone-300">
+          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-cb-text-muted">
             Manage catalog, variants, pricing, stock thresholds, publishing state, SEO, analytics, and inventory
             operations — اختصارات: <kbd className="rounded border px-1 font-mono text-[10px]">⌘K</kbd> أو{" "}
             <kbd className="rounded border px-1 font-mono text-[10px]">Ctrl+K</kbd> للأوامر،{" "}

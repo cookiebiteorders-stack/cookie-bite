@@ -21,7 +21,7 @@
     r.setAttribute("lang", lang);
     r.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
     r.setAttribute("data-lang", lang);
-  } catch (_) {
+  } catch {
     /* ignore */
   }
 })();

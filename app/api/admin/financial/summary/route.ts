@@ -26,7 +26,6 @@ const expenseSchema = z.object({
   notes: z.string().max(1000).optional(),
 });
 
-type RawOrder = Record<string, unknown>;
 type RawExpense = Record<string, unknown>;
 
 function num(v: unknown): number {

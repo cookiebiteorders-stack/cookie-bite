@@ -8,6 +8,11 @@ const queryChain = {
   select: jest.fn().mockReturnThis(),
   order: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
+  gte: jest.fn().mockReturnThis(),
+  lt: jest.fn().mockReturnThis(),
+  lte: jest.fn().mockReturnThis(),
+  ilike: jest.fn().mockReturnThis(),
+  limit: jest.fn().mockReturnThis(),
   range: jest.fn(),
 };
 

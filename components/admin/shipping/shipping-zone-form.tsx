@@ -44,12 +44,14 @@ export function ShippingZoneForm({ existingNames }: ShippingZoneFormProps) {
     mode: "onChange",
   });
 
+  /* eslint-disable react-hooks/incompatible-library -- react-hook-form watch is intentionally dynamic */
   const watch = form.watch();
+  /* eslint-enable react-hooks/incompatible-library */
   const cities = watch.cities ?? [];
 
-  const setCities = (next: string[]) => {
+  const setCities = useCallback((next: string[]) => {
     form.setValue("cities", next, { shouldValidate: true, shouldDirty: true });
-  };
+  }, [form]);
 
   const baseEgp = displayFeeToEgp(watch.base_fee_display ?? 0, watch.currency ?? "EGP");
   const freeEgp =
@@ -82,7 +84,7 @@ export function ShippingZoneForm({ existingNames }: ShippingZoneFormProps) {
       setCityDraft("");
       setSuggestions([]);
     },
-    [form],
+    [form, setCities],
   );
 
   const onNameChange = (v: string) => {

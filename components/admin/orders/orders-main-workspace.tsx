@@ -34,24 +34,24 @@ function initialsFromEmail(email: string | null) {
 
 function statusBadge(status: AdminOrderRow["status"]) {
   const map: Record<string, string> = {
-    pending: "bg-amber-100 text-amber-950 dark:bg-amber-950/50 dark:text-amber-50",
-    processing: "bg-sky-100 text-sky-950 dark:bg-sky-950/50 dark:text-sky-50",
-    shipped: "bg-cyan-100 text-cyan-950 dark:bg-cyan-950/50 dark:text-cyan-50",
-    delivered: "bg-emerald-100 text-emerald-950 dark:bg-emerald-950/50 dark:text-emerald-50",
-    cancelled: "bg-red-100 text-red-900 dark:bg-red-950/50 dark:text-red-50",
-    refunded: "bg-orange-100 text-orange-950 dark:bg-orange-950/50 dark:text-orange-50",
+    pending: "bg-amber-100 text-amber-950 ring-1 ring-amber-300 dark:bg-amber-950/50 dark:text-amber-50 dark:ring-amber-800",
+    processing: "bg-sky-100 text-sky-950 ring-1 ring-sky-300 dark:bg-sky-950/50 dark:text-sky-50 dark:ring-sky-800",
+    shipped: "bg-cyan-100 text-cyan-950 ring-1 ring-cyan-300 dark:bg-cyan-950/50 dark:text-cyan-50 dark:ring-cyan-800",
+    delivered: "bg-emerald-100 text-emerald-950 ring-1 ring-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-50 dark:ring-emerald-800",
+    cancelled: "bg-red-100 text-red-900 ring-1 ring-red-300 dark:bg-red-950/50 dark:text-red-50 dark:ring-red-800",
+    refunded: "bg-orange-100 text-orange-950 ring-1 ring-orange-300 dark:bg-orange-950/50 dark:text-orange-50 dark:ring-orange-800",
   };
-  return map[status] ?? "bg-stone-100 text-stone-800";
+  return map[status] ?? "bg-stone-100 text-stone-900 ring-1 ring-stone-300 dark:bg-stone-900 dark:text-stone-100 dark:ring-stone-700";
 }
 
 function payBadge(p: AdminOrderRow["payment_status"]) {
   const map: Record<string, string> = {
-    unpaid: "bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100",
-    paid: "bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100",
-    failed: "bg-red-50 text-red-900 dark:bg-red-950/40 dark:text-red-100",
-    refunded: "bg-violet-50 text-violet-900 dark:bg-violet-950/40 dark:text-violet-100",
+    unpaid: "bg-amber-50 text-amber-900 ring-1 ring-amber-300 dark:bg-amber-950/40 dark:text-amber-100 dark:ring-amber-800",
+    paid: "bg-emerald-50 text-emerald-900 ring-1 ring-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-100 dark:ring-emerald-800",
+    failed: "bg-red-50 text-red-900 ring-1 ring-red-300 dark:bg-red-950/40 dark:text-red-100 dark:ring-red-800",
+    refunded: "bg-violet-50 text-violet-900 ring-1 ring-violet-300 dark:bg-violet-950/40 dark:text-violet-100 dark:ring-violet-800",
   };
-  return map[p] ?? "bg-stone-100 text-stone-800";
+  return map[p] ?? "bg-stone-100 text-stone-900 ring-1 ring-stone-300 dark:bg-stone-900 dark:text-stone-100 dark:ring-stone-700";
 }
 
 function deliveryLabel(status: AdminOrderRow["status"]) {
@@ -419,7 +419,7 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
               placeholder="بحث: رقم الطلب، البريد…"
-              className="w-full rounded-xl border border-cb-border bg-cb-surface py-2.5 ps-10 pe-3 text-sm shadow-inner focus-visible:border-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60"
+            className="w-full rounded-xl border border-cb-border bg-cb-surface py-2.5 ps-10 pe-3 text-sm text-cb-text-strong shadow-inner focus-visible:border-cb-focus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cb-focus/40"
               aria-label="بحث الطلبات"
             />
             {localSearch !== debouncedSearch ? (
@@ -616,9 +616,9 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
         )}
       </div>
 
-      <div className="hidden overflow-x-auto rounded-2xl border border-cb-border/90 bg-white/95 shadow-sm dark:bg-cb-surface-elevated/95 md:block">
-        <table className="w-full min-w-[1280px] border-collapse text-sm">
-          <thead className="bg-gradient-to-b from-cb-surface-2/80 to-transparent text-start text-xs font-bold uppercase tracking-wide text-cb-text-muted">
+      <div className="hidden overflow-x-auto rounded-2xl border border-cb-border/90 bg-cb-surface-elevated shadow-sm md:block">
+        <table data-cb-zebra="true" className="w-full min-w-[1280px] border-collapse text-sm">
+          <thead className="bg-gradient-to-b from-cb-surface-2/80 to-transparent text-start text-xs font-bold uppercase tracking-wide text-cb-text-strong">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((h) => (
@@ -645,7 +645,7 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
                 <motion.tr
                   key={row.id}
                   layout={!reduceMotion}
-                  className="group border-b border-cb-border/80 transition hover:bg-amber-50/30 dark:hover:bg-amber-950/10"
+                  className="group border-b border-cb-border/80 transition"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-2 py-2 align-middle">

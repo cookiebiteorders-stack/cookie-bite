@@ -4,9 +4,9 @@ type Variant = "default" | "success" | "warning" | "error" | "accent" | "outline
 
 const variants: Record<Variant, string> = {
   default: "bg-cb-surface-elevated text-cb-text-strong border-cb-border",
-  success: "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
-  warning: "bg-amber-500/15 text-amber-300 border-amber-500/40",
-  error: "bg-red-500/15 text-red-300 border-red-500/40",
+  success: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40",
+  warning: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40",
+  error: "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/40",
   accent: "bg-cb-terracotta-dark text-white border-cb-terracotta-dark",
   outline: "bg-transparent text-cb-text-strong border-cb-border-strong",
 };

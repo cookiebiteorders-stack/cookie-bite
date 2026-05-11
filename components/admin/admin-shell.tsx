@@ -18,9 +18,9 @@ export function AdminShell({ role, children }: AdminShellProps) {
   const navItems = getAccessibleAdminConsoleNav(role);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="admin-console min-h-screen bg-background text-foreground">
       <div className="mx-auto grid max-w-[1600px] grid-cols-1 lg:grid-cols-[260px_1fr]">
-        <aside className="border-r border-cb-border bg-cb-surface-2/90 px-4 py-6 backdrop-blur-md lg:min-h-screen">
+        <aside className="border-r border-cb-border bg-cb-surface-2 px-4 py-6 backdrop-blur-md lg:min-h-screen">
           <div className="mb-8 rounded-2xl border border-cb-border bg-cb-surface p-4 shadow-sm cb-shadow-editorial">
             <div className="flex items-center gap-2">
               <LogoMark className="h-9 w-9 text-cb-brand-logo" title="Cookie Bite" />
@@ -28,7 +28,7 @@ export function AdminShell({ role, children }: AdminShellProps) {
                 Cookie Bite
               </p>
             </div>
-            <p className="mt-2 text-xs font-semibold tracking-[0.16em] text-cb-text-muted">
+            <p className="mt-2 text-xs font-semibold tracking-[0.16em] text-cb-text">
               ADMIN CONSOLE
             </p>
             <span className="mt-3 inline-flex rounded-full border border-cb-border-strong bg-cb-peach/50 px-3 py-1 text-xs font-bold text-cb-text-strong">
@@ -47,8 +47,8 @@ export function AdminShell({ role, children }: AdminShellProps) {
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors duration-200",
                     active
-                      ? "bg-cb-terracotta-dark text-cb-cream-2 shadow-[var(--shadow-hover)]"
-                      : "text-cb-text-strong hover:bg-cb-hover-overlay",
+                      ? "bg-cb-terracotta-dark text-white shadow-[var(--shadow-hover)]"
+                      : "text-cb-text-strong hover:bg-cb-hover-overlay hover:text-cb-text-strong",
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" aria-hidden />

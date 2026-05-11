@@ -83,7 +83,7 @@ async function loadCrmStats(
   for (const [, n] of byUserCount) {
     if (n >= 2) returning_with_orders += 1;
   }
-  for (const [uid, last] of lastOrder) {
+  for (const [, last] of lastOrder) {
     if (last >= d90) active_last_90d += 1;
   }
 

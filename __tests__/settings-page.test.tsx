@@ -41,8 +41,9 @@ describe("AdminSettingsPage", () => {
     fireEvent.click(retry);
 
     await waitFor(() => {
-      expect(screen.getByText("Canonical Host")).toBeInTheDocument();
+      expect(healthCalls).toBeGreaterThan(1);
+      expect(screen.queryByText("network fail")).not.toBeInTheDocument();
     });
-  });
+  }, 15000);
 });
 

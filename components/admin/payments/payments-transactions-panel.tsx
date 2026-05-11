@@ -21,12 +21,12 @@ const columnHelper = createColumnHelper<PaymentTransactionRow>();
 function statusBadge(status: string) {
   const s = status.toLowerCase();
   const map: Record<string, string> = {
-    paid: "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-100",
-    failed: "bg-red-100 text-red-900 dark:bg-red-950/60 dark:text-red-100",
-    unpaid: "bg-amber-100 text-amber-950 dark:bg-amber-950/50 dark:text-amber-100",
-    refunded: "bg-slate-200 text-slate-900 dark:bg-slate-800 dark:text-slate-100",
+    paid: "bg-emerald-100 text-emerald-900 ring-1 ring-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-100 dark:ring-emerald-800",
+    failed: "bg-red-100 text-red-900 ring-1 ring-red-300 dark:bg-red-950/60 dark:text-red-100 dark:ring-red-800",
+    unpaid: "bg-amber-100 text-amber-950 ring-1 ring-amber-300 dark:bg-amber-950/50 dark:text-amber-100 dark:ring-amber-800",
+    refunded: "bg-slate-200 text-slate-900 ring-1 ring-slate-300 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700",
   };
-  return map[s] ?? "bg-cb-surface-2 text-cb-text-strong";
+  return map[s] ?? "bg-cb-surface-2 text-cb-text-strong ring-1 ring-cb-border";
 }
 
 type Props = {
@@ -215,12 +215,14 @@ export function PaymentsTransactionsPanel({ rows }: Props) {
     [expanded, liveMode, pushToast],
   );
 
+  /* eslint-disable react-hooks/incompatible-library -- TanStack Table returns non-memoizable helpers */
   const table = useReactTable({
     data: filtered,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => row.id,
   });
+  /* eslint-enable react-hooks/incompatible-library */
 
   return (
     <section className="space-y-4">
@@ -250,7 +252,7 @@ export function PaymentsTransactionsPanel({ rows }: Props) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="ID, email, order code…"
-              className="w-full rounded-xl border border-cb-border bg-cb-surface py-2 ps-9 pe-3 text-sm"
+              className="w-full rounded-xl border border-cb-border bg-cb-surface py-2 ps-9 pe-3 text-sm text-cb-text-strong"
             />
           </span>
         </label>
@@ -259,7 +261,7 @@ export function PaymentsTransactionsPanel({ rows }: Props) {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm text-cb-text-strong"
           >
             <option value="all">All</option>
             <option value="paid">Paid</option>
@@ -273,7 +275,7 @@ export function PaymentsTransactionsPanel({ rows }: Props) {
           <select
             value={methodFilter}
             onChange={(e) => setMethodFilter(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm text-cb-text-strong"
           >
             <option value="all">All methods</option>
             {methods.map((m) => (
@@ -290,7 +292,7 @@ export function PaymentsTransactionsPanel({ rows }: Props) {
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-cb-border bg-cb-surface px-2 py-2 text-sm"
+              className="mt-1 w-full rounded-xl border border-cb-border bg-cb-surface px-2 py-2 text-sm text-cb-text-strong"
             />
           </label>
           <label className="block text-xs font-bold uppercase tracking-wide text-cb-text-muted">
@@ -299,15 +301,15 @@ export function PaymentsTransactionsPanel({ rows }: Props) {
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-cb-border bg-cb-surface px-2 py-2 text-sm"
+              className="mt-1 w-full rounded-xl border border-cb-border bg-cb-surface px-2 py-2 text-sm text-cb-text-strong"
             />
           </label>
         </div>
       </div>
 
       <div className="hidden overflow-x-auto rounded-2xl border border-cb-border bg-cb-surface-elevated md:block">
-        <table className="w-full min-w-[1100px] text-left text-sm">
-          <thead className="border-b border-cb-border bg-cb-surface-2/80 text-xs font-bold uppercase tracking-wide text-cb-text-muted">
+        <table data-cb-zebra="true" className="w-full min-w-[1100px] text-left text-sm">
+          <thead className="border-b border-cb-border bg-cb-surface-2/80 text-xs font-bold uppercase tracking-wide text-cb-text-strong">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((h) => (
@@ -323,7 +325,7 @@ export function PaymentsTransactionsPanel({ rows }: Props) {
               <Fragment key={row.id}>
                 <tr
                   className={cn(
-                    "border-t border-cb-border transition-colors hover:bg-cb-hover-overlay/50",
+                    "border-t border-cb-border transition-colors",
                     expanded === row.original.id && "bg-cb-peach/10",
                   )}
                 >

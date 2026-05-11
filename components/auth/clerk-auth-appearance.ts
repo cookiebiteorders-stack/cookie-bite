@@ -1,4 +1,4 @@
-/** مظهر Clerk — Cookie Bite، وضع فاتح، تباين AA، تفاعلات واضحة */
+/** مظهر Clerk — Cookie Bite، mobile-first وتباين قوي */
 export const clerkAuthAppearance = {
   layout: {
     socialButtonsVariant: "blockButton" as const,
@@ -20,17 +20,17 @@ export const clerkAuthAppearance = {
   },
   elements: {
     rootBox:
-      "mx-auto w-full !max-w-[22rem] min-w-0 box-border motion-safe:transition-[opacity,transform] motion-safe:duration-300",
+      "mx-auto w-full !max-w-[28rem] min-w-0 box-border motion-safe:transition-[opacity,transform] motion-safe:duration-300",
     card: [
       "shadow-[0_8px_32px_-8px_rgba(91,58,36,0.12)] ring-1 ring-cb-peach-deep/80 bg-cb-surface dark:bg-cb-surface-elevated dark:ring-cb-border",
-      "!w-full !max-w-[22rem] min-w-0 mx-auto",
-      "rounded-2xl p-5 sm:p-6 box-border gap-4",
+      "!w-full !max-w-[28rem] min-w-0 mx-auto",
+      "rounded-2xl p-4 sm:p-6 box-border gap-4",
       "motion-safe:transition-[box-shadow,ring-color] motion-safe:duration-300",
       "focus-within:ring-2 focus-within:ring-cb-brand-logo/25 focus-within:ring-offset-2 focus-within:ring-offset-cb-cream dark:focus-within:ring-offset-cb-cream-2",
     ].join(" "),
     header: "space-y-1.5",
     headerTitle:
-      "font-serif text-xl font-semibold text-cb-text-strong tracking-tight sm:text-[1.35rem]",
+      "font-serif text-2xl font-semibold text-cb-text-strong tracking-tight sm:text-[1.75rem]",
     headerSubtitle:
       "text-sm leading-relaxed text-cb-text-muted sm:text-[0.9375rem]",
     main: "min-w-0 w-full max-w-full gap-4",
@@ -38,7 +38,7 @@ export const clerkAuthAppearance = {
     socialButtonsRoot: "grid w-full min-w-0 max-w-full grid-cols-1 gap-2.5",
     socialButtonsBlockButton: [
       "w-full max-w-full rounded-xl border-2 border-cb-border bg-cb-cream-2/80",
-      "text-sm h-11 min-h-11 font-semibold text-cb-text-strong",
+      "text-sm h-12 min-h-12 font-semibold text-cb-text-strong",
       "transition-[background-color,transform,box-shadow] duration-200 ease-out",
       "hover:bg-cb-peach/50 hover:-translate-y-px hover:shadow-sm",
       "active:translate-y-0",
@@ -47,7 +47,7 @@ export const clerkAuthAppearance = {
       "w-full max-w-full rounded-xl border-2 border-cb-border h-11",
     formButtonPrimary: [
       "w-full max-w-full rounded-xl bg-cb-brand-logo hover:bg-[color-mix(in_oklab,var(--cb-brand-logo)_88%,#000)]",
-      "text-sm h-11 min-h-11 font-bold text-white shadow-sm",
+      "text-base h-12 min-h-12 font-bold text-white shadow-sm",
       "transition-[background-color,transform,box-shadow] duration-200 ease-out",
       "hover:-translate-y-px hover:shadow-md",
       "active:translate-y-0",
@@ -58,7 +58,7 @@ export const clerkAuthAppearance = {
     formFieldRow: "min-w-0 w-full max-w-full gap-2.5",
     formFieldInputGroup: "min-w-0 w-full max-w-full gap-1.5",
     formFieldInput: [
-      "w-full max-w-full min-w-0 rounded-xl text-sm h-11 box-border",
+      "w-full max-w-full min-w-0 rounded-xl text-base h-12 box-border",
       "border-2 border-cb-border bg-cb-cream-2/90 px-3.5 text-cb-text-strong dark:bg-cb-surface-2 dark:border-cb-border",
       "placeholder:text-cb-text-muted/80",
       "transition-[border-color,box-shadow] duration-200",
@@ -70,6 +70,7 @@ export const clerkAuthAppearance = {
       "w-full max-w-full min-w-0 [&_*]:min-w-0 [&_input]:min-w-0",
     formInputGroup: "w-full max-w-full min-w-0",
     formFieldLabel: "text-xs font-bold uppercase tracking-wide text-cb-text-strong",
+    formFieldAction: "text-sm font-semibold text-cb-terracotta-dark hover:underline",
     formFieldErrorText:
       "text-xs font-medium text-red-800 bg-red-50/90 rounded-lg px-2 py-1.5 ring-1 ring-red-200/80",
     formFieldSuccessText: "text-xs font-medium text-emerald-800",

@@ -105,7 +105,7 @@ export default async function AdminHomePage() {
         <h1 className="font-serif text-3xl font-bold text-cb-text-strong">
           Dashboard Overview
         </h1>
-        <p className="mt-2 max-w-3xl text-sm text-stone-700 dark:text-stone-300">
+        <p className="mt-2 max-w-3xl text-sm text-cb-text-muted">
           Owner/Admin control center scaffolded from your full blueprint. This is the Phase 1
           foundation: role model, KPI surface, quick actions, and permission architecture ready for API
           binding.

@@ -62,7 +62,7 @@ export const roleMatrix: Record<UserRole, Record<ModuleKey, PermissionLevel>> = 
     discounts: "none",
     media: "view",
     cms: "none",
-    analytics: "none",
+    analytics: "limited",
     financial: "none",
     invoices: "view",
     shipping: "limited",

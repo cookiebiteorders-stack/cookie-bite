@@ -206,12 +206,14 @@ export function FinancialLedgerTable({ ledger }: Props) {
     [expanded, duplicateRow, deleteRow],
   );
 
+  /* eslint-disable react-hooks/incompatible-library -- TanStack Table returns non-memoizable helpers */
   const table = useReactTable({
     data: filtered,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (r) => r.id,
   });
+  /* eslint-enable react-hooks/incompatible-library */
 
   return (
     <section className="space-y-4">

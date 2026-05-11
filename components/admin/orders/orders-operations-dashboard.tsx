@@ -130,8 +130,8 @@ export function OrdersOperationsDashboard() {
         <div className="admin-panel-scrim" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-950 dark:text-sky-200/95">Operations</p>
-          <h2 className="mt-1 font-serif text-xl font-bold text-stone-900 dark:text-stone-50 sm:text-2xl">لوحة الطلبات</h2>
-          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-stone-800 dark:text-stone-300">
+          <h2 className="mt-1 font-serif text-xl font-bold text-cb-text-strong sm:text-2xl">لوحة الطلبات</h2>
+          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-cb-text">
             Manage live order queues, payments, shipping, fulfillment, customer requests, and bulk workflows —{" "}
             <kbd className="rounded border px-1 font-mono text-[10px]">⌘K</kbd> أو{" "}
             <kbd className="rounded border px-1 font-mono text-[10px]">Ctrl+K</kbd> للأوامر،{" "}

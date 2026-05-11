@@ -49,21 +49,23 @@ export function ThemeProvider({
   initialPreference,
   initialResolved,
 }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(() => initialPreference);
-  const [systemTheme, setSystemTheme] = useState<"light" | "dark">(() =>
-    initialPreference === "system" ? initialResolved : initialPreference === "dark" ? "dark" : "light",
-  );
-
-  useEffect(() => {
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return initialPreference;
     const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved === "light" || saved === "dark" || saved === "system") {
-      if (saved !== initialPreference) setThemeState(saved);
+    return saved === "light" || saved === "dark" || saved === "system"
+      ? saved
+      : initialPreference;
+  });
+  const [systemTheme, setSystemTheme] = useState<"light" | "dark">(() => {
+    if (typeof window === "undefined") {
+      return initialPreference === "system"
+        ? initialResolved
+        : initialPreference === "dark"
+          ? "dark"
+          : "light";
     }
-  }, [initialPreference]);
-
-  useEffect(() => {
-    setSystemTheme(getSystemTheme());
-  }, []);
+    return getSystemTheme();
+  });
   const resolvedTheme: "light" | "dark" =
     theme === "system" ? systemTheme : theme;
 

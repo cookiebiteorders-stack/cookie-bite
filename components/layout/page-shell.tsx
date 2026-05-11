@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import { MobileFooter } from "@/components/layout/mobile-footer";
@@ -18,11 +17,7 @@ import { LayoutGroup } from "motion/react";
 
 /** يمنع ترطيب مكوّنات تعتمد على viewport/storage من أن تُصدَّر في HTML الخادم */
 function ClientOnlyMrBrownie() {
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    setReady(true);
-  }, []);
-  if (!ready) return null;
+  if (typeof window === "undefined") return null;
   return <MrBrownieChat />;
 }
 

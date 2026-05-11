@@ -114,13 +114,13 @@ export function FinancialKpiCards({ kpis, comparison, showUsd, onToggleUsd }: Pr
             )}
           >
             <div className="flex items-start justify-between gap-2">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200">{c.label}</p>
-              <c.icon className="h-4 w-4 shrink-0 text-stone-700 dark:text-stone-300" />
+              <p className="text-[11px] font-bold uppercase tracking-wide text-cb-text-strong">{c.label}</p>
+              <c.icon className="h-4 w-4 shrink-0 text-cb-text" />
             </div>
-            <p className="mt-2 font-serif text-xl font-bold tabular-nums text-stone-950 dark:text-white sm:text-2xl">
+            <p className="mt-2 font-serif text-xl font-bold tabular-nums text-cb-text-strong sm:text-2xl">
               {c.value}
             </p>
-            <p className="text-xs text-stone-700 dark:text-stone-300">{c.sub}</p>
+            <p className="text-xs text-cb-text">{c.sub}</p>
             {comparison && c.label === "Total revenue" && cmpChip("vs prev.", kpis.revenue_egp, comparison.revenue_egp)}
             {comparison && c.label === "Total expenses" && cmpChip("vs prev.", kpis.expenses_egp, comparison.expenses_egp)}
             {comparison && c.label === "Net profit" && cmpChip("vs prev.", kpis.net_egp, comparison.net_egp)}

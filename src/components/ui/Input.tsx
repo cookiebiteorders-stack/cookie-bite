@@ -35,7 +35,7 @@ export function Input({
   return (
     <label
       className={cn(
-        "flex w-full items-center gap-2 rounded-lg border bg-cb-surface-elevated px-3 transition",
+        "flex w-full items-center gap-2 rounded-lg border bg-cb-surface-elevated px-3 text-cb-text-strong shadow-sm transition focus-within:ring-2 focus-within:ring-cb-focus/35",
         sizeClasses[inputSize],
         variantClasses[variant],
       )}
@@ -44,7 +44,7 @@ export function Input({
       <input
         {...props}
         className={cn(
-          "w-full bg-transparent text-cb-text-strong outline-none placeholder:text-cb-text-muted",
+          "w-full bg-transparent text-cb-text-strong outline-none placeholder:text-cb-text-placeholder disabled:text-cb-text-muted",
           className,
         )}
       />

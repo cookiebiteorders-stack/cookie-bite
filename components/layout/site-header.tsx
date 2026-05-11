@@ -99,8 +99,8 @@ export function SiteHeader() {
         className={cn(
           "fixed left-0 right-0 top-0 z-50 w-full border-b transition-[border-color,background-color,box-shadow,backdrop-filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
           scrolled
-            ? "border-cb-border/90 bg-[color:var(--cb-nav-blur-scrolled)] shadow-[0_12px_40px_-16px_rgba(40,28,20,0.14)] backdrop-blur-xl supports-[backdrop-filter]:bg-[color:var(--cb-nav-blur-scrolled)] dark:shadow-[0_16px_48px_-12px_rgba(0,0,0,0.45)]"
-            : "border-cb-peach-deep/45 bg-[color:var(--cb-nav-blur)] backdrop-blur-md supports-[backdrop-filter]:bg-[color:var(--cb-nav-blur)] dark:border-cb-border/30",
+            ? "border-[color:var(--cb-nav-border-scrolled)] bg-[color:var(--cb-nav-blur-scrolled)] shadow-[0_12px_40px_-16px_rgba(40,28,20,0.14)] backdrop-blur-xl supports-[backdrop-filter]:bg-[color:var(--cb-nav-blur-scrolled)] dark:shadow-[0_16px_48px_-12px_rgba(0,0,0,0.45)]"
+            : "border-[color:var(--cb-nav-border)] bg-[color:var(--cb-nav-blur)] backdrop-blur-md supports-[backdrop-filter]:bg-[color:var(--cb-nav-blur)]",
         )}
       >
         <div className="mx-auto w-full max-w-7xl cb-gutter">

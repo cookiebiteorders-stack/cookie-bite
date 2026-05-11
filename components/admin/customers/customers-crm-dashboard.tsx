@@ -151,10 +151,10 @@ export function CustomersCrmDashboard() {
         <div className="admin-panel-scrim" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-900 dark:text-amber-200/95">CRM</p>
-          <h1 id="crm-dashboard-title" className="mt-1 font-serif text-xl font-bold text-stone-900 dark:text-stone-50 sm:text-2xl">
+          <h1 id="crm-dashboard-title" className="mt-1 font-serif text-xl font-bold text-cb-text-strong sm:text-2xl">
             Customer Management &amp; CRM
           </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-stone-700 dark:text-stone-300">
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-cb-text-muted">
             إدارة ملفات العملاء، الولاء، التجزئة، تحليلات الاحتفاظ، التفاعل، وأتمتة دورة حياة العميل —{" "}
             <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] dark:bg-stone-900">⌘K</kbd> أو{" "}
             <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] dark:bg-stone-900">Ctrl+K</kbd> للأوامر،{" "}

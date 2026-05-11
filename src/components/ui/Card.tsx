@@ -3,11 +3,11 @@ import { cn } from "@/lib/utils";
 type Variant = "default" | "elevated" | "ghost" | "product" | "featured";
 
 const variants: Record<Variant, string> = {
-  default: "bg-cb-surface border-cb-border",
-  elevated: "bg-cb-surface-elevated border-cb-border-strong shadow-lg",
-  ghost: "bg-transparent border-cb-border/70",
-  product: "bg-cb-surface border-cb-border hover:-translate-y-0.5 hover:shadow-lg",
-  featured: "bg-cb-surface-elevated border-cb-border-strong shadow-xl",
+  default: "bg-cb-surface border-cb-border text-cb-text",
+  elevated: "bg-cb-surface-elevated border-cb-border-strong text-cb-text shadow-lg",
+  ghost: "bg-transparent border-cb-border/80 text-cb-text",
+  product: "bg-cb-surface border-cb-border text-cb-text hover:-translate-y-0.5 hover:shadow-lg",
+  featured: "bg-cb-surface-elevated border-cb-border-strong text-cb-text shadow-xl",
 };
 
 export function Card({

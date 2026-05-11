@@ -27,19 +27,19 @@ function engagementScore(c: AdminCustomerRow): number {
 
 function tierStyle(tier: AdminCustomerRow["loyalty_tier"], points: number) {
   if (tier === "platinum" || points >= 2800) {
-    return "bg-violet-100 text-violet-950 dark:bg-violet-950/50 dark:text-violet-50";
+    return "bg-violet-100 text-violet-950 ring-1 ring-violet-300 dark:bg-violet-950/50 dark:text-violet-50 dark:ring-violet-800";
   }
-  if (tier === "gold") return "bg-amber-100 text-amber-950 dark:bg-amber-950/50 dark:text-amber-50";
-  if (tier === "silver") return "bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100";
-  return "bg-orange-100 text-orange-950 dark:bg-orange-950/50 dark:text-orange-50";
+  if (tier === "gold") return "bg-amber-100 text-amber-950 ring-1 ring-amber-300 dark:bg-amber-950/50 dark:text-amber-50 dark:ring-amber-800";
+  if (tier === "silver") return "bg-slate-200 text-slate-900 ring-1 ring-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:ring-slate-600";
+  return "bg-orange-100 text-orange-950 ring-1 ring-orange-300 dark:bg-orange-950/50 dark:text-orange-50 dark:ring-orange-800";
 }
 
 function statusLabel(c: AdminCustomerRow): { text: string; cls: string } {
   const churn = churnScore(c);
-  if (c.loyalty_tier === "platinum" || c.points >= 2800) return { text: "VIP", cls: "bg-violet-100 text-violet-900 dark:bg-violet-900/40 dark:text-violet-100" };
-  if (churn >= 70) return { text: "At Risk", cls: "bg-red-50 text-red-900 dark:bg-red-950/40 dark:text-red-100" };
-  if (c.total_orders === 0) return { text: "Inactive", cls: "bg-stone-100 text-stone-800 dark:bg-stone-800 dark:text-stone-100" };
-  return { text: "Active", cls: "bg-emerald-50 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100" };
+  if (c.loyalty_tier === "platinum" || c.points >= 2800) return { text: "VIP", cls: "bg-violet-100 text-violet-900 ring-1 ring-violet-300 dark:bg-violet-900/40 dark:text-violet-100 dark:ring-violet-800" };
+  if (churn >= 70) return { text: "At Risk", cls: "bg-red-50 text-red-900 ring-1 ring-red-300 dark:bg-red-950/40 dark:text-red-100 dark:ring-red-800" };
+  if (c.total_orders === 0) return { text: "Inactive", cls: "bg-stone-100 text-stone-800 ring-1 ring-stone-300 dark:bg-stone-800 dark:text-stone-100 dark:ring-stone-700" };
+  return { text: "Active", cls: "bg-emerald-50 text-emerald-900 ring-1 ring-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-100 dark:ring-emerald-800" };
 }
 
 function exportCsv(rows: AdminCustomerRow[]) {
@@ -139,7 +139,7 @@ export function CrmMainWorkspace({ searchInputRef, onOpenProfile }: Props) {
         cell: ({ row }) => (
           <button
             type="button"
-            className="text-start font-semibold text-stone-900 hover:text-amber-700 dark:text-stone-50 dark:hover:text-amber-300"
+            className="text-start font-semibold text-cb-text-strong hover:text-cb-terracotta-dark"
             onClick={() => onOpenProfile(row.original.id)}
           >
             {row.original.full_name ?? "بدون اسم"}
@@ -277,7 +277,7 @@ export function CrmMainWorkspace({ searchInputRef, onOpenProfile }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2 rounded-2xl border border-cb-border/80 bg-white/90 p-3 dark:bg-cb-surface-elevated/90">
+      <div className="flex flex-wrap gap-2 rounded-2xl border border-cb-border/80 bg-cb-surface-elevated p-3">
         <p className="w-full text-[11px] font-bold uppercase tracking-wide text-cb-text-muted sm:w-auto sm:py-2">تجزئة سريعة</p>
         {segmentChips.map((chip) => (
           <button
@@ -296,7 +296,7 @@ export function CrmMainWorkspace({ searchInputRef, onOpenProfile }: Props) {
         ))}
       </div>
 
-      <div className="rounded-2xl border border-cb-border/90 bg-white/90 p-4 shadow-sm dark:bg-cb-surface-elevated/90">
+      <div className="rounded-2xl border border-cb-border/90 bg-cb-surface-elevated p-4 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cb-text-muted" />
@@ -306,7 +306,7 @@ export function CrmMainWorkspace({ searchInputRef, onOpenProfile }: Props) {
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
               placeholder="بحث: الاسم، البريد، معرف…"
-              className="w-full rounded-xl border border-cb-border bg-cb-surface py-2.5 ps-10 pe-3 text-sm shadow-inner focus-visible:border-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60"
+              className="w-full rounded-xl border border-cb-border bg-cb-surface py-2.5 ps-10 pe-3 text-sm text-cb-text-strong shadow-inner focus-visible:border-cb-focus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cb-focus/40"
               aria-label="بحث العملاء"
             />
             {localSearch !== debouncedSearch ? (
@@ -409,9 +409,9 @@ export function CrmMainWorkspace({ searchInputRef, onOpenProfile }: Props) {
         )}
       </div>
 
-      <div className="hidden overflow-x-auto rounded-2xl border border-cb-border/90 bg-white/95 shadow-sm dark:bg-cb-surface-elevated/95 md:block">
-        <table className="w-full min-w-[1200px] border-collapse text-sm">
-          <thead className="bg-gradient-to-b from-cb-surface-2/80 to-transparent text-start text-xs font-bold uppercase tracking-wide text-cb-text-muted">
+      <div className="hidden overflow-x-auto rounded-2xl border border-cb-border/90 bg-cb-surface-elevated shadow-sm md:block">
+        <table data-cb-zebra="true" className="w-full min-w-[1200px] border-collapse text-sm">
+          <thead className="bg-gradient-to-b from-cb-surface-2/80 to-transparent text-start text-xs font-bold uppercase tracking-wide text-cb-text-strong">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((h) => (
@@ -438,7 +438,7 @@ export function CrmMainWorkspace({ searchInputRef, onOpenProfile }: Props) {
                 <motion.tr
                   key={row.id}
                   layout={!reduceMotion}
-                  className="border-b border-cb-border/80 transition hover:bg-amber-50/25 dark:hover:bg-amber-950/10"
+                  className="border-b border-cb-border/80 transition"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-2 py-2 align-middle">

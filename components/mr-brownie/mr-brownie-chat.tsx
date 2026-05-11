@@ -256,12 +256,21 @@ export function MrBrownieChat() {
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  /** يطابق SSR دائماً؛ المزامنة مع viewport/sessionStorage بعد التركيب في useLayoutEffect */
-  const [fabPos, setFabPos] = useState<MrBrownieFabPosition>(() =>
-    defaultFabPosition(false),
+  const [fabPos, setFabPos] = useState<MrBrownieFabPosition>(() => {
+    if (typeof window === "undefined") return defaultFabPosition(false);
+    const mobile = isMobileViewport();
+    const saved = loadFabPosition();
+    if (!saved) return defaultFabPosition(mobile);
+    return {
+      ...saved,
+      bottomPx: clampFabBottom(saved.bottomPx, window.innerHeight, mobile),
+    };
+  });
+  const [reduceMotion, setReduceMotion] = useState(() =>
+    typeof window === "undefined"
+      ? false
+      : window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
-  /** يطابق SSR (false)؛ يُحدَّث من matchMedia بعد التركيب لتفادي اختلاف الترطيب */
-  const [reduceMotion, setReduceMotion] = useState(false);
   const [dragPx, setDragPx] = useState<{ left: number; top: number } | null>(null);
   const [roamPx, setRoamPx] = useState<{ left: number; top: number } | null>(null);
   const [settling, setSettling] = useState<{ left: number; top: number } | null>(
@@ -329,19 +338,10 @@ export function MrBrownieChat() {
   }, [cancelDragRaf, cancelSettleRaf]);
 
   useLayoutEffect(() => {
-    setReduceMotion(
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    );
-    const mobile = isMobileViewport();
-    const saved = loadFabPosition();
-    if (!saved) {
-      setFabPos(defaultFabPosition(mobile));
-      return;
-    }
-    setFabPos({
-      ...saved,
-      bottomPx: clampFabBottom(saved.bottomPx, window.innerHeight, mobile),
-    });
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = () => setReduceMotion(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
   }, []);
 
   const hideBubble = useCallback(() => {
