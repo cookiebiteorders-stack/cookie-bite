@@ -37,28 +37,28 @@ export function ShippingInsights({ zones }: ShippingInsightsProps) {
       label: "Total zones",
       value: String(total),
       icon: MapPin,
-      className: "border-sky-200/80 bg-sky-50/80 text-sky-950 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-sky-100",
+      className: "border-sky-200/90 bg-white text-stone-950 dark:border-sky-900/50 dark:bg-stone-900 dark:text-stone-100",
     },
     {
       label: "Active",
       value: String(activeCount),
       icon: Zap,
       className:
-        "border-emerald-200/80 bg-emerald-50/80 text-emerald-950 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100",
+        "border-emerald-200/90 bg-white text-stone-950 dark:border-emerald-900/50 dark:bg-stone-900 dark:text-stone-100",
     },
     {
       label: "Avg delivery (mid)",
       value: avgEta(zones),
       icon: Clock,
       className:
-        "border-violet-200/80 bg-violet-50/80 text-violet-950 dark:border-violet-900/50 dark:bg-violet-950/40 dark:text-violet-100",
+        "border-violet-200/90 bg-white text-stone-950 dark:border-violet-900/50 dark:bg-stone-900 dark:text-stone-100",
     },
     {
       label: "Avg base fee",
       value: avgFee(zones),
       icon: Coins,
       className:
-        "border-amber-200/80 bg-amber-50/80 text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100",
+        "border-amber-200/90 bg-white text-stone-950 dark:border-amber-900/50 dark:bg-stone-900 dark:text-stone-100",
     },
   ];
 
@@ -73,10 +73,10 @@ export function ShippingInsights({ zones }: ShippingInsightsProps) {
           className={cn(cardBase, item.className)}
         >
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-bold uppercase tracking-wide text-current">{item.label}</p>
-            <item.icon className="h-4 w-4 text-current" aria-hidden />
+            <p className="text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">{item.label}</p>
+            <item.icon className="h-4 w-4 text-amber-700 dark:text-amber-300" aria-hidden />
           </div>
-          <p className="mt-2 font-serif text-2xl font-bold tabular-nums text-current">{item.value}</p>
+          <p className="mt-2 font-serif text-2xl font-bold tabular-nums text-stone-950 dark:text-white">{item.value}</p>
         </motion.div>
       ))}
     </div>
