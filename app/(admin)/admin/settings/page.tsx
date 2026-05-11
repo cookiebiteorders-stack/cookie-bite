@@ -22,6 +22,10 @@ import {
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { cn } from "@/lib/utils";
+import {
+  getDesktopSocialPopupPreference,
+  setDesktopSocialPopupPreference,
+} from "@/lib/auth/social-preferences";
 
 type HealthResponse = {
   canonical_host: string;
@@ -70,6 +74,9 @@ export default function AdminSettingsPage() {
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "dark" | "rtl">("desktop");
   const [activeLocale, setActiveLocale] = useState<"en" | "ar">("en");
   const [activeFlags, setActiveFlags] = useState<string[]>(["smart_retries", "high_contrast_mode"]);
+  const [desktopSocialPopup, setDesktopSocialPopup] = useState(() =>
+    getDesktopSocialPopupPreference(),
+  );
 
   async function load() {
     setLoading(true);
@@ -213,6 +220,14 @@ export default function AdminSettingsPage() {
 
   function toggleFlag(flag: string) {
     setActiveFlags((prev) => (prev.includes(flag) ? prev.filter((f) => f !== flag) : [...prev, flag]));
+  }
+
+  function toggleDesktopSocialPopup() {
+    setDesktopSocialPopup((prev) => {
+      const next = !prev;
+      setDesktopSocialPopupPreference(next);
+      return next;
+    });
   }
 
   const headerStats = [
@@ -604,6 +619,19 @@ export default function AdminSettingsPage() {
                     <span>{activeFlags.includes(flag) ? "ON" : "OFF"}</span>
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={toggleDesktopSocialPopup}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-2xl border px-3 py-2 text-xs font-bold",
+                    desktopSocialPopup
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200"
+                      : "border-cb-border bg-white text-stone-700 dark:bg-stone-900 dark:text-stone-300",
+                  )}
+                >
+                  desktop_social_popup
+                  <span>{desktopSocialPopup ? "ON" : "OFF"}</span>
+                </button>
               </div>
             </article>
           </section>

@@ -24,7 +24,8 @@ export const clerkAuthAppearance = {
     card: [
       "shadow-[0_8px_32px_-8px_rgba(91,58,36,0.12)] ring-1 ring-cb-peach-deep/80 bg-cb-surface dark:bg-cb-surface-elevated dark:ring-cb-border",
       "!w-full !max-w-[28rem] min-w-0 mx-auto",
-      "rounded-2xl p-4 sm:p-6 box-border gap-4",
+      "rounded-2xl p-4 sm:p-5 box-border gap-3 sm:gap-4",
+      "max-h-[min(66dvh,34rem)] overflow-y-auto sm:max-h-[min(68dvh,36rem)]",
       "motion-safe:transition-[box-shadow,ring-color] motion-safe:duration-300",
       "focus-within:ring-2 focus-within:ring-cb-brand-logo/25 focus-within:ring-offset-2 focus-within:ring-offset-cb-cream dark:focus-within:ring-offset-cb-cream-2",
     ].join(" "),

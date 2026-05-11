@@ -1,7 +1,6 @@
-import { SignIn } from "@clerk/nextjs";
 import { AuthLayout } from "@/components/auth/auth-layout";
-import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
 import { ClerkSmartCaptcha } from "@/components/auth/clerk-smart-captcha";
+import { SignInForm } from "@/components/auth/sign-in-form";
 import { safeAuthRedirectPath } from "@/lib/auth/safe-redirect";
 import { IMAGES } from "@/lib/data";
 
@@ -25,17 +24,7 @@ export default async function SignInPage({ searchParams }: Props) {
       switchCta="Create account"
     >
       <ClerkSmartCaptcha />
-      <SignIn
-        routing="path"
-        path="/sign-in"
-        signUpUrl="/sign-up"
-        appearance={clerkAuthAppearance}
-        oauthFlow="redirect"
-        fallbackRedirectUrl={afterAuth}
-        forceRedirectUrl={afterAuth}
-        signUpFallbackRedirectUrl={afterAuth}
-        signUpForceRedirectUrl={afterAuth}
-      />
+      <SignInForm afterAuth={afterAuth} />
     </AuthLayout>
   );
 }

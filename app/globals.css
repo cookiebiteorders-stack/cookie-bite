@@ -1141,6 +1141,63 @@ table[data-cb-zebra="true"] tbody tr:hover {
   );
 }
 
+/* ============================================================
+   Admin contrast hardening (global fix for washed visuals)
+   ============================================================ */
+.admin-console {
+  --cb-text-strong: #20130b;
+  --cb-text: #3f2a1d;
+  --cb-text-muted: #5a4334;
+  --cb-border: #dbcbbf;
+  --cb-border-strong: #c39a7f;
+  --cb-surface: #fffdfa;
+  --cb-surface-2: #f8efe7;
+  --cb-surface-elevated: #ffffff;
+  --bg-hover: #f7ece2;
+}
+
+.dark .admin-console {
+  --cb-text-strong: #fff4e9;
+  --cb-text: #ecd7c2;
+  --cb-text-muted: #d7b493;
+  --cb-border: #6c4833;
+  --cb-border-strong: #8f5d42;
+  --cb-surface: #2f180d;
+  --cb-surface-2: #261207;
+  --cb-surface-elevated: #3a1e10;
+  --bg-hover: rgba(255, 148, 77, 0.2);
+}
+
+.admin-console .admin-panel-surface,
+.admin-console .admin-hero-surface {
+  border-color: color-mix(in oklab, var(--cb-border) 96%, transparent);
+  box-shadow: 0 8px 30px -14px rgba(40, 20, 10, 0.25);
+}
+
+.admin-console .admin-panel-scrim {
+  opacity: 0.14;
+}
+
+.dark .admin-console .admin-panel-scrim {
+  opacity: 0.18;
+}
+
+.admin-console table thead th {
+  color: var(--cb-text-strong);
+}
+
+.admin-console table tbody td {
+  color: var(--cb-text);
+}
+
+.admin-console input,
+.admin-console select,
+.admin-console textarea {
+  color: var(--cb-text-strong);
+  background-color: var(--cb-surface);
+  border-color: var(--cb-border);
+}
+
 @keyframes morph-dust {
   0% {
     opacity: 0;

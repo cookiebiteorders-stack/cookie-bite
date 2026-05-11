@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import { MobileFooter } from "@/components/layout/mobile-footer";
@@ -8,18 +9,16 @@ import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { WhatsAppFab } from "@/components/layout/whatsapp-fab";
-import { MrBrownieChat } from "@/components/mr-brownie/mr-brownie-chat";
 import { PageTransition } from "@/components/motion/page-transition";
 import { CartProvider } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 import { LayoutGroup } from "motion/react";
 
-/** يمنع ترطيب مكوّنات تعتمد على viewport/storage من أن تُصدَّر في HTML الخادم */
-function ClientOnlyMrBrownie() {
-  if (typeof window === "undefined") return null;
-  return <MrBrownieChat />;
-}
+const ClientOnlyMrBrownie = dynamic(
+  () => import("@/components/mr-brownie/mr-brownie-chat").then((m) => m.MrBrownieChat),
+  { ssr: false },
+);
 
 export function PageShell({
   children,
