@@ -24,6 +24,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("shipping_zones")
     .select("*")
+    .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
   if (error) {
     return NextResponse.json(
@@ -46,9 +47,19 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createSupabaseAdminClient();
+
+  const { data: maxRow } = await supabase
+    .from("shipping_zones")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const nextSort = (Number((maxRow as { sort_order?: number } | null)?.sort_order) || 0) + 10;
+
   const { data, error } = await supabase
     .from("shipping_zones")
-    .insert(parsed.data)
+    .insert({ ...parsed.data, sort_order: nextSort })
     .select("*")
     .single();
   if (error || !data) {

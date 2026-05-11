@@ -1,7 +1,7 @@
 import { clerkClient, clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { adminRouteModuleMap, canAccess } from "@/lib/admin/rbac";
-import { resolveStaffRoleFromEmail } from "@/lib/admin/auth-role";
+import { resolveStaffRole } from "@/lib/admin/auth-role";
 import { PRODUCTION_HOST } from "@/lib/config/production-lock";
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
@@ -127,7 +127,7 @@ export default clerkMiddleware(async (auth, request) => {
   const user = await client.users.getUser(userId);
   const email = user.primaryEmailAddress?.emailAddress ?? null;
 
-  const role = resolveStaffRoleFromEmail(email);
+  const role = await resolveStaffRole({ email, clerkUserId: userId });
   if (!["owner", "admin", "staff"].includes(role)) {
     return NextResponse.redirect(new URL("/403", request.url));
   }

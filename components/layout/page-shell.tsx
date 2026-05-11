@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import { MobileFooter } from "@/components/layout/mobile-footer";
@@ -14,6 +15,16 @@ import { CartProvider } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 import { LayoutGroup } from "motion/react";
+
+/** يمنع ترطيب مكوّنات تعتمد على viewport/storage من أن تُصدَّر في HTML الخادم */
+function ClientOnlyMrBrownie() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    setReady(true);
+  }, []);
+  if (!ready) return null;
+  return <MrBrownieChat />;
+}
 
 export function PageShell({
   children,
@@ -64,7 +75,7 @@ export function PageShell({
         <div className="desktop-whatsapp-fab">
           <WhatsAppFab />
         </div>
-        <MrBrownieChat />
+        <ClientOnlyMrBrownie />
         <CartDrawer />
       </div>
     </CartProvider>

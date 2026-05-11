@@ -107,6 +107,16 @@ export function canAccess(role: UserRole, module: ModuleKey) {
   return roleMatrix[role][module] !== "none";
 }
 
+/** وحدات الإدارة التي يصل إليها الدور (أي مستوى غير none). */
+export function getAccessibleModules(role: UserRole): ModuleKey[] {
+  return (Object.keys(roleMatrix[role]) as ModuleKey[]).filter((m) => roleMatrix[role][m] !== "none");
+}
+
+/** مستوى الصلاحية لهذا الدور في الوحدة. */
+export function getPermission(role: UserRole, module: ModuleKey): PermissionLevel {
+  return roleMatrix[role][module];
+}
+
 export const adminRouteModuleMap: Record<string, ModuleKey> = {
   "/admin": "dashboard",
   "/admin/products": "products",

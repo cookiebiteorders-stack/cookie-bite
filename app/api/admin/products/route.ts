@@ -15,6 +15,12 @@ const querySchema = z.object({
   search: z.string().optional(),
   low_stock: z.coerce.boolean().optional(),
   active: z.coerce.boolean().optional(),
+  category: z.string().max(120).optional(),
+  price_min: z.coerce.number().nonnegative().optional(),
+  price_max: z.coerce.number().nonnegative().optional(),
+  stock_state: z.enum(["in_stock", "low", "out"]).optional(),
+  discounted: z.coerce.boolean().optional(),
+  featured: z.coerce.boolean().optional(),
 });
 
 const bulkPatchSchema = z.object({
@@ -34,6 +40,7 @@ const bulkPatchSchema = z.object({
       sku: z.string().max(80).nullable().optional(),
       image_url: z.string().url().nullable().optional(),
       dietary: z.array(z.string().max(120)).optional(),
+      compare_price_egp: z.number().positive().nullable().optional(),
     })
     .refine((v) => Object.keys(v).length > 0, {
       message: "patch is required",
@@ -54,11 +61,49 @@ const createProductSchema = z.object({
   is_active: z.boolean().default(true),
   image_url: z.string().url().optional().nullable(),
   dietary: z.array(z.string().max(120)).optional(),
+  compare_price_egp: z.number().positive().nullable().optional(),
 });
 
 const deleteSchema = z.object({
   ids: z.array(z.string().uuid()).min(1),
 });
+
+async function loadCatalogStats(supabase: ReturnType<typeof createSupabaseAdminClient>) {
+  const [
+    { count: total },
+    { count: active },
+    { count: draft },
+    { count: out_of_stock },
+    { count: low_stock },
+    { data: pipelineRows },
+  ] = await Promise.all([
+    supabase.from("products").select("id", { count: "exact", head: true }),
+    supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
+    supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", false),
+    supabase.from("products").select("id", { count: "exact", head: true }).lte("stock", 0),
+    supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .gt("stock", 0)
+      .lte("stock", 10),
+    supabase.from("products").select("price_egp, stock").eq("is_active", true).limit(5000),
+  ]);
+
+  const revenue_estimate_egp = (pipelineRows ?? []).reduce(
+    (sum, row) => sum + Number(row.price_egp ?? 0) * Number(row.stock ?? 0),
+    0,
+  );
+
+  return {
+    total: total ?? 0,
+    active: active ?? 0,
+    draft: draft ?? 0,
+    out_of_stock: out_of_stock ?? 0,
+    low_stock: low_stock ?? 0,
+    revenue_estimate_egp,
+  };
+}
 
 function slugify(value: string): string {
   return value
@@ -79,7 +124,19 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const { page, limit, search, low_stock, active } = parsed.data;
+  const {
+    page,
+    limit,
+    search,
+    low_stock,
+    active,
+    category,
+    price_min,
+    price_max,
+    stock_state,
+    discounted,
+    featured,
+  } = parsed.data;
   const supabase = createSupabaseAdminClient();
   let db = supabase
     .from("products")
@@ -88,13 +145,32 @@ export async function GET(req: NextRequest) {
 
   if (search?.trim()) {
     const q = search.trim();
-    db = db.or(`slug.ilike.%${q}%,name.ilike.%${q}%,sku.ilike.%${q}%`);
+    db = db.or(
+      `slug.ilike.%${q}%,name.ilike.%${q}%,sku.ilike.%${q}%,category.ilike.%${q}%`,
+    );
   }
   if (typeof low_stock === "boolean" && low_stock) db = db.lte("stock", 10);
   if (typeof active === "boolean") db = db.eq("is_active", active);
+  if (category?.trim()) db = db.ilike("category", `%${category.trim()}%`);
+  if (typeof price_min === "number") db = db.gte("price_egp", price_min);
+  if (typeof price_max === "number") db = db.lte("price_egp", price_max);
+  if (stock_state === "in_stock") db = db.gt("stock", 10);
+  if (stock_state === "low") db = db.gt("stock", 0).lte("stock", 10);
+  if (stock_state === "out") db = db.lte("stock", 0);
+  if (typeof discounted === "boolean" && discounted) {
+    db = db.not("compare_price_egp", "is", null);
+  }
+  if (typeof featured === "boolean" && featured) {
+    db = db.contains("badges", ["featured"]);
+  }
 
   const offset = (page - 1) * limit;
-  const { data, count, error } = await db.range(offset, offset + limit - 1);
+  const [listResult, stats] = await Promise.all([
+    db.range(offset, offset + limit - 1),
+    loadCatalogStats(supabase),
+  ]);
+
+  const { data, count, error } = listResult;
   if (error) {
     return NextResponse.json(
       bilingualError("Database error", "خطأ في قاعدة البيانات"),
@@ -107,6 +183,7 @@ export async function GET(req: NextRequest) {
     total: count ?? 0,
     page,
     limit,
+    stats,
     meta: {
       role: actor.role,
       permission: actor.permission,
@@ -148,6 +225,7 @@ export async function POST(req: NextRequest) {
     category: payload.category ?? null,
     sku: payload.sku ?? null,
     price_egp: payload.price_egp,
+    compare_price_egp: payload.compare_price_egp ?? null,
     stock: payload.stock,
     is_active: payload.is_active,
     image_url: payload.image_url ?? null,

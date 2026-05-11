@@ -6,13 +6,35 @@ import { sendOrderStatusEmail } from "@/lib/email/send";
 import { bilingualError } from "@/lib/validations";
 import { writeAuditLog } from "@/lib/admin/audit";
 
-const schema = z.object({
-  status: z
-    .enum(["pending", "processing", "shipped", "delivered", "cancelled", "refunded"])
-    .optional(),
-  payment_status: z.enum(["unpaid", "paid", "failed", "refunded"]).optional(),
-  note: z.string().max(500).optional(),
-});
+const schema = z
+  .object({
+    status: z
+      .enum(["pending", "processing", "shipped", "delivered", "cancelled", "refunded"])
+      .optional(),
+    payment_status: z.enum(["unpaid", "paid", "failed", "refunded"]).optional(),
+    note: z.string().max(500).optional(),
+    shipping_address: z.record(z.string(), z.unknown()).optional(),
+  })
+  .refine(
+    (d) =>
+      Boolean(d.status ?? d.payment_status ?? d.note ?? (d.shipping_address && Object.keys(d.shipping_address).length)),
+    { message: "empty patch" },
+  );
+
+export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  await requireAdminAccess("orders");
+  const { id } = await ctx.params;
+  const supabase = createSupabaseAdminClient();
+  const { data: order, error: orderErr } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
+  if (orderErr || !order) {
+    return NextResponse.json(bilingualError("Order not found", "الطلب غير موجود"), { status: 404 });
+  }
+  const { data: items, error: itemsErr } = await supabase.from("order_items").select("*").eq("order_id", id);
+  if (itemsErr) {
+    return NextResponse.json(bilingualError("Database error", "خطأ في قاعدة البيانات"), { status: 500 });
+  }
+  return NextResponse.json({ order, items: items ?? [] });
+}
 
 export async function PATCH(
   req: NextRequest,
@@ -42,6 +64,14 @@ export async function PATCH(
     .select("*")
     .eq("id", id)
     .maybeSingle();
+
+  if (parsed.data.shipping_address && before) {
+    const prev =
+      before.shipping_address && typeof before.shipping_address === "object" && !Array.isArray(before.shipping_address)
+        ? (before.shipping_address as Record<string, unknown>)
+        : {};
+    patch.shipping_address = { ...prev, ...parsed.data.shipping_address };
+  }
 
   const { data: order, error } = await supabase
     .from("orders")

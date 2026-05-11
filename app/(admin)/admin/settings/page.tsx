@@ -24,11 +24,23 @@ type Template = {
   is_active: boolean;
 };
 
+type TemplatesResponse = {
+  templates: Template[];
+  warning?: { en: string; ar: string };
+};
+
 export default function AdminSettingsPage() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
+  /** فشل تحميل فحص البيئة (نادر) */
   const [error, setError] = useState<string | null>(null);
+  /** فشل تحميل قوالب الإشعارات — لا يمنع عرض بقية الإعدادات */
+  const [templatesError, setTemplatesError] = useState<string | null>(null);
+  const [migrationWarning, setMigrationWarning] = useState<{
+    en: string;
+    ar: string;
+  } | null>(null);
 
   const [tplChannel, setTplChannel] = useState<"email" | "sms" | "whatsapp" | "push">("email");
   const [tplKey, setTplKey] = useState("order_confirmed");
@@ -39,28 +51,54 @@ export default function AdminSettingsPage() {
   async function load() {
     setLoading(true);
     setError(null);
-    try {
-      const [healthData, templatesData] = await Promise.all([
-        fetchJson<HealthResponse>("/api/admin/settings/health", {
-          cache: "no-store",
-          timeoutMs: 15_000,
-          retries: 1,
-          retryDelayMs: 250,
-        }),
-        fetchJson<{ templates: Template[] }>("/api/admin/notifications/templates", {
-          cache: "no-store",
-          timeoutMs: 15_000,
-          retries: 1,
-          retryDelayMs: 250,
-        }),
-      ]);
-      setHealth(healthData);
-      setTemplates(templatesData.templates ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load settings");
-    } finally {
-      setLoading(false);
+    setTemplatesError(null);
+    setMigrationWarning(null);
+
+    const healthP = fetchJson<HealthResponse>("/api/admin/settings/health", {
+      cache: "no-store",
+      timeoutMs: 15_000,
+      retries: 1,
+      retryDelayMs: 250,
+    })
+      .then((data) => ({ ok: true as const, data }))
+      .catch((err: unknown) => ({ ok: false as const, err }));
+
+    const templatesP = fetchJson<TemplatesResponse>(
+      "/api/admin/notifications/templates",
+      {
+        cache: "no-store",
+        timeoutMs: 15_000,
+        retries: 1,
+        retryDelayMs: 250,
+      },
+    )
+      .then((data) => ({ ok: true as const, data }))
+      .catch((err: unknown) => ({ ok: false as const, err }));
+
+    const [hRes, tRes] = await Promise.all([healthP, templatesP]);
+
+    if (hRes.ok) {
+      setHealth(hRes.data);
+    } else {
+      setHealth(null);
+      setError(
+        hRes.err instanceof Error ? hRes.err.message : "Failed to load health",
+      );
     }
+
+    if (tRes.ok) {
+      setTemplates(tRes.data.templates ?? []);
+      setMigrationWarning(tRes.data.warning ?? null);
+    } else {
+      setTemplates([]);
+      setTemplatesError(
+        tRes.err instanceof Error
+          ? tRes.err.message
+          : "Failed to load notification templates",
+      );
+    }
+
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -88,7 +126,9 @@ export default function AdminSettingsPage() {
         },
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save template");
+      setTemplatesError(
+        err instanceof Error ? err.message : "Failed to save template",
+      );
       return;
     }
     setTplBody("");
@@ -110,31 +150,63 @@ export default function AdminSettingsPage() {
         <div className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5 text-sm text-cb-text-muted">
           Loading settings...
         </div>
-      ) : error ? (
-        <div className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5 text-sm text-red-600">
-          <p>{error}</p>
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="mt-3 rounded-xl border border-cb-border px-4 py-2 text-sm font-semibold text-cb-text-strong"
-          >
-            Retry / إعادة المحاولة
-          </button>
-        </div>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <article className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-4">
-              <p className="font-semibold text-cb-text-strong">Canonical Host</p>
-              <p className="mt-1 text-sm text-cb-text">{health?.canonical_host}</p>
-            </article>
-            <article className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-4">
-              <p className="font-semibold text-cb-text-strong">Env Status</p>
-              <p className="mt-1 text-sm text-cb-text">
-                {health?.env.ok ? "Healthy" : `Missing: ${health?.env.missing.join(", ")}`}
+          {migrationWarning ? (
+            <div className="rounded-2xl border border-amber-300/80 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-100">
+              <p className="font-semibold">{migrationWarning.en}</p>
+              <p className="mt-1 text-xs opacity-90" dir="rtl">
+                {migrationWarning.ar}
               </p>
-            </article>
-          </div>
+            </div>
+          ) : null}
+
+          {error ? (
+            <div className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5 text-sm text-red-600">
+              <p className="font-semibold">Environment check failed</p>
+              <p className="mt-1">{error}</p>
+              <button
+                type="button"
+                onClick={() => void load()}
+                className="mt-3 rounded-xl border border-cb-border px-4 py-2 text-sm font-semibold text-cb-text-strong"
+              >
+                Retry / إعادة المحاولة
+              </button>
+            </div>
+          ) : null}
+
+          {templatesError ? (
+            <div className="rounded-2xl border border-amber-300/80 bg-amber-50/90 p-5 text-sm text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/25 dark:text-amber-100">
+              <p className="font-semibold">Notification templates</p>
+              <p className="mt-1">{templatesError}</p>
+              <p className="mt-2 text-xs text-cb-text-muted">
+                تأكد من تشغيل هجرات Supabase (مثلاً `0005_phase_cde_foundations.sql`) وأن
+                `SUPABASE_SERVICE_KEY` صحيح.
+              </p>
+              <button
+                type="button"
+                onClick={() => void load()}
+                className="mt-3 rounded-xl border border-cb-border bg-cb-surface px-4 py-2 text-sm font-semibold text-cb-text-strong"
+              >
+                Retry templates / إعادة تحميل القوالب
+              </button>
+            </div>
+          ) : null}
+
+          {health ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <article className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-4">
+                <p className="font-semibold text-cb-text-strong">Canonical Host</p>
+                <p className="mt-1 text-sm text-cb-text">{health.canonical_host}</p>
+              </article>
+              <article className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-4">
+                <p className="font-semibold text-cb-text-strong">Env Status</p>
+                <p className="mt-1 text-sm text-cb-text">
+                  {health.env.ok ? "Healthy" : `Missing: ${health.env.missing.join(", ")}`}
+                </p>
+              </article>
+            </div>
+          ) : null}
 
           <div className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
             <h2 className="text-lg font-bold text-cb-text-strong">Notification Templates</h2>

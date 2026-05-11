@@ -17,6 +17,21 @@ const schema = z.object({
   is_active: z.boolean().default(true),
 });
 
+function isMissingTemplatesTable(err: {
+  code?: string;
+  message?: string;
+}): boolean {
+  const m = (err.message ?? "").toLowerCase();
+  return (
+    err.code === "42P01" ||
+    err.code === "PGRST205" ||
+    (m.includes("notification_templates") &&
+      (m.includes("does not exist") ||
+        m.includes("could not find") ||
+        m.includes("schema cache")))
+  );
+}
+
 export async function GET() {
   await requireAdminAccess("settings");
   const supabase = createSupabaseAdminClient();
@@ -25,8 +40,7 @@ export async function GET() {
     .select("*")
     .order("updated_at", { ascending: false });
   if (error) {
-    // بعض البيئات القديمة لا تحتوي table notification_templates بعد.
-    if (error.code === "42P01") {
+    if (isMissingTemplatesTable(error)) {
       return NextResponse.json({
         templates: [],
         warning: {
@@ -35,10 +49,23 @@ export async function GET() {
         },
       });
     }
-    return NextResponse.json(
-      bilingualError("Database error", "خطأ في قاعدة البيانات"),
-      { status: 500 },
-    );
+    console.error("[api/admin/notifications/templates GET] Supabase:", {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
+    const body: Record<string, unknown> = {
+      ...bilingualError("Database error", "خطأ في قاعدة البيانات"),
+    };
+    if (process.env.NODE_ENV === "development") {
+      body.debug = {
+        message: error.message,
+        code: error.code,
+        hint: error.hint,
+      };
+    }
+    return NextResponse.json(body, { status: 500 });
   }
   return NextResponse.json({ templates: data ?? [] });
 }

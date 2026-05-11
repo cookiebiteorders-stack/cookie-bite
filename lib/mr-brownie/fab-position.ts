@@ -18,7 +18,8 @@ export function fabSizePx(isMobile: boolean): number {
 /** @deprecated استخدم fabSizePx(isMobile) — يبقى للتوافق مع أي استيراد قديم */
 export const FAB_SIZE_PX = FAB_SIZE_DESKTOP_PX;
 
-const EDGE_INSET = 16;
+/** تثبيت قريب من حافة نافذة المتصفح (وليس حاوية المحتوى) */
+const EDGE_INSET = 6;
 
 export function defaultFabPosition(isMobile: boolean): MrBrownieFabPosition {
   return {

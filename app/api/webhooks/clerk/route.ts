@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { Webhook } from "svix";
+import { provisionClerkUsernameAndPassword } from "@/lib/auth/clerk-provision-credentials";
 import { deleteUserByClerkId, upsertUserFromClerk } from "@/lib/db/users";
 import { sendWelcomeEmail } from "@/lib/email/send";
 
@@ -7,6 +8,7 @@ type ClerkUserEvent = {
   type: "user.created" | "user.updated" | "user.deleted";
   data: {
     id: string;
+    username?: string | null;
     email_addresses?: Array<{ id: string; email_address: string }>;
     primary_email_address_id?: string | null;
     first_name?: string | null;
@@ -75,9 +77,29 @@ export async function POST(req: Request) {
       avatarUrl: evt.data.image_url ?? null,
     });
 
+    let provisioned: Awaited<
+      ReturnType<typeof provisionClerkUsernameAndPassword>
+    > | null = null;
+    try {
+      provisioned = await provisionClerkUsernameAndPassword(evt.data.id);
+    } catch (err) {
+      console.error("clerk provision username/password failed", err);
+    }
+
     if (evt.type === "user.created") {
       try {
-        await sendWelcomeEmail({ to: email, name: evt.data.first_name ?? undefined });
+        const credentials =
+          provisioned?.username && provisioned.passwordForEmail
+            ? {
+                username: provisioned.username,
+                password: provisioned.passwordForEmail,
+              }
+            : undefined;
+        await sendWelcomeEmail({
+          to: email,
+          name: evt.data.first_name ?? undefined,
+          credentials,
+        });
       } catch (err) {
         console.error("welcome email failed", err);
       }

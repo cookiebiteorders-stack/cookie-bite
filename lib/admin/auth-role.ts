@@ -1,5 +1,5 @@
 import type { UserRole } from "@/lib/admin/rbac";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const DEFAULT_OWNER_EMAIL = "cookie.bite.orders@gmail.com";
 
@@ -39,8 +39,12 @@ export async function resolveStaffRole(params: {
   const normalizedEmail = (params.email ?? "").trim().toLowerCase();
   const clerkUserId = (params.clerkUserId ?? "").trim();
 
+  const supabase = tryCreateSupabaseAdminClient();
+  if (!supabase) {
+    return resolveStaffRoleFromEmail(normalizedEmail || params.email);
+  }
+
   try {
-    const supabase = createSupabaseAdminClient();
     let query = supabase.from("users").select("role").limit(1);
 
     if (clerkUserId) {

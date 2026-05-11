@@ -14,13 +14,13 @@ describe("AdminSettingsPage", () => {
   });
 
   it("shows error and retry button, then recovers on retry", async () => {
-    let firstAttempt = true;
+    let healthCalls = 0;
     fetchJsonMock.mockImplementation((url: string) => {
-      if (firstAttempt) {
-        firstAttempt = false;
-        return Promise.reject(new Error("network fail"));
-      }
       if (url.includes("/api/admin/settings/health")) {
+        healthCalls += 1;
+        if (healthCalls === 1) {
+          return Promise.reject(new Error("network fail"));
+        }
         return Promise.resolve({
           canonical_host: "cookie-bite.com",
           node_env: "development",
@@ -35,7 +35,9 @@ describe("AdminSettingsPage", () => {
 
     render(<AdminSettingsPage />);
     await screen.findByText("network fail");
-    const retry = screen.getByRole("button", { name: /retry/i });
+    const retry = screen.getByRole("button", {
+      name: /Retry \/ إعادة المحاولة/i,
+    });
     fireEvent.click(retry);
 
     await waitFor(() => {

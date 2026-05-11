@@ -110,11 +110,29 @@ export async function fetchJson<TResult>(
       typeof (parsed as { error?: unknown }).error === "object" &&
       (parsed as { error?: { en?: string } }).error?.en;
 
-    throw new Error(
+    let message =
       typeof msg === "string"
         ? msg
-        : `Request failed (${res.status})`,
-    );
+        : `Request failed (${res.status})`;
+
+    const dbgRaw =
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "debug" in parsed
+        ? (parsed as { debug?: unknown }).debug
+        : null;
+    const dbg =
+      dbgRaw &&
+      typeof dbgRaw === "object" &&
+      "message" in dbgRaw &&
+      typeof (dbgRaw as { message?: unknown }).message === "string"
+        ? (dbgRaw as { message: string; hint?: string })
+        : null;
+    if (dbg?.message) {
+      message = `${message} — ${dbg.message}${dbg.hint ? ` (${dbg.hint})` : ""}`;
+    }
+
+    throw new Error(message);
   }
 
   return parsed as TResult;

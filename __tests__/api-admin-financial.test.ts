@@ -1,5 +1,6 @@
 /** @jest-environment node */
 
+import { NextRequest } from "next/server";
 import { GET, POST } from "@/app/api/admin/financial/summary/route";
 
 const requireAdminAccessMock = jest.fn();
@@ -23,6 +24,26 @@ jest.mock("@/lib/supabase/admin", () => ({
   createSupabaseAdminClient: () => supabaseMock,
 }));
 
+function chainOrders(rows: unknown[]) {
+  return {
+    select: jest.fn().mockReturnThis(),
+    gte: jest.fn().mockReturnThis(),
+    lte: jest.fn().mockReturnThis(),
+    order: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockResolvedValue({ data: rows, error: null }),
+  };
+}
+
+function chainExpenses(rows: unknown[]) {
+  return {
+    select: jest.fn().mockReturnThis(),
+    gte: jest.fn().mockReturnThis(),
+    lte: jest.fn().mockReturnThis(),
+    order: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockResolvedValue({ data: rows, error: null }),
+  };
+}
+
 describe("api/admin/financial/summary", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -33,31 +54,42 @@ describe("api/admin/financial/summary", () => {
     });
   });
 
-  it("GET returns revenue, expenses and net", async () => {
-    const ordersChain = {
-      select: jest.fn().mockReturnThis(),
-      gte: jest.fn().mockResolvedValue({
-        data: [{ total_egp: 100 }, { total_egp: 50 }],
-      }),
-    };
-    const expensesChain = {
-      select: jest.fn().mockResolvedValue({
-        data: [
-          { amount_egp: 20, category: "ops", expense_date: "2026-01-01" },
-          { amount_egp: 10, category: "ops", expense_date: "2026-01-02" },
-        ],
-      }),
-    };
+  it("GET returns KPIs for current month range", async () => {
+    const ordersChain = chainOrders([
+      { total_egp: 100, created_at: "2026-01-15T10:00:00.000Z", payment_status: "paid" },
+      { total_egp: 50, created_at: "2026-01-16T10:00:00.000Z", payment_status: "paid" },
+    ]);
+    const expensesChain = chainExpenses([
+      {
+        id: "e1",
+        title: "Ops",
+        amount_egp: 20,
+        category: "ops",
+        expense_date: "2026-01-01",
+        notes: null,
+      },
+      {
+        id: "e2",
+        title: "Ops2",
+        amount_egp: 10,
+        category: "ops",
+        expense_date: "2026-01-02",
+        notes: null,
+      },
+    ]);
     (supabaseMock.from as jest.Mock)
       .mockReturnValueOnce(ordersChain)
       .mockReturnValueOnce(expensesChain);
 
-    const res = await GET();
+    const req = new NextRequest(
+      "http://localhost/api/admin/financial/summary?preset=custom&from=2026-01-01&to=2026-01-31",
+    );
+    const res = await GET(req);
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.revenue_30d_egp).toBe(150);
-    expect(body.expenses_total_egp).toBe(30);
-    expect(body.net_egp).toBe(120);
+    const body = (await res.json()) as { kpis: { revenue_egp: number; expenses_egp: number; net_egp: number } };
+    expect(body.kpis.revenue_egp).toBe(150);
+    expect(body.kpis.expenses_egp).toBe(30);
+    expect(body.kpis.net_egp).toBe(120);
   });
 
   it("POST creates expense with actor id and writes audit", async () => {
@@ -92,4 +124,3 @@ describe("api/admin/financial/summary", () => {
     expect(writeAuditLogMock).toHaveBeenCalled();
   });
 });
-

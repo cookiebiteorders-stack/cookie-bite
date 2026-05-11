@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ModuleKey, PermissionLevel, UserRole } from "@/lib/admin/rbac";
+import {
+  type ModuleKey,
+  type PermissionLevel,
+  type UserRole,
+  getAccessibleModules,
+  getPermission,
+} from "@/lib/admin/rbac";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 
 type Matrix = Record<UserRole, Record<ModuleKey, PermissionLevel>>;
@@ -43,6 +49,7 @@ export default function AdminRolesPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [assignEmail, setAssignEmail] = useState("");
   const [role, setRole] = useState<UserRole>("staff");
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -87,11 +94,23 @@ export default function AdminRolesPage() {
     setSaving(true);
     setNotice(null);
     setError(null);
+    const emailTrim = assignEmail.trim().toLowerCase();
+    const payload =
+      emailTrim.length > 0
+        ? { email: emailTrim, role }
+        : selectedUserId
+          ? { user_id: selectedUserId, role }
+          : null;
+    if (!payload) {
+      setError("Select a registered user or enter their account email.");
+      setSaving(false);
+      return;
+    }
     try {
       const res = await fetch("/api/admin/roles/matrix", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: selectedUserId || undefined, role }),
+        body: JSON.stringify(payload),
       });
       const data = (await res.json()) as {
         ok?: boolean;
@@ -101,8 +120,9 @@ export default function AdminRolesPage() {
       if (!res.ok) {
         throw new Error(data.error?.en ?? "Failed to assign role");
       }
-      setNotice("Role assigned successfully.");
+      setNotice("Role assigned successfully. The user will get matching admin navigation and API access on next request.");
       setSelectedUserId("");
+      setAssignEmail("");
       const updated = data.assignment;
       if (updated) {
         setAssignments((prev) => {
@@ -135,15 +155,20 @@ export default function AdminRolesPage() {
 
       <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
         <h2 className="font-serif text-xl font-bold text-cb-text-strong">
-          Assign Role by User
+          Assign Role by User or Email
         </h2>
         <p className="mt-1 text-sm text-cb-text-muted">
-          Owner can pick any registered user (name + email) and assign a role.
+          Owner updates the <code className="rounded bg-cb-surface-2 px-1">users.role</code> row in Supabase. The account must
+          exist in the users table (usually after the customer signs up). Role is resolved by{" "}
+          <strong>Clerk user id</strong> first, then email — so linking Clerk ↔ Supabase must stay correct.
         </p>
         <div className="mt-4 grid gap-3 md:grid-cols-[1.5fr_0.8fr_auto]">
           <select
             value={selectedUserId}
-            onChange={(e) => setSelectedUserId(e.target.value)}
+            onChange={(e) => {
+              setSelectedUserId(e.target.value);
+              if (e.target.value) setAssignEmail("");
+            }}
             aria-label="Select registered user"
             className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
           >
@@ -158,6 +183,7 @@ export default function AdminRolesPage() {
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole)}
             className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
+            aria-label="Role to assign"
           >
             {roles.map((r) => (
               <option key={r} value={r}>
@@ -167,12 +193,40 @@ export default function AdminRolesPage() {
           </select>
           <button
             type="button"
-            disabled={saving || !selectedUserId}
+            disabled={saving || (!selectedUserId && !assignEmail.trim())}
             onClick={() => void assignRole()}
             className="rounded-xl border border-cb-border px-4 py-2 text-sm font-semibold disabled:opacity-50"
           >
             {saving ? "Saving..." : "Assign"}
           </button>
+        </div>
+        <label className="mt-4 block text-sm font-semibold text-cb-text-strong">
+          Or assign by exact email (must match a row in users)
+          <input
+            type="email"
+            value={assignEmail}
+            onChange={(e) => {
+              setAssignEmail(e.target.value);
+              if (e.target.value.trim()) setSelectedUserId("");
+            }}
+            placeholder="colleague@company.com"
+            className="mt-1 w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
+            autoComplete="email"
+          />
+        </label>
+        <div className="mt-4 rounded-xl border border-cb-border bg-cb-surface-2/60 p-4 text-sm text-cb-text">
+          <p className="font-semibold text-cb-text-strong">Access preview for selected role: {role}</p>
+          <p className="mt-1 text-xs text-cb-text-muted">
+            Navigation and APIs use the same matrix. Write actions require <code className="rounded bg-cb-surface px-1">full</code> or{" "}
+            <code className="rounded bg-cb-surface px-1">limited</code> on that module.
+          </p>
+          <ul className="mt-2 max-h-40 list-inside list-disc overflow-y-auto text-xs text-cb-text-muted">
+            {getAccessibleModules(role).map((m) => (
+              <li key={m}>
+                <span className="font-mono text-cb-text-strong">{m}</span> — {getPermission(role, m)}
+              </li>
+            ))}
+          </ul>
         </div>
         {notice ? <p className="mt-3 text-sm text-emerald-700">{notice}</p> : null}
       </section>

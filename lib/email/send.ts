@@ -5,9 +5,13 @@ import {
   welcomeEmail,
 } from "@/lib/email/templates";
 
-export async function sendWelcomeEmail(opts: { to: string; name?: string }) {
+export async function sendWelcomeEmail(opts: {
+  to: string;
+  name?: string;
+  credentials?: { username: string; password: string };
+}) {
   const resend = getResend();
-  const tpl = welcomeEmail({ name: opts.name });
+  const tpl = welcomeEmail({ name: opts.name, credentials: opts.credentials });
   return resend.emails.send({
     from: EMAIL_CONFIG.from,
     to: opts.to,
