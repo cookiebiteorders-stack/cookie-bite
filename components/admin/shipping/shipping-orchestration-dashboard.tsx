@@ -33,7 +33,7 @@ export function ShippingOrchestrationDashboard() {
         <ShippingZoneForm existingNames={existingNames} />
         <div className="space-y-4">
           {!loading && zones.length === 0 && !error ? (
-            <p className="rounded-xl border border-dashed border-cb-border bg-cb-surface/40 px-4 py-3 text-sm text-cb-text-muted">
+            <p className="rounded-xl border border-dashed border-cb-border bg-cb-surface/40 px-4 py-3 text-sm text-stone-700 dark:text-stone-300">
               No shipping zones yet. Add your first zone with the form, or import a CSV.
             </p>
           ) : null}

@@ -17,12 +17,10 @@ export function ShippingHero({ online }: ShippingHeroProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-cb-border/80",
-        "bg-gradient-to-br from-cb-cream-2/90 via-cb-surface-elevated to-cb-peach/25",
-        "p-6 shadow-[var(--shadow-editorial)] backdrop-blur-xl sm:p-8",
-        "dark:from-cb-surface-2 dark:via-cb-surface-elevated dark:to-cb-terracotta-dark/20",
+        "admin-hero-surface group rounded-2xl p-6 shadow-[var(--shadow-editorial)] backdrop-blur-xl sm:p-8",
       )}
     >
+      <div className="admin-panel-scrim" aria-hidden />
       <div
         className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-cb-mint/25 blur-3xl transition-opacity duration-500 group-hover:opacity-90"
         aria-hidden
@@ -48,7 +46,7 @@ export function ShippingHero({ online }: ShippingHeroProps) {
               </h1>
               <Sparkles className="h-4 w-4 text-amber-500 opacity-80" aria-hidden />
             </div>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-cb-text sm:text-base">
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-stone-800 dark:text-stone-300 sm:text-base">
               Manage delivery zones, fees, SLA ranges, and priority — with live validation and
               enterprise-grade controls.
             </p>

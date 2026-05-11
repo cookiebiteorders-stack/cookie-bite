@@ -88,9 +88,9 @@ export default function AdminAuditLogsPage() {
 
   return (
     <section className="space-y-5">
-      <header className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
+      <header className="admin-panel-surface rounded-2xl p-5">
         <h1 className="font-serif text-3xl font-bold text-cb-text-strong">Audit Logs</h1>
-        <p className="mt-2 text-sm text-cb-text">
+        <p className="mt-2 text-sm text-stone-700 dark:text-stone-300">
           Immutable activity history for admin-sensitive actions.
         </p>
       </header>

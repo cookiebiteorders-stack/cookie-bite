@@ -144,18 +144,18 @@ export function ProductManagementDashboard() {
         initial={reduceMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          "flex flex-col gap-4 rounded-2xl border border-cb-border/80 bg-gradient-to-br from-amber-50/60 via-white to-white p-5 shadow-sm",
-          "dark:from-stone-950 dark:via-cb-surface-elevated dark:to-cb-surface-elevated sm:flex-row sm:items-center sm:justify-between",
+          "admin-panel-surface flex flex-col gap-4 rounded-2xl p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between",
         )}
       >
+        <div className="admin-panel-scrim" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-800/80 dark:text-amber-200/90">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-900 dark:text-amber-200/95">
             Catalog
           </p>
           <h2 className="mt-1 font-serif text-xl font-bold text-stone-900 dark:text-stone-50 sm:text-2xl">
             إدارة المنتجات
           </h2>
-          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-cb-text-muted">
+          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-stone-700 dark:text-stone-300">
             Manage catalog, variants, pricing, stock thresholds, publishing state, SEO, analytics, and inventory
             operations — اختصارات: <kbd className="rounded border px-1 font-mono text-[10px]">⌘K</kbd> أو{" "}
             <kbd className="rounded border px-1 font-mono text-[10px]">Ctrl+K</kbd> للأوامر،{" "}

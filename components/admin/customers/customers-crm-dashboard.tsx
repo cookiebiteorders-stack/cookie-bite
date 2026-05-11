@@ -145,16 +145,16 @@ export function CustomersCrmDashboard() {
         initial={reduceMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          "flex flex-col gap-4 rounded-2xl border border-cb-border/80 bg-gradient-to-br from-amber-50/90 via-white to-stone-50/80 p-5 shadow-sm",
-          "dark:from-amber-950/25 dark:via-cb-surface-elevated dark:to-stone-950/40 sm:flex-row sm:items-start sm:justify-between",
+          "admin-panel-surface flex flex-col gap-4 rounded-2xl p-5 shadow-sm",
         )}
       >
+        <div className="admin-panel-scrim" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-900/80 dark:text-amber-200/90">CRM</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-900 dark:text-amber-200/95">CRM</p>
           <h1 id="crm-dashboard-title" className="mt-1 font-serif text-xl font-bold text-stone-900 dark:text-stone-50 sm:text-2xl">
             Customer Management &amp; CRM
           </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-cb-text-muted">
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-stone-700 dark:text-stone-300">
             إدارة ملفات العملاء، الولاء، التجزئة، تحليلات الاحتفاظ، التفاعل، وأتمتة دورة حياة العميل —{" "}
             <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] dark:bg-stone-900">⌘K</kbd> أو{" "}
             <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] dark:bg-stone-900">Ctrl+K</kbd> للأوامر،{" "}
@@ -163,133 +163,135 @@ export function CustomersCrmDashboard() {
             تلقائي كل 90 ثانية.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => pushToast("إضافة عميل — استخدم لوحة المستخدمين أو الاستيراد.", "info")}
-            className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-amber-700"
-          >
-            <UserPlus className="h-4 w-4 shrink-0" aria-hidden />
-            إضافة عميل
-          </button>
-          <button
-            type="button"
-            onClick={() => pushToast("استيراد عملاء — CSV قريباً مع التحقق من التكرار.", "info")}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
-          >
-            <Upload className="h-4 w-4 shrink-0" aria-hidden />
-            استيراد
-          </button>
-          <button
-            type="button"
-            onClick={exportPage}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
-          >
-            <Download className="h-4 w-4 shrink-0" aria-hidden />
-            تصدير CSV
-          </button>
-          <button
-            type="button"
-            onClick={() => pushToast("إرسال حملة — اربط بـ Resend/Sinch لاحقاً.", "info")}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
-          >
-            <Mail className="h-4 w-4 shrink-0" aria-hidden />
-            حملة
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setAdvancedFiltersOpen(true);
-              pushToast("أنشئ شريحة من الفلاتر المتقدمة ثم احفظ القاعدة في الـ backend.", "info");
-            }}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
-          >
-            <Users className="h-4 w-4 shrink-0" aria-hidden />
-            شريحة
-          </button>
-          <button
-            type="button"
-            onClick={() => void loadCustomers()}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
-          >
-            <Zap className="h-4 w-4 shrink-0" aria-hidden />
-            مزامنة
-          </button>
-          <button
-            type="button"
-            onClick={() => void loadCustomers()}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
-          >
-            <RefreshCw className="h-4 w-4 shrink-0" aria-hidden />
-            تحديث
-          </button>
-          <div className="relative">
+        <div className="w-full overflow-x-auto">
+          <div className="flex min-w-max flex-nowrap items-center gap-2 pb-1">
             <button
               type="button"
-              onClick={() => setQuickOpen((o) => !o)}
-              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
-              aria-expanded={quickOpen}
-              aria-haspopup="true"
+              onClick={() => pushToast("إضافة عميل — استخدم لوحة المستخدمين أو الاستيراد.", "info")}
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-amber-700"
             >
-              <Bell className="h-4 w-4 shrink-0" aria-hidden />
-              إجراءات سريعة
-              <ChevronDown className={cn("h-3.5 w-3.5 transition", quickOpen && "rotate-180")} aria-hidden />
+              <UserPlus className="h-4 w-4 shrink-0" aria-hidden />
+              إضافة عميل
             </button>
-            {quickOpen ? (
-              <ul
-                className="absolute end-0 z-30 mt-1 min-w-[220px] overflow-hidden rounded-xl border border-cb-border bg-cb-surface-elevated py-1 text-start shadow-xl"
-                onMouseLeave={() => setQuickOpen(false)}
-                role="menu"
+            <button
+              type="button"
+              onClick={() => pushToast("استيراد عملاء — CSV قريباً مع التحقق من التكرار.", "info")}
+              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+            >
+              <Upload className="h-4 w-4 shrink-0" aria-hidden />
+              استيراد
+            </button>
+            <button
+              type="button"
+              onClick={exportPage}
+              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+            >
+              <Download className="h-4 w-4 shrink-0" aria-hidden />
+              تصدير CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => pushToast("إرسال حملة — اربط بـ Resend/Sinch لاحقاً.", "info")}
+              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+            >
+              <Mail className="h-4 w-4 shrink-0" aria-hidden />
+              حملة
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAdvancedFiltersOpen(true);
+                pushToast("أنشئ شريحة من الفلاتر المتقدمة ثم احفظ القاعدة في الـ backend.", "info");
+              }}
+              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+            >
+              <Users className="h-4 w-4 shrink-0" aria-hidden />
+              شريحة
+            </button>
+            <button
+              type="button"
+              onClick={() => void loadCustomers()}
+              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+            >
+              <Zap className="h-4 w-4 shrink-0" aria-hidden />
+              مزامنة
+            </button>
+            <button
+              type="button"
+              onClick={() => void loadCustomers()}
+              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+            >
+              <RefreshCw className="h-4 w-4 shrink-0" aria-hidden />
+              تحديث
+            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setQuickOpen((o) => !o)}
+                className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+                aria-expanded={quickOpen}
+                aria-haspopup="true"
               >
-                {(
-                  [
-                    "بريد جماعي",
-                    "SMS جماعي",
-                    "تعيين وسوم",
-                    "تحديث المستوى",
-                    "تصدير تقارير",
-                    "توليد رؤى",
-                  ] as const
-                ).map((label) => (
-                  <li key={label}>
+                <Bell className="h-4 w-4 shrink-0" aria-hidden />
+                إجراءات سريعة
+                <ChevronDown className={cn("h-3.5 w-3.5 transition", quickOpen && "rotate-180")} aria-hidden />
+              </button>
+              {quickOpen ? (
+                <ul
+                  className="absolute end-0 z-30 mt-1 min-w-[220px] overflow-hidden rounded-xl border border-cb-border bg-cb-surface-elevated py-1 text-start shadow-xl"
+                  onMouseLeave={() => setQuickOpen(false)}
+                  role="menu"
+                >
+                  {(
+                    [
+                      "بريد جماعي",
+                      "SMS جماعي",
+                      "تعيين وسوم",
+                      "تحديث المستوى",
+                      "تصدير تقارير",
+                      "توليد رؤى",
+                    ] as const
+                  ).map((label) => (
+                    <li key={label}>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="flex w-full px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                        onClick={() => {
+                          setQuickOpen(false);
+                          pushToast(`${label} — قريباً مع RBAC وسجل تدقيق.`, "info");
+                        }}
+                      >
+                        {label}
+                      </button>
+                    </li>
+                  ))}
+                  <li>
                     <button
                       type="button"
                       role="menuitem"
                       className="flex w-full px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
                       onClick={() => {
                         setQuickOpen(false);
-                        pushToast(`${label} — قريباً مع RBAC وسجل تدقيق.`, "info");
+                        cycleTheme();
                       }}
                     >
-                      {label}
+                      تبديل المظهر
                     </button>
                   </li>
-                ))}
-                <li>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="flex w-full px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                    onClick={() => {
-                      setQuickOpen(false);
-                      cycleTheme();
-                    }}
-                  >
-                    تبديل المظهر
-                  </button>
-                </li>
-              </ul>
-            ) : null}
+                </ul>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => aiBatchInsight()}
+              className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-950 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-100"
+            >
+              <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
+              رؤى AI
+            </button>
+            <ThemeToggle className="shrink-0" />
           </div>
-          <button
-            type="button"
-            onClick={() => aiBatchInsight()}
-            className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-950 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-100"
-          >
-            <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
-            رؤى AI
-          </button>
-          <ThemeToggle className="shrink-0" />
         </div>
       </motion.div>
 

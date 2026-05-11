@@ -101,11 +101,11 @@ export default async function AdminHomePage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5 shadow-[var(--shadow-card)] cb-shadow-editorial">
+      <section className="admin-panel-surface rounded-2xl p-5 shadow-[var(--shadow-card)] cb-shadow-editorial">
         <h1 className="font-serif text-3xl font-bold text-cb-text-strong">
           Dashboard Overview
         </h1>
-        <p className="mt-2 max-w-3xl text-sm text-cb-text">
+        <p className="mt-2 max-w-3xl text-sm text-stone-700 dark:text-stone-300">
           Owner/Admin control center scaffolded from your full blueprint. This is the Phase 1
           foundation: role model, KPI surface, quick actions, and permission architecture ready for API
           binding.

@@ -48,7 +48,7 @@ function StatCard({ title, value, sub, trend, icon: Icon, seed, accent, wrap, de
       whileHover={reduceMotion ? undefined : { y: -2 }}
       className={cn(
         "relative overflow-hidden rounded-2xl border p-4 shadow-sm",
-        "bg-white/95 dark:bg-cb-surface-elevated/95",
+        "bg-white dark:bg-cb-surface-elevated",
         wrap,
       )}
     >
@@ -68,9 +68,9 @@ function StatCard({ title, value, sub, trend, icon: Icon, seed, accent, wrap, de
           {up ? "↑" : "↓"} {Math.abs(trend)}%
         </span>
       </div>
-      <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-cb-text-muted">{title}</p>
-      <p className="mt-1 font-serif text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-50">{value}</p>
-      {sub ? <p className="mt-0.5 text-xs text-cb-text-muted">{sub}</p> : null}
+      <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200">{title}</p>
+      <p className="mt-1 font-serif text-2xl font-bold tracking-tight text-stone-950 dark:text-white">{value}</p>
+      {sub ? <p className="mt-0.5 text-xs text-stone-700 dark:text-stone-300">{sub}</p> : null}
       <MiniSparkline seed={seed} color={accent} className="mt-2 h-9 w-full" />
     </motion.div>
   );
@@ -183,11 +183,12 @@ export function OrdersHeroStats({ stats, online }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
         className={cn(
-          "relative overflow-hidden rounded-2xl border border-cb-border/80 bg-gradient-to-br from-stone-50 via-white to-amber-50/50 p-6 shadow-[var(--shadow-editorial)] sm:p-8",
-          "dark:from-stone-950 dark:via-cb-surface-elevated dark:to-amber-950/20",
+          "admin-hero-surface rounded-2xl p-6 shadow-[var(--shadow-editorial)] sm:p-8",
+          "dark:to-amber-950/20",
         )}
       >
-        <div className="pointer-events-none absolute -right-16 -top-12 h-48 w-48 rounded-full bg-amber-200/25 blur-3xl dark:bg-amber-900/15" aria-hidden />
+        <div className="pointer-events-none absolute -right-16 -top-12 h-48 w-48 rounded-full bg-amber-300/16 blur-3xl dark:bg-amber-900/15" aria-hidden />
+        <div className="admin-panel-scrim" aria-hidden />
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex gap-4">
             <motion.div
@@ -201,7 +202,7 @@ export function OrdersHeroStats({ stats, online }: Props) {
               <h1 className="font-serif text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-50 sm:text-3xl">
                 Order Operations Board
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-700 dark:text-stone-300 sm:text-[15px]">
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-800 dark:text-stone-300 sm:text-[15px]">
                 إدارة طابور الطلبات المباشر، المدفوعات، الشحن، التنفيذ، طلبات العملاء، والعمليات الجماعية — لوحة عمليات
                 على مستوى المؤسسات.
               </p>

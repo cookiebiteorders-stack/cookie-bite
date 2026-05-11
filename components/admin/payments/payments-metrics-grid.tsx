@@ -77,11 +77,11 @@ export function PaymentsMetricsGrid({ kpis }: Props) {
           className={cn(card, item.className)}
         >
           <div className="flex items-start justify-between gap-2">
-            <p className="text-[11px] font-bold uppercase tracking-wide opacity-80">{item.label}</p>
-            <item.icon className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+            <p className="text-[11px] font-bold uppercase tracking-wide text-current">{item.label}</p>
+            <item.icon className="h-4 w-4 shrink-0 text-current" aria-hidden />
           </div>
           <p className="mt-2 font-serif text-2xl font-bold tabular-nums tracking-tight">{item.value}</p>
-          <p className="mt-1 text-xs opacity-75">{item.sub}</p>
+          <p className="mt-1 text-xs text-current">{item.sub}</p>
         </motion.article>
       ))}
     </div>

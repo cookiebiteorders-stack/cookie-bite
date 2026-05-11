@@ -821,6 +821,67 @@ textarea,
   );
 }
 
+/* Admin contrast system: reusable high-contrast surfaces */
+.admin-panel-surface {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--cb-border) 92%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--cb-cream-2) 58%, white) 0%,
+    color-mix(in oklab, var(--cb-surface) 92%, white) 44%,
+    color-mix(in oklab, var(--cb-surface-2) 48%, white) 100%
+  );
+}
+
+.dark .admin-panel-surface {
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--cb-surface) 88%, black) 0%,
+    color-mix(in oklab, var(--cb-surface-elevated) 90%, black) 50%,
+    color-mix(in oklab, var(--cb-surface-2) 72%, black) 100%
+  );
+}
+
+.admin-panel-scrim {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--cb-surface) 90%, transparent) 0%,
+    color-mix(in oklab, var(--cb-surface) 60%, transparent) 40%,
+    color-mix(in oklab, var(--cb-surface) 12%, transparent) 72%,
+    transparent 100%
+  );
+  opacity: 0.72;
+}
+
+.dark .admin-panel-scrim {
+  opacity: 0.32;
+}
+
+.admin-hero-surface {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--cb-border) 90%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--cb-cream-2) 64%, white) 0%,
+    color-mix(in oklab, var(--cb-surface) 94%, white) 46%,
+    color-mix(in oklab, var(--cb-peach) 36%, white) 100%
+  );
+}
+
+.dark .admin-hero-surface {
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--cb-surface) 90%, black) 0%,
+    color-mix(in oklab, var(--cb-surface-elevated) 92%, black) 54%,
+    color-mix(in oklab, var(--cb-peach) 34%, black) 100%
+  );
+}
+
 @keyframes morph-dust {
   0% {
     opacity: 0;

@@ -48,7 +48,7 @@ function StatCard({ title, value, sub, trendPct, icon: Icon, seed, accent, wrap,
       whileHover={reduceMotion ? undefined : { y: -2 }}
       className={cn(
         "relative overflow-hidden rounded-2xl border p-4 shadow-sm",
-        "bg-white/95 dark:bg-cb-surface-elevated/95",
+        "bg-white dark:bg-cb-surface-elevated",
         wrap,
       )}
     >
@@ -65,9 +65,9 @@ function StatCard({ title, value, sub, trendPct, icon: Icon, seed, accent, wrap,
           {up ? "↑" : "↓"} {Math.abs(trendPct)}%
         </span>
       </div>
-      <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-cb-text-muted">{title}</p>
-      <p className="mt-1 font-serif text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-50">{value}</p>
-      {sub ? <p className="mt-0.5 text-xs text-cb-text-muted">{sub}</p> : null}
+      <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200">{title}</p>
+      <p className="mt-1 font-serif text-2xl font-bold tracking-tight text-stone-950 dark:text-white">{value}</p>
+      {sub ? <p className="mt-0.5 text-xs text-stone-700 dark:text-stone-300">{sub}</p> : null}
       <MiniSparkline seed={seed} color={accent} className="mt-2 h-9 w-full" />
     </motion.div>
   );
@@ -178,11 +178,12 @@ export function CrmHeroStats({ stats, online }: Props) {
         initial={reduceMotion ? false : { opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          "relative overflow-hidden rounded-2xl border border-cb-border/80 bg-gradient-to-br from-amber-50/50 via-white to-violet-50/40 p-6 shadow-[var(--shadow-editorial)] sm:p-8",
-          "dark:from-stone-950 dark:via-cb-surface-elevated dark:to-violet-950/20",
+          "admin-hero-surface rounded-2xl p-6 shadow-[var(--shadow-editorial)] sm:p-8",
+          "dark:to-violet-950/20",
         )}
       >
-        <div className="pointer-events-none absolute -right-20 -top-16 h-52 w-52 rounded-full bg-violet-200/20 blur-3xl dark:bg-violet-900/15" aria-hidden />
+        <div className="pointer-events-none absolute -right-20 -top-16 h-52 w-52 rounded-full bg-violet-200/18 blur-3xl dark:bg-violet-900/15" aria-hidden />
+        <div className="admin-panel-scrim" aria-hidden />
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex gap-4">
             <motion.div
@@ -195,7 +196,7 @@ export function CrmHeroStats({ stats, online }: Props) {
               <h1 className="font-serif text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-50 sm:text-3xl">
                 Customer Management &amp; CRM
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-700 dark:text-stone-300 sm:text-[15px]">
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-800 dark:text-stone-300 sm:text-[15px]">
                 إدارة ملفات العملاء، الولاء، التجزئة، الاحتفاظ، التفاعل، وأتمتة دورة الحياة — لوحة CRM بمستوى SaaS مميز.
               </p>
             </div>

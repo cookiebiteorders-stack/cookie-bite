@@ -144,11 +144,11 @@ export default function AdminRolesPage() {
 
   return (
     <section className="space-y-5">
-      <header className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
+      <header className="admin-panel-surface rounded-2xl p-5">
         <h1 className="font-serif text-3xl font-bold text-cb-text-strong">
           Role Management
         </h1>
-        <p className="mt-2 text-sm text-cb-text">
+        <p className="mt-2 text-sm text-stone-700 dark:text-stone-300">
           RBAC matrix visibility for owner governance and permission audits.
         </p>
       </header>

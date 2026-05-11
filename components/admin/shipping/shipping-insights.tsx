@@ -73,10 +73,10 @@ export function ShippingInsights({ zones }: ShippingInsightsProps) {
           className={cn(cardBase, item.className)}
         >
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-bold uppercase tracking-wide opacity-80">{item.label}</p>
-            <item.icon className="h-4 w-4 opacity-70" aria-hidden />
+            <p className="text-xs font-bold uppercase tracking-wide text-current">{item.label}</p>
+            <item.icon className="h-4 w-4 text-current" aria-hidden />
           </div>
-          <p className="mt-2 font-serif text-2xl font-bold tabular-nums">{item.value}</p>
+          <p className="mt-2 font-serif text-2xl font-bold tabular-nums text-current">{item.value}</p>
         </motion.div>
       ))}
     </div>

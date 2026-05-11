@@ -44,11 +44,11 @@ export function FinancialHero({
       initial={reduceMotion ? false : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-cb-border/80 p-6 shadow-[var(--shadow-editorial)] sm:p-8",
-        "bg-gradient-to-br from-cb-cream-2/95 via-cb-surface-elevated to-cb-peach/20 backdrop-blur-xl",
-        "dark:from-cb-surface-2 dark:via-cb-surface-elevated dark:to-cb-terracotta-dark/15",
+        "admin-hero-surface rounded-2xl p-6 shadow-[var(--shadow-editorial)] sm:p-8",
+        "backdrop-blur-xl",
       )}
     >
+      <div className="admin-panel-scrim" aria-hidden />
       <div
         className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-cb-mint/20 blur-3xl"
         aria-hidden
@@ -60,7 +60,7 @@ export function FinancialHero({
           </div>
           <div>
             <h1 className="font-serif text-2xl font-bold text-cb-text-strong sm:text-3xl">Financial Reports</h1>
-            <p className="mt-2 max-w-2xl text-sm text-cb-text sm:text-base">
+            <p className="mt-2 max-w-2xl text-sm text-stone-800 dark:text-stone-300 sm:text-base">
               Revenue, expenses, and net performance insights — with charts, ledger, and comparison mode.
             </p>
             <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-100">
@@ -109,7 +109,7 @@ export function FinancialHero({
               {p.label}
             </button>
           ))}
-          <label className="ms-auto flex cursor-pointer items-center gap-2 text-xs font-bold text-cb-text-strong">
+          <label className="ms-auto flex cursor-pointer items-center gap-2 text-xs font-bold text-stone-800 dark:text-stone-200">
             <input type="checkbox" className="h-4 w-4 rounded" checked={compareMode} onChange={(e) => onCompare(e.target.checked)} />
             Compare prev.
           </label>

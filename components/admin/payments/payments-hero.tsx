@@ -25,11 +25,11 @@ export function PaymentsHero({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32 }}
       className={cn(
-        "relative overflow-hidden rounded-2xl border p-6 shadow-[var(--shadow-editorial)] sm:p-8",
-        "border-cb-border/80 bg-gradient-to-br from-cb-cream-2/90 via-cb-surface-elevated to-cb-mint/15",
-        "backdrop-blur-xl dark:from-cb-surface-2 dark:via-cb-surface-elevated dark:to-cb-terracotta-dark/15",
+        "admin-hero-surface rounded-2xl p-6 shadow-[var(--shadow-editorial)] sm:p-8",
+        "backdrop-blur-xl",
       )}
     >
+      <div className="admin-panel-scrim" aria-hidden />
       <div
         className="pointer-events-none absolute inset-0 rounded-2xl opacity-70"
         style={{
@@ -47,12 +47,12 @@ export function PaymentsHero({
             <h1 className="font-serif text-2xl font-bold tracking-tight text-cb-text-strong sm:text-3xl">
               Payments Console
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cb-text sm:text-base">
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-800 dark:text-stone-300 sm:text-base">
               Gateway transaction health, status distribution, and captured value — with safe
               error handling and live refresh.
             </p>
             {lastFetchedAt && (
-              <p className="mt-2 text-xs text-cb-text-muted">
+              <p className="mt-2 text-xs text-stone-600 dark:text-stone-400">
                 Last sync: {new Date(lastFetchedAt).toLocaleString()}
               </p>
             )}

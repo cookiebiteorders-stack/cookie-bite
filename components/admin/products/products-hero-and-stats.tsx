@@ -46,7 +46,7 @@ function StatCard({ title, value, sub, trendPct, icon: Icon, seed, accent, delay
       whileHover={reduceMotion ? undefined : { y: -2 }}
       className={cn(
         "relative overflow-hidden rounded-2xl border border-cb-border/80 bg-white/95 p-4 shadow-[0_1px_0_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(120,80,40,0.18)]",
-        "dark:bg-cb-surface-elevated/95 dark:shadow-[0_8px_28px_-14px_rgba(0,0,0,0.55)]",
+        "dark:bg-cb-surface-elevated dark:shadow-[0_8px_28px_-14px_rgba(0,0,0,0.55)]",
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -65,11 +65,11 @@ function StatCard({ title, value, sub, trendPct, icon: Icon, seed, accent, delay
           {up ? "↑" : "↓"} {Math.abs(trendPct)}%
         </span>
       </div>
-      <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-cb-text-muted">{title}</p>
+      <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200">{title}</p>
       <p className="mt-1 font-serif text-2xl font-bold tracking-tight text-stone-800 dark:text-stone-100">
         {value}
       </p>
-      {sub ? <p className="mt-0.5 text-xs text-cb-text-muted">{sub}</p> : null}
+      {sub ? <p className="mt-0.5 text-xs text-stone-700 dark:text-stone-300">{sub}</p> : null}
       <MiniSparkline seed={seed} color={accent} className="mt-2 h-9 w-full" />
     </motion.div>
   );
@@ -154,11 +154,12 @@ export function ProductsHeroAndStats({ stats, online }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
         className={cn(
-          "relative overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50/95 via-white to-orange-50/80 p-6 shadow-[var(--shadow-editorial)] sm:p-8",
-          "dark:border-amber-900/40 dark:from-stone-900 dark:via-cb-surface-elevated dark:to-amber-950/30",
+          "admin-hero-surface rounded-2xl p-6 shadow-[var(--shadow-editorial)] sm:p-8",
+          "dark:border-amber-900/40",
         )}
       >
-        <div className="pointer-events-none absolute -right-20 -top-16 h-56 w-56 rounded-full bg-orange-200/30 blur-3xl dark:bg-orange-900/20" aria-hidden />
+        <div className="pointer-events-none absolute -right-20 -top-16 h-56 w-56 rounded-full bg-orange-300/20 blur-3xl dark:bg-orange-900/20" aria-hidden />
+        <div className="admin-panel-scrim" aria-hidden />
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex gap-4">
             <motion.div
@@ -172,7 +173,7 @@ export function ProductsHeroAndStats({ stats, online }: Props) {
               <h1 className="font-serif text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-50 sm:text-3xl">
                 Product Management
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-700 dark:text-stone-300 sm:text-[15px]">
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-800 dark:text-stone-300 sm:text-[15px]">
                 إدارة الكتالوج، المتغيرات، التسعير، عتبات المخزون، حالة النشر، SEO، والتحليلات — لوحة
                 تحكم على مستوى المؤسسات بتجربة مستخدم سلسة.
               </p>

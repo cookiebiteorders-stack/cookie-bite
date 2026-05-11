@@ -580,7 +580,7 @@ export function ShippingZonesPanel() {
     >
       <div className="flex flex-col gap-3 rounded-2xl border border-cb-border bg-cb-surface-elevated p-4 shadow-sm lg:flex-row lg:items-end lg:justify-between">
         <div className="grid flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="block text-xs font-bold uppercase tracking-wide text-cb-text-muted">
+          <label className="block text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
             Search
             <input
               value={search}
@@ -589,7 +589,7 @@ export function ShippingZonesPanel() {
               className="mt-1 w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
             />
           </label>
-          <label className="block text-xs font-bold uppercase tracking-wide text-cb-text-muted">
+          <label className="block text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
             Status
             <select
               value={status}
@@ -601,7 +601,7 @@ export function ShippingZonesPanel() {
               <option value="inactive">Inactive</option>
             </select>
           </label>
-          <label className="block text-xs font-bold uppercase tracking-wide text-cb-text-muted">
+          <label className="block text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
             Fee min (EGP)
             <input
               value={feeMin}
@@ -610,7 +610,7 @@ export function ShippingZonesPanel() {
               className="mt-1 w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
             />
           </label>
-          <label className="block text-xs font-bold uppercase tracking-wide text-cb-text-muted">
+          <label className="block text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
             Fee max (EGP)
             <input
               value={feeMax}
@@ -621,7 +621,7 @@ export function ShippingZonesPanel() {
           </label>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold text-cb-text-muted">Sort</span>
+          <span className="text-xs font-semibold text-stone-700 dark:text-stone-300">Sort</span>
           {(["priority", "name", "fee", "eta"] as SortKey[]).map((k) => (
             <button
               key={k}
@@ -667,7 +667,7 @@ export function ShippingZonesPanel() {
         <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => void onCsv(e)} />
         {selectedCount > 0 && (
           <>
-            <span className="text-xs text-cb-text-muted">{selectedCount} selected</span>
+            <span className="text-xs text-stone-700 dark:text-stone-300">{selectedCount} selected</span>
             <button
               type="button"
               className="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white"
@@ -706,14 +706,14 @@ export function ShippingZonesPanel() {
           ))}
         </div>
       ) : displayZones.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-cb-border bg-cb-surface/50 p-10 text-center text-sm text-cb-text-muted">
+        <div className="rounded-2xl border border-dashed border-cb-border bg-cb-surface/50 p-10 text-center text-sm text-stone-700 dark:text-stone-300">
           No zones match your filters. Adjust search or add a new zone.
         </div>
       ) : (
         <>
           <div className="hidden overflow-x-auto rounded-2xl border border-cb-border bg-cb-surface-elevated md:block">
             <table className="w-full min-w-[960px] text-left text-sm">
-              <thead className="border-b border-cb-border bg-cb-surface-2/80 text-xs font-bold uppercase tracking-wide text-cb-text-muted">
+              <thead className="border-b border-cb-border bg-cb-surface-2/80 text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
                 {table.getHeaderGroups().map((hg) => (
                   <tr key={hg.id}>
                     {hg.headers.map((h) => (

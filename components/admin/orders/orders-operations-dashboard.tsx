@@ -124,115 +124,117 @@ export function OrdersOperationsDashboard() {
         initial={reduceMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          "flex flex-col gap-4 rounded-2xl border border-cb-border/80 bg-gradient-to-br from-stone-50 via-white to-sky-50/40 p-5 shadow-sm",
-          "dark:from-stone-950 dark:via-cb-surface-elevated dark:to-sky-950/20 sm:flex-row sm:items-center sm:justify-between",
+          "admin-panel-surface flex flex-col gap-4 rounded-2xl p-5 shadow-sm",
         )}
       >
+        <div className="admin-panel-scrim" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-800/80 dark:text-sky-200/90">Operations</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-950 dark:text-sky-200/95">Operations</p>
           <h2 className="mt-1 font-serif text-xl font-bold text-stone-900 dark:text-stone-50 sm:text-2xl">لوحة الطلبات</h2>
-          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-cb-text-muted">
+          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-stone-800 dark:text-stone-300">
             Manage live order queues, payments, shipping, fulfillment, customer requests, and bulk workflows —{" "}
             <kbd className="rounded border px-1 font-mono text-[10px]">⌘K</kbd> أو{" "}
             <kbd className="rounded border px-1 font-mono text-[10px]">Ctrl+K</kbd> للأوامر،{" "}
             <kbd className="rounded border px-1 font-mono text-[10px]">/</kbd> للبحث. تحديث تلقائي كل 90 ثانية.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
+        <div className="w-full overflow-x-auto">
+          <div className="flex min-w-max flex-nowrap items-center gap-2 pb-1">
+            <button
             type="button"
             onClick={() => pushToast("إنشاء طلب يدوي — اربط بنقطة POS لاحقاً", "info")}
             className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-amber-700"
-          >
-            <ShoppingCart className="h-4 w-4" aria-hidden />
-            إنشاء طلب
-          </button>
-          <button
+            >
+              <ShoppingCart className="h-4 w-4" aria-hidden />
+              إنشاء طلب
+            </button>
+            <button
             type="button"
             onClick={exportPage}
             className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
-          >
-            <Download className="h-4 w-4" aria-hidden />
-            تصدير
-          </button>
-          <button
+            >
+              <Download className="h-4 w-4" aria-hidden />
+              تصدير
+            </button>
+            <button
             type="button"
             onClick={() => pushToast("استيراد CSV — قريباً", "info")}
             className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
-          >
-            <Upload className="h-4 w-4" aria-hidden />
-            استيراد
-          </button>
-          <button
+            >
+              <Upload className="h-4 w-4" aria-hidden />
+              استيراد
+            </button>
+            <button
             type="button"
             onClick={() => void loadOrders()}
             className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
-          >
-            <Zap className="h-4 w-4" aria-hidden />
-            مزامنة
-          </button>
-          <button
+            >
+              <Zap className="h-4 w-4" aria-hidden />
+              مزامنة
+            </button>
+            <button
             type="button"
             onClick={() => pushToast("طباعة جماعية — قريباً", "info")}
             className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
-          >
-            <Printer className="h-4 w-4" aria-hidden />
-            طباعة
-          </button>
-          <button
+            >
+              <Printer className="h-4 w-4" aria-hidden />
+              طباعة
+            </button>
+            <button
             type="button"
             onClick={() => void loadOrders()}
             className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
-          >
-            <RefreshCw className="h-4 w-4" aria-hidden />
-            تحديث فوري
-          </button>
-          <div className="relative">
-            <button
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden />
+              تحديث فوري
+            </button>
+            <div className="relative">
+              <button
               type="button"
               onClick={() => setSettingsOpen((o) => !o)}
               className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
               aria-expanded={settingsOpen}
-            >
-              <Settings className="h-4 w-4" aria-hidden />
-              سريع
-            </button>
-            {settingsOpen ? (
-              <ul
-                className="absolute end-0 z-30 mt-1 min-w-[200px] overflow-hidden rounded-xl border border-cb-border bg-cb-surface-elevated py-1 text-start shadow-xl"
-                onMouseLeave={() => setSettingsOpen(false)}
-                role="menu"
               >
-                <li>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="flex w-full px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                    onClick={() => {
-                      setSettingsOpen(false);
-                      pushToast("توليد ملصقات — اربط بشركة شحن", "info");
-                    }}
-                  >
-                    توليد ملصقات
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="flex w-full px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                    onClick={() => {
-                      setSettingsOpen(false);
-                      cycleTheme();
-                    }}
-                  >
-                    تبديل المظهر
-                  </button>
-                </li>
-              </ul>
-            ) : null}
+                <Settings className="h-4 w-4" aria-hidden />
+                سريع
+              </button>
+              {settingsOpen ? (
+                <ul
+                  className="absolute end-0 z-30 mt-1 min-w-[200px] overflow-hidden rounded-xl border border-cb-border bg-cb-surface-elevated py-1 text-start shadow-xl"
+                  onMouseLeave={() => setSettingsOpen(false)}
+                  role="menu"
+                >
+                  <li>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                      onClick={() => {
+                        setSettingsOpen(false);
+                        pushToast("توليد ملصقات — اربط بشركة شحن", "info");
+                      }}
+                    >
+                      توليد ملصقات
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                      onClick={() => {
+                        setSettingsOpen(false);
+                        cycleTheme();
+                      }}
+                    >
+                      تبديل المظهر
+                    </button>
+                  </li>
+                </ul>
+              ) : null}
+            </div>
+            <ThemeToggle className="shrink-0" />
           </div>
-          <ThemeToggle className="shrink-0" />
         </div>
       </motion.div>
 
