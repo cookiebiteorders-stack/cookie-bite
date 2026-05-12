@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { MessageCircle, Send, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { ClipboardCopy, MessageCircle, Send, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { cn } from "@/lib/utils";
 import {
   resetWizard,
+  type ProductMarketingPreviewJson,
   type ProductWizardState,
 } from "@/lib/admin/product-assistant/wizard";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
@@ -26,6 +27,10 @@ export function ProductAssistantPanel({ canWrite }: { canWrite: boolean }) {
   const [compiledPayload, setCompiledPayload] = useState<Record<string, unknown> | null>(
     null,
   );
+  const [marketingPreview, setMarketingPreview] = useState<ProductMarketingPreviewJson | null>(
+    null,
+  );
+  const [previewOpen, setPreviewOpen] = useState(true);
   const listRef = useRef<HTMLDivElement>(null);
 
   const createProduct = useProductsDashboardStore((s) => s.createProduct);
@@ -49,12 +54,14 @@ export function ProductAssistantPanel({ canWrite }: { canWrite: boolean }) {
         reply: string;
         wizard: ProductWizardState;
         compiledPayload: Record<string, unknown> | null;
+        marketingPreview: ProductMarketingPreviewJson | null;
       }>("/api/admin/product-assistant/chat", {
         method: "POST",
         jsonBody: { message: text, wizard },
       });
       setWizard(res.wizard);
       setCompiledPayload(res.compiledPayload ?? null);
+      setMarketingPreview(res.marketingPreview ?? null);
       setMessages((m) => [...m, { id: id(), role: "assistant", content: res.reply }]);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "فشل الطلب";
@@ -73,6 +80,7 @@ export function ProductAssistantPanel({ canWrite }: { canWrite: boolean }) {
       const row = await createProduct(compiledPayload);
       if (row) {
         setCompiledPayload(null);
+        setMarketingPreview(null);
         setWizard(resetWizard());
         setMessages([
           {
@@ -90,9 +98,21 @@ export function ProductAssistantPanel({ canWrite }: { canWrite: boolean }) {
   const onReset = useCallback(() => {
     setWizard(resetWizard());
     setCompiledPayload(null);
+    setMarketingPreview(null);
     setMessages([]);
     setInput("");
   }, []);
+
+  const copyPreviewJson = useCallback(async () => {
+    if (!marketingPreview) return;
+    const text = JSON.stringify(marketingPreview, null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      pushToast("تم نسخ JSON المعاينة.", "success");
+    } catch {
+      pushToast("تعذّر النسخ من المتصفح.", "error");
+    }
+  }, [marketingPreview, pushToast]);
 
   return (
     <div className="rounded-2xl border border-cb-border bg-cb-surface-elevated shadow-sm">
@@ -143,6 +163,39 @@ export function ProductAssistantPanel({ canWrite }: { canWrite: boolean }) {
               ))
             )}
           </div>
+
+          {marketingPreview ? (
+            <div className="mt-2 rounded-xl border border-cb-border bg-cb-surface-2">
+              <button
+                type="button"
+                onClick={() => setPreviewOpen((o) => !o)}
+                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-start text-xs font-bold text-cb-text-strong"
+              >
+                معاينة JSON (تسويق / SEO — ج.م)
+                <span className="font-normal text-cb-text-muted">{previewOpen ? "▼" : "◀"}</span>
+              </button>
+              {previewOpen ? (
+                <div className="border-t border-cb-border p-2">
+                  <div className="mb-2 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => void copyPreviewJson()}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-cb-border bg-white px-2 py-1 text-[11px] font-semibold text-cb-text-strong hover:bg-amber-50 dark:bg-stone-900 dark:hover:bg-amber-950/30"
+                    >
+                      <ClipboardCopy className="h-3.5 w-3.5" aria-hidden />
+                      نسخ JSON
+                    </button>
+                  </div>
+                  <pre
+                    dir="ltr"
+                    className="max-h-48 overflow-auto rounded-lg bg-stone-950 p-2 text-left text-[10px] leading-relaxed text-amber-50/95"
+                  >
+                    {JSON.stringify(marketingPreview, null, 2)}
+                  </pre>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           {compiledPayload ? (
             <div className="mt-2 flex flex-wrap gap-2">

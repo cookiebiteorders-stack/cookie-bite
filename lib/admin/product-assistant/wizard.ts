@@ -32,7 +32,114 @@ export type ProductWizardState = {
   active: boolean;
   step: WizardStep;
   draft: ProductWizardDraft;
+  /** آخر وصف عُيِّن عبر Gemini في هذه الجلسة */
+  descriptionFromAi?: boolean;
 };
+
+/** معاينة تسويقية / SEO — للعرض أو التصدير (الكتالوج يستخدم `compiledPayload` منفصلاً) */
+export type ProductMarketingPreviewJson = {
+  name: string;
+  slug: string;
+  price: number;
+  currency: "EGP";
+  category: string;
+  stock: number;
+  sku: string;
+  description: string;
+  short_description: string;
+  features: string[];
+  tags: string[];
+  images: string[];
+  generated: {
+    description: boolean;
+    images: boolean;
+  };
+};
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function shortFromDescription(text: string, max = 220): string {
+  const t = text.replace(/\s+/g, " ").trim();
+  if (t.length <= max) return t;
+  const slice = t.slice(0, max);
+  const lastSpace = slice.lastIndexOf(" ");
+  return (lastSpace > 40 ? slice.slice(0, lastSpace) : slice).trim() + "…";
+}
+
+function featureBulletsFromDescription(desc: string, name: string, category: string): string[] {
+  const raw = desc
+    .split(/(?:\n+|\.(?:\s+|$))/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 8 && s.length < 200);
+  const uniq = [...new Set(raw)].slice(0, 5);
+  if (uniq.length >= 2) return uniq;
+  const cat = category || "handcrafted treats";
+  return [
+    `Premium ${name} — ${cat}.`,
+    "Baked with quality ingredients; perfect for gifting or everyday indulgence.",
+    "From Cookie Bite — New Cairo.",
+  ];
+}
+
+function tagsFromNameCategory(name: string, category: string): string[] {
+  const blob = `${name} ${category}`.toLowerCase();
+  const words = blob
+    .split(/[^a-z0-9\u0600-\u06FF]+/)
+    .map((w) => w.trim())
+    .filter((w) => w.length > 2 && w.length < 32);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const w of words) {
+    const k = w.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(k);
+    if (out.length >= 12) break;
+  }
+  return out.length ? out : ["cookie-bite", "dessert", "cairo"];
+}
+
+export function buildMarketingPreview(params: {
+  draft: ProductWizardDraft;
+  sku: string;
+  descriptionFromAi: boolean;
+}): ProductMarketingPreviewJson {
+  const name = params.draft.name?.trim() ?? "";
+  const price = params.draft.price_egp ?? 0;
+  const category = params.draft.category?.trim() ?? "";
+  const stock = params.draft.stock ?? 0;
+  const desc = (params.draft.description_en ?? "").trim();
+  const slug = slugify(name) || "product";
+  const img = params.draft.image_url;
+  const images = typeof img === "string" && img.length > 0 ? [img] : [];
+
+  return {
+    name,
+    slug,
+    price,
+    currency: "EGP",
+    category: category || "General",
+    stock,
+    sku: params.sku,
+    description: desc,
+    short_description: desc ? shortFromDescription(desc) : shortFromDescription(`${name} — ${category}.`, 180),
+    features: featureBulletsFromDescription(desc, name, category),
+    tags: tagsFromNameCategory(name, category),
+    images,
+    generated: {
+      description: params.descriptionFromAi,
+      images: false,
+    },
+  };
+}
 
 const CREATE_INTENT =
   /\b(add\s+product|create\s+(new\s+)?(item|product)|new\s+product|إضافة\s+منتج|أضف\s+منتج|منتج\s+جديد|إنشاء\s+منتج)\b/i;
@@ -176,6 +283,7 @@ export type WizardTurnResult = {
   wizard: ProductWizardState;
   requestGeminiDescription: boolean;
   compiledPayload: Record<string, unknown> | null;
+  marketingPreview: ProductMarketingPreviewJson | null;
 };
 
 export function runWizardTurn(params: {
@@ -184,46 +292,52 @@ export function runWizardTurn(params: {
   injectedDescription?: string | null;
 }): WizardTurnResult {
   const raw = params.userMessage.trim();
-  let { active, step, draft } = params.wizard;
+  let { active, step, draft, descriptionFromAi = false } = params.wizard;
 
   if (!active) {
     if (detectCreateProductIntent(raw)) {
       active = true;
       step = "name";
       draft = {};
+      descriptionFromAi = false;
       return {
         reply: `تم — لننشئ منتجاً خطوة بخطوة.\n\n${promptFor("name")}`,
-        wizard: { active, step, draft },
+        wizard: { active, step, draft, descriptionFromAi },
         requestGeminiDescription: false,
         compiledPayload: null,
+        marketingPreview: null,
       };
     }
     return {
       reply:
         "يمكنني مساعدتك في **إنشاء منتج** محادثةً. اكتب مثلاً: «أضف منتجاً» أو «create new product» للبدء.",
-      wizard: { active: false, step: "idle", draft: {} },
+      wizard: { active: false, step: "idle", draft: {}, descriptionFromAi: false },
       requestGeminiDescription: false,
       compiledPayload: null,
+      marketingPreview: null,
     };
   }
 
   if (params.injectedDescription != null) {
     draft = mergeDraft(draft, { description_en: params.injectedDescription });
+    descriptionFromAi = true;
     step = nextMissingStep(draft);
     if (step === "review") {
-      return finishReview(draft);
+      return finishReview(draft, descriptionFromAi);
     }
     return {
       reply: `تم توليد الوصف.\n\n${promptFor(step)}`,
-      wizard: { active: true, step, draft },
+      wizard: { active: true, step, draft, descriptionFromAi },
       requestGeminiDescription: false,
       compiledPayload: null,
+      marketingPreview: null,
     };
   }
 
   const incomingStep = step;
   const loose = parseLooseFields(raw, draft);
   draft = mergeDraft(draft, loose);
+  if (loose.description_en !== undefined) descriptionFromAi = false;
 
   /** نعالج فقط الخطوة الحالية حتى لا نطلب صورة من رسالة كانت جواباً عن الاسم فقط */
   if (incomingStep === "name") {
@@ -233,9 +347,10 @@ export function runWizardTurn(params: {
     if (!draft.name?.trim()) {
       return {
         reply: "أحتاج **اسماً واضحاً** للمنتج (سطر واحد أو مثلاً: الاسم: …).",
-        wizard: { active: true, step: "name", draft },
+        wizard: { active: true, step: "name", draft, descriptionFromAi },
         requestGeminiDescription: false,
         compiledPayload: null,
+        marketingPreview: null,
       };
     }
   } else if (incomingStep === "images") {
@@ -249,9 +364,10 @@ export function runWizardTurn(params: {
       else if (raw.length > 0) {
         return {
           reply: "لم أجد رابط صورة صالحاً (HTTPS). الصق الرابط أو اكتب «بدون».",
-          wizard: { active: true, step: "images", draft },
+          wizard: { active: true, step: "images", draft, descriptionFromAi },
           requestGeminiDescription: false,
           compiledPayload: null,
+          marketingPreview: null,
         };
       }
     }
@@ -262,9 +378,10 @@ export function runWizardTurn(params: {
     if (!draft.category?.trim()) {
       return {
         reply: "ما **التصنيف**؟ (مثلاً كوكيز، هدايا، مشروبات)",
-        wizard: { active: true, step: "category", draft },
+        wizard: { active: true, step: "category", draft, descriptionFromAi },
         requestGeminiDescription: false,
         compiledPayload: null,
+        marketingPreview: null,
       };
     }
   } else if (incomingStep === "price") {
@@ -273,9 +390,10 @@ export function runWizardTurn(params: {
       if (p == null) {
         return {
           reply: "لم أفهم السعر. أرسل رقماً مثل **85** أو **120 جنيه**.",
-          wizard: { active: true, step: "price", draft },
+          wizard: { active: true, step: "price", draft, descriptionFromAi },
           requestGeminiDescription: false,
           compiledPayload: null,
+          marketingPreview: null,
         };
       }
       draft = mergeDraft(draft, { price_egp: p });
@@ -286,9 +404,10 @@ export function runWizardTurn(params: {
       if (s == null) {
         return {
           reply: "أرسل **عدداً صحيحاً** للمخزون (مثلاً 24 أو 0).",
-          wizard: { active: true, step: "stock", draft },
+          wizard: { active: true, step: "stock", draft, descriptionFromAi },
           requestGeminiDescription: false,
           compiledPayload: null,
+          marketingPreview: null,
         };
       }
       draft = mergeDraft(draft, { stock: s });
@@ -297,41 +416,45 @@ export function runWizardTurn(params: {
     if (userWantsAuto(raw)) {
       return {
         reply: "جاري تجهيز وصف تسويقي…",
-        wizard: { active: true, step: "description", draft },
+        wizard: { active: true, step: "description", draft, descriptionFromAi },
         requestGeminiDescription: true,
         compiledPayload: null,
+        marketingPreview: null,
       };
     }
     if (raw.length > 0) draft = mergeDraft(draft, { description_en: raw.slice(0, 3000) });
     else draft = mergeDraft(draft, { description_en: null });
+    descriptionFromAi = false;
   }
 
   step = nextMissingStep(draft);
 
   if (step === "review") {
-    return finishReview(draft);
+    return finishReview(draft, descriptionFromAi);
   }
 
   const idx = STEP_ORDER.indexOf(step);
   const safeStep = idx >= 0 ? step : "name";
   return {
     reply: promptFor(safeStep),
-    wizard: { active: true, step: safeStep, draft },
+    wizard: { active: true, step: safeStep, draft, descriptionFromAi },
     requestGeminiDescription: false,
     compiledPayload: null,
+    marketingPreview: null,
   };
 }
 
-function finishReview(draft: ProductWizardDraft): WizardTurnResult {
+function finishReview(draft: ProductWizardDraft, descriptionFromAi: boolean): WizardTurnResult {
   const name = draft.name?.trim();
   const price = draft.price_egp;
   if (!name || price == null) {
     const s = nextMissingStep(draft);
     return {
       reply: `ناقص: ${!name ? "الاسم " : ""}${price == null ? "السعر " : ""}.\n\n${promptFor(s)}`,
-      wizard: { active: true, step: s, draft },
+      wizard: { active: true, step: s, draft, descriptionFromAi },
       requestGeminiDescription: false,
       compiledPayload: null,
+      marketingPreview: null,
     };
   }
 
@@ -368,14 +491,21 @@ function finishReview(draft: ProductWizardDraft): WizardTurnResult {
     `**الصورة:** ${draft.image_url ?? "بدون"}`,
   ].join("\n");
 
+  const marketingPreview = buildMarketingPreview({
+    draft,
+    sku,
+    descriptionFromAi,
+  });
+
   return {
-    reply: `اكتملت البيانات:\n${summary}\n\nاضغط **إنشاء في الكتالوج** أسفل المحادثة، أو أعد إرسال الحقول الناقصة إن لزم.`,
-    wizard: { active: true, step: "review", draft },
+    reply: `اكتملت البيانات:\n${summary}\n\nمعاينة JSON للتسويق متاحة أسفل المحادثة. اضغط **إنشاء في الكتالوج** لحفظ المنتج، أو أعد إرسال الحقول الناقصة إن لزم.`,
+    wizard: { active: true, step: "review", draft, descriptionFromAi },
     requestGeminiDescription: false,
     compiledPayload: compiled,
+    marketingPreview,
   };
 }
 
 export function resetWizard(): ProductWizardState {
-  return { active: false, step: "idle", draft: {} };
+  return { active: false, step: "idle", draft: {}, descriptionFromAi: false };
 }

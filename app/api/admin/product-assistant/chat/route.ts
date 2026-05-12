@@ -14,6 +14,7 @@ const wizardStateSchema = z.object({
   active: z.boolean(),
   step: z.enum(WIZARD_STEPS),
   draft: productWizardDraftSchema.partial().default({}),
+  descriptionFromAi: z.boolean().optional(),
 });
 
 const bodySchema = z.object({
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
     active: wizardIn.active,
     step: wizardIn.step,
     draft: wizardIn.draft ?? {},
+    descriptionFromAi: wizardIn.descriptionFromAi,
   };
 
   let turn = runWizardTurn({ userMessage: message, wizard });
@@ -77,6 +79,7 @@ export async function POST(req: NextRequest) {
           reply:
             "تعذّر توليد الوصف تلقائياً. اكتب وصفاً يدوياً أو تأكد من ضبط **GEMINI_API_KEY**.",
           compiledPayload: null,
+          marketingPreview: null,
         },
         { status: 503 },
       );
@@ -87,6 +90,7 @@ export async function POST(req: NextRequest) {
     reply: turn.reply,
     wizard: turn.wizard,
     compiledPayload: turn.compiledPayload,
+    marketingPreview: turn.marketingPreview,
     requestGeminiDescription: false,
   });
 }
