@@ -82,6 +82,7 @@ const sqlFiles = [
   "supabase/migrations/0006_customer_testimonials.sql",
   "supabase/migrations/0007_shipping_zones_sort_order.sql",
   "supabase/migrations/0008_schema_alignment_and_security.sql",
+  "supabase/migrations/0009_orders_legacy_modern_sync.sql",
 ];
 
 const failures = [];
