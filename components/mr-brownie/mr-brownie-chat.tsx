@@ -19,13 +19,14 @@ import {
   type MrBrownieFabPosition,
 } from "@/lib/mr-brownie/fab-position";
 
+import { getOrCreateChatSessionId, isChatSessionUuid, CHAT_SESSION_ID_KEY } from "@/lib/chat/session-id";
 import {
   loadPersistedMessages,
   mergeServerAndLocal,
   mrBrownieChatLsKey,
   savePersistedMessages,
+  type ChatHistoryApiRow,
   type ChatMessagePersisted,
-  type MrBrownieHistoryRow,
 } from "@/lib/mr-brownie/chat-persistence";
 
 type ChatMessage = ChatMessagePersisted;
@@ -271,6 +272,7 @@ export function MrBrownieChat() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const skipLsSaveRef = useRef(true);
 
   const [fabPos, setFabPos] = useState<MrBrownieFabPosition>(() => {
@@ -436,21 +438,46 @@ export function MrBrownieChat() {
     };
   }, [isSignedIn, user?.id, postMrBrownieAmbient]);
 
+  const enqueueSaveMessage = useCallback((role: "user" | "assistant", content: string) => {
+    const sid = getOrCreateChatSessionId();
+    if (!sid) return;
+    void fetch("/api/chat/save", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: sid,
+        message: { role, content },
+      }),
+    }).catch(() => {});
+  }, []);
+
   const pullRemoteHistory = useCallback(async () => {
     const key = mrBrownieChatLsKey(clerkKey);
     skipLsSaveRef.current = true;
+    if (typeof window !== "undefined") {
+      getOrCreateChatSessionId();
+    }
     const local = loadPersistedMessages(key);
+    setHistoryLoading(true);
     try {
-      if (!isSignedIn) {
-        await fetch("/api/mr-brownie/guest-session", {
-          method: "POST",
-          credentials: "same-origin",
-        });
+      if (isSignedIn && typeof window !== "undefined") {
+        const sidRaw = window.localStorage.getItem(CHAT_SESSION_ID_KEY);
+        if (isChatSessionUuid(sidRaw)) {
+          await fetch("/api/chat/handover", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ guestSessionId: sidRaw }),
+          }).catch(() => {});
+        }
       }
-      const res = await fetch("/api/mr-brownie/history?limit=20", {
-        credentials: "same-origin",
-      });
-      const data = (await res.json()) as { messages?: MrBrownieHistoryRow[] };
+      const sid = typeof window !== "undefined" ? getOrCreateChatSessionId() : "";
+      const url = isSignedIn
+        ? "/api/chat/history?limit=20"
+        : `/api/chat/history?sessionId=${encodeURIComponent(sid)}&limit=20`;
+      const res = await fetch(url, { credentials: "same-origin" });
+      const data = (await res.json()) as { messages?: ChatHistoryApiRow[] };
       const server = Array.isArray(data.messages) ? data.messages : [];
       const merged = mergeServerAndLocal(server, local);
       setMessages(merged);
@@ -459,6 +486,25 @@ export function MrBrownieChat() {
       setMessages(local);
     } finally {
       skipLsSaveRef.current = false;
+      setHistoryLoading(false);
+    }
+  }, [clerkKey, isSignedIn]);
+
+  const clearConversation = useCallback(async () => {
+    const key = mrBrownieChatLsKey(clerkKey);
+    const sid = getOrCreateChatSessionId();
+    try {
+      const res = await fetch("/api/chat/clear", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(isSignedIn ? {} : { sessionId: sid }),
+      });
+      if (!res.ok) return;
+      setMessages([]);
+      savePersistedMessages(key, []);
+    } catch {
+      /* ignore */
     }
   }, [clerkKey, isSignedIn]);
 
@@ -619,10 +665,14 @@ export function MrBrownieChat() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  useEffect(() => {
-    if (!scrollRef.current) return;
-    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, open]);
+  useLayoutEffect(() => {
+    if (historyLoading || !open) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
+  }, [historyLoading, messages, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -664,6 +714,7 @@ export function MrBrownieChat() {
         { role: "user", content: trimmed, createdAt: userTs },
       ];
       setMessages(nextMessages);
+      enqueueSaveMessage("user", trimmed);
       setInput("");
       setLoading(true);
       setError(null);
@@ -701,24 +752,14 @@ export function MrBrownieChat() {
           { role: "assistant", content: reply, createdAt: assistantTs },
         ]);
 
-        void fetch("/api/mr-brownie/history", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [
-              { sender_role: "user", message_content: trimmed },
-              { sender_role: "assistant", message_content: reply },
-            ],
-          }),
-        }).catch(() => {});
+        enqueueSaveMessage("assistant", reply);
       } catch {
         setError("Network error.");
       } finally {
         setLoading(false);
       }
     },
-    [loading, messages, lines],
+    [loading, messages, lines, enqueueSaveMessage],
   );
 
   const send = useCallback(() => {
@@ -1014,70 +1055,98 @@ export function MrBrownieChat() {
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  setEdgePeek(false);
-                }}
-                className="rounded-full p-2 text-cb-text-strong transition-colors hover:bg-white/70 dark:hover:bg-cb-surface-2/80"
-                aria-label="إغلاق المحادثة"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => void clearConversation()}
+                  className="rounded-full px-2.5 py-1.5 text-[11px] font-semibold text-cb-text-muted transition-colors hover:bg-white/70 hover:text-cb-text-strong dark:hover:bg-cb-surface-2/80"
+                >
+                  مسح المحادثة
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    setEdgePeek(false);
+                  }}
+                  className="rounded-full p-2 text-cb-text-strong transition-colors hover:bg-white/70 dark:hover:bg-cb-surface-2/80"
+                  aria-label="إغلاق المحادثة"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             <div
               ref={scrollRef}
               className="flex h-full min-h-0 flex-col gap-3 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4 sm:px-5"
             >
-              {messages.length === 0 ? (
-                <p className="me-auto max-w-[92%] rounded-2xl bg-gradient-to-br from-cb-cream to-cb-peach/40 px-3.5 py-2.5 text-sm leading-relaxed text-cb-text-strong shadow-[var(--shadow-card)] ring-1 ring-cb-border/50 dark:from-cb-surface-2 dark:to-cb-peach-deep/20">
-                  مرحباً — أنا Mr. Brownie. اسأل عن النكهات، الهدايا، أو التوصيل.
-                  اسحب الدبّ للأعلى أو الأسفل واليمين أو اليسار: النافذة تفتح من
-                  الناحية المناسبة عشان ما تغطّيك ✨
-                </p>
-              ) : null}
-              {messages.map((m, i) => (
-                <div
-                  key={`${m.role}-${i}`}
-                  className={cn(
-                    "max-w-[92%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm",
-                    m.role === "user"
-                      ? "ms-auto bg-gradient-to-br from-cb-terracotta-dark to-cb-terracotta text-white shadow-[var(--shadow-card)]"
-                      : "me-auto bg-cb-cream/95 text-cb-text-strong ring-1 ring-cb-border/55 dark:bg-cb-surface-2",
-                  )}
-                >
-                  {m.content}
+              {historyLoading ? (
+                <div className="space-y-3 px-0.5" aria-busy="true" aria-label="جاري تحميل السجل">
+                  <p className="text-center text-xs font-medium text-cb-text-muted">
+                    جاري تحميل السجل…
+                  </p>
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        "h-12 animate-pulse rounded-2xl bg-cb-surface-2/90",
+                        i % 2 === 0 ? "ms-auto w-4/5" : "me-auto w-3/4",
+                      )}
+                    />
+                  ))}
                 </div>
-              ))}
-              {loading ? (
-                <p className="text-xs text-cb-text-muted">جاري التفكير…</p>
-              ) : null}
-              {error ? (
-                <div
-                  role="alert"
-                  className="rounded-2xl border border-red-200/90 bg-red-50/95 px-3.5 py-3 text-sm leading-relaxed text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100"
-                >
-                  <p className="font-semibold">تعذر الرد الآن</p>
-                  <p className="mt-1.5 text-[13px] opacity-95">{error}</p>
-                  {error.includes("GEMINI") ||
-                  error.includes("Google AI Studio") ||
-                  error.includes("aistudio") ? (
-                    <p className="mt-2 text-xs opacity-90">
-                      رابط الحصول على المفتاح:{" "}
-                      <a
-                        href="https://aistudio.google.com/apikey"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-medium underline underline-offset-2 hover:opacity-100"
-                      >
-                        aistudio.google.com/apikey
-                      </a>
+              ) : (
+                <>
+                  {messages.length === 0 ? (
+                    <p className="me-auto max-w-[92%] rounded-2xl bg-gradient-to-br from-cb-cream to-cb-peach/40 px-3.5 py-2.5 text-sm leading-relaxed text-cb-text-strong shadow-[var(--shadow-card)] ring-1 ring-cb-border/50 dark:from-cb-surface-2 dark:to-cb-peach-deep/20">
+                      مرحباً — أنا Mr. Brownie. اسأل عن النكهات، الهدايا، أو التوصيل.
+                      اسحب الدبّ للأعلى أو الأسفل واليمين أو اليسار: النافذة تفتح من
+                      الناحية المناسبة عشان ما تغطّيك ✨
                     </p>
                   ) : null}
-                </div>
-              ) : null}
+                  {messages.map((m, i) => (
+                    <div
+                      key={`${m.role}-${i}`}
+                      className={cn(
+                        "max-w-[92%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm",
+                        m.role === "user"
+                          ? "ms-auto bg-gradient-to-br from-cb-terracotta-dark to-cb-terracotta text-white shadow-[var(--shadow-card)]"
+                          : "me-auto bg-cb-cream/95 text-cb-text-strong ring-1 ring-cb-border/55 dark:bg-cb-surface-2",
+                      )}
+                    >
+                      {m.content}
+                    </div>
+                  ))}
+                  {loading ? (
+                    <p className="text-xs text-cb-text-muted">جاري التفكير…</p>
+                  ) : null}
+                  {error ? (
+                    <div
+                      role="alert"
+                      className="rounded-2xl border border-red-200/90 bg-red-50/95 px-3.5 py-3 text-sm leading-relaxed text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100"
+                    >
+                      <p className="font-semibold">تعذر الرد الآن</p>
+                      <p className="mt-1.5 text-[13px] opacity-95">{error}</p>
+                      {error.includes("GEMINI") ||
+                      error.includes("Google AI Studio") ||
+                      error.includes("aistudio") ? (
+                        <p className="mt-2 text-xs opacity-90">
+                          رابط الحصول على المفتاح:{" "}
+                          <a
+                            href="https://aistudio.google.com/apikey"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium underline underline-offset-2 hover:opacity-100"
+                          >
+                            aistudio.google.com/apikey
+                          </a>
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </>
+              )}
             </div>
 
             <div className="relative z-[2] shrink-0 border-t border-cb-border/70 bg-cb-surface/95 p-3 shadow-[0_-8px_24px_-8px_rgba(42,24,16,0.12)] backdrop-blur-sm sm:p-4 dark:bg-cb-surface-elevated/95">
@@ -1094,12 +1163,13 @@ export function MrBrownieChat() {
                   }}
                   rows={2}
                   placeholder="اكتب سؤالك…"
-                  className="min-h-[48px] flex-1 resize-none rounded-2xl border border-cb-border bg-cb-surface px-3 py-2.5 text-sm text-cb-text-strong shadow-inner outline-none transition-shadow focus:border-cb-border-strong focus:ring-2 focus:ring-cb-focus/20"
+                  disabled={loading || historyLoading}
+                  className="min-h-[48px] flex-1 resize-none rounded-2xl border border-cb-border bg-cb-surface px-3 py-2.5 text-sm text-cb-text-strong shadow-inner outline-none transition-shadow focus:border-cb-border-strong focus:ring-2 focus:ring-cb-focus/20 disabled:cursor-not-allowed disabled:opacity-60"
                 />
                 <button
                   type="button"
                   onClick={send}
-                  disabled={loading || !input.trim()}
+                  disabled={loading || historyLoading || !input.trim()}
                   className={cn(
                     buttonClassName("primary", "shrink-0 self-end px-4 py-3"),
                     "min-h-[48px] rounded-2xl shadow-[var(--shadow-card)]",
@@ -1117,7 +1187,7 @@ export function MrBrownieChat() {
                   <button
                     key={s}
                     type="button"
-                    disabled={loading}
+                    disabled={loading || historyLoading}
                     onClick={() => void submitMessage(s)}
                     className={cn(
                       "rounded-full border border-cb-border/90 bg-cb-cream/80 px-3 py-1.5 text-left text-xs font-medium text-cb-text-strong",

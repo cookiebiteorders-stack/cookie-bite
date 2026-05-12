@@ -12,11 +12,15 @@ export type ChatMessagePersisted = {
   createdAt?: number;
 };
 
-export type MrBrownieHistoryRow = {
-  sender_role: "user" | "assistant";
-  message_content: string;
+export type ChatHistoryApiRow = {
+  role: "user" | "assistant";
+  content: string;
   created_at: string;
+  metadata?: Record<string, unknown> | null;
 };
+
+/** @deprecated استخدم ChatHistoryApiRow */
+export type MrBrownieHistoryRow = ChatHistoryApiRow;
 
 function normalizeLocalMessage(m: ChatMessagePersisted, index: number, total: number): ChatMessagePersisted {
   if (typeof m.createdAt === "number" && Number.isFinite(m.createdAt)) return m;
@@ -26,12 +30,12 @@ function normalizeLocalMessage(m: ChatMessagePersisted, index: number, total: nu
 
 /** دمج سجل السيرفر مع المحلي؛ إزالة التكرار القريب (نفس الدور + المحتوى خلال ثانيتين) */
 export function mergeServerAndLocal(
-  server: MrBrownieHistoryRow[],
+  server: ChatHistoryApiRow[],
   local: ChatMessagePersisted[],
 ): ChatMessagePersisted[] {
   const fromServer: ChatMessagePersisted[] = server.map((r) => ({
-    role: r.sender_role,
-    content: r.message_content,
+    role: r.role,
+    content: r.content,
     createdAt: new Date(r.created_at).getTime(),
   }));
 
