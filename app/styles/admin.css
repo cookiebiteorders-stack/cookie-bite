@@ -115,6 +115,20 @@
   background-color: var(--cb-surface);
   border-color: var(--cb-border);
 }
+
+/* تركيز واضح للوحة الإدارة (WCAG) */
+.admin-console :where(a, button, input:not([type="hidden"]), select, textarea):focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--cb-terracotta-dark, #e86b1c) 92%, white);
+  outline-offset: 2px;
+}
+
+.dark .admin-console :where(a, button, input:not([type="hidden"]), select, textarea):focus-visible {
+  outline-color: color-mix(in oklab, var(--cb-terracotta-soft, #ffc8a8) 75%, white);
+}
+
+#admin-main-content {
+  scroll-margin-top: 1rem;
+}
 /* عناوين لوحة الإدارة — نفس هوية الموقع (Playfair / Allura عبر utilities) */
 .admin-title-font {
   font-family: var(--font-playfair), ui-serif, Georgia, serif;

@@ -114,10 +114,16 @@ export function ProductAssistantPanel({ canWrite }: { canWrite: boolean }) {
     }
   }, [marketingPreview, pushToast]);
 
+  const panelId = "product-assistant-panel";
+  const messagesId = "product-assistant-messages";
+
   return (
     <div className="rounded-2xl border border-cb-border bg-cb-surface-elevated shadow-sm">
       <button
         type="button"
+        id="product-assistant-toggle"
+        aria-expanded={open}
+        aria-controls={panelId}
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-start transition hover:bg-amber-50/80 dark:hover:bg-amber-950/20"
       >
@@ -131,7 +137,12 @@ export function ProductAssistantPanel({ canWrite }: { canWrite: boolean }) {
       </button>
 
       {open ? (
-        <div className="border-t border-cb-border px-3 pb-3 pt-1">
+        <div
+          id={panelId}
+          role="region"
+          aria-labelledby="product-assistant-toggle"
+          className="border-t border-cb-border px-3 pb-3 pt-1"
+        >
           <p className="px-1 pb-2 text-xs leading-relaxed text-cb-text-muted">
             اكتب «أضف منتجاً» أو <span className="font-mono">add product</span> للبدء، ثم أجب
             خطوة بخطوة. العملة في الكتالوج هي <strong className="text-cb-text-strong">ج.م</strong>
@@ -139,7 +150,11 @@ export function ProductAssistantPanel({ canWrite }: { canWrite: boolean }) {
           </p>
 
           <div
+            id={messagesId}
             ref={listRef}
+            aria-live="polite"
+            aria-relevant="additions text"
+            aria-busy={sending}
             className="max-h-64 space-y-2 overflow-y-auto rounded-xl border border-cb-border bg-cb-surface-2 p-2"
           >
             {messages.length === 0 ? (

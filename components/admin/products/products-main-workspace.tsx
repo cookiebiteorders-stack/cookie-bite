@@ -126,6 +126,24 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!openMenuId) return;
+    const close = () => setOpenMenuId(null);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    const onPointer = (e: MouseEvent | PointerEvent) => {
+      const root = document.getElementById(`product-actions-root-${openMenuId}`);
+      if (root && !root.contains(e.target as Node)) close();
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer, true);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer, true);
+    };
+  }, [openMenuId]);
+
+  useEffect(() => {
     setSearch(debouncedSearch);
   }, [debouncedSearch, setSearch]);
 
@@ -167,11 +185,18 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
         header: "",
         cell: ({ row }) => {
           const src = row.original.image_url;
+          const label = row.original.title_en ?? row.original.name;
           return (
             <div className="h-11 w-11 overflow-hidden rounded-xl border border-cb-border bg-cb-surface-2">
               {src ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={src} alt="" className="h-full w-full object-cover" />
+                <img
+                  src={src}
+                  alt={label}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-cb-text-muted">
                   <Package className="h-5 w-5" aria-hidden />
@@ -280,14 +305,15 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
         cell: ({ row }) => {
           const p = row.original;
           const open = openMenuId === p.id;
+          const label = p.title_en ?? p.name;
           return (
-            <div className="relative text-end">
+            <div id={`product-actions-root-${p.id}`} className="relative text-end">
               <button
                 type="button"
                 className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent hover:border-cb-border hover:bg-cb-surface-2 focus-visible:outline focus-visible:ring-2 focus-visible:ring-amber-400"
                 aria-expanded={open}
                 aria-haspopup="menu"
-                aria-label={`إجراءات ${p.title_en ?? p.name}`}
+                aria-label={`إجراءات ${label}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   setOpenMenuId(open ? null : p.id);
@@ -639,7 +665,13 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
                 <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-cb-border bg-cb-surface-2">
                   {p.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.image_url} alt="" className="h-full w-full object-cover" />
+                    <img
+                      src={p.image_url}
+                      alt={p.title_en ?? p.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover"
+                    />
                   ) : null}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -681,6 +713,7 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
       {/* Desktop table */}
       <div className="hidden overflow-x-auto rounded-2xl border border-cb-border/90 bg-white/95 shadow-sm dark:bg-cb-surface-elevated/95 md:block">
         <table className="w-full min-w-[1100px] border-collapse text-sm">
+          <caption className="sr-only">جدول المنتجات — التصفية والترقيم والإجراءات</caption>
           <thead className="bg-gradient-to-b from-cb-surface-2/80 to-transparent text-start text-xs font-bold uppercase tracking-wide text-cb-text-muted">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
@@ -721,7 +754,33 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
           </tbody>
         </table>
         {!loading && products.length === 0 ? (
-          <div className="p-12 text-center text-cb-text-muted">لا نتائج في الجدول.</div>
+          <div className="border-t border-cb-border bg-amber-50/40 p-10 text-center dark:bg-amber-950/15">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow dark:bg-stone-900">
+              <Filter className="h-7 w-7 text-amber-600" aria-hidden />
+            </div>
+            <h3 className="font-serif text-lg font-bold text-stone-900 dark:text-stone-50">لا نتائج في الجدول</h3>
+            <p className="mt-2 max-w-md mx-auto text-sm text-cb-text-muted">
+              لا توجد منتجات تطابق البحث أو الفلاتر الحالية. غيّر معايير البحث أو أضف منتجاً جديداً.
+            </p>
+            <div className="mt-5 flex flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                className="rounded-xl border border-cb-border bg-white px-4 py-2 text-xs font-bold shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900"
+                onClick={() => resetFilters()}
+              >
+                مسح الفلاتر
+              </button>
+              <button
+                type="button"
+                disabled={!canWrite}
+                onClick={onAdd}
+                className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+                إضافة منتج
+              </button>
+            </div>
+          </div>
         ) : null}
       </div>
 
