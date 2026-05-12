@@ -73,17 +73,12 @@ if (!ACCESS_TOKEN) throw new Error("Missing SUPABASE_ACCESS_TOKEN");
 const ref = parseSupabaseRef(SUPABASE_URL);
 const endpoint = `https://api.supabase.com/v1/projects/${ref}/database/query`;
 
-const sqlFiles = [
-  "supabase/migrations/0001_init.sql",
-  "supabase/migrations/0002_orders_paymob.sql",
-  "supabase/migrations/0003_v2_extend_schema.sql",
-  "supabase/migrations/0004_audit_logs.sql",
-  "supabase/migrations/0005_phase_cde_foundations.sql",
-  "supabase/migrations/0006_customer_testimonials.sql",
-  "supabase/migrations/0007_shipping_zones_sort_order.sql",
-  "supabase/migrations/0008_schema_alignment_and_security.sql",
-  "supabase/migrations/0009_orders_legacy_modern_sync.sql",
-];
+const migrationsDir = path.join(projectRoot, "supabase", "migrations");
+const sqlFiles = fs
+  .readdirSync(migrationsDir, { withFileTypes: true })
+  .filter((d) => d.isFile() && d.name.endsWith(".sql"))
+  .map((d) => `supabase/migrations/${d.name}`)
+  .sort((a, b) => a.localeCompare(b, "en"));
 
 const failures = [];
 
