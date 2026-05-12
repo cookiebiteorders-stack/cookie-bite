@@ -19,7 +19,16 @@ import {
   type MrBrownieFabPosition,
 } from "@/lib/mr-brownie/fab-position";
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+import {
+  loadPersistedMessages,
+  mergeServerAndLocal,
+  mrBrownieChatLsKey,
+  savePersistedMessages,
+  type ChatMessagePersisted,
+  type MrBrownieHistoryRow,
+} from "@/lib/mr-brownie/chat-persistence";
+
+type ChatMessage = ChatMessagePersisted;
 
 /** شعار Mr. Brownie — PNG بخلفية شفافة في `public/brand/` */
 const MR_BROWNIE_MASCOT_SRC = "/brand/mr-brownie-mascot.png";
@@ -256,11 +265,13 @@ function computeSmartPanelPlacement(r: DOMRect): PanelPlacement {
 export function MrBrownieChat() {
   const { lines } = useCart();
   const { isSignedIn, user } = useUser();
+  const clerkKey = isSignedIn && user?.id ? user.id : null;
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const skipLsSaveRef = useRef(true);
 
   const [fabPos, setFabPos] = useState<MrBrownieFabPosition>(() => {
     if (typeof window === "undefined") return defaultFabPosition(false);
@@ -424,6 +435,50 @@ export function MrBrownieChat() {
       cancelled = true;
     };
   }, [isSignedIn, user?.id, postMrBrownieAmbient]);
+
+  const pullRemoteHistory = useCallback(async () => {
+    const key = mrBrownieChatLsKey(clerkKey);
+    skipLsSaveRef.current = true;
+    const local = loadPersistedMessages(key);
+    try {
+      if (!isSignedIn) {
+        await fetch("/api/mr-brownie/guest-session", {
+          method: "POST",
+          credentials: "same-origin",
+        });
+      }
+      const res = await fetch("/api/mr-brownie/history?limit=20", {
+        credentials: "same-origin",
+      });
+      const data = (await res.json()) as { messages?: MrBrownieHistoryRow[] };
+      const server = Array.isArray(data.messages) ? data.messages : [];
+      const merged = mergeServerAndLocal(server, local);
+      setMessages(merged);
+      savePersistedMessages(key, merged);
+    } catch {
+      setMessages(local);
+    } finally {
+      skipLsSaveRef.current = false;
+    }
+  }, [clerkKey, isSignedIn]);
+
+  useEffect(() => {
+    void pullRemoteHistory();
+  }, [pullRemoteHistory]);
+
+  useEffect(() => {
+    if (!open) return;
+    void pullRemoteHistory();
+  }, [open, pullRemoteHistory]);
+
+  useEffect(() => {
+    if (skipLsSaveRef.current) return;
+    const key = mrBrownieChatLsKey(clerkKey);
+    const id = window.setTimeout(() => {
+      savePersistedMessages(key, messages);
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [messages, clerkKey]);
 
   /** تجول فقط على حافتي نافذة العرض (viewport)، بعيداً عن «لوحة» المحتوى */
   const pickRoamingTarget = useCallback(() => {
@@ -603,9 +658,10 @@ export function MrBrownieChat() {
       const trimmed = raw.trim();
       if (!trimmed || loading) return;
 
+      const userTs = Date.now();
       const nextMessages: ChatMessage[] = [
         ...messages,
-        { role: "user", content: trimmed },
+        { role: "user", content: trimmed, createdAt: userTs },
       ];
       setMessages(nextMessages);
       setInput("");
@@ -617,7 +673,7 @@ export function MrBrownieChat() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            messages: nextMessages,
+            messages: nextMessages.map(({ role, content }) => ({ role, content })),
             cart: { lines },
           }),
         });
@@ -639,7 +695,23 @@ export function MrBrownieChat() {
         if (typeof metaRole === "string" && metaRole.length > 0) {
           setSessionRole(metaRole);
         }
-        setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+        const assistantTs = Date.now();
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: reply, createdAt: assistantTs },
+        ]);
+
+        void fetch("/api/mr-brownie/history", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [
+              { sender_role: "user", message_content: trimmed },
+              { sender_role: "assistant", message_content: reply },
+            ],
+          }),
+        }).catch(() => {});
       } catch {
         setError("Network error.");
       } finally {
