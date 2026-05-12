@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 const AUDIO_SRC = "/audio/cookie-bite-sounds.mpeg";
-const VOLUME = 0.15;
+const VOLUME = 0.08;
 
 export function SiteAmbientAudio() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
