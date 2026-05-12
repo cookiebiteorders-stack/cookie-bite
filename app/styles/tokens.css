@@ -115,9 +115,9 @@
   --cb-footer-bg: #ffd4b8;
   --cb-social-bg: #ffc8a8;
 
-  /* Button contrast tokens */
+  /* Button contrast tokens — نص فاتح على خلفية برتقالية داكنة (CTA) */
   --cb-btn-primary-bg: #f97316;
-  --cb-btn-primary-text: #1c1917;
+  --cb-btn-primary-text: #ffffff;
 
   /* تخطيط متجاوب — هوامش آمنة + مسافات مرنة */
   --cb-section-x: clamp(0.75rem, 2.8vw, 1.5rem);
