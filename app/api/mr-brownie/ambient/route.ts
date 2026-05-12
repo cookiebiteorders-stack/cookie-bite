@@ -21,10 +21,21 @@ export async function POST(req: NextRequest) {
     const cartSubtotal = parsed.success ? (parsed.data.cartSubtotalEgp ?? 0) : 0;
 
     const { userId } = await auth();
-    const clerkUser = await currentUser();
+
+    /** `currentUser()` hits Clerk over the network — skip for guests; on failure use Supabase + userId only */
+    let clerkEmail: string | null = null;
+    if (userId) {
+      try {
+        const clerkUser = await currentUser();
+        clerkEmail = clerkUser?.primaryEmailAddress?.emailAddress ?? null;
+      } catch (e) {
+        console.error("[mr-brownie/ambient] currentUser failed:", e);
+      }
+    }
+
     const resolvedRole = userId
       ? await resolveStaffRole({
-          email: clerkUser?.primaryEmailAddress?.emailAddress ?? null,
+          email: clerkEmail,
           clerkUserId: userId,
         })
       : "guest";

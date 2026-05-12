@@ -68,7 +68,15 @@ export async function POST(req: NextRequest) {
     }
 
     const { userId } = await auth();
-    const clerkUser = await currentUser();
+
+    let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
+    if (userId) {
+      try {
+        clerkUser = await currentUser();
+      } catch (e) {
+        console.error("[mr-brownie/chat] currentUser failed:", e);
+      }
+    }
 
     let resolvedRole: UserRole | "guest" = "guest";
     let email: string | null = null;
@@ -77,12 +85,13 @@ export async function POST(req: NextRequest) {
     let loyaltyTier: string | null = null;
     let pastOrdersHint = "";
 
-    if (userId && clerkUser) {
-      email = clerkUser.primaryEmailAddress?.emailAddress ?? null;
-      name =
-        [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ").trim() ||
-        clerkUser.username ||
-        email;
+    if (userId) {
+      email = clerkUser?.primaryEmailAddress?.emailAddress ?? null;
+      name = clerkUser
+        ? [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ").trim() ||
+          clerkUser.username ||
+          email
+        : null;
 
       resolvedRole = await resolveStaffRole({
         email,
