@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 
 const AUDIO_SRC = "/audio/cookie-bite-sounds.mpeg";
-/** 15% مستوى صوت */
 const VOLUME = 0.15;
 
 export function SiteAmbientAudio() {
