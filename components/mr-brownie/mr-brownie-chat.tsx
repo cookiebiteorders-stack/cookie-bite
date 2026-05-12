@@ -32,13 +32,19 @@ const BUBBLE_AUTO_HIDE_MS = 10000;
 const ROAM_POST_UI_MS = 1040;
 const ROAM_STORAGE_KEY = "mr-brownie-roam-pos-v1";
 
-const ROLE_LABEL_AR: Record<string, string> = {
-  guest: "زائر",
-  customer: "عميل",
-  staff: "موظف",
-  admin: "مشرف",
-  owner: "مالك",
+const ASSISTANT_FOR_ROLE_AR: Record<string, string> = {
+  guest: "المساعد للزائر",
+  customer: "المساعد للعميل",
+  staff: "المساعد لفريق التشغيل",
+  admin: "المساعد للأدمن",
+  owner: "المساعد للأونر",
 };
+
+function assistantSubtitleAr(role: string | null, signedIn: boolean): string {
+  if (!signedIn) return ASSISTANT_FOR_ROLE_AR.guest;
+  const line = role ? ASSISTANT_FOR_ROLE_AR[role] : null;
+  return line ?? "المساعد لحسابك";
+}
 
 const SUGGESTIONS_SHOP = [
   "رشّح لي هدية مناسبة 🎁",
@@ -249,7 +255,7 @@ function computeSmartPanelPlacement(r: DOMRect): PanelPlacement {
 
 export function MrBrownieChat() {
   const { lines } = useCart();
-  const { isSignedIn } = useUser();
+  const { isSignedIn, user } = useUser();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -304,6 +310,8 @@ export function MrBrownieChat() {
   const openRef = useRef(false);
   const linesRef = useRef(lines);
   const isSignedInRef = useRef(Boolean(isSignedIn));
+  const clerkUserIdRef = useRef<string | undefined>(undefined);
+  clerkUserIdRef.current = user?.id;
 
   const flushPendingDrag = useCallback(() => {
     dragFlushRafRef.current = null;
@@ -367,7 +375,8 @@ export function MrBrownieChat() {
     }, BUBBLE_AUTO_HIDE_MS);
   }, []);
 
-  const fetchDynamicAmbientMessage = useCallback(async (): Promise<string | null> => {
+  const postMrBrownieAmbient = useCallback(async () => {
+    const uidAtStart = clerkUserIdRef.current;
     try {
       const L = linesRef.current;
       const res = await fetch("/api/mr-brownie/ambient", {
@@ -378,15 +387,43 @@ export function MrBrownieChat() {
           cartSubtotalEgp: subtotalFromLines(L),
         }),
       });
-      if (!res.ok) return null;
-      const data = (await res.json()) as { message?: unknown };
-      return typeof data.message === "string" && data.message.trim().length > 0
-        ? data.message
-        : null;
+      if (!res.ok) return { message: null as string | null, role: null as string | null };
+      const data = (await res.json()) as { message?: unknown; meta?: { role?: unknown } };
+      const rawRole = data.meta?.role;
+      const role =
+        typeof rawRole === "string" && rawRole.trim().length > 0 ? rawRole.trim() : null;
+      if (role && isSignedInRef.current && clerkUserIdRef.current === uidAtStart) {
+        setSessionRole(role);
+      }
+      const message =
+        typeof data.message === "string" && data.message.trim().length > 0
+          ? data.message.trim()
+          : null;
+      return { message, role };
     } catch {
-      return null;
+      return { message: null, role: null };
     }
   }, []);
+
+  const fetchDynamicAmbientMessage = useCallback(async (): Promise<string | null> => {
+    const { message } = await postMrBrownieAmbient();
+    return message;
+  }, [postMrBrownieAmbient]);
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      setSessionRole(null);
+      return;
+    }
+    setSessionRole(null);
+    let cancelled = false;
+    void postMrBrownieAmbient().then(() => {
+      if (cancelled) return;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn, user?.id, postMrBrownieAmbient]);
 
   /** تجول فقط على حافتي نافذة العرض (viewport)، بعيداً عن «لوحة» المحتوى */
   const pickRoamingTarget = useCallback(() => {
@@ -901,11 +938,7 @@ export function MrBrownieChat() {
                     Mr. Brownie
                   </p>
                   <p className="text-xs text-cb-text-muted">
-                    {sessionRole
-                      ? `الدور الفعلي في الإجابات: ${ROLE_LABEL_AR[sessionRole] ?? sessionRole}`
-                      : isSignedIn
-                        ? "مسجّل · أول رسالة تُظهر الدور (عميل / فريق / مشرف / مالك)"
-                        : "زائر · كتالوج وأسئلة عامة فقط"}
+                    {assistantSubtitleAr(sessionRole, Boolean(isSignedIn))}
                   </p>
                 </div>
               </div>
@@ -1025,7 +1058,7 @@ export function MrBrownieChat() {
                 ))}
               </div>
               <p className="mt-2 text-[10px] text-cb-text-muted">
-                Google Gemini · السياق والصلاحيات من السيرفر حسب دورك.
+                Google Gemini · {assistantSubtitleAr(sessionRole, Boolean(isSignedIn))}
               </p>
             </div>
           </div>
