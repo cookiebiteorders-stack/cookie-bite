@@ -1,0 +1,351 @@
+@keyframes mr-brownie-panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.mr-brownie-panel-animate {
+  animation: mr-brownie-panel-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* فقاعة الرسالة العشوائية — ذيل يشير للأعلى نحو الأيقونة */
+.mr-brownie-ambient-bubble::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% - 5px);
+  left: 50%;
+  z-index: 0;
+  width: 11px;
+  height: 11px;
+  translate: -50% 0;
+  rotate: 45deg;
+  background: color-mix(in oklab, var(--cb-surface-elevated) 95%, transparent);
+  border-left: 1px solid color-mix(in oklab, var(--cb-border) 70%, transparent);
+  border-top: 1px solid color-mix(in oklab, var(--cb-border) 70%, transparent);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mr-brownie-panel-animate {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ─── Loki shapeshift (Seiðr) — cinematic morph layer ─── */
+@keyframes loki-distort {
+  0% {
+    filter: url("#turbulence-0");
+    transform: scale(1);
+    opacity: 1;
+  }
+  40% {
+    filter: url("#turbulence-max");
+    transform: scale(1.02) skewX(-1deg);
+    opacity: 0.92;
+  }
+  100% {
+    filter: url("#turbulence-0");
+    transform: scale(0.97);
+    opacity: 0.6;
+  }
+}
+
+@keyframes loki-ghost {
+  0% {
+    opacity: 0.35;
+    transform: translate(-4px, -2px) scale(1);
+    filter: blur(0);
+  }
+  60% {
+    opacity: 0.2;
+    transform: translate(-8px, -4px) scale(1.01);
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-14px, -6px) scale(1.03);
+    filter: blur(3px);
+  }
+}
+
+@keyframes loki-glitch {
+  0% {
+    text-shadow: none;
+    filter: none;
+    opacity: 1;
+  }
+  20% {
+    text-shadow: -4px 0 var(--loki-glitch-r), 4px 0 var(--loki-glitch-b);
+    opacity: 0.94;
+  }
+  40% {
+    text-shadow: 4px 0 var(--loki-glitch-r), -4px 0 var(--loki-glitch-b);
+    filter: brightness(1.85);
+  }
+  60% {
+    text-shadow: -2px 0 var(--loki-glitch-r), 2px 0 var(--loki-glitch-b);
+    filter: brightness(1.05);
+    opacity: 0.92;
+  }
+  100% {
+    text-shadow: none;
+    filter: none;
+    opacity: 1;
+  }
+}
+
+@keyframes loki-emerge {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+    filter: blur(6px) brightness(1.6);
+  }
+  40% {
+    opacity: 0.7;
+    transform: scale(1.03);
+    filter: blur(2px) brightness(1.25);
+  }
+  70% {
+    opacity: 0.92;
+    transform: scale(0.99);
+    filter: blur(0.45px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: none;
+  }
+}
+
+@keyframes loki-seal {
+  0% {
+    box-shadow: 0 0 0 0 transparent;
+    outline: 0 solid transparent;
+  }
+  50% {
+    box-shadow: 0 0 26px 6px rgba(0, 255, 136, 0.45),
+      0 0 54px 14px rgba(201, 168, 76, 0.18);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    outline: 0 solid transparent;
+  }
+}
+
+[data-loki]:not([data-loki="page-route"]):not([data-loki="page-transition"]) {
+  will-change: transform, opacity;
+}
+
+.loki-particle-canvas {
+  mix-blend-mode: screen;
+}
+
+@keyframes loki-theme-ring {
+  0% {
+    transform: scale(0.82) rotate(0deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.45) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.loki-theme-toggle {
+  position: relative;
+  isolation: isolate;
+}
+
+.loki-theme-toggle::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loki-theme-toggle--running::after {
+  opacity: 1;
+  border-top-color: var(--bifrost-3);
+  border-right-color: var(--bifrost-4);
+  border-bottom-color: var(--bifrost-6);
+  border-left-color: var(--bifrost-1);
+  animation: loki-theme-ring 0.82s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.loki-reforming {
+  animation: loki-reform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes loki-reform {
+  0% {
+    filter: blur(8px) brightness(2);
+    transform: scale(0.97);
+  }
+  60% {
+    filter: blur(3px) brightness(1.3);
+  }
+  100% {
+    filter: none;
+    transform: scale(1);
+  }
+}
+@keyframes cb-stars-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -48px, 0);
+  }
+}
+
+@keyframes cb-stars-twinkle {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.dark,
+body.dark,
+[data-theme="dark"] {
+  --cb-stars-opacity-near: 1;
+  --cb-stars-opacity-far: 1;
+  --cb-stars-size-near: 220px 220px;
+  --cb-stars-size-far: 320px 320px;
+  --cb-stars-drift-near: 80s;
+  --cb-stars-drift-far: 120s;
+  --cb-stars-twinkle: 6s;
+}
+
+.dark[data-stars-preset="low"],
+body.dark[data-stars-preset="low"],
+[data-theme="dark"][data-stars-preset="low"] {
+  --cb-stars-opacity-near: 0.68;
+  --cb-stars-opacity-far: 0.62;
+  --cb-stars-size-near: 250px 250px;
+  --cb-stars-size-far: 360px 360px;
+  --cb-stars-drift-near: 95s;
+  --cb-stars-drift-far: 150s;
+  --cb-stars-twinkle: 8s;
+}
+
+.dark[data-stars-preset="balanced"],
+body.dark[data-stars-preset="balanced"],
+[data-theme="dark"][data-stars-preset="balanced"] {
+  --cb-stars-opacity-near: 1;
+  --cb-stars-opacity-far: 1;
+  --cb-stars-size-near: 220px 220px;
+  --cb-stars-size-far: 320px 320px;
+  --cb-stars-drift-near: 80s;
+  --cb-stars-drift-far: 120s;
+  --cb-stars-twinkle: 6s;
+}
+
+.dark[data-stars-preset="cinematic"],
+body.dark[data-stars-preset="cinematic"],
+[data-theme="dark"][data-stars-preset="cinematic"] {
+  --cb-stars-opacity-near: 1.18;
+  --cb-stars-opacity-far: 1.12;
+  --cb-stars-size-near: 190px 190px;
+  --cb-stars-size-far: 280px 280px;
+  --cb-stars-drift-near: 65s;
+  --cb-stars-drift-far: 100s;
+  --cb-stars-twinkle: 4.8s;
+}
+
+.dark body::before,
+body.dark::before,
+[data-theme="dark"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(200, 220, 255, 0.13), transparent 65%),
+    radial-gradient(1.5px 1.5px at 74% 64%, rgba(200, 220, 255, 0.1), transparent 70%),
+    radial-gradient(1px 1px at 38% 82%, rgba(200, 220, 255, 0.11), transparent 68%),
+    radial-gradient(2px 2px at 90% 16%, rgba(200, 220, 255, 0.08), transparent 72%),
+    radial-gradient(1px 1px at 56% 44%, rgba(200, 220, 255, 0.09), transparent 66%);
+  background-repeat: repeat;
+  background-size: var(--cb-stars-size-near);
+  opacity: var(--cb-stars-opacity-near);
+  animation: cb-stars-drift var(--cb-stars-drift-near) linear infinite, cb-stars-twinkle var(--cb-stars-twinkle) ease-in-out infinite;
+}
+
+.dark body::after,
+body.dark::after,
+[data-theme="dark"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(2px 2px at 10% 12%, rgba(200, 220, 255, 0.05), transparent 74%),
+    radial-gradient(2.5px 2.5px at 82% 38%, rgba(200, 220, 255, 0.04), transparent 76%),
+    radial-gradient(1.5px 1.5px at 42% 68%, rgba(200, 220, 255, 0.045), transparent 72%);
+  background-repeat: repeat;
+  background-size: var(--cb-stars-size-far);
+  opacity: var(--cb-stars-opacity-far);
+  animation: cb-stars-drift var(--cb-stars-drift-far) linear infinite reverse;
+}
+
+.dark body,
+body.dark,
+[data-theme="dark"] body {
+  position: relative;
+  isolation: isolate;
+}
+
+.dark body > *,
+body.dark > *,
+[data-theme="dark"] body > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dark body::before,
+  body.dark::before,
+  [data-theme="dark"] body::before,
+  .dark body::after,
+  body.dark::after,
+  [data-theme="dark"] body::after {
+    animation: none;
+  }
+}
+@keyframes morph-dust {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale(0.6);
+  }
+  35% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -28px, 0) scale(1.15);
+  }
+}
+
+@keyframes cb-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}

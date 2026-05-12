@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { type UserRole, getRoleLabel } from "@/lib/admin/rbac";
 import { getAccessibleAdminConsoleNav } from "@/lib/admin/admin-console-nav";
 import { getAdminNavIcon } from "@/lib/admin/admin-console-nav-icons";
+import { useLanguage } from "@/components/providers/language-provider";
 
 type AdminShellProps = {
   role: UserRole;
@@ -16,9 +17,13 @@ type AdminShellProps = {
 export function AdminShell({ role, children }: AdminShellProps) {
   const pathname = usePathname();
   const navItems = getAccessibleAdminConsoleNav(role);
+  const { t } = useLanguage();
 
   return (
-    <div className="admin-console min-h-screen bg-background text-foreground">
+    <div className="admin-console cb-touch-manipulation relative z-[1] min-h-screen overflow-x-clip bg-background text-foreground">
+      <a href="#admin-main-content" className="cb-skip-link">
+        {t("actions.skipToMain")}
+      </a>
       <div className="mx-auto grid max-w-[1600px] grid-cols-1 lg:grid-cols-[260px_1fr]">
         <aside className="border-r border-cb-border bg-cb-surface-2 px-4 py-6 backdrop-blur-md lg:min-h-screen">
           <div className="mb-8 rounded-2xl border border-cb-border bg-cb-surface p-4 shadow-sm cb-shadow-editorial">
@@ -62,7 +67,9 @@ export function AdminShell({ role, children }: AdminShellProps) {
         <div className="min-w-0">
 
 
-          <main className="border-t border-transparent px-4 py-6 sm:px-6">{children}</main>
+          <main id="admin-main-content" className="border-t border-transparent px-4 py-6 sm:px-6">
+            {children}
+          </main>
         </div>
       </div>
     </div>

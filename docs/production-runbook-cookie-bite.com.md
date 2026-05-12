@@ -5,7 +5,7 @@ Use it with `docs/hostinger-production-cookie-bite.com-checklist.md`.
 
 ## 0) Preconditions
 
-- Branch is merged and CI is green (`lint`, `type-check`, `test`).
+- Branch is merged and CI is green (`lint`, `type-check`, `test`, `build`, smoke E2E when enabled, Supabase checks when secrets are configured).
 - You have dashboard access to Hostinger, Clerk, Supabase, Paymob, Resend.
 - You have production values for:
   - `PAYMOB_API_KEY`
@@ -14,13 +14,19 @@ Use it with `docs/hostinger-production-cookie-bite.com-checklist.md`.
 
 ## 1) Database Migrations (Supabase)
 
-Run migrations in this exact order:
+Run migrations in this exact order (أو استخدم `node scripts/supabase-run-migrations.mjs` الذي يفرز الملفات تلقائيًا):
 
 1. `0001_init.sql`
-2. `0002_*` (if present in your repo)
+2. `0002_*` (إن وُجد)
 3. `0003_v2_extend_schema.sql`
 4. `0004_audit_logs.sql`
 5. `0005_phase_cde_foundations.sql`
+6. `0006_customer_testimonials.sql`
+7. `0007_5_rls_helper_is_admin_or_owner.sql` — **قبل 0008**: يعرّف `is_admin_or_owner()` المستخدمة في سياسات RLS.
+8. `0007_shipping_zones_sort_order.sql`
+9. `0008_schema_alignment_and_security.sql`
+10. `0009_orders_legacy_modern_sync.sql`
+11. `0010_phase_cde_compat_patch.sql`
 
 Post-migration smoke checks:
 
@@ -56,6 +62,14 @@ Set env values (minimum required):
 Optional hard-fail guard:
 
 - `COOKIE_BITE_FAIL_ON_MISSING_ENV=true`
+
+### مراقبة أخطاء منظّمة (structured errors)
+
+- `COOKIE_BITE_LOG_WEBHOOK_URL` — عنوان HTTPS (مثل لوحة المراقبة أو Zapier) يستقبل `POST` بجسم JSON من `logStructuredError` (بعد تعقيم الحقول الحساسة). إن لم يُضف، يبقى السجل عبر `console` فقط.
+- `COOKIE_BITE_SERVICE_NAME` — اسم الخدمة في السجل (افتراضي: `cookie-bite-web`).
+- `COOKIE_BITE_CORRELATION_ID` — اختياري على مستوى العملية (مثلاً من منصة الاستضافة)؛ يمكن أيضًا تمرير `correlationId` داخل الـ context عند استدعاء المسجّل.
+
+لربط **Sentry** أو **OpenTelemetry** لاحقًا: أوّل خطوة غالبًا تكمن في إرسال نفس حمولة JSON إلى متلقي متوافق عبر الويبهوك أعلاه، أو دمج SDK في `instrumentation.ts` حسب اختيارك.
 
 ## 3) Post-Deploy Smoke (Manual)
 
@@ -98,6 +112,13 @@ npm run test:e2e
 npm run build
 ```
 
+مع أسرار Supabase (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_ACCESS_TOKEN`) يمكن تشغيل فحوصات الإنتاج القريبة من CI:
+
+```bash
+node scripts/supabase-security-check.mjs
+node scripts/supabase-schema-snapshot-check.mjs
+```
+
 ## 5) Known Non-blocking Warnings
 
 - Clerk dev-keys warning in non-production env.
@@ -107,15 +128,27 @@ npm run build
 
 If deploy fails:
 
-1. Revert Hostinger app to previous known-good commit.
+1. Revert Hostinger app to previous known-good commit (أو إعادة النشر من وسيط مثل Git من نسخة معروفة).
 2. Keep DB schema forward-only (do not drop live tables under incident pressure).
 3. Disable risky admin mutations via temporary feature gating in env if needed.
 4. Re-run smoke checklist.
+
+### DB / RLS خلال حادثة
+
+- تحقّق من تنفيذ كل المايجريشنز بما فيها **`0007_5_rls_helper_is_admin_or_owner.sql`** قبل **`0008_*`**؛ بدون `is_admin_or_owner()` تفشل سياسات 0008.
+- نفّذ (بعد تمرير أسرار Supabase) من جهة موثوقة:
+
+```bash
+node scripts/supabase-security-check.mjs
+node scripts/supabase-schema-snapshot-check.mjs
+```
+
+- راجع السجلات المركّبة: `logStructuredError` + أي وبهوك `COOKIE_BITE_LOG_WEBHOOK_URL`.
 
 ## 7) Incident Triage Quick Map
 
 - Auth failure: Clerk domain/redirect settings + `CLERK_SECRET_KEY`.
 - Payment callback failure: `PAYMOB_HMAC`, webhook URL, logs.
 - Admin 403: role mapping (`resolveStaffRoleFromEmail`) + Clerk email.
-- Missing data in admin: Supabase service key / RLS / migration state.
-
+- Missing data in admin: Supabase service key / RLS / migration state; شغّل فحص الـ snapshot للجداول الأساسية (`scripts/supabase-schema-snapshot-check.mjs`).
+- Structured errors: راقب محتوى JSON من `logStructuredError` أو الوبهوك؛ استخدم `correlationId` لتتبع مسار الدفع أو الـ webhook.

@@ -1,0 +1,16 @@
+[
+  "audit_logs",
+  "customer_testimonials",
+  "expenses",
+  "gift_boxes",
+  "invoices",
+  "notification_templates",
+  "order_items",
+  "orders",
+  "payments",
+  "products",
+  "promo_codes",
+  "shipping_zones",
+  "users",
+  "wishlists"
+]

@@ -1,0 +1,304 @@
+/* ============================================================
+   Cookie Bite — ألوان دافئة ومبهجة · فرحة وهوية العلامة
+   ============================================================ */
+:root {
+  /* Accessibility-first semantic tokens (WCAG-oriented) */
+  --bg-main: #fff7ed;
+  --bg-card: #ffffff;
+  --bg-hover: #fff1e6;
+  --text-primary: #2b1a13;
+  --text-secondary: #594a3f;
+  --text-muted: #7a695b;
+  --border-subtle: #e7ddd4;
+  --focus-ring: #f97316;
+
+  /* Master palette — Cookie Bite · ألوان أغنى وأوضح */
+  --cream: #fff2e6;
+  --caramel: #ff7518;
+  --gold: #ffc933;
+  --pink: #ff7eb0;
+  --mint: #3dd4a0;
+  --brown: #3d2418;
+  --dark: #1c0e06;
+
+  /* Surfaces — كريم دافئ + خوخ ووردي أوضح */
+  --cb-cream: var(--bg-main);
+  --cb-cream-2: #fef3e7;
+  --cb-peach: #fde8d8;
+  --cb-peach-deep: #f3d2b8;
+  --cb-pink: var(--pink);
+  --cb-surface: var(--bg-card);
+  --cb-surface-2: #fff4ea;
+  --cb-surface-elevated: var(--bg-card);
+
+  /* Brand / CTAs — برتقالي ووردي أنشط */
+  --cb-caramel: var(--caramel);
+  --cb-gold: var(--gold);
+  --cb-terracotta: #f47a2a;
+  --cb-terracotta-dark: #e86b1c;
+  --cb-brand-logo: #ea580c;
+  --cb-terracotta-soft: #ffc8a8;
+  --cb-accent: #ff4d8d;
+  --cb-accent-glow: rgba(255, 90, 45, 0.38);
+
+  /* Text — دافئ بدون كآبة */
+  --cb-text-strong: var(--text-primary);
+  --cb-text: var(--text-secondary);
+  --cb-text-muted: var(--text-muted);
+  --cb-text-placeholder: var(--text-muted);
+  --cb-brown: var(--brown);
+  --cb-muted: var(--cb-text-muted);
+
+  /* Borders / focus */
+  --cb-border: var(--border-subtle);
+  --cb-border-strong: #e2a980;
+  --cb-focus: var(--focus-ring);
+  --cb-mint: var(--mint);
+  --cb-hover-overlay: rgba(255, 100, 40, 0.16);
+
+  --shadow-card: 0 12px 40px rgba(224, 77, 0, 0.14),
+    0 4px 20px rgba(255, 100, 140, 0.1);
+  --shadow-hover: 0 22px 56px rgba(224, 77, 0, 0.2),
+    0 8px 28px rgba(255, 120, 170, 0.14);
+  --shadow-editorial: 0 1px 0 rgba(255, 255, 255, 0.88) inset,
+    0 14px 48px -10px rgba(224, 77, 0, 0.16),
+    0 4px 16px -4px rgba(61, 212, 160, 0.12);
+  --shadow-editorial-hover: 0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 24px 60px -12px rgba(224, 77, 0, 0.22),
+    0 8px 24px -6px rgba(255, 126, 176, 0.16);
+  --shadow-glow-warm: 0 0 0 1px rgba(255, 120, 60, 0.28),
+    0 28px 96px -24px rgba(255, 126, 176, 0.42);
+  --cb-nav-blur: rgba(255, 247, 237, 0.9);
+  --cb-nav-blur-scrolled: rgba(255, 252, 246, 0.95);
+  --cb-nav-border: rgba(231, 221, 212, 0.72);
+  --cb-nav-border-scrolled: rgba(214, 201, 191, 0.88);
+  --cb-glass: rgba(255, 255, 255, 0.9);
+  --cb-glass-border: rgba(255, 120, 70, 0.32);
+
+  --cb-scrim-strong: rgba(28, 14, 6, 0.58);
+  --cb-scrim-soft: rgba(28, 14, 6, 0.3);
+
+  /* خلفية الصفحة = نفس سطح الهوية الفاتح؛ النص عبر --foreground / --cb-text (داكن على فاتح) */
+  --background: var(--bg-main);
+  --foreground: var(--cb-text);
+
+  /* أسماء دلالية موحّدة (متجر + لوحة الإدارة) */
+  --card: var(--cb-surface);
+  --primary: var(--cb-terracotta-dark);
+  --secondary: var(--cb-peach);
+  --muted: var(--cb-text-muted);
+  --border: var(--cb-border);
+  --shadow: var(--shadow-card);
+  --motion-duration: 0.4s;
+  --blur-strength: 8px;
+
+  /* حالات — ألوان مرحة وواضحة */
+  --cb-success: #2eb87a;
+  --cb-success-bg: #d8f8e8;
+  --cb-warning: #ffb020;
+  --cb-warning-bg: #fff4d6;
+  --cb-danger: #f43f5e;
+  --cb-info: #38b8e8;
+  --cb-info-bg: #dff4fc;
+
+  /* Decorative — لمسات احتفال */
+  --cb-ribbon: #34d399;
+  --cb-ribbon-dark: #059669;
+  --cb-rose: #ff5c8a;
+  --cb-chocolate: #5c3828;
+  --cb-star: #ffc933;
+  --cb-star-empty: #e0b8a0;
+  --cb-heart: #ff7a8c;
+  --cb-heart-active: #e04d00;
+  --cb-progress-fill: #ff6a1a;
+  --cb-progress-track: #ffd0b8;
+  --cb-footer-bg: #ffd4b8;
+  --cb-social-bg: #ffc8a8;
+
+  /* Button contrast tokens */
+  --cb-btn-primary-bg: #f97316;
+  --cb-btn-primary-text: #1c1917;
+
+  /* تخطيط متجاوب — هوامش آمنة + مسافات مرنة */
+  --cb-section-x: clamp(0.75rem, 2.8vw, 1.5rem);
+  --cb-section-y: clamp(2.5rem, 6vw, 5.5rem);
+  --cb-touch-min: 2.75rem;
+  --fluid-display: clamp(1.85rem, 4.2vw + 1rem, 3.35rem);
+  --fluid-heading-2: clamp(1.45rem, 2.4vw + 0.85rem, 2.65rem);
+  --fluid-body: clamp(0.9375rem, 0.35vw + 0.88rem, 1.0625rem);
+
+  /* Loki palette — Asgardian sorcery overlay */
+  --loki-gold: #c9a84c;
+  --loki-green: #1f7a4a;
+  --loki-emerald: #00ff88;
+  --loki-void: #080c14;
+  --loki-illusion: rgba(0, 255, 136, 0.15);
+  --loki-glitch-r: rgba(255, 0, 60, 0.6);
+  --loki-glitch-b: rgba(0, 100, 255, 0.6);
+  --loki-particle: #b8ff6e;
+}
+@media (min-width: 1536px) {
+  :root {
+    --cb-section-x: clamp(1.5rem, 2vw, 2.25rem);
+  }
+}
+/* وضع داكن — دافئ ومبهج (كاكاو + برتقالي ناري) */
+.dark {
+  --bg-main: #221208;
+  --bg-card: #321a0e;
+  --bg-hover: rgba(255, 140, 66, 0.16);
+  --text-primary: #f8eee3;
+  --text-secondary: #e7cfb6;
+  --text-muted: #cda889;
+  --border-subtle: #5c3824;
+  --focus-ring: #ff8c42;
+
+  --cb-cream: var(--bg-main);
+  --cb-cream-2: #1a0c06;
+  --cb-peach: #2a160c;
+  --cb-peach-deep: #1f1008;
+  --cb-pink: #7a3550;
+  --cb-surface: var(--bg-card);
+  --cb-surface-2: #1a0c06;
+  --cb-surface-elevated: #422010;
+  --cb-mint: #4ade9a;
+
+  --cb-text-strong: var(--text-primary);
+  --cb-text: var(--text-secondary);
+  --cb-text-muted: var(--text-muted);
+  --cb-text-placeholder: var(--text-muted);
+  --cb-muted: var(--cb-text-muted);
+
+  --cb-terracotta: #ff8c42;
+  --cb-terracotta-dark: #ff8c42;
+  --cb-brand-logo: #ff8c42;
+  --cb-terracotta-soft: #ff9f6a;
+  --cb-accent: #ff7eb8;
+  --cb-accent-glow: rgba(255, 120, 80, 0.42);
+
+  --cb-border: var(--border-subtle);
+  --cb-border-strong: #7a4830;
+  --cb-focus: var(--focus-ring);
+  --cb-hover-overlay: rgba(255, 140, 66, 0.16);
+
+  --shadow-card: 0 12px 44px rgba(0, 0, 0, 0.48),
+    0 0 0 1px rgba(255, 120, 80, 0.1);
+  --shadow-hover: 0 22px 60px rgba(0, 0, 0, 0.55),
+    0 0 28px rgba(255, 130, 90, 0.18);
+  --shadow-editorial: 0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 16px 52px -8px rgba(0, 0, 0, 0.48),
+    0 0 0 1px rgba(255, 120, 80, 0.12);
+  --shadow-editorial-hover: 0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 26px 68px -10px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 130, 90, 0.2);
+  --shadow-glow-warm: 0 0 0 1px rgba(255, 120, 80, 0.35),
+    0 28px 100px -28px rgba(255, 120, 160, 0.28);
+  --cb-nav-blur: rgba(34, 18, 8, 0.9);
+  --cb-nav-blur-scrolled: rgba(26, 12, 6, 0.94);
+  --cb-nav-border: rgba(92, 56, 36, 0.42);
+  --cb-nav-border-scrolled: rgba(122, 72, 48, 0.76);
+  --cb-glass: rgba(50, 26, 14, 0.65);
+  --cb-glass-border: rgba(255, 140, 66, 0.28);
+
+  --cb-scrim-strong: rgba(8, 4, 2, 0.78);
+  --cb-scrim-soft: rgba(8, 4, 2, 0.5);
+
+  /* خلفية الصفحة داكنة؛ النص الفاتح للقراءة على الكاكاو */
+  --background: var(--cb-cream);
+  --foreground: var(--text-primary);
+
+  --card: var(--cb-surface);
+  --primary: var(--cb-terracotta-dark);
+  --secondary: var(--cb-peach);
+  --muted: var(--cb-text-muted);
+  --border: var(--cb-border);
+  --shadow: var(--shadow-card);
+  --motion-duration: 0.4s;
+  --blur-strength: 6px;
+
+  --cb-success: #4ade9a;
+  --cb-success-bg: #0f3d28;
+  --cb-warning: #ffb020;
+  --cb-warning-bg: #3d2808;
+  --cb-danger: #fb7185;
+  --cb-info: #5cd4f8;
+  --cb-info-bg: #0a2838;
+
+  --cb-ribbon: #4ade9a;
+  --cb-ribbon-dark: #22c55e;
+  --cb-rose: #ff7eb8;
+  --cb-chocolate: #140804;
+  --cb-star: #ffc933;
+  --cb-star-empty: #6c4838;
+  --cb-heart: #ff8a9a;
+  --cb-heart-active: #ff9338;
+  --cb-progress-fill: #ff9338;
+  --cb-progress-track: #3d180c;
+  --cb-footer-bg: #160805;
+  --cb-social-bg: #3d180c;
+
+  --cb-btn-primary-bg: #ff8c42;
+  --cb-btn-primary-text: #ffffff;
+}
+
+/* stylelint-disable-next-line at-rule-no-unknown */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-bg-main: var(--bg-main);
+  --color-bg-card: var(--bg-card);
+  --color-bg-hover: var(--bg-hover);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-cb-cream: var(--cb-cream);
+  --color-cb-cream-2: var(--cb-cream-2);
+  --color-cb-peach: var(--cb-peach);
+  --color-cb-peach-deep: var(--cb-peach-deep);
+  --color-cb-surface: var(--cb-surface);
+  --color-cb-surface-2: var(--cb-surface-2);
+  --color-cb-surface-elevated: var(--cb-surface-elevated);
+  --color-cb-terracotta: var(--cb-terracotta);
+  --color-cb-terracotta-dark: var(--cb-terracotta-dark);
+  --color-cb-brand-logo: var(--cb-brand-logo);
+  --color-cb-terracotta-soft: var(--cb-terracotta-soft);
+  --color-cb-accent: var(--cb-accent);
+  --color-cb-text-strong: var(--cb-text-strong);
+  --color-cb-text: var(--cb-text);
+  --color-cb-text-muted: var(--cb-text-muted);
+  --color-cb-text-placeholder: var(--cb-text-placeholder);
+  --color-cb-brown: var(--cb-text);
+  --color-cb-muted: var(--cb-text-muted);
+  --color-cb-mint: var(--cb-mint);
+  --color-cb-border: var(--cb-border);
+  --color-cb-border-strong: var(--cb-border-strong);
+  --color-cb-pink: var(--cb-pink);
+  --color-cb-rose: var(--cb-rose);
+  --color-cb-ribbon: var(--cb-ribbon);
+  --color-cb-ribbon-dark: var(--cb-ribbon-dark);
+  --color-cb-chocolate: var(--cb-chocolate);
+  --color-cb-star: var(--cb-star);
+  --color-cb-star-empty: var(--cb-star-empty);
+  --color-cb-heart: var(--cb-heart);
+  --color-cb-heart-active: var(--cb-heart-active);
+  --color-cb-progress-fill: var(--cb-progress-fill);
+  --color-cb-progress-track: var(--cb-progress-track);
+  --color-cb-footer-bg: var(--cb-footer-bg);
+  --color-cb-social-bg: var(--cb-social-bg);
+  --color-cb-success: var(--cb-success);
+  --color-cb-success-bg: var(--cb-success-bg);
+  --color-cb-warning: var(--cb-warning);
+  --color-cb-warning-bg: var(--cb-warning-bg);
+  --color-cb-info: var(--cb-info);
+  --color-cb-info-bg: var(--cb-info-bg);
+  --color-cb-danger: var(--cb-danger);
+  --color-cb-scrim-strong: var(--cb-scrim-strong);
+  --color-cb-scrim-soft: var(--cb-scrim-soft);
+  --color-cb-hover-overlay: var(--cb-hover-overlay);
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
+  --font-ar: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
+  --font-ar-display: var(--font-tajawal), ui-sans-serif, system-ui, sans-serif;
+  --font-layout-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-layout-body: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+}

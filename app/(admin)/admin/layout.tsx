@@ -2,7 +2,6 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { resolveStaffRole } from "@/lib/admin/auth-role";
-import { PageShell } from "@/components/layout/page-shell";
 
 export default async function AdminLayout({
   children,
@@ -29,9 +28,6 @@ export default async function AdminLayout({
     redirect("/403");
   }
 
-  return (
-    <PageShell>
-      <AdminShell role={role}>{children}</AdminShell>
-    </PageShell>
-  );
+  /** قشرة الإدارة منفصلة عن متجر PageShell (لا هيدر/فوتر/سلة/شات المتجر). */
+  return <AdminShell role={role}>{children}</AdminShell>;
 }
