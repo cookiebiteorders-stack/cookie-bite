@@ -10,6 +10,7 @@ import { ProductsHeroAndStats } from "@/components/admin/products/products-hero-
 import { ProductsAnalyticsStrip } from "@/components/admin/products/products-analytics-strip";
 import { ProductsMainWorkspace } from "@/components/admin/products/products-main-workspace";
 import { ProductFormDrawer } from "@/components/admin/products/product-form-drawer";
+import { ProductAssistantPanel } from "@/components/admin/products/product-assistant-panel";
 import { ProductsToasts } from "@/components/admin/products/products-toasts";
 import { ProductsCommandPalette } from "@/components/admin/products/products-command-palette";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -248,6 +249,7 @@ export function ProductManagementDashboard() {
       </motion.div>
 
       <ProductsHeroAndStats stats={stats} online={online} />
+      <ProductAssistantPanel canWrite={canWrite} />
       <ProductsAnalyticsStrip products={products} />
       <ProductsMainWorkspace searchInputRef={searchRef} onEdit={openEdit} onAdd={openCreate} />
 
