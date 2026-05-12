@@ -285,7 +285,8 @@
   --cb-scrim-strong: rgba(28, 14, 6, 0.58);
   --cb-scrim-soft: rgba(28, 14, 6, 0.3);
 
-  --background: #ffffff;
+  /* خلفية الصفحة = نفس سطح الهوية الفاتح؛ النص عبر --foreground / --cb-text (داكن على فاتح) */
+  --background: var(--bg-main);
   --foreground: var(--cb-text);
 
   /* أسماء دلالية موحّدة (متجر + لوحة الإدارة) */
@@ -429,8 +430,9 @@ html {
   --cb-scrim-strong: rgba(8, 4, 2, 0.78);
   --cb-scrim-soft: rgba(8, 4, 2, 0.5);
 
+  /* خلفية الصفحة داكنة؛ النص الفاتح للقراءة على الكاكاو */
   --background: var(--cb-cream);
-  --foreground: var(--cb-text);
+  --foreground: var(--text-primary);
 
   --card: var(--cb-surface);
   --primary: var(--cb-terracotta-dark);
@@ -998,17 +1000,23 @@ table[data-cb-zebra="true"] tbody tr:hover {
   left: 0;
   z-index: 100;
   padding: 0.75rem 1rem;
-  background: var(--cb-text-strong);
-  color: #fff;
+  /* ثابت: داكن على فاتح — لا نستخدم --cb-text-strong هنا لأنه يصبح فاتحاً في الوضع الداكن */
+  background: var(--dark);
+  color: var(--cream);
   font-weight: 600;
   font-size: 0.875rem;
   border-radius: 0 0 0.5rem 0;
   transform: translateY(-150%);
   transition: transform 0.2s ease-out;
 }
+.dark .cb-skip-link,
+[data-theme="dark"] .cb-skip-link {
+  background: var(--cb-terracotta);
+  color: var(--dark);
+}
 .cb-skip-link:focus-visible {
   transform: translateY(0);
-  outline: 2px solid #fff;
+  outline: 2px solid var(--cb-focus);
   outline-offset: 2px;
 }
 
@@ -1047,6 +1055,11 @@ table[data-cb-zebra="true"] tbody tr:hover {
   mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)'/%3E%3C/svg%3E");
 }
+.dark .cb-grain::after,
+[data-theme="dark"] .cb-grain::after {
+  mix-blend-mode: soft-light;
+  opacity: 0.055;
+}
 
 .cb-shadow-editorial {
   box-shadow: var(--shadow-editorial);
@@ -1067,6 +1080,15 @@ table[data-cb-zebra="true"] tbody tr:hover {
     rgba(38, 22, 18, 0) 0%,
     rgba(38, 22, 18, 0.18) 45%,
     rgba(38, 22, 18, 0.55) 100%
+  );
+}
+.dark .cb-scrim,
+[data-theme="dark"] .cb-scrim {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.35) 48%,
+    rgba(0, 0, 0, 0.78) 100%
   );
 }
 
@@ -1246,9 +1268,10 @@ body.dark a, body.dark button, body.dark [role="button"], body.dark input[type="
   background: var(--cb-terracotta-dark);
   color: #fff;
 }
-.dark ::selection {
+.dark ::selection,
+[data-theme="dark"] ::selection {
   background: var(--cb-terracotta);
-  color: var(--cb-cream-2);
+  color: var(--dark);
 }
 
 /* عناوين لوحة الإدارة — نفس هوية الموقع (Playfair / Allura عبر utilities) */
