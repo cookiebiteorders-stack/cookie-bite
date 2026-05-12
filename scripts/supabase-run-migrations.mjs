@@ -79,21 +79,43 @@ const sqlFiles = [
   "supabase/migrations/0003_v2_extend_schema.sql",
   "supabase/migrations/0004_audit_logs.sql",
   "supabase/migrations/0005_phase_cde_foundations.sql",
+  "supabase/migrations/0006_customer_testimonials.sql",
+  "supabase/migrations/0007_shipping_zones_sort_order.sql",
+  "supabase/migrations/0008_schema_alignment_and_security.sql",
 ];
+
+const failures = [];
 
 for (const rel of sqlFiles) {
   const filePath = path.join(projectRoot, rel);
   if (!fs.existsSync(filePath)) {
-    throw new Error(`Missing migration file: ${rel}`);
+    failures.push({ file: rel, error: "missing file" });
+    continue;
   }
   const sql = fs.readFileSync(filePath, "utf8");
-  await runSqlQuery({
-    endpoint,
-    accessToken: ACCESS_TOKEN,
-    sql,
-    label: rel,
-  });
+  try {
+    await runSqlQuery({
+      endpoint,
+      accessToken: ACCESS_TOKEN,
+      sql,
+      label: rel,
+    });
+  } catch (error) {
+    failures.push({
+      file: rel,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    console.error(`[migrations] failed: ${rel}`);
+  }
 }
 
-console.log("[migrations] Done.");
+if (failures.length > 0) {
+  console.error("[migrations] Completed with failures:");
+  for (const f of failures) {
+    console.error(`- ${f.file}: ${f.error}`);
+  }
+  process.exitCode = 1;
+} else {
+  console.log("[migrations] Done.");
+}
 
