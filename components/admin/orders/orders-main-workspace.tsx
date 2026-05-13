@@ -21,6 +21,7 @@ import {
   SlidersHorizontal,
   Truck,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useDebounce } from "@/src/hooks/useDebounce";
 import type { AdminOrderRow } from "@/lib/admin/orders-operations-types";
 import { useOrdersOperationsStore } from "@/stores/orders-operations-store";
@@ -106,6 +107,7 @@ type Props = {
 };
 
 export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
+  const router = useRouter();
   const reduceMotion = useReducedMotion();
   const orders = useOrdersOperationsStore((s) => s.orders);
   const total = useOrdersOperationsStore((s) => s.total);
@@ -369,7 +371,9 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
                         className="flex w-full px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
                         onClick={() => {
                           setMenuId(null);
-                          pushToast("طباعة الفاتورة — قريباً", "info");
+                          void navigator.clipboard?.writeText(o.id).catch(() => undefined);
+                          pushToast("تم نسخ معرّف الطلب. صفحة الفواتير: أنشئ فاتورة والصق المعرّف عند الطلب.", "info");
+                          router.push("/admin/invoices");
                         }}
                       >
                         <Printer className="me-1 inline h-3.5 w-3.5" />
@@ -394,6 +398,7 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
       pushToast,
       menuId,
       reduceMotion,
+      router,
     ],
   );
 

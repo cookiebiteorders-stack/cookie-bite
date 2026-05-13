@@ -28,6 +28,7 @@ export function ContactForm() {
       email: String(formData.get("email") ?? ""),
       subject: String(formData.get("subject") ?? ""),
       message: String(formData.get("message") ?? ""),
+      _gotcha: String(formData.get("_gotcha") ?? ""),
     };
 
     try {
@@ -58,7 +59,7 @@ export function ContactForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="space-y-5 rounded-3xl border border-cb-border bg-cb-surface p-5 shadow-lg sm:p-8"
+      className="space-y-5 rounded-3xl border border-cb-border bg-cb-surface p-5 shadow-lg sm:p-8 relative"
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -124,6 +125,15 @@ export function ContactForm() {
           className={textareaClasses}
         />
       </div>
+      {/* Honeypot — لا تملأ هذا الحقل */}
+      <input
+        type="text"
+        name="_gotcha"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden
+        className="pointer-events-none absolute top-0 start-0 h-px w-px opacity-0"
+      />
       {error && (
         <p className="text-sm font-semibold text-red-700" role="alert">
           {error}

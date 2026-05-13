@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   Gift,
   Heart,
@@ -18,7 +19,7 @@ type MobileTab = {
   href: string;
   label: string;
   Icon: LucideIcon;
-  match: (p: string) => boolean;
+  match: (p: string, hash?: string) => boolean;
   elevated?: boolean;
 };
 
@@ -44,22 +45,32 @@ const tabs: MobileTab[] = [
       p.startsWith("/gift-ideas") || p.startsWith("/gift-box"),
   },
   {
-    href: "/shop?wishlist=1",
+    href: "/account#wish",
     label: "Saved",
     Icon: Heart,
-    match: (p: string) => p === "/shop" && false, // placeholder
+    match: (p: string, hash = "") =>
+      p.startsWith("/account") && hash === "#wish",
   },
   {
     href: "/account",
     label: "Account",
     Icon: User,
-    match: (p: string) => p.startsWith("/account"),
+    match: (p: string, hash = "") =>
+      p.startsWith("/account") && hash !== "#wish",
   },
 ];
 
 export function MobileTabBar() {
   const pathname = usePathname();
+  const [hash, setHash] = useState("");
   const { t } = useLanguage();
+
+  useEffect(() => {
+    const sync = () => setHash(typeof window !== "undefined" ? window.location.hash : "");
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, [pathname]);
   const localizedTabs: MobileTab[] = [
     { ...tabs[0], label: t("tabs.home") },
     { ...tabs[1], label: t("tabs.shop") },
@@ -75,7 +86,7 @@ export function MobileTabBar() {
     >
       <div className="mobile-tab-bar__inner">
         {localizedTabs.map((tab) => {
-          const active = tab.match(pathname);
+          const active = tab.match(pathname, hash);
           const Icon = tab.Icon;
 
           if (tab.elevated) {

@@ -24,16 +24,25 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createSupabaseAdminClient();
-  const { data: subs } = await supabase
+  const { data: subs, error: subsError } = await supabase
     .from("push_subscriptions")
-    .select("id,user_id,endpoint,p256dh,auth_key,platform");
+    .select("id,user_id,platform", { count: "exact" });
+
+  const audience = subs?.length ?? 0;
+
+  if (subsError) {
+    return NextResponse.json(
+      bilingualError("Failed to load subscriptions", "تعذّر تحميل الاشتراكات"),
+      { status: 500 },
+    );
+  }
 
   await writeAuditLog({
     actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
     action: "push.broadcast",
     module: "notifications",
     metadata: {
-      audience: (subs ?? []).length,
+      audience,
       payload: parsed.data,
     },
     request: req,
@@ -41,8 +50,11 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    audience: (subs ?? []).length,
+    audience,
     payload: parsed.data,
-    subscriptions: subs ?? [],
+    message: {
+      en: "Broadcast logged. Server-side Web Push delivery requires VAPID keys and worker integration (subscriptions not returned for security).",
+      ar: "تم تسجيل الإذاعة. إرسال Web Push من الخادم يتطلب مفاتيح VAPID وربط workers (لم تُعاد معلومات الاشتراك لأسباب أمنية).",
+    },
   });
 }

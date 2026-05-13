@@ -55,6 +55,36 @@ function loadLines(): CartLine[] {
   }
 }
 
+function tryMigrateLegacyZustandCart(): CartLine[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("cookie-bite-cart-v1");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as {
+      state?: {
+        items?: Array<{
+          id: string;
+          name: string;
+          price: number;
+          image: string;
+          quantity: number;
+        }>;
+      };
+    };
+    const items = parsed?.state?.items;
+    if (!Array.isArray(items) || items.length === 0) return null;
+    return items.map((i) => ({
+      productId: i.id,
+      name: i.name,
+      priceEgp: i.price,
+      image: i.image,
+      quantity: Math.min(99, Math.max(1, Number(i.quantity) || 1)),
+    }));
+  } catch {
+    return null;
+  }
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [hydrated, setHydrated] = useState(false);
@@ -64,7 +94,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     queueMicrotask(() => {
       if (cancelled) return;
-      setLines(loadLines());
+      let initial = loadLines();
+      if (initial.length === 0) {
+        const migrated = tryMigrateLegacyZustandCart();
+        if (migrated?.length) {
+          initial = migrated;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
+        }
+      }
+      setLines(initial);
       setHydrated(true);
     });
     return () => {

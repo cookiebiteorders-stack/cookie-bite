@@ -204,8 +204,9 @@ function nextMissingStep(d: ProductWizardDraft): WizardStep {
 /** يحاول استخراج عدة حقول من رسالة واحدة */
 export function parseLooseFields(
   text: string,
-  _draft: ProductWizardDraft,
+  draft: ProductWizardDraft,
 ): Partial<ProductWizardDraft> {
+  void draft;
   const patch: Partial<ProductWizardDraft> = {};
   const lines = text.split(/\n+/).map((l) => l.trim()).filter(Boolean);
   for (const line of lines) {

@@ -24,3 +24,32 @@ test("admin route is guarded", async ({ page }) => {
   await expect(page).toHaveURL(/\/admin|\/sign-in|\/403/);
 });
 
+test("contact API honeypot returns ok without persisting (silent drop)", async ({ request }) => {
+  const res = await request.post("/api/contact", {
+    headers: { "Content-Type": "application/json" },
+    data: JSON.stringify({
+      name: "Bot",
+      email: "bot@example.com",
+      subject: "Spam",
+      message: "buy now",
+      _gotcha: "filled-by-scraper",
+    }),
+  });
+  expect(res.ok()).toBeTruthy();
+  const body = await res.json();
+  expect(body.ok).toBe(true);
+});
+
+test("newsletter honeypot returns ok without subscribing", async ({ request }) => {
+  const res = await request.post("/api/newsletter", {
+    headers: { "Content-Type": "application/json" },
+    data: JSON.stringify({
+      email: "human@example.com",
+      source: "e2e",
+      _gotcha: "x",
+    }),
+  });
+  expect(res.ok()).toBeTruthy();
+  const body = await res.json();
+  expect(body.ok).toBe(true);
+});

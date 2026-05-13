@@ -45,10 +45,18 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, reason: "no order id" }, { status: 400 });
   }
 
-  await updateOrderPaymentByPaymobAcceptOrderId(paymobOrderId, {
-    payment_status: success ? "paid" : "failed",
-    status: success ? "processing" : "pending",
-  });
+  const rawTxId = transaction.id;
+  const paymobTransactionId =
+    rawTxId == null || rawTxId === "" ? null : String(rawTxId);
+
+  await updateOrderPaymentByPaymobAcceptOrderId(
+    paymobOrderId,
+    {
+      payment_status: success ? "paid" : "failed",
+      status: success ? "processing" : "pending",
+    },
+    paymobTransactionId,
+  );
 
   return Response.json({ ok: true });
 }

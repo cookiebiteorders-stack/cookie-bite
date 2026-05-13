@@ -29,7 +29,7 @@ export default function TermsPage() {
           className="text-left"
           eyebrow="Legal"
           title="Terms & conditions"
-          subtitle="Summary placeholder — replace with counsel-approved text before launch."
+          subtitle="استخدام الموقع والطلبات والأسعار — إطار أولي (استشر مستشارك القانوني للوثيقة الكاملة)."
         />
         <div className="mt-10 space-y-6 text-sm leading-relaxed text-cb-text">
           <p>
@@ -42,8 +42,12 @@ export default function TermsPage() {
             We may refuse orders that violate our policies or capacity limits.
           </p>
           <p className="rounded-2xl bg-cb-peach/60 p-4 text-cb-text-strong">
-            <strong>Note:</strong> Replace this stub with full terms covering liability,
-            governing law (Egypt), dispute resolution, and marketplace rules.
+            <strong>Terms / الشروط:</strong> By ordering, you accept prices in EGP at checkout
+            and our delivery/fulfillment policies. We may cancel or adjust orders that are
+            unavailable, fraudulent, or beyond service area. Custom or gift messages must not be
+            unlawful or offensive. Limitation of liability applies to the extent permitted by
+            law in Egypt. Disputes: contact us first; governing law Egypt unless otherwise agreed
+            in writing.
           </p>
         </div>
       </div>

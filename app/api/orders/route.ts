@@ -48,9 +48,50 @@ export async function POST(req: NextRequest) {
   }
 
   const data = parsed.data;
+  const headerIdem = req.headers.get("idempotency-key")?.trim();
+  const uuidRe =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const idempotencyKey =
+    data.idempotency_key ?? (headerIdem && uuidRe.test(headerIdem) ? headerIdem : null);
+
   const supabase = createSupabaseAdminClient();
 
-  // 1) المنتجات والمخزون
+  if (idempotencyKey) {
+    const { data: existing } = await supabase
+      .from("orders")
+      .select(
+        "id, order_code, order_number, subtotal_egp, discount_amount_egp, delivery_fee_egp, gift_wrapping_fee_egp, total_egp, payment_method",
+      )
+      .eq("checkout_idempotency_key", idempotencyKey)
+      .maybeSingle<{
+        id: string;
+        order_code: string | null;
+        order_number: number;
+        subtotal_egp: number;
+        discount_amount_egp: number;
+        delivery_fee_egp: number;
+        gift_wrapping_fee_egp: number;
+        total_egp: number;
+        payment_method: string | null;
+      }>();
+    if (existing) {
+      return NextResponse.json({
+        ok: true,
+        idempotent_replay: true,
+        order_id: existing.id,
+        order_code: existing.order_code ?? `#${existing.order_number}`,
+        order_number: existing.order_number,
+        subtotal_egp: Number(existing.subtotal_egp),
+        discount_amount_egp: Number(existing.discount_amount_egp),
+        delivery_fee_egp: Number(existing.delivery_fee_egp),
+        gift_wrapping_fee_egp: Number(existing.gift_wrapping_fee_egp),
+        total_egp: Number(existing.total_egp),
+        payment_method: existing.payment_method,
+      });
+    }
+  }
+
+  // 1) المنتجات والمخزون — supabase already created above
   const productIds = data.cart_items.map((i) => i.product_id);
   const { data: rawProducts, error: pErr } = await supabase
     .from("products")
@@ -199,11 +240,47 @@ export async function POST(req: NextRequest) {
       is_gift: data.is_gift,
       language: data.language,
       shipping_address,
+      checkout_idempotency_key: idempotencyKey,
     })
     .select("id, order_code, order_number, total_egp")
     .single();
 
   if (oErr || !order) {
+    const code = (oErr as { code?: string } | null)?.code;
+    if (idempotencyKey && code === "23505") {
+      const { data: existing } = await supabase
+        .from("orders")
+        .select(
+          "id, order_code, order_number, subtotal_egp, discount_amount_egp, delivery_fee_egp, gift_wrapping_fee_egp, total_egp, payment_method",
+        )
+        .eq("checkout_idempotency_key", idempotencyKey)
+        .maybeSingle<{
+          id: string;
+          order_code: string | null;
+          order_number: number;
+          subtotal_egp: number;
+          discount_amount_egp: number;
+          delivery_fee_egp: number;
+          gift_wrapping_fee_egp: number;
+          total_egp: number;
+          payment_method: string | null;
+        }>();
+      if (existing) {
+        return NextResponse.json({
+          ok: true,
+          idempotent_replay: true,
+          order_id: existing.id,
+          order_code: existing.order_code ?? `#${existing.order_number}`,
+          order_number: existing.order_number,
+          subtotal_egp: Number(existing.subtotal_egp),
+          discount_amount_egp: Number(existing.discount_amount_egp),
+          delivery_fee_egp: Number(existing.delivery_fee_egp),
+          gift_wrapping_fee_egp: Number(existing.gift_wrapping_fee_egp),
+          total_egp: Number(existing.total_egp),
+          payment_method: existing.payment_method,
+        });
+      }
+    }
     console.error("orders insert error", oErr);
     return NextResponse.json(
       bilingualError("Failed to create order", "فشل إنشاء الطلب"),

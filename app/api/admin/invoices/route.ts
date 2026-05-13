@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { requireAdminAccess } from "@/lib/admin/require-admin";
+import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-admin";
+import { writeAuditLog } from "@/lib/admin/audit";
 import { bilingualError } from "@/lib/validations";
 
 type InvoiceStatus = "paid" | "pending" | "failed" | "refunded";
@@ -325,5 +327,78 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json(response);
+}
+
+const createInvoiceSchema = z.object({
+  order_id: z.string().uuid().optional().nullable(),
+  /** DB allows 0 for placeholder / manual drafts */
+  amount_egp: z.number().nonnegative(),
+  status: z.enum(["pending", "paid", "failed", "refunded"]).optional().default("pending"),
+});
+
+export async function POST(req: NextRequest) {
+  const actor = await requireAdminAccess("invoices");
+  requireWritePermission(actor);
+
+  const parsed = createInvoiceSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json(bilingualError("Invalid payload", "بيانات غير صالحة"), {
+      status: 400,
+    });
+  }
+
+  const supabase = createSupabaseAdminClient();
+  if (parsed.data.order_id) {
+    const { data: orderRow } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("id", parsed.data.order_id)
+      .maybeSingle();
+    if (!orderRow) {
+      return NextResponse.json(bilingualError("Order not found", "الطلب غير موجود"), {
+        status: 404,
+      });
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("invoices")
+    .insert({
+      order_id: parsed.data.order_id ?? null,
+      amount: parsed.data.amount_egp,
+      status: parsed.data.status,
+    })
+    .select("id, order_id, amount, status, issued_at")
+    .single();
+
+  if (error || !data) {
+    console.error("invoice insert", error);
+    return NextResponse.json(bilingualError("Failed to create invoice", "فشل إنشاء الفاتورة"), {
+      status: 500,
+    });
+  }
+
+  await writeAuditLog({
+    actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
+    action: "invoices.create",
+    module: "invoices",
+    entity_id: data.id,
+    after: data,
+    request: req,
+  });
+
+  return NextResponse.json(
+    {
+      ok: true,
+      invoice: {
+        id: data.id,
+        order_id: data.order_id,
+        amount_egp: Number(data.amount),
+        status: data.status,
+        issued_at: data.issued_at,
+      },
+    },
+    { status: 201 },
+  );
 }
 

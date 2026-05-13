@@ -324,7 +324,10 @@ export function MrBrownieChat() {
   const linesRef = useRef(lines);
   const isSignedInRef = useRef(Boolean(isSignedIn));
   const clerkUserIdRef = useRef<string | undefined>(undefined);
-  clerkUserIdRef.current = user?.id;
+
+  useEffect(() => {
+    clerkUserIdRef.current = user?.id;
+  }, [user?.id]);
 
   const flushPendingDrag = useCallback(() => {
     dragFlushRafRef.current = null;
@@ -424,14 +427,16 @@ export function MrBrownieChat() {
   }, [postMrBrownieAmbient]);
 
   useEffect(() => {
-    if (!isSignedIn) {
-      setSessionRole(null);
-      return;
-    }
-    setSessionRole(null);
     let cancelled = false;
-    void postMrBrownieAmbient().then(() => {
-      if (cancelled) return;
+    queueMicrotask(() => {
+      if (!isSignedIn) {
+        setSessionRole(null);
+        return;
+      }
+      setSessionRole(null);
+      void postMrBrownieAmbient().then(() => {
+        if (cancelled) return;
+      });
     });
     return () => {
       cancelled = true;
@@ -509,12 +514,16 @@ export function MrBrownieChat() {
   }, [clerkKey, isSignedIn]);
 
   useEffect(() => {
-    void pullRemoteHistory();
+    queueMicrotask(() => {
+      void pullRemoteHistory();
+    });
   }, [pullRemoteHistory]);
 
   useEffect(() => {
     if (!open) return;
-    void pullRemoteHistory();
+    queueMicrotask(() => {
+      void pullRemoteHistory();
+    });
   }, [open, pullRemoteHistory]);
 
   useEffect(() => {

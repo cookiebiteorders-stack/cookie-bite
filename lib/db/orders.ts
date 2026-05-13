@@ -97,16 +97,43 @@ export async function insertCheckoutOrder(
 export async function updateOrderPaymentByPaymobAcceptOrderId(
   paymobAcceptOrderId: number,
   patch: Pick<OrderRow, "payment_status"> & Partial<Pick<OrderRow, "status">>,
+  paymobTransactionId?: string | null,
 ) {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
     return false;
   }
   const supabase = createSupabaseAdminClient();
+  const txId = paymobTransactionId ?? null;
+
+  const { data: current, error: readErr } = await supabase
+    .from("orders")
+    .select("id, payment_status, status, paymob_transaction_id")
+    .eq("paymob_accept_order_id", paymobAcceptOrderId)
+    .maybeSingle<
+      Pick<OrderRow, "id" | "payment_status" | "status" | "paymob_transaction_id">
+    >();
+
+  if (readErr || !current) {
+    if (readErr) console.error("updateOrderPaymentByPaymobAcceptOrderId read", readErr);
+    return false;
+  }
+
+  const nextStatus = patch.status ?? current.status;
+  if (
+    txId &&
+    current.paymob_transaction_id === txId &&
+    current.payment_status === patch.payment_status &&
+    current.status === nextStatus
+  ) {
+    return true;
+  }
+
   const { error } = await supabase
     .from("orders")
     .update({
       payment_status: patch.payment_status,
       ...(patch.status ? { status: patch.status } : {}),
+      ...(txId ? { paymob_transaction_id: txId } : {}),
     })
     .eq("paymob_accept_order_id", paymobAcceptOrderId);
   if (error) {

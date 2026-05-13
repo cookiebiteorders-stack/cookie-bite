@@ -363,10 +363,12 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
                       <button
                         type="button"
                         role="menuitem"
-                        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                        onClick={() => setOpenMenuId(null)}
+                        disabled
+                        title="معاينة المتجر للمنتج غير مفعّلة بعد"
+                        aria-disabled="true"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold opacity-50 hover:bg-amber-50 dark:hover:bg-amber-950/30"
                       >
-                        <Eye className="h-3.5 w-3.5" /> معاينة (قريباً)
+                        <Eye className="h-3.5 w-3.5" /> معاينة (غير متوفر)
                       </button>
                     </li>
                     <li>

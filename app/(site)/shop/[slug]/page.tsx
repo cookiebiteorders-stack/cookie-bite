@@ -2,25 +2,32 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { ALL_SELLABLE, getProductBySlug } from "@/lib/data";
 import { PdpSharedHero } from "@/components/shop/pdp-shared-hero";
 import { PdpActions } from "@/components/shop/pdp-actions";
 import { ProductCard } from "@/components/product/product-card";
 import { buttonClassName } from "@/components/ui/button";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { ShareButtons } from "@/components/seo/share-buttons";
+import {
+  getActivePdpProduct,
+  getRelatedStorefrontProducts,
+  listAllActiveSlugs,
+} from "@/lib/storefront/pdp-data";
 
 type Props = { params: Promise<{ slug: string }> };
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
 
+export const dynamic = "force-dynamic";
+
 export async function generateStaticParams() {
-  return ALL_SELLABLE.map((p) => ({ slug: p.id }));
+  const slugs = await listAllActiveSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
-  if (!product) return { title: "Product" };
+  const product = await getActivePdpProduct(slug);
+  if (!product) return { title: "Product | Cookie Bite" };
   return {
     title: `${product.name} Cookies in New Cairo`,
     description: `${product.description} Order ${product.name} online from Cookie Bite with premium ingredients and fast support in New Cairo.`,
@@ -48,21 +55,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getActivePdpProduct(slug);
   if (!product) notFound();
 
-  const related = ALL_SELLABLE.filter(
-    (p) => p.id !== product.id && p.category === product.category,
-  ).slice(0, 3);
-  const fallbackRelated = ALL_SELLABLE.filter((p) => p.id !== product.id).slice(0, 3);
-  const carousel = related.length ? related : fallbackRelated;
+  const carousel = await getRelatedStorefrontProducts(
+    product.category,
+    product.id,
+    3,
+  );
+
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
     image: [product.image],
     description: product.description,
-    sku: product.id,
+    sku: product.productUuid ?? product.id,
     brand: { "@type": "Brand", name: "Cookie Bite" },
     offers: {
       "@type": "Offer",
@@ -70,7 +78,10 @@ export default async function ProductPage({ params }: Props) {
       priceCurrency: "EGP",
       price: String(product.price),
       itemCondition: "https://schema.org/NewCondition",
-      availability: "https://schema.org/InStock",
+      availability:
+        product.stock != null && product.stock <= 0
+          ? "https://schema.org/OutOfStock"
+          : "https://schema.org/InStock",
     },
   };
 
@@ -105,6 +116,13 @@ export default async function ProductPage({ params }: Props) {
             <p className="mt-6 font-serif text-3xl font-bold text-cb-terracotta-dark">
               {product.price} EGP
             </p>
+            {product.stock != null && product.stock <= 10 ? (
+              <p className="mt-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
+                {product.stock === 0
+                  ? "Currently out of stock online — contact us on WhatsApp."
+                  : `Only ${product.stock} left in stock.`}
+              </p>
+            ) : null}
 
             <div className="mt-8">
               <PdpActions product={product} />

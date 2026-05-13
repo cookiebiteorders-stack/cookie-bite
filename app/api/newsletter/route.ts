@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 const Schema = z.object({
   email: z.string().email().max(120),
   source: z.string().max(40).optional(),
+  _gotcha: z.string().max(80).optional(),
 });
 
 export async function POST(req: Request) {
@@ -20,6 +21,10 @@ export async function POST(req: Request) {
       { ok: false, error: "Invalid email" },
       { status: 400 },
     );
+  }
+
+  if (parsed.data._gotcha?.trim()) {
+    return Response.json({ ok: true });
   }
 
   const supabase = createSupabaseAdminClient();

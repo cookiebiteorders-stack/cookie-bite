@@ -74,6 +74,8 @@ export const checkoutSchema = z
     language: languageEnum.default("ar"),
     guest_email: z.string().email().optional(),
     cart_items: z.array(cartItemSchema).min(1),
+    /** يُقبل أيضاً من رأس HTTP `Idempotency-Key` في المسار */
+    idempotency_key: z.string().uuid().optional(),
   })
   .refine((d) => Boolean(d.address_id || d.address), {
     message: "Either address_id or address must be provided",

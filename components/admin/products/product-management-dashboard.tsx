@@ -176,8 +176,10 @@ export function ProductManagementDashboard() {
           </button>
           <button
             type="button"
-            onClick={() => pushToast("استورد CSV قريباً — استخدم التصدير كنموذج للأعمدة.", "info")}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900"
+            disabled
+            title="استيراد CSV غير مفعّل — استخدم تصدير CSV كنموذج للأعمدة"
+            aria-disabled="true"
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm opacity-50 dark:bg-stone-900"
           >
             <Upload className="h-4 w-4" aria-hidden />
             استيراد

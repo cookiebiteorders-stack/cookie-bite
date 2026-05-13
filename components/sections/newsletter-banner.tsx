@@ -13,18 +13,24 @@ export function NewsletterBanner() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
 
-  async function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("loading");
     try {
+      const fd = new FormData(e.currentTarget);
       const res = await fetch("/api/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source: "home-banner" }),
+        body: JSON.stringify({
+          email: String(fd.get("email") ?? ""),
+          source: "home-banner",
+          _gotcha: String(fd.get("_gotcha") ?? ""),
+        }),
       });
       if (!res.ok) throw new Error("subscribe failed");
       setStatus("sent");
       setEmail("");
+      e.currentTarget.reset();
     } catch {
       setStatus("error");
     }
@@ -75,19 +81,28 @@ export function NewsletterBanner() {
           </div>
           <form
             onSubmit={onSubmit}
-            className="flex w-full flex-col gap-3 sm:flex-row sm:items-stretch lg:flex-col xl:flex-row xl:items-center"
+            className="relative flex w-full flex-col gap-3 sm:flex-row sm:items-stretch lg:flex-col xl:flex-row xl:items-center"
           >
             <label htmlFor="newsletter-email" className="sr-only">
               {t("newsletter.emailLabel")}
             </label>
             <input
               id="newsletter-email"
+              name="email"
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t("newsletter.placeholder")}
               className="cb-touch-manipulation min-h-[3rem] w-full flex-1 rounded-xl border border-white/35 bg-white/12 px-4 text-base text-white placeholder:text-white/70 outline-none transition duration-300 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-cb-terracotta-dark"
+            />
+            <input
+              type="text"
+              name="_gotcha"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden
+              className="pointer-events-none absolute h-px w-px opacity-0"
             />
             <motion.button
               type="submit"

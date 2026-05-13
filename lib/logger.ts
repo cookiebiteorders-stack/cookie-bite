@@ -63,9 +63,10 @@ export function logStructuredError(
       ? context.correlationId
       : (process.env.COOKIE_BITE_CORRELATION_ID ?? undefined);
 
-  const { correlationId: _strip, ...rest } = (context ?? {}) as LogPayload & {
+  const { correlationId: _omitCorrelation, ...rest } = (context ?? {}) as LogPayload & {
     correlationId?: string;
   };
+  void _omitCorrelation;
 
   const record = {
     ts: new Date().toISOString(),

@@ -27,6 +27,18 @@ const customJestConfig = {
     "components/**/*.{ts,tsx}",
     "!**/*.d.ts",
   ],
+  coverageThreshold: {
+    global: {
+      lines: 0,
+      statements: 0,
+      branches: 0,
+      functions: 0,
+    },
+    "./lib/validations/index.ts": {
+      lines: 40,
+      statements: 40,
+    },
+  },
 };
 
 export default createJestConfig(customJestConfig);

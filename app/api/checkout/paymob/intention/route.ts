@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
 import { insertCheckoutOrder } from "@/lib/db/orders";
 import { getUserByClerkId } from "@/lib/db/users";
-import { getProductBySlug } from "@/lib/data";
+import { resolveCheckoutLineItems } from "@/lib/checkout/resolve-line-items";
 import { sendOrderConfirmation } from "@/lib/email/send";
 import {
   buildPaymobBillingData,
@@ -66,21 +66,14 @@ export async function POST(req: Request) {
   const shippingEmail =
     shipping.email && shipping.email.length > 0 ? shipping.email : undefined;
 
-  const resolved: { id: string; name: string; unitPrice: number; quantity: number }[] = [];
-  let subtotal = 0;
-  for (const row of items) {
-    const p = getProductBySlug(row.id);
-    if (!p) {
-      return Response.json({ ok: false, error: `Unknown product: ${row.id}` }, { status: 400 });
-    }
-    resolved.push({
-      id: p.id,
-      name: p.name,
-      unitPrice: p.price,
-      quantity: row.quantity,
-    });
-    subtotal += p.price * row.quantity;
+  const pricing = await resolveCheckoutLineItems(items);
+  if (!pricing.ok) {
+    return Response.json(
+      { ok: false, error: pricing.error },
+      { status: pricing.status },
+    );
   }
+  const { lines: resolved, subtotal } = pricing;
 
   const threshold = Number(process.env.NEXT_PUBLIC_FREE_DELIVERY_THRESHOLD_EGP ?? 500) || 500;
   const deliveryFee = subtotal >= threshold ? 0 : 45;

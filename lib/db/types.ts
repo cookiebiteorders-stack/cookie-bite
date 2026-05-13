@@ -84,6 +84,7 @@ export type OrderRow = {
   shipping_address: Record<string, unknown> | null;
   paymob_accept_order_id?: number | null;
   paymob_transaction_id?: string | null;
+  checkout_idempotency_key?: string | null;
   created_at: string;
   updated_at: string;
 };

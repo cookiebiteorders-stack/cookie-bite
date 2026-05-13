@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 
@@ -13,13 +14,19 @@ export async function POST(req: NextRequest) {
     request: req,
   });
 
-  // مزامنة Sanity الفعلية تُنفّذ عبر webhook تلقائي.
-  // هذا endpoint يوفر نقطة trigger يدوية (noop آمنة حالياً).
+  try {
+    revalidatePath("/shop");
+    revalidatePath("/shop", "layout");
+    revalidatePath("/api/products");
+  } catch (e) {
+    console.error("revalidatePath after products sync", e);
+  }
+
   return NextResponse.json({
     ok: true,
     message: {
-      en: "Manual sync trigger accepted. Use /api/sanity/webhook for actual sync payload.",
-      ar: "تم قبول طلب المزامنة اليدوية. استخدم /api/sanity/webhook للمزامنة الفعلية.",
+      en: "Storefront cache revalidated. Sanity/content webhooks still apply for CMS-driven updates.",
+      ar: "تم تحديث الكاش للمتجر. ويبهوكس Sanity/المحتوى لا تزال تنطبق على تحديثات CMS.",
     },
   });
 }

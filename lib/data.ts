@@ -51,13 +51,18 @@ export const IMAGES = {
 };
 
 export type Product = {
+  /** Slug المستخدم في الروابط والسلة وعند الدفع */
   id: string;
+  /** معرف UUID في جدول products (قائمة الرغبات وربط داخلي) */
+  productUuid?: string;
   name: string;
   description: string;
   price: number;
   image: string;
   category: string;
   badges?: ("bestseller" | "new" | "trending")[];
+  /** مخزون تقريبي لعرض حالة التوفر في الواجهة */
+  stock?: number;
 };
 
 export const PRODUCTS: Product[] = [];

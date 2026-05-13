@@ -88,6 +88,8 @@ export default clerkMiddleware(async (auth, request) => {
       path.startsWith("/api/push")
     ) {
       if (!rateOk(`user:${ip}`, 30, 60_000)) return tooMany();
+    } else if (path.startsWith("/api/mr-brownie") || path.startsWith("/api/chat")) {
+      if (!rateOk(`chat:${ip}`, 24, 60_000)) return tooMany();
     } else if (path.startsWith("/api/admin/")) {
       if (!rateOk(`admin:${ip}`, 60, 60_000)) return tooMany();
     }

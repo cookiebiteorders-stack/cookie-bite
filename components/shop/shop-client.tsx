@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { PRODUCTS, type Product } from "@/lib/data";
+import { useAuth } from "@clerk/nextjs";
 import { ProductCard } from "@/components/product/product-card";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { useLanguage } from "@/components/providers/language-provider";
-import { buttonClassName } from "@/components/ui/button";
 import { fetchJson } from "@/lib/http/fetch-json";
+import { buttonClassName } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { Product } from "@/lib/data";
 
 type SortMode = "newest" | "price_asc" | "price_desc" | "popular";
 type BadgeFilter = "bestseller" | "new" | "trending";
@@ -46,6 +47,7 @@ type ShopProduct = Product & {
 };
 
 function normalizeProduct(p: ApiProduct, descFallback: string): ShopProduct {
+  const slug = p.slug?.trim() || "";
   const title = p.title_en || p.title_ar || p.name;
   const description =
     p.description_en || p.description_ar || p.description || descFallback;
@@ -56,7 +58,8 @@ function normalizeProduct(p: ApiProduct, descFallback: string): ShopProduct {
   const normalizedBadges = (p.badges ?? []).filter(isBadgeFilter);
 
   return {
-    id: p.slug || p.id,
+    id: slug || p.id,
+    productUuid: p.id,
     name: title,
     description,
     price: p.price_egp,
@@ -102,7 +105,10 @@ export function ShopClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const [catalog, setCatalog] = useState<ShopProduct[]>(PRODUCTS as ShopProduct[]);
+  const { isLoaded, isSignedIn } = useAuth();
+  const [catalog, setCatalog] = useState<ShopProduct[]>([]);
+  const [wishlistUuids, setWishlistUuids] = useState<Set<string>>(new Set());
+  const filterAnchorRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -123,6 +129,55 @@ export function ShopClient() {
   });
   const [minPrice, setMinPrice] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) {
+      queueMicrotask(() => setWishlistUuids(new Set()));
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const data = await fetchJson<{ items?: { product?: { id?: string } }[] }>(
+          "/api/wishlist",
+          { cache: "no-store" },
+        );
+        if (cancelled) return;
+        const s = new Set<string>();
+        for (const it of data.items ?? []) {
+          const id = it.product?.id;
+          if (id) s.add(id);
+        }
+        setWishlistUuids(s);
+      } catch {
+        if (!cancelled) setWishlistUuids(new Set());
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, isSignedIn]);
+
+  const onWishlistToggled = useCallback((productUuid: string, nowSaved: boolean) => {
+    setWishlistUuids((prev) => {
+      const next = new Set(prev);
+      if (nowSaved) next.add(productUuid);
+      else next.delete(productUuid);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const openFilters = () => {
+      filterAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const first = filterAnchorRef.current?.querySelector<HTMLElement>(
+        "input[type=\"search\"], input:not([type]), select",
+      );
+      first?.focus();
+    };
+    window.addEventListener("cookiebite:openShopFilters", openFilters);
+    return () => window.removeEventListener("cookiebite:openShopFilters", openFilters);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -279,7 +334,11 @@ export function ShopClient() {
           subtitle={t("pages.shop.subtitle")}
         />
 
-        <div className="mb-5 grid gap-3 rounded-2xl bg-cb-surface-elevated p-4 ring-1 ring-cb-border shadow-sm dark:bg-cb-surface-2 dark:ring-cb-border/80 sm:grid-cols-2 lg:grid-cols-4">
+        <div
+          ref={filterAnchorRef}
+          id="shop-filters"
+          className="mb-5 grid gap-3 rounded-2xl bg-cb-surface-elevated p-4 ring-1 ring-cb-border shadow-sm dark:bg-cb-surface-2 dark:ring-cb-border/80 sm:grid-cols-2 lg:grid-cols-4"
+        >
           <input
             type="search"
             value={query}
@@ -424,7 +483,12 @@ export function ShopClient() {
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {filtered.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard
+              key={p.id}
+              product={p}
+              wishlisted={p.productUuid ? wishlistUuids.has(p.productUuid) : false}
+              onWishlistToggled={onWishlistToggled}
+            />
           ))}
         </div>
 

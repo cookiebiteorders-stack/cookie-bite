@@ -142,8 +142,10 @@ export function OrdersOperationsDashboard() {
           <div className="flex min-w-max flex-nowrap items-center gap-2 pb-1">
             <button
             type="button"
-            onClick={() => pushToast("إنشاء طلب يدوي — اربط بنقطة POS لاحقاً", "info")}
-            className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-amber-700"
+            disabled
+            title="غير متوفر حالياً — يتطلب تكامل نقطة بيع (POS)"
+            aria-disabled="true"
+            className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition opacity-50"
             >
               <ShoppingCart className="h-4 w-4" aria-hidden />
               إنشاء طلب
@@ -158,8 +160,10 @@ export function OrdersOperationsDashboard() {
             </button>
             <button
             type="button"
-            onClick={() => pushToast("استيراد CSV — قريباً", "info")}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+            disabled
+            title="استيراد CSV غير مفعّل بعد"
+            aria-disabled="true"
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm opacity-50 dark:bg-stone-900"
             >
               <Upload className="h-4 w-4" aria-hidden />
               استيراد
@@ -174,8 +178,10 @@ export function OrdersOperationsDashboard() {
             </button>
             <button
             type="button"
-            onClick={() => pushToast("طباعة جماعية — قريباً", "info")}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+            disabled
+            title="الطباعة الجماعية غير متوفرة بعد"
+            aria-disabled="true"
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm opacity-50 dark:bg-stone-900"
             >
               <Printer className="h-4 w-4" aria-hidden />
               طباعة

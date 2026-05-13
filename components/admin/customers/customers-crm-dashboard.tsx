@@ -175,8 +175,10 @@ export function CustomersCrmDashboard() {
             </button>
             <button
               type="button"
-              onClick={() => pushToast("استيراد عملاء — CSV قريباً مع التحقق من التكرار.", "info")}
-              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+              disabled
+              title="استيراد عملاء CSV غير مفعّل بعد"
+              aria-disabled="true"
+              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm opacity-50 dark:bg-stone-900"
             >
               <Upload className="h-4 w-4 shrink-0" aria-hidden />
               استيراد
@@ -256,11 +258,10 @@ export function CustomersCrmDashboard() {
                       <button
                         type="button"
                         role="menuitem"
-                        className="flex w-full px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                        onClick={() => {
-                          setQuickOpen(false);
-                          pushToast(`${label} — قريباً مع RBAC وسجل تدقيق.`, "info");
-                        }}
+                        disabled
+                        title="غير متوفر حالياً — يتطلب RBAC وسجل تدقيق في الخلفية"
+                        aria-disabled="true"
+                        className="flex w-full px-3 py-2 text-xs font-semibold opacity-50 hover:bg-amber-50 dark:hover:bg-amber-950/30"
                       >
                         {label}
                       </button>

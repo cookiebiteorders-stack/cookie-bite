@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Heart, ShoppingBag } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
 import type { Product } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { AddToCartButton } from "@/components/product/add-to-cart-button";
@@ -12,6 +15,9 @@ type Props = {
   product: Product;
   layout?: "grid" | "compact";
   className?: string;
+  /** يُدار من صفحة المتجر لتفادي طلبات متكررة */
+  wishlisted?: boolean;
+  onWishlistToggled?: (productUuid: string, nowSaved: boolean) => void;
 };
 
 const badgeKey: Record<NonNullable<Product["badges"]>[number], string> = {
@@ -20,8 +26,60 @@ const badgeKey: Record<NonNullable<Product["badges"]>[number], string> = {
   trending: "product.badgeTrending",
 };
 
-export function ProductCard({ product, layout = "grid", className }: Props) {
+export function ProductCard({
+  product,
+  layout = "grid",
+  className,
+  wishlisted = false,
+  onWishlistToggled,
+}: Props) {
   const { t } = useLanguage();
+  const router = useRouter();
+  const { isSignedIn } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [uncontrolledSaved, setUncontrolledSaved] = useState(false);
+
+  const uuid = product.productUuid;
+  const controlled = onWishlistToggled !== undefined;
+  const saved = controlled ? wishlisted : uncontrolledSaved;
+
+  async function toggleWishlist(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!uuid || busy) return;
+    if (!isSignedIn) {
+      router.push(
+        `/sign-in?redirect_url=${encodeURIComponent(
+          typeof window !== "undefined"
+            ? `${window.location.pathname}${window.location.search}`
+            : "/shop",
+        )}`,
+      );
+      return;
+    }
+    setBusy(true);
+    try {
+      if (saved) {
+        const res = await fetch(`/api/wishlist/${uuid}`, { method: "DELETE" });
+        if (res.ok) {
+          if (controlled) onWishlistToggled!(uuid, false);
+          else setUncontrolledSaved(false);
+        }
+      } else {
+        const res = await fetch("/api/wishlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ product_id: uuid }),
+        });
+        if (res.ok) {
+          if (controlled) onWishlistToggled!(uuid, true);
+          else setUncontrolledSaved(true);
+        }
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <article
@@ -43,10 +101,18 @@ export function ProductCard({ product, layout = "grid", className }: Props) {
         </Link>
         <button
           type="button"
-          className="absolute end-3 top-3 z-10 rounded-full border border-cb-peach-deep/60 bg-cb-cream/95 p-2 text-cb-terracotta-dark shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md"
+          disabled={busy || !uuid}
+          onClick={toggleWishlist}
+          className={cn(
+            "absolute end-3 top-3 z-10 rounded-full border border-cb-peach-deep/60 p-2 shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md disabled:opacity-40",
+            wishlisted
+              ? "bg-cb-terracotta-dark text-white"
+              : "bg-cb-cream/95 text-cb-terracotta-dark",
+          )}
           aria-label={t("product.favoritesAria")}
+          aria-pressed={saved}
         >
-          <Heart className="h-4 w-4" />
+          <Heart className={cn("h-4 w-4", saved && "fill-current")} />
         </button>
         {product.badges?.length ? (
           <div className="pointer-events-none absolute start-3 top-3 z-10 flex flex-wrap gap-1">

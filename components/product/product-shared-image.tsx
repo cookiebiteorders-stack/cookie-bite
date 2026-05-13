@@ -35,6 +35,7 @@ export function ProductSharedImage({
       sizes={sizes}
       priority={priority}
       fetchPriority={priority ? "high" : undefined}
+      decoding="async"
       className={cn("object-cover", imgClassName)}
     />
   );

@@ -60,11 +60,6 @@ const typeOptions: Array<{
   { id: "loyalty", label: "Loyalty Reward", hint: "نقاط الولاء", icon: Users },
 ];
 
-function toTypeForApi(builderType: BuilderType): "percent" | "fixed" {
-  if (builderType === "fixed") return "fixed";
-  return "percent";
-}
-
 function typeLabel(type: Discount["type"]) {
   return type === "percent" ? "Percentage" : "Fixed";
 }
@@ -152,18 +147,54 @@ export default function AdminDiscountsPage() {
   async function createDiscount(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    const payload = {
-      code,
-      type: toTypeForApi(builderType),
-      value: Number(value),
+
+    const unsupported: BuilderType[] = [
+      "bogo",
+      "bundle",
+      "vip",
+      "first-order",
+      "loyalty",
+    ];
+    if (unsupported.includes(builderType)) {
+      setError(
+        "This campaign type is not stored in the database yet. Choose Percentage or Fixed amount, or Shipping/Seasonal (saved as percentage).",
+      );
+      return;
+    }
+
+    let expiresAtIso: string | undefined;
+    if (expiry?.trim()) {
+      const d = new Date(expiry);
+      if (Number.isNaN(d.getTime())) {
+        setError("Invalid expiry date");
+        return;
+      }
+      expiresAtIso = d.toISOString();
+    }
+
+    const apiType = builderType === "fixed" ? "fixed" : "percent";
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue) || numericValue <= 0) {
+      setError("Enter a valid positive value");
+      return;
+    }
+    if (apiType === "percent" && numericValue > 100) {
+      setError("Percentage cannot exceed 100");
+      return;
+    }
+
+    const payload: Record<string, unknown> = {
+      code: code.trim(),
+      type: apiType,
+      value: numericValue,
       active: true,
-      max_uses: maxUses ? Number(maxUses) : null,
-      valid_until: expiry || null,
-      min_order: Number(minOrder) || 0,
-      campaign_tag: campaignTag,
-      rule_mode: ruleMode,
-      rules: selectedRules,
+      min_order_amount_egp: Number(minOrder) || 0,
     };
+    if (maxUses.trim()) {
+      const mu = Number(maxUses);
+      if (Number.isFinite(mu) && mu >= 1) payload.max_uses = mu;
+    }
+    if (expiresAtIso) payload.expires_at = expiresAtIso;
 
     const res = await fetch("/api/admin/discounts", {
       method: "POST",

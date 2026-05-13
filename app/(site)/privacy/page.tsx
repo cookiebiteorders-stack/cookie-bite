@@ -29,7 +29,7 @@ export default function PrivacyPage() {
           className="text-left"
           eyebrow="Legal"
           title="Privacy policy"
-          subtitle="Summary placeholder — replace with counsel-approved text before launch."
+          subtitle="بياناتك وطلباتك — ممارسات جمع البيانات والدفع (نسخة أولية؛ راجع مع مستشارك القانوني عند التوسع)."
         />
         <div className="mt-10 space-y-6 text-sm leading-relaxed text-cb-text">
           <p>
@@ -43,8 +43,12 @@ export default function PrivacyPage() {
             for marketing messages.
           </p>
           <p className="rounded-2xl bg-cb-peach/60 p-4 text-cb-text-strong">
-            <strong>Note:</strong> Publish a full privacy policy with your legal advisor before
-            going live. This stub satisfies navigation and SEO structure from the master spec.
+            <strong>Privacy / الخصوصية:</strong> We collect data needed to fulfill orders and
+            accounts (name, phone, address, email when provided). Authentication may use Clerk;
+            profiles and orders may be stored in Supabase with access controls. We do not sell
+            your personal data. You may request access or correction by contacting us via the
+            site. Card payments are handled by Paymob; we do not store full card numbers.
+            Marketing emails are opt-out where applicable.
           </p>
         </div>
       </div>

@@ -141,6 +141,9 @@ export function MobileHeader() {
                 type="button"
                 className="mobile-header__icon-btn"
                 aria-label={t("mobileHeader.filter")}
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("cookiebite:openShopFilters"));
+                }}
               >
                 <SlidersHorizontal className="h-5 w-5" aria-hidden />
               </button>
