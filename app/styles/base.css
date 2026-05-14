@@ -118,41 +118,43 @@ textarea,
   cursor: text;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  color: var(--cb-text-strong);
-}
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--cb-text-strong);
+  }
 
-p,
-span,
-label,
-li,
-dt,
-dd,
-th,
-td {
-  color: inherit;
-}
+  p,
+  span,
+  label,
+  li,
+  dt,
+  dd,
+  th,
+  td {
+    color: inherit;
+  }
 
-small,
-.text-muted,
-[data-muted="true"] {
-  color: var(--cb-text-muted);
-}
+  small,
+  .text-muted,
+  [data-muted="true"] {
+    color: var(--cb-text-muted);
+  }
 
-a {
-  color: color-mix(in oklab, var(--cb-terracotta-dark) 88%, var(--cb-text-strong));
-  text-underline-offset: 3px;
-  text-decoration-thickness: 1.5px;
-}
+  a {
+    color: color-mix(in oklab, var(--cb-terracotta-dark) 88%, var(--cb-text-strong));
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+  }
 
-a:hover {
-  color: var(--cb-terracotta-dark);
-  text-decoration: underline;
+  a:hover {
+    color: var(--cb-terracotta-dark);
+    text-decoration: underline;
+  }
 }
 
 input::placeholder,
