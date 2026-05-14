@@ -61,7 +61,7 @@ export function RedeemPointsCard({ points }: Props) {
   }
 
   return (
-    <div className="mt-5 rounded-2xl bg-cb-cream p-4 ring-1 ring-cb-border">
+    <div className="mt-5 rounded-2xl bg-cb-cream p-4 text-cb-text-strong ring-1 ring-cb-border">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-cb-text-strong">

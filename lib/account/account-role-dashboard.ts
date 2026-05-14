@@ -72,7 +72,7 @@ export const ACCOUNT_ROLE_DASHBOARD_COPY: Record<UserRole, AccountRoleDashboardC
 export function accountRoleBadgeClass(role: UserRole): string {
   switch (role) {
     case "owner":
-      return "bg-amber-600 text-white ring-1 ring-amber-800/40";
+      return "bg-amber-600 text-[rgb(255,255,240)] ring-1 ring-amber-800/40";
     case "admin":
       return "bg-cb-terracotta-dark text-white";
     case "staff":

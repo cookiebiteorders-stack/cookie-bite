@@ -5,7 +5,7 @@ export type ButtonVariant = "primary" | "outline" | "ghost" | "subtle";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-[var(--cb-btn-primary-bg)] text-[var(--cb-btn-primary-text)] shadow-sm hover:brightness-110 active:brightness-95",
+    "bg-[var(--cb-btn-primary-bg)] text-white no-underline shadow-sm hover:brightness-110 hover:text-white active:brightness-95",
   outline:
     "border-2 border-cb-border text-cb-text-strong bg-transparent hover:bg-cb-surface-2 hover:border-cb-border-strong hover:text-cb-text-strong",
   ghost:
