@@ -70,7 +70,7 @@ export function NewsletterBanner() {
                 <Mail className="h-6 w-6" aria-hidden />
               </span>
               <div>
-                <h2 className="font-serif text-2xl font-semibold leading-tight sm:text-3xl">
+                <h2 className="font-serif text-2xl font-semibold leading-tight text-white sm:text-3xl">
                   {t("newsletter.title")}
                 </h2>
                 <p className="mt-3 text-sm leading-relaxed text-white/85 sm:text-base">

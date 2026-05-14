@@ -25,9 +25,7 @@ export function InstagramGrid() {
             title={
               <span>
                 {t("instagram.titleBefore")}
-                <span className="text-cb-terracotta-dark dark:text-cb-terracotta">
-                  {SITE.handle}
-                </span>
+                <span className="text-[var(--caramel)]">{SITE.handle}</span>
               </span>
             }
             subtitle={t("instagram.subtitle")}

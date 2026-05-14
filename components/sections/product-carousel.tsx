@@ -133,7 +133,7 @@ export function ProductCarousel() {
               href="/shop"
               className={buttonClassName(
                 "primary",
-                "mt-8 justify-center cb-shadow-editorial-hover",
+                "mt-8 justify-center text-white visited:text-white hover:text-white active:text-white cb-shadow-editorial-hover",
               )}
             >
               {t("carousel.cta")}
