@@ -29,7 +29,7 @@ export function SiteLogoLink({ showTagline = true, className }: Props) {
         sizes="(max-width: 640px) 52vw, 240px"
       />
       {showTagline ? (
-        <span className="hidden text-[11px] leading-tight text-cb-text-muted sm:block">
+        <span className="hidden text-[11px] leading-tight text-white sm:block">
           {SITE.tagline}
         </span>
       ) : null}
