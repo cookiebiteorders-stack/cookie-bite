@@ -27,8 +27,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "supabase/functions/**"]
+  "exclude": ["node_modules", "supabase/functions/**", ".next/types/validator.ts"]
 }
