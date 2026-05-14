@@ -2,15 +2,15 @@
    Cookie Bite — ألوان دافئة ومبهجة · فرحة وهوية العلامة
    ============================================================ */
 :root {
-  /* Accessibility-first semantic tokens (WCAG-oriented) */
-  --bg-main: #fff7ed;
-  --bg-card: #ffffff;
-  --bg-hover: #fff1e6;
-  --text-primary: #2b1a13;
-  --text-secondary: #594a3f;
-  --text-muted: #7a695b;
-  --border-subtle: #e7ddd4;
-  --focus-ring: #f97316;
+  /* Accessibility-first semantic tokens — محاذاة مع تصدير Cookie Bite (فاتح / داكن) */
+  --bg-main: #fdfbf7;
+  --bg-card: #f8f4ee;
+  --bg-hover: #f1e9da;
+  --text-primary: #4a3b33;
+  --text-secondary: #57534e;
+  --text-muted: #78716c;
+  --border-subtle: #e4d9bc;
+  --focus-ring: #b45309;
 
   /* Master palette — Cookie Bite · ألوان أغنى وأوضح */
   --cream: #fff2e6;
@@ -21,22 +21,22 @@
   --brown: #3d2418;
   --dark: #1c0e06;
 
-  /* Surfaces — كريم دافئ + خوخ ووردي أوضح */
+  /* Surfaces — كريم دافئ + خوخ (تصدير shadcn) */
   --cb-cream: var(--bg-main);
-  --cb-cream-2: #fef3e7;
-  --cb-peach: #fde8d8;
-  --cb-peach-deep: #f3d2b8;
+  --cb-cream-2: #f8f4ee;
+  --cb-peach: #f2daba;
+  --cb-peach-deep: #e4c090;
   --cb-pink: var(--pink);
   --cb-surface: var(--bg-card);
-  --cb-surface-2: #fff4ea;
-  --cb-surface-elevated: var(--bg-card);
+  --cb-surface-2: #f1e9da;
+  --cb-surface-elevated: #fdfbf7;
 
-  /* Brand / CTAs — برتقالي ووردي أنشط */
+  /* Brand / CTAs — كهرماني من primary التصدير (#B45309) */
   --cb-caramel: var(--caramel);
   --cb-gold: var(--gold);
-  --cb-terracotta: #f47a2a;
-  --cb-terracotta-dark: #e86b1c;
-  --cb-brand-logo: #ea580c;
+  --cb-terracotta: #d97706;
+  --cb-terracotta-dark: #b45309;
+  --cb-brand-logo: #b45309;
   --cb-terracotta-soft: #ffc8a8;
   --cb-accent: #ff4d8d;
   --cb-accent-glow: rgba(255, 90, 45, 0.38);
@@ -68,29 +68,30 @@
     0 8px 24px -6px rgba(255, 126, 176, 0.16);
   --shadow-glow-warm: 0 0 0 1px rgba(255, 120, 60, 0.28),
     0 28px 96px -24px rgba(255, 126, 176, 0.42);
-  --cb-nav-blur: rgba(255, 247, 237, 0.9);
-  --cb-nav-blur-scrolled: rgba(255, 252, 246, 0.95);
-  --cb-nav-border: rgba(231, 221, 212, 0.72);
-  --cb-nav-border-scrolled: rgba(214, 201, 191, 0.88);
+  --cb-nav-blur: rgba(253, 251, 247, 0.92);
+  --cb-nav-blur-scrolled: rgba(253, 251, 247, 0.96);
+  --cb-nav-border: rgba(228, 217, 188, 0.75);
+  --cb-nav-border-scrolled: rgba(212, 199, 176, 0.88);
   --cb-glass: rgba(255, 255, 255, 0.9);
   --cb-glass-border: rgba(255, 120, 70, 0.32);
 
   --cb-scrim-strong: rgba(28, 14, 6, 0.58);
   --cb-scrim-soft: rgba(28, 14, 6, 0.3);
 
-  /* خلفية الصفحة = نفس سطح الهوية الفاتح؛ النص عبر --foreground / --cb-text (داكن على فاتح) */
+  /* خلفية الصفحة = نفس سطح الهوية الفاتح؛ النص الأساسي = --text-primary */
   --background: var(--bg-main);
-  --foreground: var(--cb-text);
+  --foreground: var(--text-primary);
 
   /* أسماء دلالية موحّدة (متجر + لوحة الإدارة) */
   --card: var(--cb-surface);
   --primary: var(--cb-terracotta-dark);
-  --secondary: var(--cb-peach);
-  --muted: var(--cb-text-muted);
+  --secondary: var(--cb-peach-deep);
+  --muted: #f1e9da;
   --border: var(--cb-border);
   --shadow: var(--shadow-card);
   --motion-duration: 0.4s;
   --blur-strength: 8px;
+  --radius: 0.3rem;
 
   /* حالات — ألوان مرحة وواضحة */
   --cb-success: #2eb87a;
@@ -116,8 +117,41 @@
   --cb-social-bg: #ffc8a8;
 
   /* Button contrast tokens — نص فاتح على خلفية برتقالية داكنة (CTA) */
-  --cb-btn-primary-bg: #f97316;
+  --cb-btn-primary-bg: #b45309;
   --cb-btn-primary-text: #ffffff;
+
+  /* توكنات shadcn / مخططات — للمكوّنات والرسوم لاحقاً */
+  --ring: #b45309;
+  --input: #e4d9bc;
+  --popover: #f8f4ee;
+  --popover-foreground: #4a3b33;
+  --accent: #f2daba;
+  --accent-foreground: #57534e;
+  --muted-foreground: #78716c;
+  --primary-foreground: #ffffff;
+  --secondary-foreground: #57534e;
+  --card-foreground: #4a3b33;
+  --destructive: #991b1b;
+  --destructive-foreground: #ffffff;
+  --chart-1: #b45309;
+  --chart-2: #78716c;
+  --chart-3: #a16207;
+  --chart-4: #78716c;
+  --chart-5: #ca8a04;
+  --sidebar: #f1e9da;
+  --sidebar-foreground: #4a3b33;
+  --sidebar-primary: #b45309;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #a16207;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #e4d9bc;
+  --sidebar-ring: #b45309;
+  --shadow-blur: 3px;
+  --shadow-color: hsl(28 18% 25%);
+  --shadow-spread: 0px;
+  --shadow-opacity: 0.18;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 2px;
 
   /* تخطيط متجاوب — هوامش آمنة + مسافات مرنة */
   --cb-section-x: clamp(0.75rem, 2.8vw, 1.5rem);
@@ -142,25 +176,25 @@
     --cb-section-x: clamp(1.5rem, 2vw, 2.25rem);
   }
 }
-/* وضع داكن — دافئ ومبهج (كاكاو + برتقالي ناري) */
+/* وضع داكن — stone + برتقالي (محاذاة تصدير Cookie Bite) */
 .dark {
-  --bg-main: #221208;
-  --bg-card: #321a0e;
-  --bg-hover: rgba(255, 140, 66, 0.16);
-  --text-primary: #f8eee3;
-  --text-secondary: #e7cfb6;
-  --text-muted: #cda889;
-  --border-subtle: #5c3824;
-  --focus-ring: #ff8c42;
+  --bg-main: #1c1917;
+  --bg-card: #292524;
+  --bg-hover: rgba(249, 115, 22, 0.12);
+  --text-primary: #f5f5f4;
+  --text-secondary: #e7e5e4;
+  --text-muted: #a8a29e;
+  --border-subtle: #44403c;
+  --focus-ring: #f97316;
 
   --cb-cream: var(--bg-main);
-  --cb-cream-2: #1a0c06;
-  --cb-peach: #2a160c;
-  --cb-peach-deep: #1f1008;
+  --cb-cream-2: #1c1917;
+  --cb-peach: #292524;
+  --cb-peach-deep: #57534e;
   --cb-pink: #7a3550;
   --cb-surface: var(--bg-card);
-  --cb-surface-2: #1a0c06;
-  --cb-surface-elevated: #422010;
+  --cb-surface-2: #292524;
+  --cb-surface-elevated: #44403c;
   --cb-mint: #4ade9a;
 
   --cb-text-strong: var(--text-primary);
@@ -169,76 +203,104 @@
   --cb-text-placeholder: var(--text-muted);
   --cb-muted: var(--cb-text-muted);
 
-  --cb-terracotta: #ff8c42;
-  --cb-terracotta-dark: #ff8c42;
-  --cb-brand-logo: #ff8c42;
-  --cb-terracotta-soft: #ff9f6a;
+  --cb-terracotta: #f97316;
+  --cb-terracotta-dark: #f97316;
+  --cb-brand-logo: #f97316;
+  --cb-terracotta-soft: #fb923c;
   --cb-accent: #ff7eb8;
-  --cb-accent-glow: rgba(255, 120, 80, 0.42);
+  --cb-accent-glow: rgba(249, 115, 22, 0.35);
 
   --cb-border: var(--border-subtle);
-  --cb-border-strong: #7a4830;
+  --cb-border-strong: #57534e;
   --cb-focus: var(--focus-ring);
-  --cb-hover-overlay: rgba(255, 140, 66, 0.16);
+  --cb-hover-overlay: rgba(249, 115, 22, 0.14);
 
-  --shadow-card: 0 12px 44px rgba(0, 0, 0, 0.48),
-    0 0 0 1px rgba(255, 120, 80, 0.1);
-  --shadow-hover: 0 22px 60px rgba(0, 0, 0, 0.55),
-    0 0 28px rgba(255, 130, 90, 0.18);
-  --shadow-editorial: 0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 16px 52px -8px rgba(0, 0, 0, 0.48),
-    0 0 0 1px rgba(255, 120, 80, 0.12);
-  --shadow-editorial-hover: 0 1px 0 rgba(255, 255, 255, 0.1) inset,
-    0 26px 68px -10px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 130, 90, 0.2);
-  --shadow-glow-warm: 0 0 0 1px rgba(255, 120, 80, 0.35),
-    0 28px 100px -28px rgba(255, 120, 160, 0.28);
-  --cb-nav-blur: rgba(34, 18, 8, 0.9);
-  --cb-nav-blur-scrolled: rgba(26, 12, 6, 0.94);
-  --cb-nav-border: rgba(92, 56, 36, 0.42);
-  --cb-nav-border-scrolled: rgba(122, 72, 48, 0.76);
-  --cb-glass: rgba(50, 26, 14, 0.65);
-  --cb-glass-border: rgba(255, 140, 66, 0.28);
+  --shadow-card: 0 12px 44px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(249, 115, 22, 0.08);
+  --shadow-hover: 0 22px 60px rgba(0, 0, 0, 0.5),
+    0 0 28px rgba(249, 115, 22, 0.15);
+  --shadow-editorial: 0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 16px 52px -8px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(249, 115, 22, 0.1);
+  --shadow-editorial-hover: 0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 26px 68px -10px rgba(0, 0, 0, 0.52),
+    0 0 0 1px rgba(249, 115, 22, 0.16);
+  --shadow-glow-warm: 0 0 0 1px rgba(249, 115, 22, 0.28),
+    0 28px 100px -28px rgba(14, 165, 233, 0.12);
+  --cb-nav-blur: rgba(28, 25, 23, 0.92);
+  --cb-nav-blur-scrolled: rgba(28, 25, 23, 0.96);
+  --cb-nav-border: rgba(68, 64, 60, 0.55);
+  --cb-nav-border-scrolled: rgba(87, 83, 78, 0.72);
+  --cb-glass: rgba(41, 37, 36, 0.72);
+  --cb-glass-border: rgba(249, 115, 22, 0.22);
 
-  --cb-scrim-strong: rgba(8, 4, 2, 0.78);
-  --cb-scrim-soft: rgba(8, 4, 2, 0.5);
+  --cb-scrim-strong: rgba(12, 10, 9, 0.78);
+  --cb-scrim-soft: rgba(12, 10, 9, 0.48);
 
-  /* خلفية الصفحة داكنة؛ النص الفاتح للقراءة على الكاكاو */
+  /* خلفية الصفحة داكنة؛ النص الفاتح */
   --background: var(--cb-cream);
   --foreground: var(--text-primary);
 
   --card: var(--cb-surface);
   --primary: var(--cb-terracotta-dark);
-  --secondary: var(--cb-peach);
-  --muted: var(--cb-text-muted);
+  --secondary: var(--cb-peach-deep);
+  --muted: #292524;
   --border: var(--cb-border);
   --shadow: var(--shadow-card);
   --motion-duration: 0.4s;
   --blur-strength: 6px;
+  --radius: 0.3rem;
 
   --cb-success: #4ade9a;
   --cb-success-bg: #0f3d28;
-  --cb-warning: #ffb020;
+  --cb-warning: #eab308;
   --cb-warning-bg: #3d2808;
   --cb-danger: #fb7185;
-  --cb-info: #5cd4f8;
-  --cb-info-bg: #0a2838;
+  --cb-info: #0ea5e9;
+  --cb-info-bg: #0c2a4d;
 
   --cb-ribbon: #4ade9a;
   --cb-ribbon-dark: #22c55e;
   --cb-rose: #ff7eb8;
-  --cb-chocolate: #140804;
-  --cb-star: #ffc933;
-  --cb-star-empty: #6c4838;
+  --cb-chocolate: #0c0a09;
+  --cb-star: #eab308;
+  --cb-star-empty: #57534e;
   --cb-heart: #ff8a9a;
-  --cb-heart-active: #ff9338;
-  --cb-progress-fill: #ff9338;
-  --cb-progress-track: #3d180c;
-  --cb-footer-bg: #160805;
-  --cb-social-bg: #3d180c;
+  --cb-heart-active: #f97316;
+  --cb-progress-fill: #f97316;
+  --cb-progress-track: #44403c;
+  --cb-footer-bg: #1c1917;
+  --cb-social-bg: #292524;
 
-  --cb-btn-primary-bg: #ff8c42;
+  --cb-btn-primary-bg: #f97316;
   --cb-btn-primary-text: #ffffff;
+
+  --ring: #f97316;
+  --input: #44403c;
+  --popover: #292524;
+  --popover-foreground: #f5f5f4;
+  --accent: #1e4252;
+  --accent-foreground: #e7e5e4;
+  --muted-foreground: #a8a29e;
+  --primary-foreground: #ffffff;
+  --secondary-foreground: #e7e5e4;
+  --card-foreground: #f5f5f4;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --chart-1: #f97316;
+  --chart-2: #0ea5e9;
+  --chart-3: #eab308;
+  --chart-4: #a8a29e;
+  --chart-5: #78716c;
+  --sidebar: #292524;
+  --sidebar-foreground: #f5f5f4;
+  --sidebar-primary: #f97316;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #0ea5e9;
+  --sidebar-accent-foreground: #0c2a4d;
+  --sidebar-border: #44403c;
+  --sidebar-ring: #f97316;
+  --shadow-color: hsl(0 0% 5%);
 }
 
 /* stylelint-disable-next-line at-rule-no-unknown */
@@ -295,6 +357,18 @@
   --color-cb-scrim-strong: var(--cb-scrim-strong);
   --color-cb-scrim-soft: var(--cb-scrim-soft);
   --color-cb-hover-overlay: var(--cb-hover-overlay);
+  --color-card: var(--card);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-popover: var(--popover);
+  --radius-lg: var(--radius);
   --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
   --font-ar: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;

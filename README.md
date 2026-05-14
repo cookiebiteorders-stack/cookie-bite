@@ -40,6 +40,10 @@ The project is configured with:
    - `COOKIE_BITE_PRIMARY_DOMAIN=cookie-bite.com`
 5. Point the domain DNS to Hostinger deployment and enable SSL.
 
+## Documentation
+
+- **[Full site reference (AR)](docs/WEBSITE_COMPLETE_REFERENCE.md)** — pages, API routes, database, security, env vars, and architecture.
+
 ## External Dashboard Settings (Must Match Production Domain)
 
 - Clerk: add `https://cookie-bite.com` as the primary/allowed domain.
