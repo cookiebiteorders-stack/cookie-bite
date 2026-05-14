@@ -51,6 +51,3 @@ hostinger-deploy.zip
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# Cursor (local agent plans)
-.cursor/plans/
