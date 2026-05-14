@@ -65,7 +65,7 @@ export function HeroSection5() {
               transition={{ delay: 0.08, duration: 0.7, ease: soft }}
               className="inline-flex rotate-[-0.8deg] flex-col gap-1"
             >
-              <span className="text-[max(10px,0.65rem)] font-bold uppercase tracking-[0.22em] text-white sm:tracking-[0.28em]">
+              <span className="text-[max(10px,0.65rem)] font-bold uppercase tracking-[0.22em] text-white! sm:tracking-[0.28em]">
                 {t("hero.kicker")}
               </span>
               <span className="font-playful text-[clamp(1rem,3.5vw,1.35rem)] text-[var(--caramel)] md:text-xl">
@@ -77,10 +77,10 @@ export function HeroSection5() {
               initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.18, duration: 0.75, ease: soft }}
-              className="mt-6 max-w-[min(100%,22rem)] text-balance font-serif text-[length:var(--fluid-display)] font-semibold leading-[1.06] text-white [text-shadow:0_1px_12px_rgba(0,0,0,0.24)] sm:mt-7 sm:max-w-3xl lg:mt-12"
+              className="mt-6 max-w-[min(100%,22rem)] text-balance font-serif text-[length:var(--fluid-display)] font-semibold leading-[1.06] text-white! [text-shadow:0_1px_12px_rgba(0,0,0,0.24)] sm:mt-7 sm:max-w-3xl lg:mt-12"
             >
               {t("hero.titleBefore")}
-              <span className="italic text-[var(--caramel)]">
+              <span className="italic text-[var(--caramel)]!">
                 {t("hero.titleAccent")}
               </span>
               {t("hero.titleComma")}
@@ -94,7 +94,7 @@ export function HeroSection5() {
               initial={{ opacity: 0, y: 22 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.32, duration: 0.72, ease: soft }}
-              className="mt-6 max-w-xl text-pretty text-[length:var(--fluid-body)] font-medium leading-relaxed text-white sm:mt-7 sm:text-lg lg:max-w-lg"
+              className="mt-6 max-w-xl text-pretty text-[length:var(--fluid-body)] font-medium leading-relaxed text-white! sm:mt-7 sm:text-lg lg:max-w-lg"
             >
               {t("hero.body")}
             </motion.p>
@@ -109,13 +109,13 @@ export function HeroSection5() {
                 href="/shop"
                 className={buttonClassName(
                   "primary",
-                  "cb-touch-manipulation min-h-[3rem] w-full justify-center rounded-full px-7 py-3 text-base text-white visited:text-white hover:text-white active:text-white sm:w-auto cb-shadow-editorial-hover",
+                  "cb-touch-manipulation min-h-[3rem] w-full justify-center rounded-full px-7 py-3 text-base text-white! visited:text-white! hover:text-white! active:text-white! sm:w-auto cb-shadow-editorial-hover",
                 )}
               >
-                <span className="text-center text-white visited:text-white hover:text-white sm:text-nowrap">
+                <span className="text-center text-white! visited:text-white! hover:text-white! sm:text-nowrap">
                   {t("hero.ctaShop")}
                 </span>
-                <ChevronRight className="ms-0.5 h-5 w-5 shrink-0 text-white rtl:rotate-180" aria-hidden />
+                <ChevronRight className="ms-0.5 h-5 w-5 shrink-0 text-white! rtl:rotate-180" aria-hidden />
               </Link>
               <Link
                 href="/gift-box"
