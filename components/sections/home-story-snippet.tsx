@@ -64,7 +64,7 @@ export function HomeStorySnippet() {
             <ViewReveal variant="slide-left" delay={0.1}>
               <h2 className="max-w-xl font-serif text-[2.1rem] font-semibold leading-[1.08] text-cb-text-strong sm:text-4xl lg:text-[2.65rem]">
                 {t("homeStory.titleMain")}
-                <span className="mt-2 block text-[1.65rem] font-normal italic text-cb-terracotta-dark sm:text-3xl dark:text-cb-terracotta">
+                <span className="mt-2 block w-full text-[1.65rem] font-normal italic text-cb-terracotta-dark sm:text-3xl dark:text-cb-terracotta">
                   {t("homeStory.titleItalic")}
                 </span>
               </h2>
