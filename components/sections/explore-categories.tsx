@@ -94,14 +94,17 @@ export function ExploreCategories() {
                           </p>
                         </div>
                         <motion.span
-                          className="flex h-11 w-11 shrink-0 rotate-3 items-center justify-center rounded-xl border border-white/35 bg-white/95 text-cb-terracotta-dark shadow-md dark:bg-cb-surface-elevated/95 dark:text-cb-terracotta"
+                          className="flex h-11 w-11 shrink-0 rotate-3 items-center justify-center rounded-xl border border-white/35 bg-white/95 shadow-md dark:bg-cb-surface-elevated/95"
                           whileHover={{ rotate: 0, scale: 1.06 }}
                           transition={{
                             duration: duration.short,
                             ease: easeSoft,
                           }}
                         >
-                          <ArrowUpRight className="h-5 w-5" aria-hidden />
+                          <ArrowUpRight
+                            className="h-5 w-5 text-[var(--caramel)]"
+                            aria-hidden
+                          />
                         </motion.span>
                       </div>
                     </div>
