@@ -56,5 +56,9 @@ export type FinancialSummaryResponse = {
   expenses_by_category: Record<string, number>;
   expenses: ExpenseRow[];
   ledger: LedgerEntry[];
-  meta: { fetched_at: string };
+  meta: {
+    fetched_at: string;
+    /** تحذيرات تشغيل (مثلاً جدول expenses غير متوفر أو أعمدة قديمة) */
+    warnings?: string[];
+  };
 };

@@ -30,8 +30,9 @@ export function buildFinancialPayload(params: {
   expenses: ExpenseRow[];
   compare: boolean;
   prevBlock?: FinancialComparisonBlock | null;
+  metaWarnings?: string[];
 }): FinancialSummaryResponse {
-  const { preset, from, to, ordersPaid, expenses, compare, prevBlock } = params;
+  const { preset, from, to, ordersPaid, expenses, compare, prevBlock, metaWarnings } = params;
 
   const revenueByDay = new Map<string, number>();
   for (const o of ordersPaid) {
@@ -131,7 +132,10 @@ export function buildFinancialPayload(params: {
     expenses_by_category: byCategory,
     expenses,
     ledger: ledger.slice(0, 400),
-    meta: { fetched_at: new Date().toISOString() },
+    meta: {
+      fetched_at: new Date().toISOString(),
+      ...(metaWarnings && metaWarnings.length > 0 ? { warnings: metaWarnings } : {}),
+    },
   };
 }
 

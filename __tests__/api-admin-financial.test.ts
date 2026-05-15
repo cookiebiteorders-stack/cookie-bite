@@ -77,9 +77,11 @@ describe("api/admin/financial/summary", () => {
         notes: null,
       },
     ]);
-    (supabaseMock.from as jest.Mock)
-      .mockReturnValueOnce(ordersChain)
-      .mockReturnValueOnce(expensesChain);
+    (supabaseMock.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "orders") return ordersChain;
+      if (table === "expenses") return expensesChain;
+      return ordersChain;
+    });
 
     const req = new NextRequest(
       "http://localhost/api/admin/financial/summary?preset=custom&from=2026-01-01&to=2026-01-31",

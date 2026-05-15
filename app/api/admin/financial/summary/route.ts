@@ -17,6 +17,11 @@ import {
   type OrderPaidRow,
 } from "@/lib/financial/build-financial-payload";
 import type { ExpenseRow, FinancialSummaryResponse } from "@/lib/financial/types";
+import {
+  fetchFinancialExpenses,
+  fetchFinancialOrders,
+  normalizeExpenseRow,
+} from "@/lib/financial/fetch-financial-data";
 
 const expenseSchema = z.object({
   title: z.string().min(2).max(200),
@@ -26,28 +31,23 @@ const expenseSchema = z.object({
   notes: z.string().max(1000).optional(),
 });
 
-type RawExpense = Record<string, unknown>;
-
-function num(v: unknown): number {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function normalizeExpense(raw: RawExpense): ExpenseRow {
-  return {
-    id: String(raw.id ?? ""),
-    title: String(raw.title ?? ""),
-    category: String(raw.category ?? "operations"),
-    amount_egp: num(raw.amount_egp),
-    expense_date: String(raw.expense_date ?? "").slice(0, 10),
-    notes: raw.notes == null || raw.notes === "" ? null : String(raw.notes),
-    created_at: raw.created_at == null ? undefined : String(raw.created_at),
-  };
-}
-
 export async function GET(req: NextRequest) {
   await requireAdminAccess("financial");
-  const supabase = createSupabaseAdminClient();
+
+  let supabase: ReturnType<typeof createSupabaseAdminClient>;
+  try {
+    supabase = createSupabaseAdminClient();
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return NextResponse.json(
+      {
+        ...bilingualError("Could not load financial summary", "تعذر تحميل الملخص المالي"),
+        details: message,
+        ...(process.env.NODE_ENV === "development" ? { debug: { message } } : {}),
+      },
+      { status: 503 },
+    );
+  }
 
   const { preset, from, to } = parseFinancialRange(req.nextUrl.searchParams);
   const compare = req.nextUrl.searchParams.get("compare") === "1";
@@ -57,73 +57,48 @@ export async function GET(req: NextRequest) {
   const fromDateStr = formatISO(from, { representation: "date" });
   const toDateStr = formatISO(to, { representation: "date" });
 
-  const [ordersRes, expensesRes] = await Promise.all([
-    supabase
-      .from("orders")
-      .select("total_egp,created_at,payment_status")
-      .gte("created_at", fromIso)
-      .lte("created_at", toIso)
-      .order("created_at", { ascending: false })
-      .limit(20_000),
-    supabase
-      .from("expenses")
-      .select("*")
-      .gte("expense_date", fromDateStr)
-      .lte("expense_date", toDateStr)
-      .order("expense_date", { ascending: false })
-      .limit(10_000),
-  ]);
+  const metaWarnings: string[] = [];
+  let ordersPaid: OrderPaidRow[];
+  let expenses: ExpenseRow[];
 
-  if (ordersRes.error) {
-    console.error("[financial/summary] orders", ordersRes.error);
+  try {
+    const [ordersBundle, expenseBundle] = await Promise.all([
+      fetchFinancialOrders(supabase, fromIso, toIso),
+      fetchFinancialExpenses(supabase, fromDateStr, toDateStr),
+    ]);
+    ordersPaid = ordersBundle.rows;
+    expenses = expenseBundle.rows;
+    metaWarnings.push(...ordersBundle.warnings, ...expenseBundle.warnings);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("[financial/summary] fetch:", message);
     const body: Record<string, unknown> = {
       ...bilingualError("Could not load financial summary", "تعذر تحميل الملخص المالي"),
+      details: message,
     };
     if (process.env.NODE_ENV === "development") {
-      body.debug = { message: ordersRes.error.message, code: ordersRes.error.code };
+      body.debug = { message };
     }
     return NextResponse.json(body, { status: 500 });
   }
-
-  if (expensesRes.error) {
-    console.error("[financial/summary] expenses", expensesRes.error);
-    const body: Record<string, unknown> = {
-      ...bilingualError("Could not load financial summary", "تعذر تحميل الملخص المالي"),
-    };
-    if (process.env.NODE_ENV === "development") {
-      body.debug = { message: expensesRes.error.message, code: expensesRes.error.code };
-    }
-    return NextResponse.json(body, { status: 500 });
-  }
-
-  const ordersPaid = ((ordersRes.data as unknown) as OrderPaidRow[] | null) ?? [];
-  const expensesRaw = ((expensesRes.data as unknown) as RawExpense[] | null) ?? [];
-  const expenses = expensesRaw.map((r) => normalizeExpense(r));
 
   let prevBlock = null as FinancialSummaryResponse["comparison"];
   if (compare) {
     const prev = previousPeriod(from, to);
-    const [oPrev, ePrev] = await Promise.all([
-      supabase
-        .from("orders")
-        .select("total_egp,created_at,payment_status")
-        .gte("created_at", prev.from.toISOString())
-        .lte("created_at", prev.to.toISOString())
-        .limit(20_000),
-      supabase
-        .from("expenses")
-        .select("*")
-        .gte("expense_date", formatISO(prev.from, { representation: "date" }))
-        .lte("expense_date", formatISO(prev.to, { representation: "date" }))
-        .limit(10_000),
-    ]);
-    if (!oPrev.error && !ePrev.error) {
-      const op = ((oPrev.data as unknown) as OrderPaidRow[] | null) ?? [];
-      const ep = ((ePrev.data as unknown) as RawExpense[] | null) ?? [];
-      const expPrev = ep.map((r) => normalizeExpense(r));
+    const pf = formatISO(prev.from, { representation: "date" });
+    const pt = formatISO(prev.to, { representation: "date" });
+    try {
+      const [oPrev, ePrev] = await Promise.all([
+        fetchFinancialOrders(supabase, prev.from.toISOString(), prev.to.toISOString()),
+        fetchFinancialExpenses(supabase, pf, pt),
+      ]);
+      const op = oPrev.rows;
+      const expPrev = ePrev.rows;
       const revP = summarizeOrdersForRange(op, prev.from, prev.to).revenue;
       const expP = summarizeExpensesForRange(expPrev, prev.from, prev.to);
       prevBlock = buildComparisonBlock(prev.label, revP, expP);
+    } catch {
+      /* مقارنة الفترة السابقة اختيارية — لا تُفشل الصفحة */
     }
   }
 
@@ -135,6 +110,7 @@ export async function GET(req: NextRequest) {
     expenses,
     compare,
     prevBlock,
+    metaWarnings,
   });
 
   return NextResponse.json(payload);
