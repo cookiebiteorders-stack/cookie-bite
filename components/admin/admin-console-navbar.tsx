@@ -87,7 +87,6 @@ export function AdminConsoleNavbar({ role, navItems }: AdminConsoleNavbarProps) 
           <LanguageToggle />
           <ThemeToggle />
           <UserButton
-            afterSignOutUrl="/"
             appearance={{
               elements: {
                 avatarBox: "h-9 w-9 ring-2 ring-cb-border/80",

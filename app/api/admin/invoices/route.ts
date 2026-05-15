@@ -65,6 +65,34 @@ function toIsoBoundaryEnd(date: string | null): string | null {
   return Number.isNaN(v.getTime()) ? null : v.toISOString();
 }
 
+type UserLookupRow = { full_name: string | null; email: string | null };
+
+/** PostgREST يتطلب FK من orders.user_id → users.id لـ `users:user_id (...)`؛ نجلب المستخدمين منفصلاً لتفادي أخطاء schema cache. */
+async function fetchUserLookupByIds(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  userIds: string[],
+): Promise<Map<string, UserLookupRow>> {
+  const map = new Map<string, UserLookupRow>();
+  const unique = [...new Set(userIds.filter(Boolean))];
+  if (unique.length === 0) return map;
+
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, full_name, email")
+    .in("id", unique);
+
+  if (error) {
+    console.error("[api/admin/invoices] users lookup:", error.message);
+    return map;
+  }
+
+  for (const row of data ?? []) {
+    const r = row as { id: string; full_name: string | null; email: string | null };
+    map.set(String(r.id), { full_name: r.full_name ?? null, email: r.email ?? null });
+  }
+  return map;
+}
+
 export async function GET(request: NextRequest) {
   const actor = await requireAdminAccess("invoices");
   const supabase = createSupabaseAdminClient();
@@ -84,7 +112,7 @@ export async function GET(request: NextRequest) {
 
   const debug: Record<string, unknown> = {
     source: "invoices",
-    query: "invoices + orders + users + payments",
+    query: "invoices + orders + order_items + payments; users batched",
   };
 
   let invoiceRows: InvoiceApiRow[] = [];
@@ -111,11 +139,6 @@ export async function GET(request: NextRequest) {
           product_name,
           quantity,
           unit_price_egp
-        ),
-        users:user_id (
-          id,
-          full_name,
-          email
         )
       ),
       payments (
@@ -135,9 +158,25 @@ export async function GET(request: NextRequest) {
 
   if (!invoicesError) {
     total = invoicesCount ?? 0;
-    invoiceRows = (invoicesData ?? []).map((row: Record<string, unknown>) => {
-      const order = (row.orders as Record<string, unknown> | null) ?? null;
-      const user = (order?.users as Record<string, unknown> | null) ?? null;
+    const invoiceUserIds = (invoicesData ?? [])
+      .map((row) => {
+        const r = row as unknown as Record<string, unknown>;
+        const orderRaw = r.orders;
+        const order = (Array.isArray(orderRaw) ? orderRaw[0] : orderRaw) as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        return order?.user_id != null ? String(order.user_id) : null;
+      })
+      .filter((x): x is string => Boolean(x));
+    const userLookup = await fetchUserLookupByIds(supabase, invoiceUserIds);
+
+    invoiceRows = (invoicesData ?? []).map((raw) => {
+      const row = raw as unknown as Record<string, unknown>;
+      const orderRaw = row.orders;
+      const order = ((Array.isArray(orderRaw) ? orderRaw[0] : orderRaw) as Record<string, unknown> | null) ?? null;
+      const userId = order?.user_id != null ? String(order.user_id) : null;
+      const user = userId ? userLookup.get(userId) : undefined;
       const payment = Array.isArray(row.payments) ? (row.payments[0] as Record<string, unknown> | undefined) : undefined;
       const issuedAt =
         (typeof row.issued_at === "string" ? row.issued_at : null) ??
@@ -183,7 +222,7 @@ export async function GET(request: NextRequest) {
     debug.fallback_reason = invoicesError.message;
     debug.fallback_code = invoicesError.code;
     debug.source = "orders_fallback";
-    debug.query = "orders + order_items + users";
+    debug.query = "orders + order_items + users (batched lookup)";
 
     let ordersQuery = supabase
       .from("orders")
@@ -206,11 +245,6 @@ export async function GET(request: NextRequest) {
           product_name,
           quantity,
           unit_price_egp
-        ),
-        users:user_id (
-          id,
-          full_name,
-          email
         )
       `,
         { count: "exact" },
@@ -240,8 +274,14 @@ export async function GET(request: NextRequest) {
     }
 
     total = ordersCount ?? 0;
+    const orderUserIds = (ordersData ?? [])
+      .map((o) => (o.user_id != null ? String(o.user_id) : null))
+      .filter((x): x is string => Boolean(x));
+    const userLookup = await fetchUserLookupByIds(supabase, orderUserIds);
+
     invoiceRows = (ordersData ?? []).map((o: Record<string, unknown>) => {
-      const user = (o.users as Record<string, unknown> | null) ?? null;
+      const userId = o.user_id != null ? String(o.user_id) : null;
+      const user = userId ? userLookup.get(userId) : undefined;
       const createdAt = typeof o.created_at === "string" ? o.created_at : new Date().toISOString();
       const orderNumber = Number(o.order_number ?? 0);
       const invoiceNumber =
