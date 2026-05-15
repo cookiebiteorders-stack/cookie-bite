@@ -60,7 +60,23 @@ const SELECT_ATTEMPTS = [
 
 export async function GET() {
   await requireAdminAccess("payments");
-  const supabase = createSupabaseAdminClient();
+
+  let supabase;
+  try {
+    supabase = createSupabaseAdminClient();
+  } catch (e) {
+    console.error("[api/admin/payments/summary] Supabase client:", e);
+    const body: Record<string, unknown> = {
+      ...bilingualError(
+        "Database not configured",
+        "قاعدة البيانات غير مهيأة — تحقق من NEXT_PUBLIC_SUPABASE_URL و SUPABASE_SERVICE_KEY",
+      ),
+    };
+    if (process.env.NODE_ENV === "development") {
+      body.debug = { message: e instanceof Error ? e.message : String(e) };
+    }
+    return NextResponse.json(body, { status: 503 });
+  }
 
   let data: RawOrder[] | null = null;
   let lastError: { message: string; code?: string; details?: string; hint?: string } | null = null;

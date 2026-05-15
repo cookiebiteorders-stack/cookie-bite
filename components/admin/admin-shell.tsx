@@ -1,12 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoMark } from "@/components/brand/logo-mark";
-import { cn } from "@/lib/utils";
 import { type UserRole, getRoleLabel } from "@/lib/admin/rbac";
 import { getAccessibleAdminConsoleNav } from "@/lib/admin/admin-console-nav";
-import { getAdminNavIcon } from "@/lib/admin/admin-console-nav-icons";
+import { AdminConsoleNavLinks } from "@/components/admin/admin-console-nav-links";
+import { AdminConsoleNavbar } from "@/components/admin/admin-console-navbar";
 import { useLanguage } from "@/components/providers/language-provider";
 
 type AdminShellProps = {
@@ -25,7 +24,7 @@ export function AdminShell({ role, children }: AdminShellProps) {
         {t("actions.skipToMain")}
       </a>
       <div className="mx-auto grid max-w-[1600px] grid-cols-1 lg:grid-cols-[260px_1fr]">
-        <aside className="border-r border-cb-border bg-cb-surface-2 px-4 py-6 backdrop-blur-md lg:min-h-screen">
+        <aside className="hidden border-r border-cb-border bg-cb-surface-2 px-4 py-6 backdrop-blur-md lg:block lg:min-h-screen">
           <div className="mb-8 rounded-2xl border border-cb-border bg-cb-surface p-4 shadow-sm cb-shadow-editorial">
             <div className="flex items-center gap-2">
               <LogoMark className="h-9 w-9 text-cb-brand-logo" title="Cookie Bite" />
@@ -41,32 +40,11 @@ export function AdminShell({ role, children }: AdminShellProps) {
             </span>
           </div>
 
-          <nav className="space-y-1" aria-label="Admin navigation">
-            {navItems.map((item) => {
-              const active = pathname === item.href;
-              const Icon = getAdminNavIcon(item);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors duration-200",
-                    active
-                      ? "bg-cb-terracotta-dark text-white shadow-[var(--shadow-hover)]"
-                      : "text-cb-text-strong hover:bg-cb-hover-overlay hover:text-cb-text-strong",
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+          <AdminConsoleNavLinks items={navItems} pathname={pathname} />
         </aside>
 
         <div className="min-w-0">
-
+          <AdminConsoleNavbar role={role} navItems={navItems} />
 
           <main id="admin-main-content" className="border-t border-transparent px-4 py-6 sm:px-6">
             {children}
