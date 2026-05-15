@@ -38,11 +38,52 @@ const REQUIRED_PROD_KEYS = [
   "INTERNAL_API_SECRET",
 ] as const;
 
+/** مجموعات متغيرات الإنتاج لكل تكامل — تُستخدم في لوحة الصحة وليست قياسات ping. */
+export const INTEGRATION_ENV_GROUPS = {
+  app_urls: ["NEXT_PUBLIC_APP_URL", "APP_BASE_URL"],
+  clerk: ["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "CLERK_SECRET_KEY"],
+  supabase: ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_KEY"],
+  paymob: ["PAYMOB_API_KEY", "PAYMOB_HMAC"],
+  resend: ["RESEND_API_KEY", "RESEND_FROM_EMAIL"],
+  internal_api: ["INTERNAL_API_SECRET"],
+} as const;
+
+export type IntegrationEnvStatus = {
+  [K in keyof typeof INTEGRATION_ENV_GROUPS]: boolean;
+};
+
 export type ProductionEnvCheck = {
   ok: boolean;
   missing: string[];
   warnings: string[];
 };
+
+function integrationGroupReady(missingKeys: ReadonlySet<string>, keys: readonly string[]): boolean {
+  return !keys.some((k) => missingKeys.has(k));
+}
+
+/** في التطوير: الكل سليم. في الإنتاج: وفق مجموعات المتغيرات المفقودة. */
+export function getIntegrationEnvStatus(check: ProductionEnvCheck): IntegrationEnvStatus {
+  if (process.env.NODE_ENV !== "production") {
+    return {
+      app_urls: true,
+      clerk: true,
+      supabase: true,
+      paymob: true,
+      resend: true,
+      internal_api: true,
+    };
+  }
+  const m = new Set(check.missing);
+  return {
+    app_urls: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.app_urls),
+    clerk: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.clerk),
+    supabase: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.supabase),
+    paymob: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.paymob),
+    resend: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.resend),
+    internal_api: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.internal_api),
+  };
+}
 
 export function checkProductionEnv(): ProductionEnvCheck {
   const missing: string[] = [];
@@ -70,7 +111,6 @@ export function checkProductionEnv(): ProductionEnvCheck {
   return { ok: missing.length === 0, missing, warnings };
 }
 
-/** يطلق Error إذا كنت في production وفيه إعدادات ناقصة. */
 export function assertProductionEnvOrWarn(): void {
   if (process.env.NODE_ENV !== "production") return;
   const result = checkProductionEnv();

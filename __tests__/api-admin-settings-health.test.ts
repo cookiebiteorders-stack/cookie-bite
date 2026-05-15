@@ -12,6 +12,14 @@ jest.mock("@/lib/admin/require-admin", () => ({
 jest.mock("@/lib/config/production-lock", () => ({
   PRODUCTION_HOST: "cookie-bite.com",
   checkProductionEnv: () => checkProductionEnvMock(),
+  getIntegrationEnvStatus: () => ({
+    app_urls: true,
+    clerk: true,
+    supabase: true,
+    paymob: true,
+    resend: true,
+    internal_api: true,
+  }),
 }));
 
 describe("api/admin/settings/health GET", () => {
@@ -29,12 +37,13 @@ describe("api/admin/settings/health GET", () => {
     });
   });
 
-  it("returns canonical host and env health", async () => {
+  it("returns canonical host, env health, and integration flags", async () => {
     const res = await GET();
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.canonical_host).toBe("cookie-bite.com");
     expect(body.env.ok).toBe(true);
+    expect(body.integrations.supabase).toBe(true);
     expect(requireAdminAccessMock).toHaveBeenCalledWith("settings");
   });
 });

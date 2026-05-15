@@ -35,7 +35,26 @@ type HealthResponse = {
     missing: string[];
     warnings: string[];
   };
+  /** مجموعات متغيرات البيئة (إنتاج) — ليس قياس ping */
+  integrations: {
+    app_urls: boolean;
+    clerk: boolean;
+    supabase: boolean;
+    paymob: boolean;
+    resend: boolean;
+    internal_api: boolean;
+  };
 };
+
+/** بطاقات العرض ← مفتاح `integrations` من الـ API (أزمن ثابتة توضيحية). */
+const HEALTH_CARD_DEFS = [
+  { name: "API Gateway", key: "internal_api" as const, latencyOk: "38 ms", latencyIssue: "82 ms" },
+  { name: "PostgreSQL / Supabase", key: "supabase" as const, latencyOk: "24 ms", latencyIssue: "68 ms" },
+  { name: "Queue Worker", key: "paymob" as const, latencyOk: "51 ms", latencyIssue: "66 ms" },
+  { name: "CDN Edge", key: "app_urls" as const, latencyOk: "18 ms", latencyIssue: "31 ms" },
+  { name: "Email Service", key: "resend" as const, latencyOk: "44 ms", latencyIssue: "170 ms" },
+  { name: "Webhook Delivery", key: "clerk" as const, latencyOk: "62 ms", latencyIssue: "95 ms" },
+];
 
 type Template = {
   id: string;
@@ -173,14 +192,14 @@ export default function AdminSettingsPage() {
   const errorRate = Math.min(12, Math.max(1, warningCount + missingCount));
   const activeStaff = 6 + (templates.length % 5);
 
-  const statusRows = [
-    { name: "API Gateway", ok: health?.env.ok ?? false, latency: `${82 + warningCount * 9} ms` },
-    { name: "PostgreSQL / Supabase", ok: missingCount === 0, latency: `${29 + missingCount * 13} ms` },
-    { name: "Queue Worker", ok: warningCount < 2, latency: `${66 + warningCount * 11} ms` },
-    { name: "CDN Edge", ok: true, latency: "31 ms" },
-    { name: "Email Service", ok: templates.length > 0, latency: `${110 + Math.max(0, 4 - activeTemplates) * 15} ms` },
-    { name: "Webhook Delivery", ok: warningCount < 3, latency: `${95 + warningCount * 14} ms` },
-  ];
+  const statusRows = HEALTH_CARD_DEFS.map(({ name, key, latencyOk, latencyIssue }) => {
+    const ok = health ? health.integrations[key] : false;
+    return {
+      name,
+      ok,
+      latency: ok ? latencyOk : latencyIssue,
+    };
+  });
 
   const aiMessages = [
     warningCount > 0
@@ -333,6 +352,10 @@ export default function AdminSettingsPage() {
                 </h2>
                 <p className="mt-1 text-sm text-stone-700 dark:text-stone-300">
                   Real-time operational status for core services.
+                </p>
+                <p className="mt-2 text-xs text-cb-text-muted" dir="rtl">
+                  الحالة تُشتق من مجموعات متغيرات الإنتاج (ليست pings). الأزمن المعروضة ثابتة وتوضيحية وليست
+                  قياسات شبكة حية.
                 </p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {statusRows.map((row) => (

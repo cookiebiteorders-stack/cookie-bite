@@ -25,6 +25,14 @@ describe("AdminSettingsPage", () => {
           canonical_host: "cookie-bite.com",
           node_env: "development",
           env: { ok: true, missing: [], warnings: [] },
+          integrations: {
+            app_urls: true,
+            clerk: true,
+            supabase: true,
+            paymob: true,
+            resend: true,
+            internal_api: true,
+          },
         });
       }
       if (url.includes("/api/admin/notifications/templates")) {
