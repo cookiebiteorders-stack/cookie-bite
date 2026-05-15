@@ -70,10 +70,10 @@ export type AnalyticsDashboardData = {
 type OrderLite = {
   id: string;
   total_egp: number;
-  payment_status: string | null;
+  payment_status?: string | null;
   status: string | null;
   created_at: string;
-  user_id: string | null;
+  user_id?: string | null;
 };
 
 type PaymentLite = {
@@ -88,7 +88,8 @@ type OrderItemLite = {
   order_id: string | null;
   product_name: string | null;
   quantity: number;
-  total_price_egp: number | null;
+  total_price_egp?: number | null;
+  unit_price_egp?: number | null;
   created_at?: string | null;
   product_id?: string | null;
 };
@@ -167,6 +168,23 @@ function percentChange(current: number, previous: number): number {
   if (previous <= 0 && current > 0) return 100;
   if (previous <= 0) return 0;
   return Number((((current - previous) / previous) * 100).toFixed(1));
+}
+
+function isMissingColumnOrSchemaError(err: QueryErrorLike | null): boolean {
+  if (!err) return false;
+  const m = (err.message ?? "").toLowerCase();
+  return (
+    err.code === "42703" ||
+    err.code === "PGRST204" ||
+    (m.includes("column") && m.includes("does not exist")) ||
+    m.includes("could not find the table")
+  );
+}
+
+function lineItemRevenue(item: OrderItemLite): number {
+  const line = toNum(item.total_price_egp);
+  if (line > 0) return line;
+  return toNum(item.unit_price_egp) * Math.max(0, toNum(item.quantity));
 }
 
 function compactTrend(values: number[], size = 12): number[] {
@@ -265,22 +283,55 @@ export async function getRevenue(
 export async function getOrders(
   supabase: SupabaseClient,
   opts: { fromIso: string; toIso: string; segment: CustomerSegmentFilter; orderIds?: Set<string> },
-): Promise<{ points: OrdersPoint[]; rows: OrderLite[] }> {
-  let q = supabase
-    .from("orders")
-    .select("id,total_egp,payment_status,status,created_at,user_id")
-    .gte("created_at", opts.fromIso)
-    .lte("created_at", opts.toIso)
-    .order("created_at", { ascending: true })
-    .limit(10000);
+): Promise<{
+  points: OrdersPoint[];
+  rows: OrderLite[];
+  queryDebug: Record<string, unknown>;
+}> {
+  const queryDebug: Record<string, unknown> = {};
 
-  if (opts.segment === "guest") q = q.is("user_id", null);
-  if (opts.segment === "registered") q = q.not("user_id", "is", null);
+  const attempts = [
+    "id,total_egp,payment_status,status,created_at,user_id",
+    "id,total_egp,payment_status,status,created_at",
+    "id,total_egp,status,created_at",
+  ] as const;
 
-  const { data, error } = await q;
-  if (error) throw new Error(`Orders query failed: ${error.message}`);
+  let rows: OrderLite[] = [];
+  let lastError: QueryErrorLike | null = null;
 
-  const rows = ((data as unknown) as OrderLite[]) ?? [];
+  for (const sel of attempts) {
+    let q = supabase
+      .from("orders")
+      .select(sel)
+      .gte("created_at", opts.fromIso)
+      .lte("created_at", opts.toIso)
+      .order("created_at", { ascending: true })
+      .limit(10000);
+
+    const canSegment = sel.includes("user_id");
+    if (canSegment) {
+      if (opts.segment === "guest") q = q.is("user_id", null);
+      if (opts.segment === "registered") q = q.not("user_id", "is", null);
+    } else if (opts.segment !== "all") {
+      queryDebug.ordersSegmentIgnored =
+        "guest/registered filter skipped (user_id not in select — likely missing column in DB)";
+    }
+
+    const res = await q;
+    if (!res.error) {
+      rows = ((res.data ?? []) as unknown) as OrderLite[];
+      queryDebug.ordersSelect = sel;
+      lastError = null;
+      break;
+    }
+    lastError = res.error;
+    if (!isMissingColumnOrSchemaError(res.error)) break;
+  }
+
+  if (lastError && rows.length === 0) {
+    throw new Error(`Orders query failed: ${lastError.message}`);
+  }
+
   const filteredRows = opts.orderIds ? rows.filter((row) => opts.orderIds!.has(row.id)) : rows;
   const map = new Map<string, number>();
   for (const row of filteredRows) {
@@ -291,22 +342,43 @@ export async function getOrders(
     date,
     orders: map.get(date) ?? 0,
   }));
-  return { points, rows: filteredRows };
+
+  return { points, rows: filteredRows, queryDebug };
 }
 
 export async function getCustomers(
   supabase: SupabaseClient,
   opts: { fromIso: string; toIso: string },
-): Promise<{ total: number; growth: CustomerGrowthPoint[] }> {
-  const { data, error } = await supabase
+): Promise<{ total: number; growth: CustomerGrowthPoint[]; debug: Record<string, unknown> }> {
+  let rows: UserLite[] = [];
+  let usedRoleFilter = true;
+
+  let res = await supabase
     .from("users")
     .select("id,role,created_at")
     .eq("role", "customer")
     .order("created_at", { ascending: true })
     .limit(20000);
 
-  if (error) throw new Error(`Customers query failed: ${error.message}`);
-  const rows = ((data as unknown) as UserLite[]) ?? [];
+  if (res.error && isMissingColumnOrSchemaError(res.error)) {
+    usedRoleFilter = false;
+    const res2 = await supabase
+      .from("users")
+      .select("id,created_at")
+      .order("created_at", { ascending: true })
+      .limit(20000);
+    if (res2.error) throw new Error(`Customers query failed: ${res2.error.message}`);
+    rows = ((res2.data ?? []) as unknown) as UserLite[];
+  } else if (res.error) {
+    throw new Error(`Customers query failed: ${res.error.message}`);
+  } else {
+    rows = ((res.data ?? []) as unknown) as UserLite[];
+  }
+
+  const debug: Record<string, unknown> = {
+    customersRoleCustomerOnly: usedRoleFilter,
+  };
+
   const growthMap = new Map<string, number>();
   for (const row of rows) {
     if (!row.created_at) continue;
@@ -320,7 +392,7 @@ export async function getCustomers(
     return { date, customers: running };
   });
 
-  return { total: rows.length, growth };
+  return { total: rows.length, growth, debug };
 }
 
 export async function getTopProducts(
@@ -345,6 +417,25 @@ export async function getTopProducts(
         .from("order_items")
         .select("order_id,product_name,quantity,total_price_egp")
         .limit(15000),
+    async () =>
+      await supabase
+        .from("order_items")
+        .select("order_id,product_name,quantity,unit_price_egp,created_at,product_id")
+        .gte("created_at", opts.fromIso)
+        .lte("created_at", opts.toIso)
+        .limit(15000),
+    async () =>
+      await supabase
+        .from("order_items")
+        .select("order_id,product_name,quantity,unit_price_egp,product_id")
+        .limit(15000),
+    async () =>
+      await supabase
+        .from("order_items")
+        .select("order_id,product_name,quantity,unit_price_egp")
+        .limit(15000),
+    async () =>
+      await supabase.from("order_items").select("order_id,product_name,quantity").limit(15000),
   ]);
 
   if (attempt.error) throw new Error(`Top products query failed: ${attempt.error.message}`);
@@ -357,7 +448,7 @@ export async function getTopProducts(
     if (opts.category && !name.toLowerCase().includes(opts.category.toLowerCase())) continue;
     const rec = productMap.get(name) ?? { sales: 0, revenue: 0, orderIds: new Set<string>() };
     rec.sales += Math.max(0, toNum(item.quantity));
-    rec.revenue += Math.max(0, toNum(item.total_price_egp));
+    rec.revenue += Math.max(0, lineItemRevenue(item));
     if (item.order_id) rec.orderIds.add(item.order_id);
     productMap.set(name, rec);
   }
@@ -553,6 +644,8 @@ export async function getAnalyticsDashboard(
       debug: {
         ...debug,
         ...revenueResult.debug,
+        ...ordersResult.queryDebug,
+        ...customersResult.debug,
         scopedOrderIds: scopedOrderIds ? scopedOrderIds.size : "all",
       },
     },

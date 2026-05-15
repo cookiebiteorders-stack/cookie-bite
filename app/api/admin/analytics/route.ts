@@ -5,33 +5,48 @@ import { bilingualError } from "@/lib/validations";
 
 export async function GET() {
   await requireAdminAccess("analytics");
-  const supabase = createSupabaseAdminClient();
+
+  let supabase: ReturnType<typeof createSupabaseAdminClient>;
+  try {
+    supabase = createSupabaseAdminClient();
+  } catch {
+    return NextResponse.json(
+      bilingualError("Analytics unavailable (database not configured)", "التحليلات غير متاحة"),
+      { status: 503 },
+    );
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const [{ data: allOrders }, { data: todayOrders }, { data: yesterdayOrders }] =
-    await Promise.all([
-      supabase.from("orders").select("id,total_egp,status,created_at"),
-      supabase
-        .from("orders")
-        .select("id,total_egp,status,created_at")
-        .gte("created_at", today.toISOString()),
-      supabase
-        .from("orders")
-        .select("id,total_egp,status,created_at")
-        .gte("created_at", yesterday.toISOString())
-        .lt("created_at", today.toISOString()),
-    ]);
+  const sel = "id,total_egp,status,created_at";
+  const [rAll, rToday, rYesterday] = await Promise.all([
+    supabase.from("orders").select(sel),
+    supabase.from("orders").select(sel).gte("created_at", today.toISOString()),
+    supabase
+      .from("orders")
+      .select(sel)
+      .gte("created_at", yesterday.toISOString())
+      .lt("created_at", today.toISOString()),
+  ]);
 
-  if (!allOrders || !todayOrders || !yesterdayOrders) {
+  const pickErr = rAll.error ?? rToday.error ?? rYesterday.error;
+  if (pickErr) {
+    console.error("[api/admin/analytics] orders:", pickErr.message);
     return NextResponse.json(
-      bilingualError("Could not load analytics", "تعذر تحميل التحليلات"),
+      {
+        ...bilingualError("Could not load analytics", "تعذر تحميل التحليلات"),
+        details: pickErr.message,
+      },
       { status: 500 },
     );
   }
+
+  const allOrders = rAll.data ?? [];
+  const todayOrders = rToday.data ?? [];
+  const yesterdayOrders = rYesterday.data ?? [];
 
   const sum = (arr: Array<{ total_egp: number }>) =>
     arr.reduce((s, o) => s + Number(o.total_egp || 0), 0);

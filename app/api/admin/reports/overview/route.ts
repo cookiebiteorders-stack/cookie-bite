@@ -16,7 +16,24 @@ function toRangePreset(value: string | null): AnalyticsRangePreset {
 
 export async function GET(request: NextRequest) {
   const actor = await requireAdminAccess("analytics");
-  const supabase = createSupabaseAdminClient();
+
+  let supabase: ReturnType<typeof createSupabaseAdminClient>;
+  try {
+    supabase = createSupabaseAdminClient();
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Supabase not configured";
+    return NextResponse.json(
+      {
+        ...bilingualError("Could not load analytics", "تعذر تحميل التحليلات"),
+        details: message,
+        ...(actor.role === "owner" && process.env.NODE_ENV === "development"
+          ? { debug: { error: message } }
+          : {}),
+      },
+      { status: 503 },
+    );
+  }
+
   const params = request.nextUrl.searchParams;
   const segmentParam = params.get("segment");
   const segment =
