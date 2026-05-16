@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { SignUp } from "@clerk/nextjs";
 import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
 import { useTheme } from "@/components/providers/theme-provider";
-import { useLanguage } from "@/components/providers/language-provider";
 import { getDesktopSocialPopupPreference, AUTH_SOCIAL_POPUP_DESKTOP_KEY } from "@/lib/auth/social-preferences";
 
 type SignUpFormProps = {
@@ -21,7 +19,6 @@ function isMobileDevice() {
 
 export function SignUpForm({ afterAuth }: SignUpFormProps) {
   const { resolvedTheme } = useTheme();
-  const { t } = useLanguage();
   const [desktopPopupEnabled, setDesktopPopupEnabled] = useState(() =>
     getDesktopSocialPopupPreference(),
   );
@@ -66,40 +63,30 @@ export function SignUpForm({ afterAuth }: SignUpFormProps) {
       },
       elements: {
         ...clerkAuthAppearance.elements,
-        /** مطابقة تسجيل الدخول — إخفاء صف التبديل المدمج في Clerk؛ رابط «تسجيل الدخول» أسفل النموذج في الواجهة */
-        footerAction: "hidden",
       },
     };
   }, [resolvedTheme]);
 
+  const signInUrl = useMemo(() => {
+    if (afterAuth && afterAuth !== "/account") {
+      return `/sign-in?redirect_url=${encodeURIComponent(afterAuth)}`;
+    }
+    return "/sign-in";
+  }, [afterAuth]);
+
   return (
-    <>
-      <SignUp
-        routing="path"
-        path="/sign-up"
-        signInUrl="/sign-in"
-        appearance={appearance}
-        oauthFlow={oauthFlow}
-        oidcPrompt="select_account"
-        fallbackRedirectUrl={afterAuth}
-        forceRedirectUrl={afterAuth}
-        signInFallbackRedirectUrl={afterAuth}
-        signInForceRedirectUrl={afterAuth}
-      />
-      <p className="mt-4 text-center text-sm text-cb-text-muted">
-        {t("auth.alreadyHaveAccount")}{" "}
-        <Link
-          href={
-            afterAuth && afterAuth !== "/account"
-              ? `/sign-in?redirect_url=${encodeURIComponent(afterAuth)}`
-              : "/sign-in"
-          }
-          className="font-semibold text-cb-terracotta-dark underline-offset-2 hover:underline dark:text-cb-terracotta"
-        >
-          {t("actions.signIn")}
-        </Link>
-      </p>
-    </>
+    <SignUp
+      routing="path"
+      path="/sign-up"
+      signInUrl={signInUrl}
+      appearance={appearance}
+      oauthFlow={oauthFlow}
+      oidcPrompt="select_account"
+      fallbackRedirectUrl={afterAuth}
+      forceRedirectUrl={afterAuth}
+      signInFallbackRedirectUrl={afterAuth}
+      signInForceRedirectUrl={afterAuth}
+    />
   );
 }
 
