@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { bilingualError } from "@/lib/validations";
+import { fetchOrderItemsByOrderIds } from "@/lib/db/order-items-fetch";
 
 type InvoiceStatus = "paid" | "pending" | "failed" | "refunded";
 
@@ -112,12 +113,18 @@ export async function GET(request: NextRequest) {
 
   const debug: Record<string, unknown> = {
     source: "invoices",
-    query: "invoices + orders + order_items + payments; users batched",
+    query: "invoices + orders + payments; order_items batched separately",
   };
 
   let invoiceRows: InvoiceApiRow[] = [];
   let total = 0;
 
+  /**
+   * تجنّبنا تضمين order_items داخل الـ embed لأن بعض البيئات تحتوي على
+   * أعمدة مختلفة (`product_snapshot.name` بدلاً من `product_name`)
+   * وكان PostgREST يفشل بـ "column order_items_1.product_name does not exist".
+   * بدلاً من ذلك نجلب البنود بـ select * منفصل ونوحّدها في الذاكرة.
+   */
   const invoicesQuery = supabase
     .from("invoices")
     .select(
@@ -133,13 +140,7 @@ export async function GET(request: NextRequest) {
         order_code,
         status,
         guest_email,
-        user_id,
-        order_items (
-          id,
-          product_name,
-          quantity,
-          unit_price_egp
-        )
+        user_id
       ),
       payments (
         id,
@@ -171,6 +172,19 @@ export async function GET(request: NextRequest) {
       .filter((x): x is string => Boolean(x));
     const userLookup = await fetchUserLookupByIds(supabase, invoiceUserIds);
 
+    const orderIds = (invoicesData ?? [])
+      .map((row) => {
+        const r = row as unknown as Record<string, unknown>;
+        const orderRaw = r.orders;
+        const order = (Array.isArray(orderRaw) ? orderRaw[0] : orderRaw) as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        return order?.id != null ? String(order.id) : null;
+      })
+      .filter((x): x is string => Boolean(x));
+    const itemsByOrderId = await fetchOrderItemsByOrderIds(supabase, orderIds);
+
     invoiceRows = (invoicesData ?? []).map((raw) => {
       const row = raw as unknown as Record<string, unknown>;
       const orderRaw = row.orders;
@@ -182,6 +196,8 @@ export async function GET(request: NextRequest) {
         (typeof row.issued_at === "string" ? row.issued_at : null) ??
         (typeof row.created_at === "string" ? row.created_at : null) ??
         new Date().toISOString();
+      const orderId = typeof order?.id === "string" ? order.id : null;
+      const items = orderId ? itemsByOrderId.get(orderId) ?? [] : [];
 
       return {
         id: String(row.id ?? ""),
@@ -197,17 +213,15 @@ export async function GET(request: NextRequest) {
               ? order.guest_email
               : null,
         order: {
-          id: typeof order?.id === "string" ? order.id : null,
+          id: orderId,
           order_code: typeof order?.order_code === "string" ? order.order_code : null,
           status: typeof order?.status === "string" ? order.status : null,
-          items: Array.isArray(order?.order_items)
-            ? (order?.order_items as Record<string, unknown>[]).map((item) => ({
-                id: String(item.id ?? ""),
-                product_name: String(item.product_name ?? "Unknown item"),
-                quantity: Number(item.quantity ?? 0),
-                unit_price_egp: Number(item.unit_price_egp ?? 0),
-              }))
-            : [],
+          items: items.map((item) => ({
+            id: item.id,
+            product_name: item.product_name,
+            quantity: item.quantity,
+            unit_price_egp: item.unit_price_egp,
+          })),
         },
         payment: {
           id: typeof payment?.id === "string" ? payment.id : null,
@@ -222,7 +236,7 @@ export async function GET(request: NextRequest) {
     debug.fallback_reason = invoicesError.message;
     debug.fallback_code = invoicesError.code;
     debug.source = "orders_fallback";
-    debug.query = "orders + order_items + users (batched lookup)";
+    debug.query = "orders + users + order_items (all batched separately)";
 
     let ordersQuery = supabase
       .from("orders")
@@ -239,13 +253,7 @@ export async function GET(request: NextRequest) {
         guest_email,
         user_id,
         created_at,
-        updated_at,
-        order_items (
-          id,
-          product_name,
-          quantity,
-          unit_price_egp
-        )
+        updated_at
       `,
         { count: "exact" },
       )
@@ -279,17 +287,24 @@ export async function GET(request: NextRequest) {
       .filter((x): x is string => Boolean(x));
     const userLookup = await fetchUserLookupByIds(supabase, orderUserIds);
 
+    const orderIdsForItems = (ordersData ?? [])
+      .map((o) => (o.id != null ? String(o.id) : null))
+      .filter((x): x is string => Boolean(x));
+    const itemsByOrderId = await fetchOrderItemsByOrderIds(supabase, orderIdsForItems);
+
     invoiceRows = (ordersData ?? []).map((o: Record<string, unknown>) => {
       const userId = o.user_id != null ? String(o.user_id) : null;
       const user = userId ? userLookup.get(userId) : undefined;
       const createdAt = typeof o.created_at === "string" ? o.created_at : new Date().toISOString();
       const orderNumber = Number(o.order_number ?? 0);
+      const orderId = String(o.id ?? "");
+      const items = itemsByOrderId.get(orderId) ?? [];
       const invoiceNumber =
         Number.isFinite(orderNumber) && orderNumber > 0
           ? `INV-${String(orderNumber).padStart(8, "0")}`
-          : normalizeInvoiceNumber(String(o.id ?? ""), createdAt, "INV");
+          : normalizeInvoiceNumber(orderId, createdAt, "INV");
       return {
-        id: String(o.id ?? ""),
+        id: orderId,
         invoice_number: invoiceNumber,
         amount_egp: Number(o.total_egp ?? 0),
         status: toInvoiceStatus(o.payment_status),
@@ -302,17 +317,15 @@ export async function GET(request: NextRequest) {
               ? o.guest_email
               : null,
         order: {
-          id: String(o.id ?? ""),
+          id: orderId,
           order_code: typeof o.order_code === "string" ? o.order_code : null,
           status: typeof o.status === "string" ? o.status : null,
-          items: Array.isArray(o.order_items)
-            ? (o.order_items as Record<string, unknown>[]).map((item) => ({
-                id: String(item.id ?? ""),
-                product_name: String(item.product_name ?? "Unknown item"),
-                quantity: Number(item.quantity ?? 0),
-                unit_price_egp: Number(item.unit_price_egp ?? 0),
-              }))
-            : [],
+          items: items.map((item) => ({
+            id: item.id,
+            product_name: item.product_name,
+            quantity: item.quantity,
+            unit_price_egp: item.unit_price_egp,
+          })),
         },
         payment: {
           id: null,

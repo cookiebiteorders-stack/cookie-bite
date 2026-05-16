@@ -3,6 +3,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { resolveStaffRole } from "@/lib/admin/auth-role";
 import { bilingualError } from "@/lib/validations";
+import { fetchOrderItemsByOrderIds } from "@/lib/db/order-items-fetch";
 
 type InvoiceStatus = "paid" | "pending" | "failed" | "refunded";
 
@@ -138,6 +139,10 @@ export async function GET(
 
   let payload: InvoiceDetailPayload | null = null;
 
+  /**
+   * نتجنب تضمين order_items في الـ embed لأن بعض البيئات لا تحتوي على
+   * عمود `product_name` (تستخدم `product_snapshot.name`)؛ نجلب البنود لاحقاً.
+   */
   if (parsed.kind === "invoice-id-prefix" && parsed.prefix) {
     const lowerPrefix = parsed.prefix.toLowerCase();
     const { data, error } = await supabase
@@ -161,14 +166,7 @@ export async function GET(
           discount_amount_egp,
           delivery_fee_egp,
           notes,
-          shipping_address,
-          order_items (
-            id,
-            product_name,
-            quantity,
-            unit_price_egp,
-            total_price_egp
-          )
+          shipping_address
         ),
         payments (
           id,
@@ -191,7 +189,14 @@ export async function GET(
       const orderRaw = row.orders;
       const order = ((Array.isArray(orderRaw) ? orderRaw[0] : orderRaw) as Record<string, unknown> | null) ?? null;
       const orderUserId = order?.user_id != null ? String(order.user_id) : null;
-      const user = await fetchUser(supabase, orderUserId);
+      const orderId = typeof order?.id === "string" ? order.id : null;
+      const [user, itemsByOrderId] = await Promise.all([
+        fetchUser(supabase, orderUserId),
+        orderId
+          ? fetchOrderItemsByOrderIds(supabase, [orderId])
+          : Promise.resolve(new Map<string, never[]>()),
+      ]);
+      const items = orderId ? (itemsByOrderId.get(orderId) ?? []) : [];
       const payment = Array.isArray(row.payments) ? (row.payments[0] as Record<string, unknown> | undefined) : undefined;
       const issuedAt =
         (typeof row.issued_at === "string" ? row.issued_at : null) ??
@@ -212,21 +217,18 @@ export async function GET(
               ? order.guest_email
               : null,
         order: {
-          id: typeof order?.id === "string" ? order.id : null,
+          id: orderId,
           order_code: typeof order?.order_code === "string" ? order.order_code : null,
           status: typeof order?.status === "string" ? order.status : null,
-          items: Array.isArray(order?.order_items)
-            ? (order?.order_items as Record<string, unknown>[]).map((item) => ({
-                id: String(item.id ?? ""),
-                product_name: String(item.product_name ?? "Unknown item"),
-                quantity: Number(item.quantity ?? 0),
-                unit_price_egp: Number(item.unit_price_egp ?? 0),
-                total_price_egp:
-                  item.total_price_egp != null
-                    ? Number(item.total_price_egp)
-                    : Number(item.quantity ?? 0) * Number(item.unit_price_egp ?? 0),
-              }))
-            : [],
+          items: items.map((item) => ({
+            id: item.id,
+            product_name: item.product_name,
+            quantity: item.quantity,
+            unit_price_egp: item.unit_price_egp,
+            total_price_egp:
+              item.total_price_egp ??
+              item.quantity * item.unit_price_egp,
+          })),
           subtotal_egp:
             order?.subtotal_egp != null ? Number(order.subtotal_egp) : null,
           discount_amount_egp:
@@ -272,14 +274,7 @@ export async function GET(
           notes,
           shipping_address,
           created_at,
-          updated_at,
-          order_items (
-            id,
-            product_name,
-            quantity,
-            unit_price_egp,
-            total_price_egp
-          )
+          updated_at
         `,
         )
         .eq("order_number", parsed.orderNumber)
@@ -298,17 +293,24 @@ export async function GET(
     }
 
     const orderUserId = orderRow.user_id != null ? String(orderRow.user_id) : null;
-    const user = await fetchUser(supabase, orderUserId);
+    const orderId = String(orderRow.id ?? "");
+    const [user, itemsByOrderId] = await Promise.all([
+      fetchUser(supabase, orderUserId),
+      orderId
+        ? fetchOrderItemsByOrderIds(supabase, [orderId])
+        : Promise.resolve(new Map<string, never[]>()),
+    ]);
+    const items = orderId ? (itemsByOrderId.get(orderId) ?? []) : [];
     const createdAt =
       typeof orderRow.created_at === "string" ? orderRow.created_at : new Date().toISOString();
     const orderNumber = Number(orderRow.order_number ?? 0);
     const invoiceNum =
       Number.isFinite(orderNumber) && orderNumber > 0
         ? `INV-${String(orderNumber).padStart(8, "0")}`
-        : normalizeInvoiceNumber(String(orderRow.id ?? ""), createdAt);
+        : normalizeInvoiceNumber(orderId, createdAt);
 
     payload = {
-      id: String(orderRow.id ?? ""),
+      id: orderId,
       invoice_number: invoiceNum,
       amount_egp: Number(orderRow.total_egp ?? 0),
       status: toInvoiceStatus(orderRow.payment_status),
@@ -321,21 +323,17 @@ export async function GET(
             ? orderRow.guest_email
             : null,
       order: {
-        id: String(orderRow.id ?? ""),
+        id: orderId,
         order_code: typeof orderRow.order_code === "string" ? orderRow.order_code : null,
         status: typeof orderRow.status === "string" ? orderRow.status : null,
-        items: Array.isArray(orderRow.order_items)
-          ? (orderRow.order_items as Record<string, unknown>[]).map((item) => ({
-              id: String(item.id ?? ""),
-              product_name: String(item.product_name ?? "Unknown item"),
-              quantity: Number(item.quantity ?? 0),
-              unit_price_egp: Number(item.unit_price_egp ?? 0),
-              total_price_egp:
-                item.total_price_egp != null
-                  ? Number(item.total_price_egp)
-                  : Number(item.quantity ?? 0) * Number(item.unit_price_egp ?? 0),
-            }))
-          : [],
+        items: items.map((item) => ({
+          id: item.id,
+          product_name: item.product_name,
+          quantity: item.quantity,
+          unit_price_egp: item.unit_price_egp,
+          total_price_egp:
+            item.total_price_egp ?? item.quantity * item.unit_price_egp,
+        })),
         subtotal_egp:
           orderRow.subtotal_egp != null ? Number(orderRow.subtotal_egp) : null,
         discount_amount_egp:

@@ -436,6 +436,8 @@ export async function getTopProducts(
         .limit(15000),
     async () =>
       await supabase.from("order_items").select("order_id,product_name,quantity").limit(15000),
+    /** نسخة احتياطية: select * — تعمل حتى لو لم يوجد عمود product_name */
+    async () => await supabase.from("order_items").select("*").limit(15000),
   ]);
 
   if (attempt.error) throw new Error(`Top products query failed: ${attempt.error.message}`);
@@ -443,7 +445,17 @@ export async function getTopProducts(
 
   const productMap = new Map<string, { sales: number; revenue: number; orderIds: Set<string> }>();
   for (const item of items) {
-    const name = (item.product_name ?? "Unknown product").trim();
+    const rawName =
+      (item as { product_name?: string }).product_name ??
+      (() => {
+        const snap = (item as { product_snapshot?: Record<string, unknown> }).product_snapshot;
+        if (snap && typeof snap === "object") {
+          if (typeof snap.name === "string") return snap.name;
+          if (typeof snap.title === "string") return snap.title;
+        }
+        return null;
+      })();
+    const name = (rawName ?? "Unknown product").trim();
     if (opts.product && !name.toLowerCase().includes(opts.product.toLowerCase())) continue;
     if (opts.category && !name.toLowerCase().includes(opts.category.toLowerCase())) continue;
     const rec = productMap.get(name) ?? { sales: 0, revenue: 0, orderIds: new Set<string>() };
