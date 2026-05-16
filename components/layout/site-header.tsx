@@ -1,12 +1,13 @@
 "use client";
 
-import { Show, UserButton } from "@clerk/nextjs";
+import { Show } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Menu,
   Search,
   ShoppingBag,
+  Store,
   UserRound,
   X,
 } from "lucide-react";
@@ -16,14 +17,20 @@ import {
   useMotionValueEvent,
   useScroll,
 } from "motion/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { SiteLogoLink } from "@/components/brand/site-logo";
 import { NavDropdown } from "@/components/layout/nav-dropdown";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
+import { useStaffAdminNav } from "@/components/providers/staff-admin-nav-provider";
 import { duration, easeSoft, spring } from "@/lib/motion/presets";
+import { UserAccountDropdown } from "@/components/ui/profile-dropdown";
+import { useOptionalAdminConsole } from "@/components/admin/admin-console-context";
+import { AdminConsoleNavLinks } from "@/components/admin/admin-console-nav-links";
+import { resolveCurrentAdminConsolePage } from "@/lib/admin/admin-console-nav";
+import { getRoleLabel } from "@/lib/admin/rbac";
 import { cn } from "@/lib/utils";
 
 const iconBtn =
@@ -33,6 +40,13 @@ export function SiteHeader() {
   const pathname = usePathname();
   const { itemCount, openDrawer } = useCart();
   const { t, lang } = useLanguage();
+  const { items: staffAdminNavItems } = useStaffAdminNav();
+  const admin = useOptionalAdminConsole();
+  const currentAdminPage = admin
+    ? resolveCurrentAdminConsolePage(pathname, admin.navItems)
+    : undefined;
+  const consoleLabel = lang === "ar" ? "لوحة الإدارة" : "Admin console";
+  const storeLabel = lang === "ar" ? "المتجر" : "Store";
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuToggleRef = useRef<HTMLButtonElement>(null);
   const { scrollY } = useScroll();
@@ -75,23 +89,41 @@ export function SiteHeader() {
   const giftsActive =
     pathname.startsWith("/gift-box") || pathname.startsWith("/gift-ideas");
   const isRtl = lang === "ar";
-  const discoverLinks = [
-    { href: "/our-story", label: t("nav.ourStory") },
-    { href: "/our-cookies", label: t("nav.ourCookies") },
-    { href: "/blog", label: t("nav.blog") },
-  ];
-  const helpLinks = [
-    { href: "/contact", label: t("nav.contact") },
-    { href: "/help/faq", label: t("nav.faq") },
-    { href: "/help/returns", label: t("nav.returns") },
-  ];
-  const mobileFullLinks = [
-    { href: "/shop", label: t("nav.shop") },
-    { href: "/gift-box", label: t("nav.gifts") },
-    ...discoverLinks,
-    ...helpLinks,
-    { href: "/account", label: t("nav.account") },
-  ];
+  const discoverLinks = useMemo(
+    () => [
+      { href: "/our-story", label: t("nav.ourStory") },
+      { href: "/our-cookies", label: t("nav.ourCookies") },
+      { href: "/blog", label: t("nav.blog") },
+    ],
+    [t],
+  );
+  const helpLinks = useMemo(
+    () => [
+      { href: "/contact", label: t("nav.contact") },
+      { href: "/help/faq", label: t("nav.faq") },
+      { href: "/help/returns", label: t("nav.returns") },
+    ],
+    [t],
+  );
+  const adminNavForMenu = useMemo(
+    () =>
+      staffAdminNavItems.map((item) => ({
+        href: item.href,
+        label: t(`adminNav.${item.module}`),
+      })),
+    [staffAdminNavItems, t],
+  );
+  const adminNavActive = pathname.startsWith("/admin");
+  const mobileFullLinks = useMemo(
+    () => [
+      { href: "/shop", label: t("nav.shop") },
+      { href: "/gift-box", label: t("nav.gifts") },
+      ...discoverLinks,
+      ...helpLinks,
+      { href: "/account", label: t("nav.account") },
+    ],
+    [t, discoverLinks, helpLinks],
+  );
 
   return (
     <>
@@ -125,7 +157,19 @@ export function SiteHeader() {
                   <Menu className="h-5 w-5" aria-hidden />
                 )}
               </button>
-              <SiteLogoLink />
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                <SiteLogoLink />
+                {admin ? (
+                  <div className="hidden min-w-0 max-w-[10rem] flex-col justify-center border-s border-cb-border/60 ps-3 sm:max-w-[12rem] sm:ps-4 md:flex lg:max-w-[14rem]">
+                    <p className="truncate text-sm font-bold leading-tight text-cb-text-strong">
+                      {currentAdminPage?.label ?? "Dashboard"}
+                    </p>
+                    <p className="truncate text-[10px] font-semibold uppercase leading-tight tracking-[0.12em] text-cb-terracotta-dark dark:text-cb-terracotta">
+                      {consoleLabel} · {getRoleLabel(admin.role)}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <nav
@@ -154,11 +198,31 @@ export function SiteHeader() {
               </Link>
               <NavDropdown label={t("nav.discover")} items={discoverLinks} />
               <NavDropdown label={t("nav.help")} items={helpLinks} />
+              {adminNavForMenu.length > 0 ? (
+                <NavDropdown
+                  label={t("nav.adminMenu")}
+                  items={adminNavForMenu}
+                  isActive={adminNavActive}
+                />
+              ) : null}
             </nav>
 
             <div className="flex items-center gap-1 sm:gap-2">
               <ThemeToggle className="inline-flex" />
               <LanguageToggle className="hidden md:inline-flex" />
+              {admin ? (
+                <Link
+                  href="/"
+                  className={cn(
+                    iconBtn,
+                    "hidden gap-2 px-3 sm:inline-flex sm:w-auto sm:min-w-0 sm:shrink-0",
+                  )}
+                  aria-label={storeLabel}
+                >
+                  <Store className="h-5 w-5 shrink-0" aria-hidden />
+                  <span className="hidden text-sm font-semibold sm:inline">{storeLabel}</span>
+                </Link>
+              ) : null}
               <Link
                 href="/search"
                 className={iconBtn}
@@ -178,27 +242,7 @@ export function SiteHeader() {
               </Show>
 
               <Show when="signed-in">
-                <div className="flex items-center justify-center h-11 w-11">
-                  <UserButton
-                    userProfileUrl="/account/settings"
-                    userProfileMode="navigation"
-                    appearance={{
-                      elements: {
-                        avatarBox:
-                          "h-[2.15rem] w-[2.15rem] ring-2 ring-cb-peach-deep dark:ring-cb-border transition-transform hover:scale-105",
-                      },
-                    }}
-                  >
-                    <UserButton.MenuItems>
-                      <UserButton.Link
-                        label="Dashboard / Account"
-                        labelIcon={<UserRound className="h-4 w-4" />}
-                        href="/account"
-                      />
-                      <UserButton.Action label="manageAccount" />
-                    </UserButton.MenuItems>
-                  </UserButton>
-                </div>
+                <UserAccountDropdown />
               </Show>
 
               <button
@@ -231,7 +275,7 @@ export function SiteHeader() {
             key="mobile-nav"
             role="dialog"
             aria-modal="true"
-            aria-label={t("nav.siteNavigation")}
+            aria-label={admin ? `${t("nav.menu")} — ${consoleLabel} · ${storeLabel}` : t("nav.siteNavigation")}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -266,9 +310,30 @@ export function SiteHeader() {
                   <LanguageToggle mobile />
                 </div>
               </div>
-              <ul className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 pt-4">
+              <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 pt-4">
+                {admin ? (
+                  <>
+                    <div className="px-1 pb-2">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cb-text-muted">
+                        {consoleLabel}
+                      </p>
+                    </div>
+                    <AdminConsoleNavLinks
+                      items={admin.navItems}
+                      pathname={pathname}
+                      onNavigate={() => setMobileOpen(false)}
+                    />
+                    <div
+                      className="my-3 border-t border-cb-border px-1 pt-1 dark:border-cb-border"
+                      role="separator"
+                    />
+                    <p className="px-1 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-cb-text-muted">
+                      {storeLabel}
+                    </p>
+                  </>
+                ) : null}
                 {mobileFullLinks.map((item, i) => (
-                  <motion.li
+                  <motion.div
                     key={item.href}
                     initial={{ opacity: 0, x: 16 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -284,9 +349,37 @@ export function SiteHeader() {
                     >
                       {item.label}
                     </Link>
-                  </motion.li>
+                  </motion.div>
                 ))}
-              </ul>
+                {!admin && staffAdminNavItems.length > 0 ? (
+                  <>
+                    <div className="px-1 pt-4">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cb-text-muted">
+                        {t("nav.adminMenu")}
+                      </p>
+                    </div>
+                    {staffAdminNavItems.map((item, j) => (
+                      <motion.div
+                        key={item.href}
+                        initial={{ opacity: 0, x: 16 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          ...spring.gentle,
+                          delay: 0.04 + (mobileFullLinks.length + j) * 0.045,
+                        }}
+                      >
+                        <Link
+                          href={item.href}
+                          className="cb-touch-manipulation flex min-h-[2.75rem] items-center rounded-xl px-4 py-3 text-base font-semibold text-cb-text-strong transition-colors hover:bg-cb-peach/50 active:bg-cb-peach/60 dark:hover:bg-cb-peach/20"
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          {t(`adminNav.${item.module}`)}
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </>
+                ) : null}
+              </div>
             </motion.nav>
           </motion.div>
         ) : null}

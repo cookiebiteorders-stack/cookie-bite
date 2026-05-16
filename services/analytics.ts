@@ -353,7 +353,7 @@ export async function getCustomers(
   let rows: UserLite[] = [];
   let usedRoleFilter = true;
 
-  let res = await supabase
+  const res = await supabase
     .from("users")
     .select("id,role,created_at")
     .eq("role", "customer")

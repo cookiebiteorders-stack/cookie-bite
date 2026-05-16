@@ -481,7 +481,7 @@ export default function AdminSettingsPage() {
                 <button
                   type="button"
                   onClick={() => void upsertTemplate()}
-                  className="rounded-xl bg-gradient-to-r from-[#E67E22] to-[#d56c12] px-4 py-2 text-sm font-bold text-white shadow-[0_8px_24px_-14px_rgba(230,126,34,0.6)]"
+                  className="rounded-xl bg-[#E67E22] px-4 py-2 text-sm font-bold text-white shadow-[0_8px_24px_-14px_rgba(230,126,34,0.6)] hover:bg-[#d56c12]"
                 >
                   Save
                 </button>

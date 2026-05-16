@@ -59,7 +59,7 @@ function StatCard({ title, value, sub, trendPct, icon: Icon, seed, accent, wrap,
         <span
           className={cn(
             "rounded-full px-2 py-0.5 text-[10px] font-bold",
-            up ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200" : "bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-200",
+            up ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200" : "bg-rose-50 text-rose-800 dark:bg-transparent dark:text-rose-200",
           )}
         >
           {up ? "↑" : "↓"} {Math.abs(trendPct)}%
@@ -90,7 +90,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: Sparkles,
       seed: stats.new_signups_30d + 1,
       accent: "#ca8a04",
-      wrap: "border-amber-200/80 from-amber-50/80 to-white bg-gradient-to-br dark:border-amber-900/40",
+      wrap: "border-amber-200/80 bg-amber-50/90 dark:border-amber-900/40 dark:bg-amber-950/35",
       delay: 0,
     },
     {
@@ -101,7 +101,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: RefreshCw,
       seed: stats.returning_with_orders + 3,
       accent: "#2563eb",
-      wrap: "border-sky-200/80 from-sky-50/80 to-white bg-gradient-to-br dark:border-sky-900/40",
+      wrap: "border-sky-200/80 bg-sky-50/90 dark:border-sky-900/40 dark:bg-sky-950/35",
       delay: 0.04,
     },
     {
@@ -112,7 +112,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: Crown,
       seed: stats.vip_gold_plus + 7,
       accent: "#a855f7",
-      wrap: "border-violet-200/80 from-violet-50/80 to-white bg-gradient-to-br dark:border-violet-900/40",
+      wrap: "border-violet-200/80 bg-violet-50/90 dark:border-violet-900/40 dark:bg-violet-950/35",
       delay: 0.08,
     },
     {
@@ -123,7 +123,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: AlertTriangle,
       seed: stats.at_risk_proxy + 11,
       accent: "#dc2626",
-      wrap: "border-red-200/80 from-red-50/80 to-white bg-gradient-to-br dark:border-red-900/40",
+      wrap: "border-red-200/80 bg-red-50/90 dark:border-red-900/40 dark:bg-red-950/35",
       delay: 0.12,
     },
     {
@@ -134,7 +134,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: AlertTriangle,
       seed: churnShare + 20,
       accent: "#ea580c",
-      wrap: "border-orange-200/80 from-orange-50/80 to-white bg-gradient-to-br dark:border-orange-900/40",
+      wrap: "border-orange-200/80 bg-orange-50/90 dark:border-orange-900/40 dark:bg-orange-950/35",
       delay: 0.16,
     },
     {
@@ -145,7 +145,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: Gem,
       seed: Math.floor(stats.avg_ltv_sample_egp) + 2,
       accent: "#b45309",
-      wrap: "border-amber-200/80 from-amber-50/90 to-white bg-gradient-to-br dark:border-amber-900/40",
+      wrap: "border-amber-200/80 bg-amber-50/95 dark:border-amber-900/40 dark:bg-amber-950/38",
       delay: 0.2,
     },
     {
@@ -156,7 +156,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: TrendingUp,
       seed: stats.active_last_90d + 5,
       accent: "#059669",
-      wrap: "border-emerald-200/80 from-emerald-50/80 to-white bg-gradient-to-br dark:border-emerald-900/40",
+      wrap: "border-emerald-200/80 bg-emerald-50/90 dark:border-emerald-900/40 dark:bg-emerald-950/35",
       delay: 0.24,
     },
     {
@@ -167,7 +167,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: Award,
       seed: stats.loyalty_members + 9,
       accent: "#d97706",
-      wrap: "border-amber-200/80 from-amber-50/80 to-white bg-gradient-to-br dark:border-amber-900/40",
+      wrap: "border-amber-200/80 bg-amber-50/90 dark:border-amber-900/40 dark:bg-amber-950/35",
       delay: 0.28,
     },
   ];

@@ -30,14 +30,6 @@ export function PaymentsHero({
       )}
     >
       <div className="admin-panel-scrim" aria-hidden />
-      <div
-        className="pointer-events-none absolute inset-0 rounded-2xl opacity-70"
-        style={{
-          background:
-            "linear-gradient(120deg, transparent 40%, color-mix(in oklab, var(--cb-terracotta-dark) 12%, transparent) 50%, transparent 60%)",
-        }}
-        aria-hidden
-      />
       <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex gap-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-cb-border bg-cb-surface/90 text-cb-terracotta-dark shadow-sm">

@@ -40,8 +40,8 @@ export function PaymentsErrorPanel({
           : { opacity: 1, x: [0, -3, 3, -2, 2, 0], transition: { duration: 0.45 } }
       }
       className={cn(
-        "rounded-2xl border border-red-200/90 bg-gradient-to-br from-red-50/95 to-rose-50/80 p-5 shadow-md",
-        "dark:border-red-900/60 dark:from-red-950/50 dark:to-red-950/30",
+        "rounded-2xl border border-red-200/90 bg-red-50/95 p-5 shadow-md",
+        "dark:border-red-900/60 dark:bg-red-950/40",
       )}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">

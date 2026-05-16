@@ -35,9 +35,12 @@ type Card = {
   accent: string;
   wrap: string;
   delay: number;
+  borderless?: boolean;
+  iconBoxClass?: string;
+  invertBodyText?: boolean;
 };
 
-function StatCard({ title, value, sub, trend, icon: Icon, seed, accent, wrap, delay }: Card) {
+function StatCard({ title, value, sub, trend, icon: Icon, seed, accent, wrap, delay, borderless, iconBoxClass, invertBodyText }: Card) {
   const reduceMotion = useReducedMotion();
   const up = trend >= 0;
   return (
@@ -47,14 +50,19 @@ function StatCard({ title, value, sub, trend, icon: Icon, seed, accent, wrap, de
       transition={{ duration: 0.32, delay, ease: [0.22, 1, 0.36, 1] }}
       whileHover={reduceMotion ? undefined : { y: -2 }}
       className={cn(
-        "relative overflow-hidden rounded-2xl border p-4 shadow-sm",
+        "relative overflow-hidden rounded-2xl p-4 shadow-sm",
+        borderless ? "border-0" : "border",
         "bg-white dark:bg-cb-surface-elevated",
         wrap,
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-cb-border/80 bg-cb-surface/80 text-amber-800 dark:text-amber-200"
+          className={cn(
+            "flex h-10 w-10 items-center justify-center rounded-xl border border-cb-border/80 bg-cb-surface/80 text-amber-800 dark:text-amber-200",
+            invertBodyText && !iconBoxClass && "border-white/25 bg-white/15 text-amber-200",
+            iconBoxClass,
+          )}
           aria-hidden
         >
           <Icon className="h-5 w-5" />
@@ -62,15 +70,37 @@ function StatCard({ title, value, sub, trend, icon: Icon, seed, accent, wrap, de
         <span
           className={cn(
             "rounded-full px-2 py-0.5 text-[10px] font-bold",
-            up ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200" : "bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-200",
+            invertBodyText
+              ? up
+                ? "bg-emerald-500/85 text-emerald-50"
+                : "bg-rose-500/85 text-rose-50"
+              : up
+                ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200"
+                : "bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-200",
           )}
         >
           {up ? "↑" : "↓"} {Math.abs(trend)}%
         </span>
       </div>
-      <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200">{title}</p>
-      <p className="mt-1 font-serif text-2xl font-bold tracking-tight text-stone-950 dark:text-white">{value}</p>
-      {sub ? <p className="mt-0.5 text-xs text-stone-700 dark:text-stone-300">{sub}</p> : null}
+      <p
+        className={cn(
+          "mt-3 text-[11px] font-bold uppercase tracking-wide",
+          invertBodyText ? "text-[var(--caramel)]" : "text-stone-800 dark:text-stone-200",
+        )}
+      >
+        {title}
+      </p>
+      <p
+        className={cn(
+          "mt-1 font-serif text-2xl font-bold tracking-tight",
+          invertBodyText ? "text-[var(--caramel)]" : "text-stone-950 dark:text-white",
+        )}
+      >
+        {value}
+      </p>
+      {sub ? (
+        <p className={cn("mt-0.5 text-xs", invertBodyText ? "text-[var(--brown)]" : "text-stone-700 dark:text-stone-300")}>{sub}</p>
+      ) : null}
       <MiniSparkline seed={seed} color={accent} className="mt-2 h-9 w-full" />
     </motion.div>
   );
@@ -94,8 +124,9 @@ export function OrdersHeroStats({ stats, online }: Props) {
       icon: Package,
       seed: stats.pending + 2,
       accent: "#ca8a04",
-      wrap: "border-amber-200/80 from-amber-50/80 to-white bg-gradient-to-br dark:border-amber-900/40 dark:from-amber-950/25",
+      wrap: "border-amber-200/80 bg-[rgb(51,0,0)] dark:border-amber-900/40",
       delay: 0,
+      invertBodyText: true,
     },
     {
       title: "قيد التجهيز",
@@ -105,7 +136,7 @@ export function OrdersHeroStats({ stats, online }: Props) {
       icon: Warehouse,
       seed: stats.processing + 5,
       accent: "#2563eb",
-      wrap: "border-sky-200/80 from-sky-50/80 to-white bg-gradient-to-br dark:border-sky-900/40 dark:from-sky-950/25",
+      wrap: "border-[rgba(138,216,255,0.4)] bg-[rgba(169,226,254,1)] dark:border-sky-900/40 dark:bg-sky-950/30",
       delay: 0.04,
     },
     {
@@ -116,8 +147,9 @@ export function OrdersHeroStats({ stats, online }: Props) {
       icon: Box,
       seed: 17,
       accent: "#7c3aed",
-      wrap: "border-violet-200/80 from-violet-50/80 to-white bg-gradient-to-br dark:border-violet-900/40 dark:from-violet-950/25",
+      wrap: "border-violet-200/80 bg-violet-50/90 dark:border-violet-900/40 dark:bg-violet-950/30",
       delay: 0.08,
+      borderless: true,
     },
     {
       title: "تم الشحن",
@@ -127,7 +159,7 @@ export function OrdersHeroStats({ stats, online }: Props) {
       icon: Truck,
       seed: stats.shipped + 9,
       accent: "#0ea5e9",
-      wrap: "border-cyan-200/80 from-cyan-50/80 to-white bg-gradient-to-br dark:border-cyan-900/40 dark:from-cyan-950/25",
+      wrap: "border-cyan-200/80 bg-cyan-50/90 dark:border-cyan-900/40 dark:bg-cyan-950/30",
       delay: 0.12,
     },
     {
@@ -138,7 +170,7 @@ export function OrdersHeroStats({ stats, online }: Props) {
       icon: PackageCheck,
       seed: stats.delivered + 3,
       accent: "#059669",
-      wrap: "border-emerald-200/80 from-emerald-50/80 to-white bg-gradient-to-br dark:border-emerald-900/40 dark:from-emerald-950/25",
+      wrap: "border-emerald-200/80 bg-emerald-50/90 dark:border-emerald-900/40 dark:bg-emerald-950/30",
       delay: 0.16,
     },
     {
@@ -149,7 +181,7 @@ export function OrdersHeroStats({ stats, online }: Props) {
       icon: RotateCcw,
       seed: stats.returned + 11,
       accent: "#ea580c",
-      wrap: "border-orange-200/80 from-orange-50/80 to-white bg-gradient-to-br dark:border-orange-900/40 dark:from-orange-950/25",
+      wrap: "border-orange-200/80 bg-orange-50/90 dark:border-orange-900/40 dark:bg-orange-950/30",
       delay: 0.2,
     },
     {
@@ -160,7 +192,7 @@ export function OrdersHeroStats({ stats, online }: Props) {
       icon: AlertCircle,
       seed: stats.failed_payments + 31,
       accent: "#dc2626",
-      wrap: "border-red-200/80 from-red-50/80 to-white bg-gradient-to-br dark:border-red-900/40 dark:from-red-950/25",
+      wrap: "border-red-200/80 bg-red-50/90 dark:border-red-900/40 dark:bg-red-950/30",
       delay: 0.24,
     },
     {
@@ -171,8 +203,9 @@ export function OrdersHeroStats({ stats, online }: Props) {
       icon: Banknote,
       seed: Math.floor(stats.revenue_today_egp) + 7,
       accent: "#b45309",
-      wrap: "border-amber-200/80 from-amber-50/90 to-white bg-gradient-to-br dark:border-amber-900/40 dark:from-amber-950/30",
+      wrap: "border-amber-200/80 bg-amber-50/95 dark:border-amber-900/40 dark:bg-amber-950/35",
       delay: 0.28,
+      iconBoxClass: "bg-[rgb(51,0,0)]",
     },
   ];
 
@@ -183,8 +216,7 @@ export function OrdersHeroStats({ stats, online }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
         className={cn(
-          "admin-hero-surface rounded-2xl p-6 shadow-[var(--shadow-editorial)] sm:p-8",
-          "dark:to-amber-950/20",
+          "relative overflow-hidden rounded-2xl border border-cb-border/80 bg-[rgb(51,0,0)] p-6 shadow-[var(--shadow-editorial)] sm:p-8",
         )}
       >
         <div className="pointer-events-none absolute -right-16 -top-12 h-48 w-48 rounded-full bg-amber-300/16 blur-3xl dark:bg-amber-900/15" aria-hidden />
@@ -194,15 +226,15 @@ export function OrdersHeroStats({ stats, online }: Props) {
             <motion.div
               whileHover={reduceMotion ? undefined : { scale: 1.04, rotate: [-1.5, 1.5, 0] }}
               transition={{ type: "spring", stiffness: 380, damping: 18 }}
-              className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-cb-border bg-white/90 text-amber-700 shadow-sm dark:bg-stone-900/80 dark:text-amber-300"
+              className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-amber-200 shadow-sm backdrop-blur-sm"
             >
               <Package className="h-7 w-7" aria-hidden />
             </motion.div>
             <div>
-              <h1 className="font-serif text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-50 sm:text-3xl">
+              <h1 className="font-serif text-2xl font-bold tracking-tight text-stone-50 sm:text-3xl">
                 Order Operations Board
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-800 dark:text-stone-300 sm:text-[15px]">
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-200 sm:text-[15px]">
                 إدارة طابور الطلبات المباشر، المدفوعات، الشحن، التنفيذ، طلبات العملاء، والعمليات الجماعية — لوحة عمليات
                 على مستوى المؤسسات.
               </p>

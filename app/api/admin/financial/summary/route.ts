@@ -20,7 +20,6 @@ import type { ExpenseRow, FinancialSummaryResponse } from "@/lib/financial/types
 import {
   fetchFinancialExpenses,
   fetchFinancialOrders,
-  normalizeExpenseRow,
 } from "@/lib/financial/fetch-financial-data";
 
 const expenseSchema = z.object({

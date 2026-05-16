@@ -16,12 +16,9 @@ export default async function SignUpPage({ searchParams }: Props) {
     <AuthLayout
       imageSrc={IMAGES.signUp}
       imageAlt="Cookie Bite — دب بسمة مع كوكيز تدور حوله"
-      imageClassName="object-cover object-[center_25%]"
-      title="Create Your Account"
-      subtitle="Join Cookie Bite to save addresses, track every order, and unlock a smoother checkout experience."
-      switchLabel="Already have an account?"
-      switchHref="/sign-in"
-      switchCta="Sign in"
+      imageClassName="object-cover object-[center_20%]"
+      showAlternateAuth={false}
+      compactMobilePreview
     >
       <ClerkSmartCaptcha />
       <SignUpForm afterAuth={afterAuth} />

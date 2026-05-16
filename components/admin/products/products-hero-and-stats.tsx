@@ -51,7 +51,7 @@ function StatCard({ title, value, sub, trendPct, icon: Icon, seed, accent, delay
     >
       <div className="flex items-start justify-between gap-2">
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-100 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200"
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-100 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-[rgb(61,36,24)] dark:text-amber-200"
           aria-hidden
         >
           <Icon className="h-5 w-5" />
@@ -65,11 +65,11 @@ function StatCard({ title, value, sub, trendPct, icon: Icon, seed, accent, delay
           {up ? "↑" : "↓"} {Math.abs(trendPct)}%
         </span>
       </div>
-      <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200">{title}</p>
-      <p className="mt-1 font-serif text-2xl font-bold tracking-tight text-stone-800 dark:text-stone-100">
+      <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-[var(--caramel)]">{title}</p>
+      <p className="mt-1 font-serif text-2xl font-bold tracking-tight text-[var(--caramel)]">
         {value}
       </p>
-      {sub ? <p className="mt-0.5 text-xs text-stone-700 dark:text-stone-300">{sub}</p> : null}
+      {sub ? <p className="mt-0.5 text-xs text-[var(--brown)]">{sub}</p> : null}
       <MiniSparkline seed={seed} color={accent} className="mt-2 h-9 w-full" />
     </motion.div>
   );
@@ -170,10 +170,10 @@ export function ProductsHeroAndStats({ stats, online }: Props) {
               <TrendingUp className="h-7 w-7" aria-hidden />
             </motion.div>
             <div>
-              <h1 className="font-serif text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-50 sm:text-3xl">
+              <h1 className="font-serif text-2xl font-bold tracking-tight text-[var(--caramel)] sm:text-3xl">
                 Product Management
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-800 dark:text-stone-300 sm:text-[15px]">
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--brown)] sm:text-[15px]">
                 إدارة الكتالوج، المتغيرات، التسعير، عتبات المخزون، حالة النشر، SEO، والتحليلات — لوحة
                 تحكم على مستوى المؤسسات بتجربة مستخدم سلسة.
               </p>

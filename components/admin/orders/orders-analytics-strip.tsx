@@ -36,31 +36,31 @@ export function OrdersAnalyticsStrip({ orders, stats }: Props) {
         "grid gap-3 rounded-2xl border border-cb-border/80 bg-cb-surface-elevated/90 p-4 shadow-sm backdrop-blur-md lg:grid-cols-3",
       )}
     >
-      <div className="rounded-xl border border-cb-border/80 bg-white/90 p-4 dark:bg-stone-900/40">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-cb-text-muted">
+      <div className="rounded-xl border border-cb-border/80 bg-[rgb(51,0,0)] p-4 dark:bg-[rgb(51,0,0)]">
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-[var(--caramel)]">
           <Clock className="h-4 w-4 text-amber-600" aria-hidden />
           طلبات الصفحة (قيمة)
         </div>
         <ul className="mt-3 space-y-2 text-sm">
           {topSkus.length === 0 ? (
-            <li className="text-cb-text-muted">لا بيانات في الصفحة الحالية.</li>
+            <li className="text-stone-300">لا بيانات في الصفحة الحالية.</li>
           ) : (
             topSkus.map(([code, v]) => (
-              <li key={code} className="flex justify-between gap-2 text-stone-800 dark:text-stone-100">
+              <li key={code} className="flex justify-between gap-2 text-sm text-stone-100">
                 <span className="truncate font-mono text-xs">{code}</span>
-                <span className="shrink-0 text-xs text-cb-text-muted">{v.toLocaleString("ar-EG")} ج.م</span>
+                <span className="shrink-0 text-xs text-stone-300">{v.toLocaleString("ar-EG")} ج.م</span>
               </li>
             ))
           )}
         </ul>
       </div>
-      <div className="rounded-xl border border-cb-border/80 bg-white/90 p-4 dark:bg-stone-900/40">
+      <div className="rounded-xl border-0 bg-transparent p-4 dark:bg-transparent">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-cb-text-muted">
           <Percent className="h-4 w-4 text-orange-600" aria-hidden />
           معدل مرتجعات تقريبي
         </div>
         <p className="mt-3 font-serif text-3xl font-bold text-stone-900 dark:text-stone-50">{refundRate}%</p>
-        <p className="mt-1 text-xs text-cb-text-muted">مبني على refunded ÷ (delivered + shipped + refunded) عالمياً.</p>
+        <p className="mt-1 text-xs text-[var(--bg-main)]">مبني على refunded ÷ (delivered + shipped + refunded) عالمياً.</p>
       </div>
       <div className="rounded-xl border border-cb-border/80 bg-white/90 p-4 dark:bg-stone-900/40">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-cb-text-muted">
@@ -73,7 +73,7 @@ export function OrdersAnalyticsStrip({ orders, stats }: Props) {
         <p className="mt-1 text-sm text-stone-800 dark:text-stone-100">
           أمس: <strong>{stats.orders_yesterday}</strong>
         </p>
-        <p className="mt-2 text-[11px] text-cb-text-muted">WebSockets غير مفعّل — استخدم «تحديث» أو التحديث التلقائي.</p>
+        <p className="mt-2 text-[11px] text-[var(--bg-main)]">WebSockets غير مفعّل — استخدم «تحديث» أو التحديث التلقائي.</p>
       </div>
     </motion.div>
   );

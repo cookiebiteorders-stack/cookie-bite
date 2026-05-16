@@ -1,3 +1,5 @@
+import { ClerkHideDevFooter } from "@/components/auth/clerk-hide-dev-footer";
+
 export default function AuthLayout({
   children,
 }: {
@@ -12,6 +14,7 @@ export default function AuthLayout({
         Skip to sign-in form
       </a>
       <main id="main-auth" className="min-h-screen">
+        <ClerkHideDevFooter />
         {children}
       </main>
     </>

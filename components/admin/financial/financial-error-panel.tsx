@@ -33,7 +33,7 @@ export function FinancialErrorPanel({
           ? { opacity: 1 }
           : { opacity: 1, x: [0, -2, 2, -1, 1, 0], transition: { duration: 0.4 } }
       }
-      className="rounded-2xl border border-red-200/90 bg-gradient-to-br from-red-50/95 to-rose-50/90 p-5 shadow-md dark:border-red-900/50 dark:from-red-950/40 dark:to-red-950/20"
+      className="rounded-2xl border border-red-200/90 bg-red-50/95 p-5 shadow-md dark:border-red-900/50 dark:bg-red-950/35"
     >
       <div className="flex gap-3">
         <motion.div

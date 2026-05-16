@@ -28,6 +28,6 @@ export default async function AdminLayout({
     redirect("/403");
   }
 
-  /** قشرة الإدارة منفصلة عن متجر PageShell (لا هيدر/فوتر/سلة/شات المتجر). */
+  /** قشرة الإدارة تحتفظ بشريط المتجر (الهيدر الجوال + سطح المكتب) والسلة، مع التنقل الداخلي للوحة. */
   return <AdminShell role={role}>{children}</AdminShell>;
 }

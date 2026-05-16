@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, ArrowRight, Search, ShoppingBag, Settings, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, ArrowRight, Menu, Search, ShoppingBag, Settings, SlidersHorizontal } from "lucide-react";
 import { useMotionValueEvent, useScroll } from "motion/react";
 import { useState } from "react";
 import { LogoMark } from "@/components/brand/logo-mark";
@@ -11,14 +11,18 @@ import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { useLanguage } from "@/components/providers/language-provider";
+import { useOptionalAdminConsole } from "@/components/admin/admin-console-context";
+import { resolveCurrentAdminConsolePage } from "@/lib/admin/admin-console-nav";
+import { getRoleLabel } from "@/lib/admin/rbac";
 
-type HeaderVariant = "home" | "shop" | "story" | "account" | "default";
+type HeaderVariant = "home" | "shop" | "story" | "account" | "admin" | "default";
 
 function getVariant(pathname: string): HeaderVariant {
   if (pathname === "/") return "home";
   if (pathname.startsWith("/shop") || pathname.startsWith("/our-cookies") || pathname.startsWith("/gift-ideas")) return "shop";
   if (pathname.startsWith("/our-story")) return "story";
   if (pathname.startsWith("/account")) return "account";
+  if (pathname.startsWith("/admin")) return "admin";
   return "default";
 }
 
@@ -32,6 +36,7 @@ function getTitle(pathname: string): string {
   if (pathname.startsWith("/gift-box")) return "Gift Box";
   if (pathname.startsWith("/cart")) return "My Cart";
   if (pathname.startsWith("/contact")) return "Contact";
+  if (pathname.startsWith("/admin")) return "Admin Console";
   return "";
 }
 
@@ -45,9 +50,13 @@ export function MobileHeader() {
   const pathname = usePathname();
   const { itemCount, openDrawer } = useCart();
   const { t, lang } = useLanguage();
+  const admin = useOptionalAdminConsole();
+  const currentAdminPage = admin
+    ? resolveCurrentAdminConsolePage(pathname, admin.navItems)
+    : undefined;
   const variant = getVariant(pathname);
   const title = getTitle(pathname);
-  const showBack = !isRootTab(pathname);
+  const showBack = !isRootTab(pathname) && !admin;
 
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
@@ -75,7 +84,13 @@ export function MobileHeader() {
                   ? t("mobileHeader.myCart")
                   : title === "Contact"
                     ? t("mobileHeader.contact")
-                    : title;
+                    : title === "Admin Console"
+                      ? t("mobileHeader.adminConsole")
+                      : title;
+  const adminPageTitle = currentAdminPage?.label ?? "";
+  const localizedTitleEffective =
+    admin && adminPageTitle ? adminPageTitle : localizedTitle;
+  const consoleLabel = lang === "ar" ? "لوحة الإدارة" : "Admin console";
 
   return (
     <header
@@ -89,7 +104,18 @@ export function MobileHeader() {
     >
       {/* LEFT ZONE */}
       <div className="mobile-header__left">
-        {showBack ? (
+        {admin ? (
+          <button
+            type="button"
+            className="mobile-header__icon-btn"
+            aria-controls="admin-mobile-nav"
+            aria-expanded={admin.adminNavOpen}
+            onClick={() => admin.setAdminNavOpen(true)}
+            aria-label={lang === "ar" ? "قائمة لوحة الإدارة" : "Admin console menu"}
+          >
+            <Menu className="h-6 w-6" aria-hidden />
+          </button>
+        ) : showBack ? (
           <Link
             href="/"
             className="mobile-header__icon-btn"
@@ -119,8 +145,15 @@ export function MobileHeader() {
           >
             Cookie Bite
           </span>
+        ) : admin ? (
+          <div className="flex min-w-0 flex-col items-center gap-0.5 px-1">
+            <h1 className="mobile-header__title">{localizedTitleEffective}</h1>
+            <p className="max-w-full truncate text-center text-[10px] font-semibold uppercase leading-tight tracking-[0.12em] text-cb-terracotta-dark dark:text-cb-terracotta">
+              {consoleLabel} · {getRoleLabel(admin.role)}
+            </p>
+          </div>
         ) : (
-          <h1 className="mobile-header__title">{localizedTitle}</h1>
+          <h1 className="mobile-header__title">{localizedTitleEffective}</h1>
         )}
       </div>
 

@@ -378,7 +378,7 @@ export function ShippingZoneForm({ existingNames }: ShippingZoneFormProps) {
           whileTap={reduceMotion ? undefined : { scale: 0.99 }}
           className={cn(
             "relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl py-3 text-sm font-bold text-white shadow-md transition-colors",
-            "bg-gradient-to-r from-cb-terracotta-dark via-amber-800 to-cb-terracotta-dark",
+            "bg-cb-terracotta-dark hover:bg-[color-mix(in_oklab,var(--cb-terracotta-dark)_88%,#000)]",
             "disabled:cursor-not-allowed disabled:opacity-50",
           )}
         >

@@ -22,7 +22,7 @@ export function PaymentsMetricsGrid({ kpis }: Props) {
       sub: "Loaded window",
       icon: Activity,
       className:
-        "border-slate-200/90 bg-gradient-to-br from-slate-50 to-white text-slate-900 dark:border-slate-800 dark:from-slate-900/40 dark:to-slate-950/30 dark:text-slate-100",
+        "border-slate-200/90 bg-slate-50 text-slate-900 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-100",
     },
     {
       label: "Success rate",
@@ -30,7 +30,7 @@ export function PaymentsMetricsGrid({ kpis }: Props) {
       sub: "Paid vs failed",
       icon: CheckCircle2,
       className:
-        "border-emerald-200/90 bg-gradient-to-br from-emerald-50 to-white text-emerald-950 dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-emerald-950/20 dark:text-emerald-50",
+        "border-emerald-200/90 bg-emerald-50 text-emerald-950 dark:border-emerald-900/50 dark:bg-emerald-950/35 dark:text-emerald-50",
     },
     {
       label: "Failed",
@@ -38,7 +38,7 @@ export function PaymentsMetricsGrid({ kpis }: Props) {
       sub: "Needs attention",
       icon: XCircle,
       className:
-        "border-red-200/90 bg-gradient-to-br from-red-50 to-white text-red-950 dark:border-red-900/50 dark:from-red-950/40 dark:to-red-950/20 dark:text-red-50",
+        "border-red-200/90 bg-red-50 text-red-950 dark:border-red-900/50 dark:bg-red-950/35 dark:text-red-50",
     },
     {
       label: "Pending (unpaid)",
@@ -46,7 +46,7 @@ export function PaymentsMetricsGrid({ kpis }: Props) {
       sub: "Open intents",
       icon: Clock3,
       className:
-        "border-amber-200/90 bg-gradient-to-br from-amber-50 to-white text-amber-950 dark:border-amber-900/50 dark:from-amber-950/40 dark:to-amber-950/20 dark:text-amber-50",
+        "border-amber-200/90 bg-amber-50 text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/35 dark:text-amber-50",
     },
     {
       label: "Captured revenue",
@@ -54,7 +54,7 @@ export function PaymentsMetricsGrid({ kpis }: Props) {
       sub: `${kpis.paid_count} paid orders`,
       icon: Banknote,
       className:
-        "border-cyan-200/90 bg-gradient-to-br from-cyan-50 to-white text-cyan-950 dark:border-cyan-900/50 dark:from-cyan-950/40 dark:to-cyan-950/20 dark:text-cyan-50",
+        "border-cyan-200/90 bg-cyan-50 text-cyan-950 dark:border-cyan-900/50 dark:bg-cyan-950/35 dark:text-cyan-50",
     },
     {
       label: "Avg ticket (paid)",
@@ -62,7 +62,7 @@ export function PaymentsMetricsGrid({ kpis }: Props) {
       sub: "Mean order value",
       icon: TrendingUp,
       className:
-        "border-violet-200/90 bg-gradient-to-br from-violet-50 to-white text-violet-950 dark:border-violet-900/50 dark:from-violet-950/40 dark:to-violet-950/20 dark:text-violet-50",
+        "border-violet-200/90 bg-violet-50 text-violet-950 dark:border-violet-900/50 dark:bg-violet-950/35 dark:text-violet-50",
     },
   ];
 

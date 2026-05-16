@@ -31,14 +31,14 @@ export function ProductsAnalyticsStrip({ products }: Props) {
         "grid gap-3 rounded-2xl border border-cb-border/80 bg-cb-surface-elevated/90 p-4 shadow-sm backdrop-blur-md lg:grid-cols-2",
       )}
     >
-      <div className="rounded-xl border border-amber-100/80 bg-gradient-to-br from-white to-amber-50/40 p-4 dark:border-amber-900/40 dark:from-stone-900 dark:to-amber-950/20">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-800 dark:text-amber-200">
+      <div className="rounded-xl border-0 bg-[var(--brown)] p-4 text-right shadow-[0px_4px_12px_0px_rgba(0,0,0,0.15)]">
+        <div className="flex items-start gap-2 text-xs font-bold uppercase tracking-wide text-amber-800 dark:text-amber-200">
           <Flame className="h-4 w-4" aria-hidden />
           أعلى قيمة مخزون (الصفحة الحالية)
         </div>
         <ul className="mt-3 space-y-2 text-sm">
           {best.length === 0 ? (
-            <li className="text-cb-text-muted">لا بيانات كافية في الصفحة الحالية.</li>
+            <li className="text-[var(--caramel)]">لا بيانات كافية في الصفحة الحالية.</li>
           ) : (
             best.map((p, i) => (
               <li key={p.id} className="flex justify-between gap-2 text-stone-800 dark:text-stone-100">
@@ -53,14 +53,14 @@ export function ProductsAnalyticsStrip({ products }: Props) {
           )}
         </ul>
       </div>
-      <div className="rounded-xl border border-orange-100/80 bg-gradient-to-br from-white to-orange-50/35 p-4 dark:border-orange-900/40 dark:from-stone-900 dark:to-orange-950/20">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-orange-900 dark:text-orange-200">
+      <div className="rounded-xl border border-orange-100/80 bg-[rgb(61,36,24)] p-4 dark:border-orange-900/40">
+        <div className="flex items-center gap-2 text-right text-xs font-bold uppercase tracking-wide text-orange-900 dark:text-orange-200">
           <AlertTriangle className="h-4 w-4" aria-hidden />
           تنبيهات مخزون منخفض
         </div>
         <ul className="mt-3 space-y-2 text-sm">
           {lowAlerts.length === 0 ? (
-            <li className="text-cb-text-muted">لا منتجات منخفضة في هذه الصفحة.</li>
+            <li className="text-right text-[var(--caramel)]">لا منتجات منخفضة في هذه الصفحة.</li>
           ) : (
             lowAlerts.map((p) => (
               <li key={p.id} className="flex justify-between gap-2">
@@ -72,7 +72,7 @@ export function ProductsAnalyticsStrip({ products }: Props) {
             ))
           )}
         </ul>
-        <p className="mt-3 flex items-center gap-1 text-[11px] text-cb-text-muted">
+        <p className="mt-3 flex items-center justify-end gap-1 text-right text-[11px] text-[var(--caramel)]">
           <BarChart3 className="h-3.5 w-3.5" aria-hidden />
           مؤشرات سريعة من البيانات المحمّلة حالياً (مع التصفية والترقيم).
         </p>

@@ -26,3 +26,15 @@ export const ADMIN_CONSOLE_NAV_ITEMS: AdminConsoleNavItem[] = [
 export function getAccessibleAdminConsoleNav(role: UserRole): AdminConsoleNavItem[] {
   return ADMIN_CONSOLE_NAV_ITEMS.filter((item) => canAccess(role, item.module));
 }
+
+/** يطابق الصفحة الحالية مع عنصر التنقل (لوحة الإدارة). */
+export function resolveCurrentAdminConsolePage(
+  pathname: string,
+  navItems: AdminConsoleNavItem[],
+): AdminConsoleNavItem | undefined {
+  const exact = navItems.find((item) => pathname === item.href);
+  if (exact) return exact;
+  return navItems.find(
+    (item) => item.href !== "/admin" && pathname.startsWith(`${item.href}/`),
+  );
+}

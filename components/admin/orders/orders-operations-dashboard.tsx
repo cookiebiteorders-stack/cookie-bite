@@ -139,7 +139,7 @@ export function OrdersOperationsDashboard() {
           </p>
         </div>
         <div className="w-full overflow-x-auto">
-          <div className="flex min-w-max flex-nowrap items-center gap-2 pb-1">
+          <div className="flex min-w-max flex-nowrap items-center gap-2 pb-1 text-[var(--card-foreground)]">
             <button
             type="button"
             disabled
@@ -153,7 +153,7 @@ export function OrdersOperationsDashboard() {
             <button
             type="button"
             onClick={exportPage}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-[rgb(51,0,0)] px-3 py-2 text-xs font-bold text-[var(--card-foreground)] shadow-sm dark:bg-[rgb(51,0,0)] dark:text-[var(--card-foreground)]"
             >
               <Download className="h-4 w-4" aria-hidden />
               تصدير
@@ -163,7 +163,7 @@ export function OrdersOperationsDashboard() {
             disabled
             title="استيراد CSV غير مفعّل بعد"
             aria-disabled="true"
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm opacity-50 dark:bg-stone-900"
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-[rgb(51,0,0)] px-3 py-2 text-xs font-bold text-[var(--card-foreground)] shadow-sm opacity-50 dark:bg-[rgb(51,0,0)] dark:text-[var(--card-foreground)]"
             >
               <Upload className="h-4 w-4" aria-hidden />
               استيراد
@@ -171,7 +171,7 @@ export function OrdersOperationsDashboard() {
             <button
             type="button"
             onClick={() => void loadOrders()}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-[rgb(51,0,0)] px-3 py-2 text-xs font-bold text-[var(--card-foreground)] shadow-sm dark:bg-[rgb(51,0,0)] dark:text-[var(--card-foreground)]"
             >
               <Zap className="h-4 w-4" aria-hidden />
               مزامنة
@@ -181,7 +181,7 @@ export function OrdersOperationsDashboard() {
             disabled
             title="الطباعة الجماعية غير متوفرة بعد"
             aria-disabled="true"
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm opacity-50 dark:bg-stone-900"
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-[rgb(51,0,0)] px-3 py-2 text-xs font-bold text-[var(--card-foreground)] shadow-sm opacity-50 dark:bg-[rgb(51,0,0)] dark:text-[var(--card-foreground)]"
             >
               <Printer className="h-4 w-4" aria-hidden />
               طباعة
@@ -189,7 +189,7 @@ export function OrdersOperationsDashboard() {
             <button
             type="button"
             onClick={() => void loadOrders()}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-[rgb(51,0,0)] px-3 py-2 text-xs font-bold text-[var(--card-foreground)] shadow-sm dark:bg-[rgb(51,0,0)] dark:text-[var(--card-foreground)]"
             >
               <RefreshCw className="h-4 w-4" aria-hidden />
               تحديث فوري
@@ -198,7 +198,7 @@ export function OrdersOperationsDashboard() {
               <button
               type="button"
               onClick={() => setSettingsOpen((o) => !o)}
-              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-[rgb(51,0,0)] px-3 py-2 text-xs font-bold text-[var(--card-foreground)] shadow-sm dark:bg-[rgb(51,0,0)] dark:text-[var(--card-foreground)]"
               aria-expanded={settingsOpen}
               >
                 <Settings className="h-4 w-4" aria-hidden />

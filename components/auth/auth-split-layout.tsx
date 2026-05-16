@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Lock } from "lucide-react";
 import { SiteLogoLink } from "@/components/brand/site-logo";
 import { SITE } from "@/lib/data";
+import { cn } from "@/lib/utils";
 
 type Props = {
   children: React.ReactNode;
@@ -39,13 +39,11 @@ export function AuthSplitLayout({
           >
             <ArrowLeft className="h-5 w-5" aria-hidden />
           </Link>
-          <Image
+          <img
             src={imageSrc}
             alt={imageAlt}
-            fill
-            className={imageClassName}
-            sizes="(min-width: 768px) min(336px, 44vw), 0px"
-            priority
+            className={cn("absolute inset-0 h-full w-full", imageClassName)}
+            decoding="async"
             fetchPriority="high"
           />
           <div
@@ -71,13 +69,11 @@ export function AuthSplitLayout({
           </div>
           {showMobileImageStrip ? (
             <div className="relative mb-7 h-44 w-full max-w-[23.5rem] overflow-hidden rounded-2xl shadow-md ring-1 ring-cb-peach-deep/50 dark:ring-cb-border md:hidden">
-              <Image
+              <img
                 src={imageSrc}
                 alt={imageAlt}
-                fill
-                className={imageClassName}
-                sizes="(max-width: 640px) calc(100vw - 2rem), 23.5rem"
-                priority
+                className={cn("absolute inset-0 h-full w-full object-cover", imageClassName)}
+                decoding="async"
                 fetchPriority="high"
               />
             </div>

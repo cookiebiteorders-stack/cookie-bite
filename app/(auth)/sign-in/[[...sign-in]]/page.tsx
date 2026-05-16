@@ -17,11 +17,8 @@ export default async function SignInPage({ searchParams }: Props) {
       imageSrc={IMAGES.signIn}
       imageAlt="Cookie Bite — شخصية الكوكيز"
       imageClassName="object-cover object-[center_20%]"
-      title="Welcome Back"
-      subtitle="Sign in quickly to track orders, manage your account, and continue checkout in seconds."
-      switchLabel="New to Cookie Bite?"
-      switchHref="/sign-up"
-      switchCta="Create account"
+      showAlternateAuth={false}
+      compactMobilePreview
     >
       <ClerkSmartCaptcha />
       <SignInForm afterAuth={afterAuth} />

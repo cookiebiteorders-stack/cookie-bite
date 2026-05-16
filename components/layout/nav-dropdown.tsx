@@ -11,9 +11,11 @@ type NavDropdownProps = {
   label: ReactNode;
   items: NavDropdownItem[];
   className?: string;
+  /** يبرز الزر عندما يكون المسار الحالي ضمن أحد الروابط (مثل لوحة الإدارة). */
+  isActive?: boolean;
 };
 
-export function NavDropdown({ label, items, className }: NavDropdownProps) {
+export function NavDropdown({ label, items, className, isActive }: NavDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -35,6 +37,8 @@ export function NavDropdown({ label, items, className }: NavDropdownProps) {
         className={cn(
           "inline-flex items-center gap-1 text-sm font-medium text-cb-text-strong transition-colors duration-200 hover:text-cb-terracotta-dark",
           open && "text-cb-terracotta-dark",
+          isActive &&
+            "text-cb-text-strong underline decoration-[1.5px] underline-offset-[10px] decoration-cb-terracotta-dark/80 dark:decoration-cb-terracotta/70",
         )}
       >
         {label}

@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Lock } from "lucide-react";
 import { SiteLogoLink } from "@/components/brand/site-logo";
@@ -10,12 +9,17 @@ type AuthLayoutProps = {
   children: React.ReactNode;
   imageSrc: string;
   imageAlt: string;
-  title: string;
-  subtitle: string;
-  switchLabel: string;
-  switchHref: string;
-  switchCta: string;
+  /** عنوان الصفحة — اتركه فارغاً أو احذف الخاصية لإخفاء كتلة العنوان بالكامل */
+  title?: string;
+  subtitle?: string;
+  /** زر التبديل إلى تسجيل / دخول في أسفل القسم — عطّله في صفحة الدخول إن رغبت */
+  showAlternateAuth?: boolean;
+  switchLabel?: string;
+  switchHref?: string;
+  switchCta?: string;
   imageClassName?: string;
+  /** ارتفاع أصغر لشريط الصورة على الجوال (يناسب نماذج قصيرة مثل تسجيل الدخول) */
+  compactMobilePreview?: boolean;
 };
 
 export function AuthLayout({
@@ -24,14 +28,18 @@ export function AuthLayout({
   imageAlt,
   title,
   subtitle,
-  switchLabel,
-  switchHref,
-  switchCta,
+  showAlternateAuth = true,
+  switchLabel = "",
+  switchHref = "",
+  switchCta = "",
   imageClassName = "object-cover",
+  compactMobilePreview = false,
 }: AuthLayoutProps) {
+  const showSwitch = Boolean(showAlternateAuth && switchHref && switchCta);
+
   return (
-    <div className="relative min-h-dvh bg-gradient-to-b from-cb-cream via-cb-peach/30 to-cb-cream px-3 py-3 sm:px-4 sm:py-6 dark:from-cb-cream dark:via-cb-peach-deep/20 dark:to-cb-cream">
-      <div className="mx-auto flex min-h-[calc(100dvh-1.5rem)] max-h-[calc(100dvh-1.5rem)] w-full max-w-[980px] overflow-hidden rounded-3xl border border-cb-border/70 bg-cb-surface shadow-[var(--shadow-editorial)] sm:min-h-[calc(100dvh-3rem)] sm:max-h-[calc(100dvh-3rem)]">
+    <div className="relative min-h-dvh bg-gradient-to-b from-cb-cream via-cb-peach/30 to-cb-cream px-3 py-3 sm:px-4 sm:py-6 dark:from-neutral-950 dark:via-stone-900 dark:to-neutral-950">
+      <div className="mx-auto flex w-full max-w-[980px] min-h-[calc(100dvh-1.5rem)] flex-col overflow-hidden rounded-3xl border border-cb-border/70 bg-cb-surface shadow-[var(--shadow-editorial)] dark:bg-transparent sm:min-h-[calc(100dvh-3rem)] md:flex-row md:items-stretch">
         <aside className="relative hidden w-[42%] min-w-[320px] md:block">
           <Link
             href="/"
@@ -40,7 +48,13 @@ export function AuthLayout({
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <Image src={imageSrc} alt={imageAlt} fill className={imageClassName} priority />
+          <img
+            src={imageSrc}
+            alt={imageAlt}
+            className={cn("absolute inset-0 h-full w-full", imageClassName)}
+            decoding="async"
+            fetchPriority="high"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/20" aria-hidden />
           <div className="absolute bottom-6 left-6 right-6 space-y-2 text-white">
             <p className="font-serif text-xl font-semibold">{SITE.tagline}</p>
@@ -51,35 +65,47 @@ export function AuthLayout({
           </div>
         </aside>
 
-        <section className="flex w-full flex-1 flex-col gap-4 overflow-y-auto p-3 sm:p-5 md:px-8 md:py-8">
+        <section className="flex w-full min-h-0 flex-1 shrink-0 flex-col gap-3 overflow-x-hidden overscroll-x-none p-3 sm:p-5 md:grow md:justify-center md:gap-4 md:px-8 md:py-8">
           <div className="mx-auto w-full max-w-[460px] space-y-3">
             <SiteLogoLink showTagline={false} className="justify-center md:justify-start" />
-            <div className="space-y-2">
-              <h1 className="text-2xl font-bold tracking-tight text-cb-text-strong sm:text-3xl">{title}</h1>
-              <p className="text-sm leading-relaxed text-cb-text-muted sm:text-base">{subtitle}</p>
-            </div>
-            <div className="relative hidden h-24 overflow-hidden rounded-2xl min-[420px]:block sm:h-28 md:hidden">
-              <Image
+            {title || subtitle ? (
+              <div className="space-y-2">
+                {title ? (
+                  <h1 className="text-2xl font-bold tracking-tight text-cb-text-strong sm:text-3xl">{title}</h1>
+                ) : null}
+                {subtitle ? (
+                  <p className="text-sm leading-relaxed text-cb-text-muted sm:text-base">{subtitle}</p>
+                ) : null}
+              </div>
+            ) : null}
+            <div
+              className={cn(
+                "relative hidden overflow-hidden rounded-2xl min-[420px]:block md:hidden",
+                compactMobilePreview ? "h-16 sm:h-20" : "h-24 sm:h-28",
+              )}
+            >
+              <img
                 src={imageSrc}
                 alt={imageAlt}
-                fill
-                className={cn("object-cover", imageClassName)}
-                sizes="(max-width: 768px) calc(100vw - 2rem), 0px"
-                priority
+                className={cn("absolute inset-0 h-full w-full object-cover", imageClassName)}
+                decoding="async"
+                fetchPriority="high"
               />
             </div>
           </div>
 
-          <div className="mx-auto w-full max-w-[460px] min-h-0">{children}</div>
+          <div className="mx-auto w-full max-w-[460px] min-h-0 min-w-0 overflow-x-visible">{children}</div>
 
-          <div className="mx-auto w-full max-w-[460px] rounded-2xl border border-cb-border bg-cb-surface-elevated p-3 sm:p-4">
-            <p className="mb-2 text-sm text-cb-text-muted">{switchLabel}</p>
-            <Link href={switchHref} className="block">
-              <AuthButton type="button" className="h-11">
-                {switchCta}
-              </AuthButton>
-            </Link>
-          </div>
+          {showSwitch ? (
+            <div className="mx-auto w-full max-w-[460px] rounded-2xl border border-cb-border bg-cb-surface-elevated p-3 sm:p-4 dark:border-cb-border dark:bg-transparent">
+              <p className="mb-2 text-sm text-cb-text-muted">{switchLabel}</p>
+              <Link href={switchHref} className="block">
+                <AuthButton type="button" className="h-11">
+                  {switchCta}
+                </AuthButton>
+              </Link>
+            </div>
+          ) : null}
         </section>
       </div>
     </div>

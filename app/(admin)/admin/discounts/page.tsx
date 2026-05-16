@@ -477,7 +477,7 @@ export default function AdminDiscountsPage() {
           <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-cb-border/70 pt-4">
             <button
               type="submit"
-              className="rounded-2xl bg-gradient-to-r from-[#E67E22] to-[#d46d16] px-4 py-2 text-sm font-bold text-white shadow-[0_8px_24px_-14px_rgba(230,126,34,0.65)] transition hover:-translate-y-0.5"
+              className="rounded-2xl bg-[#E67E22] px-4 py-2 text-sm font-bold text-white shadow-[0_8px_24px_-14px_rgba(230,126,34,0.65)] transition hover:-translate-y-0.5 hover:bg-[#d46d16]"
             >
               Create Discount
             </button>
@@ -519,7 +519,7 @@ export default function AdminDiscountsPage() {
               <Ticket className="h-5 w-5 text-amber-700 dark:text-amber-300" />
               Live Preview
             </h3>
-            <div className="mt-4 rounded-2xl border border-cb-border bg-gradient-to-br from-[#FFF6EE] to-[#FFFDF9] p-4 dark:from-stone-900 dark:to-stone-950">
+            <div className="mt-4 rounded-2xl border border-cb-border bg-[#FFF6EE] p-4 dark:bg-stone-900">
               <p className="text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">Coupon Card</p>
               <p className="mt-1 font-serif text-2xl font-bold text-stone-950 dark:text-white">{code || "YOUR-CODE"}</p>
               <p className="text-sm text-stone-800 dark:text-stone-300">
@@ -634,7 +634,7 @@ export default function AdminDiscountsPage() {
                     <td className="px-4 py-3 text-stone-800 dark:text-stone-200">EGP {(d.value * 170).toLocaleString()}</td>
                     <td className="px-4 py-3">
                       <div className="h-2 w-24 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700">
-                        <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-emerald-500" style={{ width: `${d.usage}%` }} />
+                        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${d.usage}%` }} />
                       </div>
                       <span className="text-xs text-stone-700 dark:text-stone-300">{d.usage}%</span>
                     </td>

@@ -231,8 +231,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
             exit={reduceMotion ? undefined : { x: 28, opacity: 0 }}
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
             className={cn(
-              "flex h-full w-full max-w-xl flex-col border-s border-cb-border bg-gradient-to-b from-cb-surface-2 via-cb-surface-elevated to-cb-surface-elevated shadow-2xl",
-              "dark:from-cb-surface-2 dark:via-cb-surface-elevated dark:to-cb-surface-elevated",
+              "flex h-full w-full max-w-xl flex-col border-s border-cb-border bg-cb-surface-elevated shadow-2xl",
             )}
             onMouseDown={(e) => e.stopPropagation()}
           >

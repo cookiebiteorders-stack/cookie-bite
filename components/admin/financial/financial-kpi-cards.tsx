@@ -53,14 +53,14 @@ export function FinancialKpiCards({ kpis, comparison, showUsd, onToggleUsd }: Pr
       value: showUsd ? fmtUsd(kpis.revenue_egp) : fmtEgp(kpis.revenue_egp),
       sub: `${kpis.paid_orders_count} paid orders`,
       icon: TrendingUp,
-      wrap: "border-emerald-200/90 from-emerald-50 to-white dark:border-emerald-900/40 dark:from-emerald-950/30",
+      wrap: "border-emerald-200/90 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/35",
     },
     {
       label: "Total expenses",
       value: showUsd ? fmtUsd(kpis.expenses_egp) : fmtEgp(kpis.expenses_egp),
       sub: "Recorded in ledger",
       icon: Banknote,
-      wrap: "border-red-200/90 from-red-50 to-white dark:border-red-900/40 dark:from-red-950/30",
+      wrap: "border-red-200/90 bg-red-50 dark:border-red-900/40 dark:bg-red-950/35",
     },
     {
       label: "Net profit",
@@ -68,9 +68,9 @@ export function FinancialKpiCards({ kpis, comparison, showUsd, onToggleUsd }: Pr
       sub: netPositive ? "Above costs" : "Below costs",
       icon: Scale,
       wrap: cn(
-        "border-slate-200/90 from-slate-50 to-white dark:border-slate-800 dark:from-slate-900/40",
-        netPositive && "border-emerald-300/90 from-emerald-50/90 to-white dark:border-emerald-800",
-        !netPositive && "border-red-300/90 from-red-50/90 to-white dark:border-red-900/50",
+        "border-slate-200/90 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50",
+        netPositive && "border-emerald-300/90 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40",
+        !netPositive && "border-red-300/90 bg-red-50 dark:border-red-900/50 dark:bg-red-950/40",
       ),
     },
     {
@@ -78,14 +78,14 @@ export function FinancialKpiCards({ kpis, comparison, showUsd, onToggleUsd }: Pr
       value: `${kpis.profit_margin_pct.toFixed(1)}%`,
       sub: "Net ÷ revenue",
       icon: PiggyBank,
-      wrap: "border-violet-200/90 from-violet-50 to-white dark:border-violet-900/40 dark:from-violet-950/30",
+      wrap: "border-violet-200/90 bg-violet-50 dark:border-violet-900/40 dark:bg-violet-950/35",
     },
     {
       label: "Cash flow (net)",
       value: showUsd ? fmtUsd(kpis.cash_flow_egp) : fmtEgp(kpis.cash_flow_egp),
       sub: "Same as net in this view",
       icon: Wallet,
-      wrap: "border-cyan-200/90 from-cyan-50 to-white dark:border-cyan-900/40 dark:from-cyan-950/30",
+      wrap: "border-cyan-200/90 bg-cyan-50 dark:border-cyan-900/40 dark:bg-cyan-950/35",
     },
   ];
 
@@ -109,7 +109,7 @@ export function FinancialKpiCards({ kpis, comparison, showUsd, onToggleUsd }: Pr
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.04 }}
             className={cn(
-              "rounded-2xl border bg-gradient-to-br p-4 shadow-sm transition-transform hover:-translate-y-0.5 sm:p-5",
+              "rounded-2xl border p-4 shadow-sm transition-transform hover:-translate-y-0.5 sm:p-5",
               c.wrap,
             )}
           >

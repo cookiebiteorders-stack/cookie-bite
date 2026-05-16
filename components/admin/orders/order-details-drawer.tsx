@@ -118,8 +118,7 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId, canWrite }: Pr
             exit={reduceMotion ? undefined : { x: 28, opacity: 0 }}
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
             className={cn(
-              "flex h-full w-full max-w-lg flex-col border-s border-cb-border bg-gradient-to-b from-stone-50 via-white to-white shadow-2xl",
-              "dark:from-stone-950 dark:via-cb-surface-elevated dark:to-cb-surface-elevated",
+              "flex h-full w-full max-w-lg flex-col border-s border-cb-border bg-cb-surface shadow-2xl dark:bg-cb-surface-elevated",
             )}
             onMouseDown={(e) => e.stopPropagation()}
           >

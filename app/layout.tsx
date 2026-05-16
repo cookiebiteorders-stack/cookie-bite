@@ -18,11 +18,13 @@ import {
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { LanguageProvider } from "@/components/providers/language-provider";
 import { MorphTransitionProvider } from "@/components/providers/morph-transition-provider";
+import { StaffAdminNavProvider } from "@/components/providers/staff-admin-nav-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { LokiBootstrap } from "@/components/effects/loki-bootstrap";
 import { LokiSvgFilters } from "@/components/effects/loki-svg-filters";
 import { LANG_COOKIE, THEME_COOKIE } from "@/lib/preferences/client-cookies";
 import { cn } from "@/lib/utils";
+import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -234,22 +236,31 @@ export default async function RootLayout({
         <LokiSvgFilters />
         <ClerkProvider
           localization={cookieBiteClerkLocalization}
+          appearance={{
+            ...clerkAuthAppearance,
+            layout: {
+              ...clerkAuthAppearance.layout,
+              unsafe_disableDevelopmentModeWarnings: true,
+            },
+          }}
           signInUrl="/sign-in"
           signUpUrl="/sign-up"
           afterSignOutUrl="/"
           signInFallbackRedirectUrl="/account"
           signUpFallbackRedirectUrl="/account"
         >
-          <ThemeProvider initialPreference={themePreference} initialResolved={serverResolvedLightDark}>
-            <LanguageProvider initialLang={lang}>
-              <MorphTransitionProvider>
-                <LokiBootstrap />
-                <SiteJsonLd />
-                <GA4Tracker />
-                <ErrorBoundary>{children}</ErrorBoundary>
-              </MorphTransitionProvider>
-            </LanguageProvider>
-          </ThemeProvider>
+          <StaffAdminNavProvider>
+            <ThemeProvider initialPreference={themePreference} initialResolved={serverResolvedLightDark}>
+              <LanguageProvider initialLang={lang}>
+                <MorphTransitionProvider>
+                  <LokiBootstrap />
+                  <SiteJsonLd />
+                  <GA4Tracker />
+                  <ErrorBoundary>{children}</ErrorBoundary>
+                </MorphTransitionProvider>
+              </LanguageProvider>
+            </ThemeProvider>
+          </StaffAdminNavProvider>
         </ClerkProvider>
       </body>
     </html>

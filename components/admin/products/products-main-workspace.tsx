@@ -512,7 +512,7 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 6 }}
-            className="flex flex-col gap-3 rounded-2xl border border-amber-200/80 bg-gradient-to-r from-amber-50 to-orange-50/80 p-4 dark:border-amber-900/50 dark:from-amber-950/30 dark:to-orange-950/20 sm:flex-row sm:flex-wrap sm:items-center"
+            className="flex flex-col gap-3 rounded-2xl border border-amber-200/80 bg-amber-50/90 p-4 dark:border-amber-900/50 dark:bg-amber-950/30 sm:flex-row sm:flex-wrap sm:items-center"
           >
             <p className="text-sm font-bold text-amber-950 dark:text-amber-100">
               {selectedCount} منتج محدد
@@ -633,12 +633,12 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
             </div>
           ))
         ) : products.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-amber-300/80 bg-amber-50/50 p-8 text-center dark:border-amber-800 dark:bg-amber-950/20">
+          <div className="rounded-2xl border-0 bg-[var(--brown)] p-8 text-center shadow-[0px_4px_12px_0px_rgba(0,0,0,0.15)]">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow dark:bg-stone-900">
               <Filter className="h-8 w-8 text-amber-600" aria-hidden />
             </div>
             <h3 className="font-serif text-lg font-bold text-stone-900 dark:text-stone-50">لا توجد منتجات</h3>
-            <p className="mt-2 text-sm text-cb-text-muted">جرّب تغيير الفلاتر أو أضف منتجاً جديداً.</p>
+            <p className="mt-2 text-sm text-[var(--bg-card)]">جرّب تغيير الفلاتر أو أضف منتجاً جديداً.</p>
             <button
               type="button"
               disabled={!canWrite}
@@ -716,7 +716,7 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
       <div className="hidden overflow-x-auto rounded-2xl border border-cb-border/90 bg-white/95 shadow-sm dark:bg-cb-surface-elevated/95 md:block">
         <table className="w-full min-w-[1100px] border-collapse text-sm">
           <caption className="sr-only">جدول المنتجات — التصفية والترقيم والإجراءات</caption>
-          <thead className="bg-gradient-to-b from-cb-surface-2/80 to-transparent text-start text-xs font-bold uppercase tracking-wide text-cb-text-muted">
+          <thead className="bg-cb-surface-2/95 text-start text-xs font-bold uppercase tracking-wide text-cb-text-muted dark:bg-cb-surface-2/80">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((h) => (
@@ -733,7 +733,7 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
                 <tr key={i} className="border-b border-cb-border">
                   {columns.map((c, j) => (
                     <td key={j} className="px-3 py-3">
-                      <div className="h-4 animate-pulse rounded bg-gradient-to-r from-cb-surface-2 via-cb-surface to-cb-surface-2 bg-[length:200%_100%]" />
+                      <div className="h-4 animate-pulse rounded bg-cb-surface-2 dark:bg-cb-surface-2/70" />
                     </td>
                   ))}
                 </tr>

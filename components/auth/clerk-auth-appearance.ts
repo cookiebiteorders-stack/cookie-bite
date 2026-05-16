@@ -3,6 +3,8 @@ export const clerkAuthAppearance = {
   layout: {
     socialButtonsVariant: "blockButton" as const,
     shimmer: false,
+    /** إخفاء شريط «Development mode» في التطوير — يقلّل كسر التخطيط والتمرير الأفقي */
+    unsafe_disableDevelopmentModeWarnings: true,
   },
   variables: {
     colorPrimary: "#c1692c",
@@ -20,32 +22,40 @@ export const clerkAuthAppearance = {
   },
   elements: {
     rootBox:
-      "mx-auto w-full !max-w-[28rem] min-w-0 box-border motion-safe:transition-[opacity,transform] motion-safe:duration-300",
+      "mx-auto w-full !max-w-[28rem] min-w-0 box-border overflow-x-hidden motion-safe:transition-[opacity,transform] motion-safe:duration-300",
     card: [
-      "shadow-[0_8px_32px_-8px_rgba(91,58,36,0.12)] ring-1 ring-cb-peach-deep/80 bg-cb-surface dark:bg-cb-surface-elevated dark:ring-cb-border",
+      "shadow-[0_8px_32px_-8px_rgba(91,58,36,0.12)] ring-1 ring-cb-peach-deep/80 bg-cb-surface dark:bg-transparent dark:ring-cb-border/60",
       "!w-full !max-w-[28rem] min-w-0 mx-auto",
       "rounded-2xl p-4 sm:p-5 box-border gap-3 sm:gap-4",
-      "max-h-[min(66dvh,34rem)] overflow-y-auto sm:max-h-[min(68dvh,36rem)]",
+      "max-h-none overflow-x-hidden overflow-y-visible overscroll-x-none",
       "motion-safe:transition-[box-shadow,ring-color] motion-safe:duration-300",
-      "focus-within:ring-2 focus-within:ring-cb-brand-logo/25 focus-within:ring-offset-2 focus-within:ring-offset-cb-cream dark:focus-within:ring-offset-cb-cream-2",
+      "focus-within:ring-2 focus-within:ring-cb-brand-logo/25 focus-within:ring-offset-2 focus-within:ring-offset-cb-cream dark:focus-within:ring-offset-transparent",
     ].join(" "),
     header: "space-y-1.5",
     headerTitle:
       "font-serif text-2xl font-semibold text-cb-text-strong tracking-tight sm:text-[1.75rem]",
     headerSubtitle:
       "text-sm leading-relaxed text-cb-text-muted sm:text-[0.9375rem]",
-    main: "min-w-0 w-full max-w-full gap-4",
+    main: "min-w-0 w-full max-w-full gap-4 overflow-x-hidden",
     scrollBox: "min-w-0 w-full max-w-full overflow-x-hidden",
-    socialButtonsRoot: "grid w-full min-w-0 max-w-full grid-cols-1 gap-2.5",
+    socialButtonsRoot:
+      "flex w-full min-w-0 max-w-full flex-col gap-2.5 [&>*]:min-w-0 [&>*]:max-w-full [&>*]:w-full",
     socialButtonsBlockButton: [
-      "w-full max-w-full rounded-xl border-2 border-cb-border bg-cb-cream-2/80",
+      "inline-flex w-full min-w-0 max-w-full items-center justify-center gap-3",
+      "rounded-xl border-2 border-cb-border bg-cb-cream-2/80",
       "text-sm h-12 min-h-12 font-semibold text-cb-text-strong",
       "transition-[background-color,transform,box-shadow] duration-200 ease-out",
       "hover:bg-cb-peach/50 hover:-translate-y-px hover:shadow-sm",
       "active:translate-y-0",
     ].join(" "),
-    socialButtonsIconButton:
-      "w-full max-w-full rounded-xl border-2 border-cb-border h-11",
+    socialButtonsIconButton: [
+      "inline-flex w-full min-w-0 max-w-full items-center justify-center gap-3",
+      "rounded-xl border-2 border-cb-border bg-cb-cream-2/80",
+      "text-sm h-12 min-h-12 font-semibold text-cb-text-strong",
+      "transition-[background-color,transform,box-shadow] duration-200 ease-out",
+      "hover:bg-cb-peach/50 hover:-translate-y-px hover:shadow-sm",
+      "active:translate-y-0",
+    ].join(" "),
     formButtonPrimary: [
       "w-full max-w-full rounded-xl bg-cb-brand-logo hover:bg-[color-mix(in_oklab,var(--cb-brand-logo)_88%,#000)]",
       "text-base h-12 min-h-12 font-bold text-white shadow-sm",
@@ -76,10 +86,11 @@ export const clerkAuthAppearance = {
       "text-xs font-medium text-red-800 bg-red-50/90 rounded-lg px-2 py-1.5 ring-1 ring-red-200/80",
     formFieldSuccessText: "text-xs font-medium text-emerald-800",
     formFieldHintText: "text-xs text-cb-text-muted leading-snug",
-    footerAction: "flex flex-wrap gap-x-1 gap-y-1 justify-center text-center",
+    footerAction:
+      "flex min-w-0 w-full max-w-full flex-wrap gap-x-1 gap-y-1 justify-center overflow-x-hidden text-center",
     footerActionLink:
       "text-cb-terracotta-dark font-bold text-sm underline-offset-4 hover:underline",
-    footer: "text-xs sm:text-sm text-cb-text-muted",
+    footer: "min-w-0 w-full max-w-full text-xs sm:text-sm text-cb-text-muted",
     footerPages: "text-xs text-cb-text-muted",
     identityPreviewText: "text-sm text-cb-text",
     identityPreviewEditButton:

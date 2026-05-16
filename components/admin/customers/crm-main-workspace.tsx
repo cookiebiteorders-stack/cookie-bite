@@ -411,7 +411,7 @@ export function CrmMainWorkspace({ searchInputRef, onOpenProfile }: Props) {
 
       <div className="hidden overflow-x-auto rounded-2xl border border-cb-border/90 bg-cb-surface-elevated shadow-sm md:block">
         <table data-cb-zebra="true" className="w-full min-w-[1200px] border-collapse text-sm">
-          <thead className="bg-gradient-to-b from-cb-surface-2/80 to-transparent text-start text-xs font-bold uppercase tracking-wide text-cb-text-strong">
+          <thead className="bg-cb-surface-2/95 text-start text-xs font-bold uppercase tracking-wide text-cb-text-strong dark:bg-cb-surface-2/80">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((h) => (

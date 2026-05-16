@@ -158,10 +158,10 @@ export function ProductManagementDashboard() {
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-relaxed text-cb-text-muted">
             Manage catalog, variants, pricing, stock thresholds, publishing state, SEO, analytics, and inventory
-            operations — اختصارات: <kbd className="rounded border px-1 font-mono text-[10px]">⌘K</kbd> أو{" "}
-            <kbd className="rounded border px-1 font-mono text-[10px]">Ctrl+K</kbd> للأوامر،{" "}
-            <kbd className="rounded border px-1 font-mono text-[10px]">/</kbd> للبحث،{" "}
-            <kbd className="rounded border px-1 font-mono text-[10px]">N</kbd> لإضافة منتج.
+            operations — اختصارات: <kbd className="rounded border px-1 font-mono text-[10px] text-white">⌘K</kbd> أو{" "}
+            <kbd className="rounded border px-1 font-mono text-[10px] text-white">Ctrl+K</kbd> للأوامر،{" "}
+            <kbd className="rounded border px-1 font-mono text-[10px] text-white">/</kbd> للبحث،{" "}
+            <kbd className="rounded border px-1 font-mono text-[10px] text-white">N</kbd> لإضافة منتج.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -187,7 +187,7 @@ export function ProductManagementDashboard() {
           <button
             type="button"
             onClick={exportAllPage}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900"
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold text-[var(--bg-main)] shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900"
           >
             <Download className="h-4 w-4" aria-hidden />
             تصدير CSV
@@ -195,7 +195,7 @@ export function ProductManagementDashboard() {
           <button
             type="button"
             onClick={() => void onSync()}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900"
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold text-[var(--bg-main)] shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900"
           >
             <RefreshCw className="h-4 w-4" aria-hidden />
             مزامنة
@@ -204,7 +204,7 @@ export function ProductManagementDashboard() {
             <button
               type="button"
               onClick={() => setSettingsOpen((o) => !o)}
-              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900"
+              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold text-[var(--bg-main)] shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900"
               aria-expanded={settingsOpen}
               aria-haspopup="menu"
             >
@@ -287,7 +287,7 @@ export function ProductManagementDashboard() {
         onClick={openCreate}
         className={cn(
           "fixed bottom-6 end-6 z-[60] flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-300/80",
-          "bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-xl focus-visible:outline focus-visible:ring-2 focus-visible:ring-amber-300 disabled:opacity-40",
+          "bg-amber-600 text-white shadow-xl hover:bg-amber-700 focus-visible:outline focus-visible:ring-2 focus-visible:ring-amber-300 disabled:opacity-40",
         )}
         aria-label="إضافة منتج سريعة"
       >

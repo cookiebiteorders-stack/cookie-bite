@@ -465,7 +465,7 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
             <button
               type="button"
               onClick={() => setAdvancedOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-950 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-bold text-[var(--accent-foreground)] hover:bg-amber-100 dark:border-amber-800 dark:bg-white dark:text-[var(--accent-foreground)]"
             >
               <SlidersHorizontal className="h-4 w-4" />
               متقدم
@@ -488,7 +488,7 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 6 }}
-            className="flex flex-col gap-3 rounded-2xl border border-sky-200/80 bg-gradient-to-r from-sky-50 to-white p-4 dark:border-sky-900/50 dark:from-sky-950/25 dark:to-stone-900 sm:flex-row sm:flex-wrap sm:items-center"
+            className="flex flex-col gap-3 rounded-2xl border border-sky-200/80 bg-sky-50/90 p-4 dark:border-sky-900/50 dark:bg-sky-950/30 sm:flex-row sm:flex-wrap sm:items-center"
           >
             <p className="text-sm font-bold text-sky-950 dark:text-sky-100">{selectedCount} محدد</p>
             <div className="flex flex-wrap gap-2">
@@ -576,10 +576,10 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
             </div>
           ))
         ) : orders.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-amber-300/80 bg-amber-50/50 p-8 text-center dark:border-amber-800 dark:bg-amber-950/20">
+          <div className="rounded-2xl border border-dashed border-amber-300/80 bg-[rgb(51,0,0)] p-8 text-center dark:border-amber-800 dark:bg-[rgb(51,0,0)]">
             <Package className="mx-auto h-10 w-10 text-amber-600" aria-hidden />
-            <h3 className="mt-3 font-serif text-lg font-bold text-stone-900 dark:text-stone-50">لا توجد طلبات</h3>
-            <p className="mt-2 text-sm text-cb-text-muted">جرّب توسيع نطاق البحث أو إزالة الفلاتر.</p>
+            <h3 className="mt-3 font-serif text-lg font-bold text-stone-50 dark:text-stone-50">لا توجد طلبات</h3>
+            <p className="mt-2 text-sm text-[var(--bg-main)]">جرّب توسيع نطاق البحث أو إزالة الفلاتر.</p>
             <button
               type="button"
               className="mt-4 rounded-xl border border-cb-border px-4 py-2 text-sm font-bold"
@@ -623,7 +623,7 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
 
       <div className="hidden overflow-x-auto rounded-2xl border border-cb-border/90 bg-cb-surface-elevated shadow-sm md:block">
         <table data-cb-zebra="true" className="w-full min-w-[1280px] border-collapse text-sm">
-          <thead className="bg-gradient-to-b from-cb-surface-2/80 to-transparent text-start text-xs font-bold uppercase tracking-wide text-cb-text-strong">
+          <thead className="bg-cb-surface-2/95 text-start text-xs font-bold uppercase tracking-wide text-cb-text-strong dark:bg-cb-surface-2/80">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((h) => (
