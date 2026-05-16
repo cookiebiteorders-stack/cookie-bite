@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect, useCallback, type FormEvent } from "react";
 import { usePathname } from "next/navigation";
-import { Send, Loader2, Sparkles, Wrench, AlertTriangle } from "lucide-react";
+import { Send, Loader2, Wrench, AlertTriangle } from "lucide-react";
 import { useLanguage } from "@/components/providers/language-provider";
+import { MrsCookieAvatar } from "@/components/admin/copilot/mrs-cookie-avatar";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -130,9 +131,7 @@ export function CopilotChat({ fullHeight = false, greeting }: CopilotChatProps) 
     >
       <header className="flex items-center justify-between gap-3 border-b border-cb-border px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-cb-peach/60 text-cb-brand-logo">
-            <Sparkles className="h-4.5 w-4.5" aria-hidden />
-          </span>
+          <MrsCookieAvatar size={36} />
           <div className="flex flex-col leading-tight">
             <span className="text-sm font-bold text-cb-text-strong">
               {t("copilot.title")}
@@ -158,10 +157,7 @@ export function CopilotChat({ fullHeight = false, greeting }: CopilotChatProps) 
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-stretch justify-center gap-4">
             <div className="rounded-2xl border border-dashed border-cb-border-strong bg-cb-peach/30 p-5 text-center">
-              <Sparkles
-                className="mx-auto h-7 w-7 text-cb-brand-logo"
-                aria-hidden
-              />
+              <MrsCookieAvatar size={84} className="mx-auto" />
               <p className="mt-3 text-sm font-semibold text-cb-text-strong">
                 {greeting ?? t("copilot.greeting")}
               </p>

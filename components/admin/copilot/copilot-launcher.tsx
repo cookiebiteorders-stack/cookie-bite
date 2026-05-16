@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, X, Maximize2 } from "lucide-react";
+import { X, Maximize2 } from "lucide-react";
 import { useLanguage } from "@/components/providers/language-provider";
 import { CopilotChat } from "@/components/admin/copilot/copilot-chat";
+import { MrsCookieAvatar } from "@/components/admin/copilot/mrs-cookie-avatar";
 
 /**
  * Floating launcher button (bottom-right) + slide-in drawer with the chat.
@@ -45,12 +46,16 @@ export function CopilotLauncher() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label={t("copilot.openLauncher")}
-        className={`fixed bottom-5 ${
+        className={`group fixed bottom-5 ${
           lang === "ar" ? "left-5" : "right-5"
-        } z-40 inline-flex items-center gap-2 rounded-full bg-cb-brand-logo px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-cb-brand-logo/30 transition hover:bg-cb-brand-logo-dark hover:scale-105 active:scale-95`}
+        } z-40 inline-flex items-center gap-2.5 rounded-full bg-cb-surface py-1.5 ${
+          lang === "ar" ? "pr-1.5 pl-4" : "pl-1.5 pr-4"
+        } text-sm font-semibold text-cb-text-strong shadow-lg shadow-cb-brand-logo/25 ring-1 ring-cb-border-strong transition hover:scale-105 hover:ring-cb-brand-logo active:scale-95`}
       >
-        <Sparkles className="h-4 w-4" aria-hidden />
-        <span className="hidden sm:inline">{t("copilot.askCopilot")}</span>
+        <MrsCookieAvatar size={40} />
+        <span className="hidden whitespace-nowrap sm:inline">
+          {t("copilot.askCopilot")}
+        </span>
       </button>
 
       {open && (
@@ -74,14 +79,16 @@ export function CopilotLauncher() {
             } flex h-full w-full max-w-[440px] flex-col bg-cb-surface-2 shadow-2xl`}
           >
             <div className="flex items-center justify-between border-b border-cb-border bg-cb-surface px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Sparkles
-                  className="h-4 w-4 text-cb-brand-logo"
-                  aria-hidden
-                />
-                <span className="text-sm font-bold text-cb-text-strong">
-                  {t("copilot.title")}
-                </span>
+              <div className="flex items-center gap-2.5">
+                <MrsCookieAvatar size={32} />
+                <div className="flex flex-col leading-tight">
+                  <span className="text-sm font-bold text-cb-text-strong">
+                    {t("copilot.title")}
+                  </span>
+                  <span className="text-[10px] text-cb-text-soft">
+                    {t("copilot.subtitle")}
+                  </span>
+                </div>
               </div>
               <div className="flex items-center gap-1.5">
                 <Link
