@@ -8,6 +8,7 @@ import { ShippingInsights } from "@/components/admin/shipping/shipping-insights"
 import { ShippingZoneForm } from "@/components/admin/shipping/shipping-zone-form";
 import { ShippingZonesPanel } from "@/components/admin/shipping/shipping-zones-panel";
 import { ShippingToasts } from "@/components/admin/shipping/shipping-toasts";
+import { DeliveryZonesMap } from "@/components/admin/shipping/delivery-zones-map";
 
 export function ShippingOrchestrationDashboard() {
   const zones = useShippingOrchestrationStore((s) => s.zones);
@@ -29,6 +30,7 @@ export function ShippingOrchestrationDashboard() {
     <div className="space-y-6 pb-10">
       <ShippingHero online={online && !error} />
       <ShippingInsights zones={zones} />
+      <DeliveryZonesMap />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,400px)_1fr]">
         <ShippingZoneForm existingNames={existingNames} />
         <div className="space-y-4">
