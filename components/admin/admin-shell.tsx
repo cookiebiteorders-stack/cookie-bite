@@ -13,6 +13,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { CartProvider } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
+import { CopilotLauncher } from "@/components/admin/copilot/copilot-launcher";
 
 type AdminShellProps = {
   role: UserRole;
@@ -72,6 +73,7 @@ export function AdminShell({ role, children }: AdminShellProps) {
         </div>
 
         <CartDrawer />
+        <CopilotLauncher />
         </div>
       </AdminConsoleProvider>
     </CartProvider>

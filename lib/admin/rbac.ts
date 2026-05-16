@@ -124,6 +124,7 @@ export function getPermission(role: UserRole, module: ModuleKey): PermissionLeve
 
 export const adminRouteModuleMap: Record<string, ModuleKey> = {
   "/admin": "dashboard",
+  "/admin/copilot": "dashboard",
   "/admin/products": "products",
   "/admin/orders": "orders",
   "/admin/customers": "customers",

@@ -9,6 +9,7 @@ export type AdminConsoleNavItem = {
 
 export const ADMIN_CONSOLE_NAV_ITEMS: AdminConsoleNavItem[] = [
   { href: "/admin", label: "Dashboard", module: "dashboard" },
+  { href: "/admin/copilot", label: "AI Copilot", module: "dashboard" },
   { href: "/admin/products", label: "Products", module: "products" },
   { href: "/admin/orders", label: "Orders", module: "orders" },
   { href: "/admin/customers", label: "Customers", module: "customers" },

@@ -11,6 +11,7 @@ import {
   Settings,
   Shield,
   ShoppingCart,
+  Sparkles,
   Truck,
   Users,
   Wallet,
@@ -19,6 +20,7 @@ import type { AdminConsoleNavItem } from "@/lib/admin/admin-console-nav";
 
 const iconByHref: Record<string, LucideIcon> = {
   "/admin": LayoutDashboard,
+  "/admin/copilot": Sparkles,
   "/admin/products": Boxes,
   "/admin/orders": ShoppingCart,
   "/admin/customers": Users,

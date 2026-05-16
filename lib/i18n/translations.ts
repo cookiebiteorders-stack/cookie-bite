@@ -646,6 +646,22 @@ export const translations: Record<Lang, Dictionary> = {
       whatsapp: "WhatsApp",
       madeWithInCairo: "Made with in Cairo",
     },
+    copilot: {
+      title: "AI Copilot",
+      subtitle: "Your ops co-pilot",
+      askCopilot: "Ask Copilot",
+      openLauncher: "Open AI Copilot",
+      openFullPage: "Open full page",
+      close: "Close",
+      send: "Send",
+      thinking: "Thinking",
+      inputPlaceholder: "Ask anything about your store — orders, products, sales…",
+      greeting: "Hi! I'm your Cookie Bite Copilot.",
+      greetingSub:
+        "Ask me about today's metrics, pending orders, low stock, top customers — anything.",
+      trySomething: "Try one of these",
+      errorGeneric: "Something went wrong. Please try again.",
+    },
   },
   ar: {
     nav: {
@@ -1285,6 +1301,22 @@ export const translations: Record<Lang, Dictionary> = {
       tiktok: "تيك توك",
       whatsapp: "واتساب",
       madeWithInCairo: "صُنع بحب في القاهرة",
+    },
+    copilot: {
+      title: "المساعد الذكي",
+      subtitle: "مساعد العمليات الخاص بك",
+      askCopilot: "اسأل المساعد",
+      openLauncher: "افتح المساعد الذكي",
+      openFullPage: "افتح في صفحة كاملة",
+      close: "إغلاق",
+      send: "إرسال",
+      thinking: "جاري التفكير",
+      inputPlaceholder: "اسأل عن أي شيء — الطلبات، المنتجات، المبيعات…",
+      greeting: "أهلاً! أنا مساعدك الذكي في كوكي بايت.",
+      greetingSub:
+        "اسألني عن أرقام اليوم، الطلبات المعلّقة، المخزون المنخفض، أفضل العملاء — أي شيء.",
+      trySomething: "جرّب أحد هذه",
+      errorGeneric: "حدث خطأ. حاول مرة أخرى.",
     },
   },
 };
