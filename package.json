@@ -19,7 +19,8 @@
     "test:e2e:headed": "playwright test --headed",
     "deploy:github": "node scripts/git-sync.mjs",
     "email:check": "node scripts/email-diagnostics.mjs",
-    "email:finalize-dns": "node scripts/resend-dns-finalize.mjs"
+    "email:finalize-dns": "node scripts/resend-dns-finalize.mjs",
+    "copilot:check": "node scripts/copilot-check.mjs"
   },
   "dependencies": {
     "@clerk/localizations": "^4.6.0",
