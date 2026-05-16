@@ -15,6 +15,7 @@ export type InsertCheckoutOrderInput = {
   shippingAddress: Record<string, unknown>;
   notes: string | null;
   paymobAcceptOrderId?: number | null;
+  guestEmail?: string | null;
 };
 
 /** حفظ طلب + البنود؛ يعيد null إذا لم يُضبط Supabase أو فشل الإدراج. */
@@ -39,6 +40,9 @@ export async function insertCheckoutOrder(
     notes: params.notes,
     shipping_address: params.shippingAddress,
   };
+  if (params.guestEmail) {
+    insertRow.guest_email = params.guestEmail;
+  }
   if (params.paymobAcceptOrderId != null) {
     insertRow.paymob_accept_order_id = params.paymobAcceptOrderId;
   }
@@ -94,38 +98,50 @@ export async function insertCheckoutOrder(
   return { id: orderId, orderNumber };
 }
 
+export type PaymobPaymentUpdateResult =
+  | { ok: false }
+  | { ok: true; orderId: string; becamePaid: boolean; orderNumber: number };
+
 export async function updateOrderPaymentByPaymobAcceptOrderId(
   paymobAcceptOrderId: number,
   patch: Pick<OrderRow, "payment_status"> & Partial<Pick<OrderRow, "status">>,
   paymobTransactionId?: string | null,
-) {
+): Promise<PaymobPaymentUpdateResult> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
-    return false;
+    return { ok: false };
   }
   const supabase = createSupabaseAdminClient();
   const txId = paymobTransactionId ?? null;
 
   const { data: current, error: readErr } = await supabase
     .from("orders")
-    .select("id, payment_status, status, paymob_transaction_id")
+    .select("id, order_number, payment_status, status, paymob_transaction_id")
     .eq("paymob_accept_order_id", paymobAcceptOrderId)
     .maybeSingle<
-      Pick<OrderRow, "id" | "payment_status" | "status" | "paymob_transaction_id">
+      Pick<OrderRow, "id" | "order_number" | "payment_status" | "status" | "paymob_transaction_id">
     >();
 
   if (readErr || !current) {
     if (readErr) console.error("updateOrderPaymentByPaymobAcceptOrderId read", readErr);
-    return false;
+    return { ok: false };
   }
 
   const nextStatus = patch.status ?? current.status;
+  const wasPaid = current.payment_status === "paid";
+  const willBePaid = patch.payment_status === "paid";
+
   if (
     txId &&
     current.paymob_transaction_id === txId &&
     current.payment_status === patch.payment_status &&
     current.status === nextStatus
   ) {
-    return true;
+    return {
+      ok: true,
+      orderId: current.id,
+      becamePaid: willBePaid && !wasPaid,
+      orderNumber: Number(current.order_number),
+    };
   }
 
   const { error } = await supabase
@@ -138,9 +154,14 @@ export async function updateOrderPaymentByPaymobAcceptOrderId(
     .eq("paymob_accept_order_id", paymobAcceptOrderId);
   if (error) {
     console.error("updateOrderPaymentByPaymobAcceptOrderId", error);
-    return false;
+    return { ok: false };
   }
-  return true;
+  return {
+    ok: true,
+    orderId: current.id,
+    becamePaid: willBePaid && !wasPaid,
+    orderNumber: Number(current.order_number),
+  };
 }
 
 export async function listRecentOrdersForUser(userId: string, limit = 5) {

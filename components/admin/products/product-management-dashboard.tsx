@@ -17,10 +17,12 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { useTheme } from "@/components/providers/theme-provider";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { cn } from "@/lib/utils";
+import { parseCsv } from "@/lib/csv/parse-csv";
 
 export function ProductManagementDashboard() {
   const reduceMotion = useReducedMotion();
   const searchRef = useRef<HTMLInputElement>(null);
+  const importRef = useRef<HTMLInputElement>(null);
   const { resolvedTheme, setTheme } = useTheme();
 
   const stats = useProductsDashboardStore((s) => s.stats);
@@ -105,6 +107,74 @@ export function ProductManagementDashboard() {
     pushToast("تم تصدير الصفحة الحالية.", "success");
   }, [products, pushToast]);
 
+  const applyProductCsv = useCallback(
+    async (file: File) => {
+      const text = await file.text();
+      const grid = parseCsv(text);
+      if (grid.length < 2) {
+        pushToast("ملف CSV فارغ أو غير صالح.", "error");
+        return;
+      }
+      const header = grid[0]!.map((h) => h.trim().toLowerCase());
+      const ix = (name: string) => header.indexOf(name);
+      const idCol = ix("id");
+      if (idCol < 0) {
+        pushToast("CSV يجب أن يتضمن عمود id", "error");
+        return;
+      }
+      const rows: Array<Record<string, unknown>> = [];
+      for (let r = 1; r < grid.length; r++) {
+        const row = grid[r]!;
+        const id = row[idCol]?.trim();
+        if (!id) continue;
+        const rec: Record<string, unknown> = { id };
+        const nameI = ix("name");
+        const skuI = ix("sku");
+        const catI = ix("category");
+        const priceI = ix("price_egp");
+        const stockI = ix("stock");
+        const activeI = ix("is_active");
+        if (nameI >= 0 && row[nameI]?.trim()) rec.name = row[nameI]!.trim();
+        if (skuI >= 0) rec.sku = row[skuI]?.trim() || null;
+        if (catI >= 0) rec.category = row[catI]?.trim() || null;
+        if (priceI >= 0 && row[priceI]?.trim()) {
+          const p = Number(row[priceI]);
+          if (Number.isFinite(p)) rec.price_egp = p;
+        }
+        if (stockI >= 0 && row[stockI]?.trim()) {
+          const s = Number(row[stockI]);
+          if (Number.isFinite(s)) rec.stock = Math.floor(s);
+        }
+        if (activeI >= 0 && row[activeI]?.trim() !== "") {
+          const v = row[activeI]!.trim().toLowerCase();
+          rec.is_active = v === "true" || v === "1" || v === "yes";
+        }
+        const keys = Object.keys(rec).filter((k) => k !== "id");
+        if (keys.length === 0) continue;
+        rows.push(rec);
+      }
+      if (!rows.length) {
+        pushToast("لا توجد صفوف صالحة للتحديث.", "error");
+        return;
+      }
+      try {
+        const res = await fetchJson<{ updated: number; failures: string[] }>("/api/admin/products/import-rows", {
+          method: "POST",
+          jsonBody: { rows },
+        });
+        if (res.failures?.length) {
+          pushToast(`تم تحديث ${res.updated} مع ${res.failures.length} أخطاء`, "info");
+        } else {
+          pushToast(`تم تحديث ${res.updated} منتجاً.`, "success");
+        }
+        void loadProducts();
+      } catch (e) {
+        pushToast(e instanceof Error ? e.message : "فشل الاستيراد", "error");
+      }
+    },
+    [loadProducts, pushToast],
+  );
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
@@ -176,14 +246,25 @@ export function ProductManagementDashboard() {
           </button>
           <button
             type="button"
-            disabled
-            title="استيراد CSV غير مفعّل — استخدم تصدير CSV كنموذج للأعمدة"
-            aria-disabled="true"
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm opacity-50 dark:bg-stone-900"
+            disabled={!canWrite}
+            title={canWrite ? "استيراد CSV لتحديث المنتجات الموجودة (عمود id إلزامي)" : "صلاحية الكتابة مطلوبة"}
+            onClick={() => importRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm disabled:opacity-50 dark:bg-stone-900"
           >
             <Upload className="h-4 w-4" aria-hidden />
             استيراد
           </button>
+          <input
+            ref={importRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) void applyProductCsv(f);
+            }}
+          />
           <button
             type="button"
             onClick={exportAllPage}

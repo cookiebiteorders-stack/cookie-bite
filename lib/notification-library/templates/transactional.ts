@@ -316,9 +316,75 @@ export const refundConfirmedTemplate: TemplateBuilder = {
   },
 };
 
+/* ─────────────────────────── Payment confirmed ─────────────────────────── */
+
+const PAYMENT_CONFIRMED_BODY = `
+<div class="email-wrapper">
+  <motion.div class="email-header"><motion.div class="logo">YOUR STORE</motion.div></motion.div>
+  <motion.div class="email-body">
+    <span class="tag green">Payment received</span>
+    <h1>Payment confirmed — thank you, {{first_name}}.</h1>
+    <p class="greeting">Hi {{first_name}},</p>
+    <p>We've received your payment for order <strong>#{{order_number}}</strong>. Your cookies are now in our production queue.</p>
+    <table class="order-table">
+      <thead><tr><th>Item</th><th style="text-align:end;">Amount</th></tr></thead>
+      <tbody>
+        {{items_rows}}
+        <tr class="total-row"><td>Total paid</td><td style="text-align:end;">{{total_amount}}</td></tr>
+      </tbody>
+    </table>
+    <div class="two-col">
+      <motion.div class="col-box"><h4>Payment</h4><p>{{payment_method}}<br><strong>{{total_amount}}</strong></p></motion.div>
+      <motion.div class="col-box"><h4>Invoice</h4><p>{{invoice_number}}<br><a href="{{invoice_url}}">View &amp; download</a></p></motion.div>
+    </div>
+    <motion.div style="text-align:center;margin:22px 0;"><a class="cta-btn" href="{{invoice_url}}">Open invoice</a></motion.div>
+    <hr class="divider">
+    <p style="font-size:13px;color:#9C8B7A;">Questions about your payment? Reply to this email — we're here to help.</p>
+  </motion.div>
+  <motion.div class="email-footer"><p>© 2026 Cookie Bite · {{company_address}}<br><a href="{{order_url}}">Order details</a> · <a href="{{privacy_url}}">Privacy</a></p></motion.div>
+</div>
+`;
+
+export const paymentConfirmedTemplate: TemplateBuilder = {
+  meta: {
+    key: "payment-confirmed",
+    name: "Payment Confirmed",
+    description: "Sent when online payment succeeds (Paymob webhook).",
+    category: "transactional",
+    variant: "email",
+    sampleVars: {
+      first_name: "Sara",
+      order_number: "10042",
+      total_amount: "520.00 EGP",
+      payment_method: "Card · Paymob",
+      invoice_number: "INV-20250516-ABC12345",
+      invoice_url: "https://cookie-bite.com/invoices/INV-20250516-ABC12345",
+      order_url: "https://cookie-bite.com/account/orders",
+      items_rows: "<tr><td>Chocolate chip box</td><td style=\"text-align:end;\">475 EGP</td></tr>",
+      company_address: "Fifth Settlement, New Cairo, Egypt",
+      privacy_url: "https://cookie-bite.com/privacy",
+    },
+  },
+  build(vars, options) {
+    const merged = { ...paymentConfirmedTemplate.meta.sampleVars, ...vars };
+    const body = PAYMENT_CONFIRMED_BODY.replace(/<motion\./g, "<").replace(/<\/motion\./g, "</");
+    return {
+      key: paymentConfirmedTemplate.meta.key,
+      subject: `Payment received for order #${merged.order_number}`,
+      preheader: `${merged.total_amount} confirmed — invoice ${merged.invoice_number}`,
+      html: buildEmail(body, merged, {
+        title: "Payment confirmed",
+        preheader: `${merged.total_amount} confirmed`,
+        lang: options?.lang,
+      }),
+    };
+  },
+};
+
 export const TRANSACTIONAL_TEMPLATES: TemplateBuilder[] = [
   welcomeTemplate,
   orderConfirmedTemplate,
+  paymentConfirmedTemplate,
   orderShippedTemplate,
   orderDeliveredTemplate,
   refundConfirmedTemplate,

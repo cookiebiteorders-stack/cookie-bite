@@ -5,13 +5,12 @@ import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-
 import { sendOrderStatusEmail } from "@/lib/email/send";
 import { bilingualError } from "@/lib/validations";
 import { writeAuditLog } from "@/lib/admin/audit";
+import { ORDER_STATUS_VALUES, PAYMENT_STATUS_VALUES } from "@/lib/domain/order-enums";
 
 const schema = z
   .object({
-    status: z
-      .enum(["pending", "processing", "shipped", "delivered", "cancelled", "refunded"])
-      .optional(),
-    payment_status: z.enum(["unpaid", "paid", "failed", "refunded"]).optional(),
+    status: z.enum(ORDER_STATUS_VALUES).optional(),
+    payment_status: z.enum(PAYMENT_STATUS_VALUES).optional(),
     note: z.string().max(500).optional(),
     shipping_address: z.record(z.string(), z.unknown()).optional(),
   })

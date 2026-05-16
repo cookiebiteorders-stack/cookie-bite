@@ -30,13 +30,15 @@ export function StaffAdminNavProvider({ children }: { children: ReactNode }) {
     if (!isLoaded) return;
 
     if (!userId) {
-      setItems([]);
-      setReady(true);
+      queueMicrotask(() => {
+        setItems([]);
+        setReady(true);
+      });
       return;
     }
 
     const ac = new AbortController();
-    setReady(false);
+    queueMicrotask(() => setReady(false));
 
     fetch("/api/account/admin-nav", { signal: ac.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("admin-nav"))))

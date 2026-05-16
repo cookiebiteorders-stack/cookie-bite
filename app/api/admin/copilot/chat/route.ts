@@ -4,6 +4,7 @@ import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { bilingualError } from "@/lib/validations";
 import { buildCopilotSystemPrompt, type CopilotPromptContext } from "@/lib/admin/copilot/system-prompt";
 import { runCopilot } from "@/lib/admin/copilot/runner";
+import type { CopilotToolActor } from "@/lib/admin/copilot/tools";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const messageSchema = z.object({
@@ -104,10 +105,17 @@ export async function POST(req: NextRequest) {
   });
 
   try {
+    const toolActor: CopilotToolActor = {
+      role: actor.role,
+      email: actor.email,
+      user_id: actor.user_id,
+      clerk_user_id: actor.clerk_user_id,
+    };
     const result = await runCopilot({
       systemInstruction,
       history,
       userMessage: message,
+      actor: toolActor,
     });
     return NextResponse.json({
       reply: result.reply,

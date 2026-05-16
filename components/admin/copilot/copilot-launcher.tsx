@@ -15,7 +15,7 @@ export function CopilotLauncher() {
   const onDedicatedPage = pathname?.startsWith("/admin/copilot");
 
   useEffect(() => {
-    setOpen(false);
+    queueMicrotask(() => setOpen(false));
   }, [pathname]);
 
   useEffect(() => {

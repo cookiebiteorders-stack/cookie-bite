@@ -9,8 +9,9 @@ Use it with `docs/hostinger-production-cookie-bite.com-checklist.md`.
 - You have dashboard access to Hostinger, Clerk, Supabase, Paymob, Resend.
 - You have production values for:
   - `PAYMOB_API_KEY`
-  - `PAYMOB_HMAC`
-  - `INTERNAL_API_SECRET`
+  - `PAYMOB_HMAC_SECRET` (أو legacy `PAYMOB_HMAC`)
+  - `PAYMOB_INTEGRATION_ID_CARD`, `PAYMOB_INTEGRATION_ID_WALLET`
+  - `INTERNAL_API_SECRET`, `REVALIDATE_SECRET`, `CLERK_WEBHOOK_SIGNING_SECRET`
 
 ## 1) Database Migrations (Supabase)
 
@@ -27,6 +28,13 @@ Run migrations in this exact order (أو استخدم `node scripts/supabase-run
 9. `0008_schema_alignment_and_security.sql`
 10. `0009_orders_legacy_modern_sync.sql`
 11. `0010_phase_cde_compat_patch.sql`
+12. `0011_mr_brownie_chat_history.sql` — جلسات وحفظ محادثة Mr. Brownie
+13. `0012_chat_messages.sql` — رسائل المحادثة
+14. `0013_checkout_idempotency.sql` — مفتاح إيديمبوتنسي للدفع/الطلب
+15. `0014_chat_messages_rls.sql` — RLS لرسائل المحادثة
+16. `0015_orders_user_id_users_fkey.sql` — علاقة `orders.user_id` → `users`
+
+مرجع متغيرات Hostinger: [`docs/hostinger-environment-variables.md`](hostinger-environment-variables.md).
 
 Post-migration smoke checks:
 
@@ -53,7 +61,10 @@ Set env values (minimum required):
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
 - `CLERK_SECRET_KEY`
 - `PAYMOB_API_KEY`
-- `PAYMOB_HMAC`
+- `PAYMOB_HMAC_SECRET` (أو `PAYMOB_HMAC`)
+- `PAYMOB_INTEGRATION_ID_CARD`, `PAYMOB_INTEGRATION_ID_WALLET`
+- `CLERK_WEBHOOK_SIGNING_SECRET`
+- `GEMINI_API_KEY` (موصى به — Mrs. Cookie / Mr. Brownie)
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
 - `INTERNAL_API_SECRET`
@@ -148,7 +159,7 @@ node scripts/supabase-schema-snapshot-check.mjs
 ## 7) Incident Triage Quick Map
 
 - Auth failure: Clerk domain/redirect settings + `CLERK_SECRET_KEY`.
-- Payment callback failure: `PAYMOB_HMAC`, webhook URL, logs.
+- Payment callback failure: `PAYMOB_HMAC_SECRET` / `PAYMOB_HMAC`, webhook URL, logs.
 - Admin 403: role mapping (`resolveStaffRoleFromEmail`) + Clerk email.
 - Missing data in admin: Supabase service key / RLS / migration state; شغّل فحص الـ snapshot للجداول الأساسية (`scripts/supabase-schema-snapshot-check.mjs`).
 - Structured errors: راقب محتوى JSON من `logStructuredError` أو الوبهوك؛ استخدم `correlationId` لتتبع مسار الدفع أو الـ webhook.

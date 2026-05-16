@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { CreditCard, MapPin, Package, Truck, X } from "lucide-react";
+import { Bell, CreditCard, MapPin, Package, Truck, X } from "lucide-react";
 import type { AdminOrderRow, OrderItemRow } from "@/lib/admin/orders-operations-types";
 import { useOrdersOperationsStore } from "@/stores/orders-operations-store";
 import { cn } from "@/lib/utils";
@@ -51,6 +51,18 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId, canWrite }: Pr
   const [items, setItems] = useState<OrderItemRow[]>([]);
   const [tracking, setTracking] = useState("");
   const [courier, setCourier] = useState("");
+  const [notificationLogs, setNotificationLogs] = useState<
+    Array<{
+      id: string;
+      notification_type: string;
+      channel: string;
+      recipient: string;
+      status: string;
+      sent_at: string | null;
+      created_at: string;
+    }>
+  >([]);
+  const [resendBusy, setResendBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!orderId) return;
@@ -66,9 +78,49 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId, canWrite }: Pr
       const ship = (res.order.shipping_address ?? {}) as Record<string, unknown>;
       setTracking(str(ship.tracking_number));
       setCourier(str(ship.courier));
+      try {
+        const nRes = await fetch(`/api/admin/orders/${orderId}/notifications`);
+        if (nRes.ok) {
+          const nJson = (await nRes.json()) as { logs?: typeof notificationLogs };
+          setNotificationLogs(nJson.logs ?? []);
+        } else {
+          setNotificationLogs([]);
+        }
+      } catch {
+        setNotificationLogs([]);
+      }
     }
     setLoading(false);
   }, [orderId, fetchOrderDetail, pushToast]);
+
+  const resendNotification = useCallback(
+    async (type: "order_confirmation" | "payment_confirmation") => {
+      if (!orderId) return;
+      setResendBusy(type);
+      try {
+        const res = await fetch(`/api/admin/orders/${orderId}/notifications`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type }),
+        });
+        const json = (await res.json()) as { ok?: boolean; errors?: string[] };
+        if (!res.ok || !json.ok) {
+          pushToast(
+            json.errors?.join(" · ") || "تعذر إرسال الإشعار",
+            "error",
+          );
+        } else {
+          pushToast("تم إرسال الإشعار", "success");
+          void load();
+        }
+      } catch {
+        pushToast("تعذر إرسال الإشعار", "error");
+      } finally {
+        setResendBusy(null);
+      }
+    },
+    [orderId, load, pushToast],
+  );
 
   useEffect(() => {
     if (!open || !orderId) return;
@@ -268,6 +320,61 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId, canWrite }: Pr
                           </li>
                         );
                       })}
+                    </ul>
+                  </section>
+
+                  <section className="rounded-2xl border border-cb-border bg-white/90 p-4 dark:bg-stone-900/50">
+                    <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-cb-text-muted">
+                      <Bell className="h-4 w-4" aria-hidden />
+                      الإشعارات
+                    </h3>
+                    {canWrite ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={resendBusy !== null}
+                          onClick={() => void resendNotification("order_confirmation")}
+                          className="rounded-lg border border-cb-border bg-white px-2 py-1 text-xs font-bold dark:bg-stone-900 disabled:opacity-50"
+                        >
+                          {resendBusy === "order_confirmation" ? "…" : "إعادة تأكيد الطلب"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={resendBusy !== null}
+                          onClick={() => void resendNotification("payment_confirmation")}
+                          className="rounded-lg border border-cb-border bg-white px-2 py-1 text-xs font-bold dark:bg-stone-900 disabled:opacity-50"
+                        >
+                          {resendBusy === "payment_confirmation" ? "…" : "إعادة تأكيد الدفع"}
+                        </button>
+                      </div>
+                    ) : null}
+                    <ul className="mt-3 max-h-40 space-y-2 overflow-y-auto text-xs">
+                      {notificationLogs.length === 0 ? (
+                        <li className="text-cb-text-muted">لا سجلات بعد.</li>
+                      ) : (
+                        notificationLogs.map((log) => (
+                          <li
+                            key={log.id}
+                            className="flex flex-wrap items-center justify-between gap-1 rounded-lg border border-cb-border/60 px-2 py-1.5"
+                          >
+                            <span className="font-medium">
+                              {log.notification_type} · {log.channel}
+                            </span>
+                            <span
+                              className={cn(
+                                "rounded px-1.5 py-0.5 font-bold uppercase",
+                                log.status === "sent"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : log.status === "failed"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-stone-100 text-stone-600",
+                              )}
+                            >
+                              {log.status}
+                            </span>
+                          </li>
+                        ))
+                      )}
                     </ul>
                   </section>
 

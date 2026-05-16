@@ -41,5 +41,6 @@ node scripts/supabase-schema-snapshot-check.mjs
 ## ملاحظات مهمة
 
 - السكربت `supabase-run-migrations.mjs` يقرأ كل ملفات `migrations/*.sql` تلقائيًا بالترتيب.
+- لعرض القائمة فقط: `npm run supabase:list-migrations`.
 - إذا فشل migration قديم بسبب drift تاريخي، راجع **`0007_5_rls_helper_is_admin_or_owner.sql`** ووثائق `0005`/`0010`؛ السبب الشائع لأخطاء 0008 هو تشغيل 0008 قبل تعريف `is_admin_or_owner()`.
 - لا تضع أسرار في SQL files أو seed files.

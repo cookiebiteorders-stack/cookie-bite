@@ -139,5 +139,7 @@ export const adminRouteModuleMap: Record<string, ModuleKey> = {
   "/admin/settings": "settings",
   "/admin/design-library": "templates",
   "/admin/template-library": "templates",
+  "/admin/media": "media",
+  "/admin/cms": "cms",
 };
 

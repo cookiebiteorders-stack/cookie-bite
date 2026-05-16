@@ -93,7 +93,7 @@ export async function buildMrBrownieContext(params: {
 
   base.orders = {
     recent_summary: "Use analytics.today and analytics.week for aggregates.",
-    pending_count: null,
+    pending_count: snap?.pending_orders ?? null,
     abandoned_hint: null,
   };
 

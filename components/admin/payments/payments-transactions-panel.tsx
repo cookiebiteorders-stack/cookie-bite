@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 import {
   createColumnHelper,
   flexRender,
@@ -15,6 +15,7 @@ import { maskEmail, maskTransactionId, shortId } from "@/lib/payments/mask-pii";
 import { transactionsToCsv } from "@/lib/payments/export-transactions-csv";
 import { usePaymentsConsoleStore } from "@/stores/payments-console-store";
 import { cn } from "@/lib/utils";
+import { fetchJson } from "@/lib/http/fetch-json";
 
 const columnHelper = createColumnHelper<PaymentTransactionRow>();
 
@@ -36,6 +37,7 @@ type Props = {
 export function PaymentsTransactionsPanel({ rows }: Props) {
   const pushToast = usePaymentsConsoleStore((s) => s.pushToast);
   const liveMode = usePaymentsConsoleStore((s) => s.liveMode);
+  const loadSummary = usePaymentsConsoleStore((s) => s.loadSummary);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -43,6 +45,7 @@ export function PaymentsTransactionsPanel({ rows }: Props) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [refundingId, setRefundingId] = useState<string | null>(null);
 
   const methods = useMemo(() => {
     const set = new Set<string>();
@@ -84,6 +87,33 @@ export function PaymentsTransactionsPanel({ rows }: Props) {
     URL.revokeObjectURL(url);
     pushToast("Exported filtered rows (sensitive fields masked in UI only).", "success");
   };
+
+  const refundOrder = useCallback(
+    async (row: PaymentTransactionRow) => {
+      if (row.payment_status !== "paid") {
+        pushToast("الاسترداد يطبّق على المعاملات المدفوعة فقط.", "info");
+        return;
+      }
+      const modeNote = liveMode
+        ? "سيتم استدعاء Paymob ثم تحديث الطلب."
+        : "وضع المعاينة: تحديث الحالة محلياً فقط (بدون Paymob).";
+      if (!window.confirm(`تأكيد استرداد الطلب ${row.order_code ?? row.id}؟ ${modeNote}`)) return;
+      setRefundingId(row.id);
+      try {
+        await fetchJson("/api/admin/payments/refund", {
+          method: "POST",
+          jsonBody: { order_id: row.id, record_only: !liveMode },
+        });
+        pushToast("تم تنفيذ طلب الاسترداد.", "success");
+        await loadSummary();
+      } catch (e) {
+        pushToast(e instanceof Error ? e.message : "فشل الاسترداد", "error");
+      } finally {
+        setRefundingId(null);
+      }
+    },
+    [liveMode, loadSummary, pushToast],
+  );
 
   const columns = useMemo(
     () => [
@@ -187,17 +217,11 @@ export function PaymentsTransactionsPanel({ rows }: Props) {
             </button>
             <button
               type="button"
-              className="rounded-lg border border-cb-border px-2 py-1 text-[11px] font-bold opacity-80"
-              onClick={() =>
-                pushToast(
-                  liveMode
-                    ? "Refund flow is not wired to Paymob in this UI — use the gateway dashboard."
-                    : "Test mode: refunds are disabled in the console preview.",
-                  "info",
-                )
-              }
+              disabled={refundingId === row.original.id}
+              className="rounded-lg border border-cb-border px-2 py-1 text-[11px] font-bold disabled:opacity-50"
+              onClick={() => void refundOrder(row.original)}
             >
-              Refund
+              {refundingId === row.original.id ? "…" : "Refund"}
             </button>
             <button
               type="button"
@@ -212,7 +236,7 @@ export function PaymentsTransactionsPanel({ rows }: Props) {
         ),
       }),
     ],
-    [expanded, liveMode, pushToast],
+    [expanded, refundingId, refundOrder, pushToast],
   );
 
   /* eslint-disable react-hooks/incompatible-library -- TanStack Table returns non-memoizable helpers */

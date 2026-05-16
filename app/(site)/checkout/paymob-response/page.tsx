@@ -35,9 +35,12 @@ export default async function PaymobResponsePage({ searchParams }: Props) {
     first(q.order_id) ??
     "";
 
+  if (success && order) {
+    redirect(`/order-confirmation?order=${encodeURIComponent(order)}`);
+  }
+
   const target = new URLSearchParams();
   target.set("status", success ? "success" : "failed");
   if (order) target.set("order", order);
-
   redirect(`/checkout/thank-you?${target.toString()}`);
 }

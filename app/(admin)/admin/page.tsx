@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { roleMatrix, type ModuleKey, type UserRole } from "@/lib/admin/rbac";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -112,6 +113,19 @@ export default async function AdminHomePage() {
           foundation: role model, KPI surface, quick actions, and permission architecture ready for API
           binding.
         </p>
+      </section>
+
+      <section className="admin-panel-surface rounded-2xl border border-cb-border p-5">
+        <h2 className="font-serif text-xl font-bold text-cb-text-strong">Commerce intelligence</h2>
+        <p className="mt-2 text-sm text-cb-text-muted">
+          لوحة التحليلات المتقدّمة والرسوم البيانية متوفرة في Reports — يتم ربط المزيد من الـ BI هنا لاحقاً.
+        </p>
+        <Link
+          href="/admin/reports"
+          className="mt-4 inline-flex rounded-xl bg-cb-terracotta-dark px-4 py-2 text-sm font-bold text-white shadow-sm hover:brightness-110"
+        >
+          فتح Reports &amp; BI
+        </Link>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -4,11 +4,17 @@ import { renderTemplate } from "@/lib/notification-library";
 
 type SendResult = Awaited<ReturnType<ReturnType<typeof getResend>["emails"]["send"]>>;
 
+export type EmailAttachment = {
+  filename: string;
+  content: Buffer | string;
+};
+
 async function dispatch(opts: {
   to: string;
   subject: string;
   html: string;
   replyTo?: string;
+  attachments?: EmailAttachment[];
 }): Promise<SendResult> {
   const resend = getResend();
   return resend.emails.send({
@@ -17,6 +23,11 @@ async function dispatch(opts: {
     replyTo: opts.replyTo ?? EMAIL_CONFIG.replyTo,
     subject: opts.subject,
     html: opts.html,
+    attachments: opts.attachments?.map((a) => ({
+      filename: a.filename,
+      content:
+        typeof a.content === "string" ? a.content : a.content.toString("base64"),
+    })),
   });
 }
 
@@ -134,6 +145,7 @@ export async function sendTemplateEmail(opts: {
   lang?: "en" | "ar";
   replyTo?: string;
   subjectOverride?: string;
+  attachments?: EmailAttachment[];
 }) {
   const rendered = renderTemplate(opts.templateKey, opts.vars ?? {}, {
     lang: opts.lang,
@@ -146,6 +158,7 @@ export async function sendTemplateEmail(opts: {
     subject: opts.subjectOverride ?? rendered.subject,
     html: rendered.html,
     replyTo: opts.replyTo,
+    attachments: opts.attachments,
   });
 }
 

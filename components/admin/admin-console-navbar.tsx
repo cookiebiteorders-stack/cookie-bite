@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Store, X } from "lucide-react";
 import { useEffect } from "react";
-import { LogoMark } from "@/components/brand/logo-mark";
 import { AdminConsoleNavLinks } from "@/components/admin/admin-console-nav-links";
 import { useOptionalAdminConsole } from "@/components/admin/admin-console-context";
 import { useLanguage } from "@/components/providers/language-provider";

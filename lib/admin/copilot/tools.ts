@@ -7,9 +7,8 @@
  * → feed the result back → ask Gemini again → finally emit text.
  *
  * Design rules:
- *   - All tools are READ-ONLY for v1. Write actions (cancel order, refund,
- *     deactivate code) will be added in a follow-up with a confirm-then-do
- *     handshake.
+ *   - قراءة افتراضياً؛ أدوات الكتابة (`cancel_order`, `update_product_stock`) تتطلّب
+ *     تأكيداً صريحاً (`confirm:true`) بعد موافقة الأدمن في المحادثة، وتُسجَّل في audit_logs.
  *   - Every handler is wrapped in try/catch and always returns JSON the
  *     model can parse — even errors carry a "warning" string so Gemini can
  *     gracefully tell the admin what failed.
@@ -20,13 +19,22 @@
 
 import type { FunctionDeclaration } from "@google/generative-ai";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { writeAuditLog } from "@/lib/admin/audit";
+import type { UserRole } from "@/lib/admin/rbac";
 
 /* -------------------------------------------------------------------------- *
  * Helpers                                                                     *
  * -------------------------------------------------------------------------- */
 
+export type CopilotToolActor = {
+  role: UserRole;
+  email: string | null;
+  user_id: string | null;
+  clerk_user_id: string;
+};
+
 type Json = Record<string, unknown> | unknown[] | string | number | boolean | null;
-type Handler = (args: Record<string, unknown>) => Promise<Json>;
+type Handler = (args: Record<string, unknown>, actor: CopilotToolActor) => Promise<Json>;
 
 function toIsoStart(daysAgo: number): string {
   const d = new Date();
@@ -55,7 +63,9 @@ const ROW_HARD_LIMIT = 50;
  * Handlers                                                                    *
  * -------------------------------------------------------------------------- */
 
-async function get_dashboard_summary(): Promise<Json> {
+async function get_dashboard_summary(_args: Record<string, unknown>, _actor: CopilotToolActor): Promise<Json> {
+  void _args;
+  void _actor;
   try {
     const sb = createSupabaseAdminClient();
     const todayStart = toIsoStart(0);
@@ -135,7 +145,8 @@ async function get_dashboard_summary(): Promise<Json> {
   }
 }
 
-async function search_orders(args: Record<string, unknown>): Promise<Json> {
+async function search_orders(args: Record<string, unknown>, _actor: CopilotToolActor): Promise<Json> {
+  void _actor;
   try {
     const sb = createSupabaseAdminClient();
     const status = typeof args.status === "string" ? args.status : null;
@@ -193,7 +204,8 @@ async function search_orders(args: Record<string, unknown>): Promise<Json> {
   }
 }
 
-async function get_order_details(args: Record<string, unknown>): Promise<Json> {
+async function get_order_details(args: Record<string, unknown>, _actor: CopilotToolActor): Promise<Json> {
+  void _actor;
   try {
     const sb = createSupabaseAdminClient();
     const id = typeof args.id === "string" ? args.id : null;
@@ -238,7 +250,8 @@ async function get_order_details(args: Record<string, unknown>): Promise<Json> {
   }
 }
 
-async function search_products(args: Record<string, unknown>): Promise<Json> {
+async function search_products(args: Record<string, unknown>, _actor: CopilotToolActor): Promise<Json> {
+  void _actor;
   try {
     const sb = createSupabaseAdminClient();
     const query = typeof args.query === "string" ? args.query.trim() : "";
@@ -277,7 +290,8 @@ async function search_products(args: Record<string, unknown>): Promise<Json> {
   }
 }
 
-async function search_customers(args: Record<string, unknown>): Promise<Json> {
+async function search_customers(args: Record<string, unknown>, _actor: CopilotToolActor): Promise<Json> {
+  void _actor;
   try {
     const sb = createSupabaseAdminClient();
     const query = typeof args.query === "string" ? args.query.trim() : "";
@@ -330,7 +344,8 @@ async function search_customers(args: Record<string, unknown>): Promise<Json> {
   }
 }
 
-async function get_top_products(args: Record<string, unknown>): Promise<Json> {
+async function get_top_products(args: Record<string, unknown>, _actor: CopilotToolActor): Promise<Json> {
+  void _actor;
   try {
     const sb = createSupabaseAdminClient();
     const days = Math.max(1, Math.min(180, num(args.days ?? 30)));
@@ -368,7 +383,8 @@ async function get_top_products(args: Record<string, unknown>): Promise<Json> {
   }
 }
 
-async function get_sales_report(args: Record<string, unknown>): Promise<Json> {
+async function get_sales_report(args: Record<string, unknown>, _actor: CopilotToolActor): Promise<Json> {
+  void _actor;
   try {
     const sb = createSupabaseAdminClient();
     const days = Math.max(1, Math.min(180, num(args.days ?? 30)));
@@ -403,7 +419,8 @@ async function get_sales_report(args: Record<string, unknown>): Promise<Json> {
   }
 }
 
-async function list_discounts(args: Record<string, unknown>): Promise<Json> {
+async function list_discounts(args: Record<string, unknown>, _actor: CopilotToolActor): Promise<Json> {
+  void _actor;
   try {
     const sb = createSupabaseAdminClient();
     const status = typeof args.status === "string" ? args.status : null;
@@ -433,7 +450,8 @@ async function list_discounts(args: Record<string, unknown>): Promise<Json> {
   }
 }
 
-async function list_recent_audit_logs(args: Record<string, unknown>): Promise<Json> {
+async function list_recent_audit_logs(args: Record<string, unknown>, _actor: CopilotToolActor): Promise<Json> {
+  void _actor;
   try {
     const sb = createSupabaseAdminClient();
     const days = Math.max(1, Math.min(30, num(args.days ?? 7)));
@@ -451,6 +469,89 @@ async function list_recent_audit_logs(args: Record<string, unknown>): Promise<Js
     return { count: (data ?? []).length, logs: data ?? [] };
   } catch (e) {
     return { warning: e instanceof Error ? e.message : "list_recent_audit_logs failed", logs: [] };
+  }
+}
+
+async function cancel_order(args: Record<string, unknown>, actor: CopilotToolActor): Promise<Json> {
+  try {
+    const confirm = args.confirm === true;
+    const order_id = typeof args.order_id === "string" ? args.order_id : null;
+    if (!order_id) return { warning: "order_id (uuid) is required." };
+    if (!confirm) {
+      return {
+        dry_run: true,
+        hint: "Re-call with confirm:true only after the admin explicitly approves cancelling this order.",
+        order_id,
+      };
+    }
+    if (actor.role === "staff") {
+      return { warning: "Staff cannot cancel orders via copilot — use an owner/admin account." };
+    }
+    const sb = createSupabaseAdminClient();
+    const { data: before } = await sb.from("orders").select("*").eq("id", order_id).maybeSingle();
+    if (!before) return { warning: "Order not found." };
+    const { data: after, error } = await sb
+      .from("orders")
+      .update({ status: "cancelled" })
+      .eq("id", order_id)
+      .select("*")
+      .single();
+    if (error || !after) return { warning: error?.message ?? "Failed to update order." };
+    await writeAuditLog({
+      actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
+      action: "copilot.order.cancel",
+      module: "orders",
+      entity_id: order_id,
+      before,
+      after,
+      metadata: { source: "copilot", clerk_user_id: actor.clerk_user_id },
+    });
+    return { ok: true, order_id, status: after.status };
+  } catch (e) {
+    return { warning: e instanceof Error ? e.message : "cancel_order failed" };
+  }
+}
+
+async function update_product_stock(args: Record<string, unknown>, actor: CopilotToolActor): Promise<Json> {
+  try {
+    const confirm = args.confirm === true;
+    const product_id = typeof args.product_id === "string" ? args.product_id : null;
+    const stock = Math.floor(num(args.stock));
+    if (!product_id) return { warning: "product_id (uuid) is required." };
+    if (!Number.isFinite(stock) || stock < 0) return { warning: "stock must be a non-negative integer." };
+    if (!confirm) {
+      return {
+        dry_run: true,
+        hint: "Re-call with confirm:true after explicit admin approval.",
+        product_id,
+        stock,
+      };
+    }
+    if (actor.role === "staff") {
+      return { warning: "Staff cannot adjust inventory via copilot." };
+    }
+    const sb = createSupabaseAdminClient();
+    const { data: before } = await sb.from("products").select("*").eq("id", product_id).maybeSingle();
+    if (!before) return { warning: "Product not found." };
+    const { data: after, error } = await sb
+      .from("products")
+      .update({ stock })
+      .eq("id", product_id)
+      .select("*")
+      .single();
+    if (error || !after) return { warning: error?.message ?? "Failed to update stock." };
+    await writeAuditLog({
+      actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
+      action: "copilot.product.set_stock",
+      module: "products",
+      entity_id: product_id,
+      before,
+      after,
+      metadata: { source: "copilot", clerk_user_id: actor.clerk_user_id },
+    });
+    return { ok: true, product_id, stock: after.stock };
+  } catch (e) {
+    return { warning: e instanceof Error ? e.message : "update_product_stock failed" };
   }
 }
 
@@ -581,6 +682,39 @@ export const TOOL_DECLARATIONS = [
       },
     },
   },
+  {
+    name: "cancel_order",
+    description:
+      "DANGEROUS: Cancel an order (status → cancelled). First call returns dry_run instructions; execute ONLY with confirm:true after the admin explicitly approves in chat. Owner/admin only — staff cannot run this.",
+    parameters: {
+      type: OBJ,
+      properties: {
+        order_id: { type: STR, description: "Order UUID." },
+        confirm: {
+          type: BOOL,
+          description: "Must be true to apply. Never true unless the admin clearly confirmed cancellation.",
+        },
+      },
+      required: ["order_id"],
+    },
+  },
+  {
+    name: "update_product_stock",
+    description:
+      "DANGEROUS: Set product stock level. First call is dry_run unless confirm:true after explicit admin approval. Owner/admin only.",
+    parameters: {
+      type: OBJ,
+      properties: {
+        product_id: { type: STR },
+        stock: { type: NUM },
+        confirm: {
+          type: BOOL,
+          description: "Must be true to apply the stock update.",
+        },
+      },
+      required: ["product_id", "stock"],
+    },
+  },
 ] as unknown as FunctionDeclaration[];
 
 export const TOOL_HANDLERS: Record<string, Handler> = {
@@ -593,6 +727,8 @@ export const TOOL_HANDLERS: Record<string, Handler> = {
   get_sales_report,
   list_discounts,
   list_recent_audit_logs,
+  cancel_order,
+  update_product_stock,
 };
 
 export type CopilotToolCall = {
@@ -605,6 +741,7 @@ export type CopilotToolCall = {
 export async function runTool(
   name: string,
   args: Record<string, unknown>,
+  actor: CopilotToolActor,
 ): Promise<CopilotToolCall> {
   const handler = TOOL_HANDLERS[name];
   const start = Date.now();
@@ -618,7 +755,7 @@ export async function runTool(
   }
   let result: Json;
   try {
-    result = await handler(args ?? {});
+    result = await handler(args ?? {}, actor);
   } catch (e) {
     result = { warning: e instanceof Error ? e.message : "tool failed" };
   }

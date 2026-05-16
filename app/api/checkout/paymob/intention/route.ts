@@ -3,7 +3,7 @@ import { z } from "zod";
 import { insertCheckoutOrder } from "@/lib/db/orders";
 import { getUserByClerkId } from "@/lib/db/users";
 import { resolveCheckoutLineItems } from "@/lib/checkout/resolve-line-items";
-import { sendOrderConfirmation } from "@/lib/email/send";
+import { scheduleOrderConfirmed } from "@/lib/notifications/schedule";
 import {
   buildPaymobBillingData,
   buildPaymobLineItems,
@@ -12,6 +12,7 @@ import {
   paymobIframeUrl,
   paymobRegisterEcommerceOrder,
 } from "@/lib/paymob/accept";
+import { resolvePaymobHmacSecret } from "@/lib/paymob/env";
 
 const BodySchema = z.object({
   items: z.array(
@@ -80,7 +81,7 @@ export async function POST(req: Request) {
   const total = subtotal + deliveryFee;
 
   const apiKey = process.env.PAYMOB_API_KEY?.trim() ?? "";
-  const hmacSecret = process.env.PAYMOB_HMAC_SECRET?.trim() ?? "";
+  const hmacSecret = resolvePaymobHmacSecret();
   const integrationCard = Number(process.env.PAYMOB_INTEGRATION_ID_CARD);
   const integrationWallet = Number(process.env.PAYMOB_INTEGRATION_ID_WALLET);
   const hasPaymobAuth = Boolean(apiKey && hmacSecret);
@@ -117,31 +118,13 @@ export async function POST(req: Request) {
       paymentStatus: "unpaid",
       shippingAddress,
       notes: `Web checkout · ${guestRef}`,
+      guestEmail: shippingEmail ?? null,
     });
 
     const orderId = inserted ? String(inserted.orderNumber) : guestRef;
 
-    if (shippingEmail && process.env.RESEND_API_KEY) {
-      try {
-        const itemsHtml = resolved
-          .map(
-            (l) =>
-              `<tr><td style="padding:8px 0;border-bottom:1px solid #F2DDC5">${l.name} × ${l.quantity}</td><td style="padding:8px 0;border-bottom:1px solid #F2DDC5;text-align:right">${(l.unitPrice * l.quantity).toFixed(0)} EGP</td></tr>`,
-          )
-          .join("");
-        const deliveryRow = `<tr><td style="padding:8px 0;border-bottom:1px solid #F2DDC5">Delivery</td><td style="padding:8px 0;border-bottom:1px solid #F2DDC5;text-align:right">${deliveryFee === 0 ? "Free" : `${deliveryFee} EGP`}</td></tr>`;
-        await sendOrderConfirmation({
-          to: shippingEmail,
-          payload: {
-            name: shipping.name,
-            orderId: inserted ? `#${inserted.orderNumber}` : orderId,
-            total,
-            itemsHtml: itemsHtml + deliveryRow,
-          },
-        });
-      } catch (err) {
-        console.error("order confirmation email failed", err);
-      }
+    if (inserted?.id) {
+      scheduleOrderConfirmed(inserted.id);
     }
 
     return Response.json({
@@ -172,7 +155,7 @@ export async function POST(req: Request) {
       lines: resolved,
       shipping,
       message:
-        "Paymob keys missing. Set PAYMOB_API_KEY and PAYMOB_HMAC_SECRET, plus PAYMOB_INTEGRATION_ID_CARD / WALLET.",
+        "Paymob keys missing. Set PAYMOB_API_KEY and PAYMOB_HMAC_SECRET (or legacy PAYMOB_HMAC), plus PAYMOB_INTEGRATION_ID_CARD / WALLET.",
     });
   }
 
@@ -212,7 +195,12 @@ export async function POST(req: Request) {
       shippingAddress,
       notes: `Paymob checkout · ${guestRef}`,
       paymobAcceptOrderId: paymobOrderId,
+      guestEmail: shippingEmail ?? null,
     });
+
+    if (inserted?.id) {
+      scheduleOrderConfirmed(inserted.id);
+    }
 
     const billing = buildPaymobBillingData({
       name: shipping.name,

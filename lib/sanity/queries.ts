@@ -54,3 +54,31 @@ export const SITE_SETTINGS_QUERY = `
   contact_address_ar
 }
 `;
+
+export const BLOG_POSTS_INDEX_QUERY = `
+*[_type == "blogPost" && is_published == true] | order(_updatedAt desc) {
+  _id,
+  "slug": slug.current,
+  title_en,
+  title_ar,
+  excerpt_en,
+  excerpt_ar,
+  "coverUrl": cover_image.asset->url,
+  _updatedAt
+}
+`;
+
+export const BLOG_POST_BY_SLUG_QUERY = `
+*[_type == "blogPost" && slug.current == $slug && is_published == true][0] {
+  _id,
+  "slug": slug.current,
+  title_en,
+  title_ar,
+  excerpt_en,
+  excerpt_ar,
+  body_en,
+  body_ar,
+  "coverUrl": cover_image.asset->url,
+  _updatedAt
+}
+`;

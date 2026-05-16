@@ -20,6 +20,8 @@ import { useCustomersCrmStore } from "@/stores/customers-crm-store";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { useTheme } from "@/components/providers/theme-provider";
 import { cn } from "@/lib/utils";
+import { parseCsv } from "@/lib/csv/parse-csv";
+import { fetchJson } from "@/lib/http/fetch-json";
 import { CrmHeroStats } from "@/components/admin/customers/crm-hero-stats";
 import { CrmAnalyticsStrip } from "@/components/admin/customers/crm-analytics-strip";
 import { CrmMainWorkspace } from "@/components/admin/customers/crm-main-workspace";
@@ -57,6 +59,7 @@ function exportCustomersCsv(rows: AdminCustomerRow[]) {
 export function CustomersCrmDashboard() {
   const reduceMotion = useReducedMotion();
   const searchRef = useRef<HTMLInputElement>(null);
+  const importRef = useRef<HTMLInputElement>(null);
   const { resolvedTheme, setTheme } = useTheme();
 
   const loadCustomers = useCustomersCrmStore((s) => s.loadCustomers);
@@ -90,6 +93,42 @@ export function CustomersCrmDashboard() {
     exportCustomersCsv(customers);
     pushToast("تم تصدير الصفحة الحالية إلى CSV.", "success");
   }, [customers, pushToast]);
+
+  const importNewsletterCsv = useCallback(
+    async (file: File) => {
+      const text = await file.text();
+      const grid = parseCsv(text);
+      if (!grid.length) {
+        pushToast("ملف فارغ.", "error");
+        return;
+      }
+      const header = grid[0]!.map((h) => h.trim().toLowerCase());
+      const emailIdx = header.findIndex((h) => h === "email" || h === "e-mail");
+      if (emailIdx < 0) {
+        pushToast("CSV يحتاج عمود email", "error");
+        return;
+      }
+      const emails: string[] = [];
+      for (let r = 1; r < grid.length; r++) {
+        const cell = grid[r]![emailIdx]?.trim();
+        if (cell && cell.includes("@")) emails.push(cell);
+      }
+      if (!emails.length) {
+        pushToast("لا توجد عناوين بريد.", "error");
+        return;
+      }
+      try {
+        await fetchJson("/api/admin/customers/import-newsletter", {
+          method: "POST",
+          jsonBody: { emails },
+        });
+        pushToast(`تم استيراد ${emails.length} بريد للحملات (اشتراك).`, "success");
+      } catch (e) {
+        pushToast(e instanceof Error ? e.message : "فشل الاستيراد", "error");
+      }
+    },
+    [pushToast],
+  );
 
   const aiBatchInsight = useCallback(() => {
     const atRisk = stats.at_risk_proxy;
@@ -175,14 +214,25 @@ export function CustomersCrmDashboard() {
             </button>
             <button
               type="button"
-              disabled
-              title="استيراد عملاء CSV غير مفعّل بعد"
-              aria-disabled="true"
-              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm opacity-50 dark:bg-stone-900"
+              disabled={!canWrite}
+              title={canWrite ? "استيراد عمود email إلى قائمة النشرة للحملات" : "صلاحية الكتابة مطلوبة"}
+              onClick={() => importRef.current?.click()}
+              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm disabled:opacity-50 dark:bg-stone-900"
             >
               <Upload className="h-4 w-4 shrink-0" aria-hidden />
               استيراد
             </button>
+            <input
+              ref={importRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) void importNewsletterCsv(f);
+              }}
+            />
             <button
               type="button"
               onClick={exportPage}
@@ -258,10 +308,20 @@ export function CustomersCrmDashboard() {
                       <button
                         type="button"
                         role="menuitem"
-                        disabled
-                        title="غير متوفر حالياً — يتطلب RBAC وسجل تدقيق في الخلفية"
-                        aria-disabled="true"
-                        className="flex w-full px-3 py-2 text-xs font-semibold opacity-50 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                        className="flex w-full px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                        onClick={() => {
+                          setQuickOpen(false);
+                          if (label === "تصدير تقارير") exportPage();
+                          else if (label === "تعيين وسوم") {
+                            setAdvancedFiltersOpen(true);
+                            pushToast("استخدم الفلاتر المتقدمة ثم صدّر CSV لتجميع الشريحة.", "info");
+                          } else if (label === "توليد رؤى") void aiBatchInsight();
+                          else
+                            pushToast(
+                              `${label}: يتطلب ربط مزوّد رسائل — استخدم الحملة أو البريد لاحقاً.`,
+                              "info",
+                            );
+                        }}
                       >
                         {label}
                       </button>

@@ -363,12 +363,19 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
                       <button
                         type="button"
                         role="menuitem"
-                        disabled
-                        title="معاينة المتجر للمنتج غير مفعّلة بعد"
-                        aria-disabled="true"
-                        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold opacity-50 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                        disabled={!canWrite}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold hover:bg-amber-50 disabled:opacity-50 dark:hover:bg-amber-950/30"
+                        onClick={() => {
+                          setOpenMenuId(null);
+                          const slug = (p.slug ?? "").trim();
+                          if (!slug) {
+                            pushToast("لا يوجد slug للمنتج — احفظ المنتج أولاً.", "info");
+                            return;
+                          }
+                          window.open(`/shop/${encodeURIComponent(slug)}`, "_blank", "noopener,noreferrer");
+                        }}
                       >
-                        <Eye className="h-3.5 w-3.5" /> معاينة (غير متوفر)
+                        <Eye className="h-3.5 w-3.5" /> معاينة في المتجر
                       </button>
                     </li>
                     <li>
@@ -418,6 +425,7 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
       bulkDelete,
       openMenuId,
       reduceMotion,
+      pushToast,
     ],
   );
 

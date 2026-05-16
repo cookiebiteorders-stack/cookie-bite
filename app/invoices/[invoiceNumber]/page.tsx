@@ -25,8 +25,10 @@ export default function PublicInvoicePage() {
   useEffect(() => {
     if (!invoiceNumber) return;
     const controller = new AbortController();
-    setLoading(true);
-    setError(null);
+    queueMicrotask(() => {
+      setLoading(true);
+      setError(null);
+    });
 
     fetch(`/api/invoices/${encodeURIComponent(invoiceNumber)}`, {
       cache: "no-store",

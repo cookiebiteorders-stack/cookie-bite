@@ -236,6 +236,25 @@ export default function AdminReportsPage() {
     setNotice("CSV export completed.");
   };
 
+  const createManualInvoice = async () => {
+    const raw = window.prompt("Manual invoice amount (EGP)", "100");
+    if (raw == null) return;
+    const amount = Number(raw);
+    if (!Number.isFinite(amount) || amount < 0) {
+      setNotice("Invalid amount.");
+      return;
+    }
+    try {
+      await fetchJson("/api/admin/invoices", {
+        method: "POST",
+        jsonBody: { amount_egp: amount, status: "pending", order_id: null },
+      });
+      setNotice("Manual invoice draft created — view Invoices.");
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "Invoice creation failed");
+    }
+  };
+
   const empty =
     !loading &&
     !error &&
@@ -324,7 +343,7 @@ export default function AdminReportsPage() {
           </button>
           <button
             type="button"
-            onClick={() => setNotice("Manual invoice/report creation flow can be wired to POST endpoint.")}
+            onClick={() => void createManualInvoice()}
             className={buttonClassName("subtle", "px-4 py-2 text-xs")}
           >
             <FilePlus2 className="h-4 w-4" />

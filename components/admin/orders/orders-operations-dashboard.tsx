@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { motion, useReducedMotion } from "motion/react";
 import {
@@ -22,6 +23,8 @@ import { OrdersCommandPalette } from "@/components/admin/orders/orders-command-p
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { useTheme } from "@/components/providers/theme-provider";
 import { cn } from "@/lib/utils";
+import { parseCsv } from "@/lib/csv/parse-csv";
+import { fetchJson } from "@/lib/http/fetch-json";
 
 export function OrdersOperationsDashboard() {
   const reduceMotion = useReducedMotion();
@@ -115,8 +118,51 @@ export function OrdersOperationsDashboard() {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   }, [resolvedTheme, setTheme]);
 
+  const printPage = useCallback(() => {
+    window.print();
+  }, []);
+
+  const applyCsvImports = useCallback(
+    async (file: File) => {
+      const text = await file.text();
+      const grid = parseCsv(text);
+      if (grid.length < 2) {
+        pushToast("ملف CSV فارغ أو غير صالح.", "error");
+        return;
+      }
+      const header = grid[0]!.map((h) => h.trim().toLowerCase());
+      const idIdx = header.indexOf("id");
+      const stIdx = header.indexOf("status");
+      const payIdx = header.indexOf("payment_status");
+      if (idIdx < 0 || (stIdx < 0 && payIdx < 0)) {
+        pushToast("CSV يحتاج أعمدة: id و status و/أو payment_status", "error");
+        return;
+      }
+      let ok = 0;
+      for (let r = 1; r < grid.length; r++) {
+        const row = grid[r]!;
+        const id = row[idIdx]?.trim();
+        if (!id) continue;
+        const body: Record<string, unknown> = {};
+        if (stIdx >= 0 && row[stIdx]?.trim()) body.status = row[stIdx]!.trim();
+        if (payIdx >= 0 && row[payIdx]?.trim()) body.payment_status = row[payIdx]!.trim();
+        if (Object.keys(body).length === 0) continue;
+        try {
+          await fetchJson(`/api/admin/orders/${id}`, { method: "PATCH", jsonBody: body });
+          ok += 1;
+        } catch {
+          /* skip row */
+        }
+      }
+      pushToast(`تم تطبيق التحديث على ${ok} طلباً.`, "success");
+      void loadOrders();
+    },
+    [loadOrders, pushToast],
+  );
+
   const meta = useOrdersOperationsStore((s) => s.meta);
   const canWrite = Boolean(meta?.can_write);
+  const importRef = useRef<HTMLInputElement>(null);
 
   return (
     <section className="relative space-y-6 pb-20">
@@ -140,16 +186,17 @@ export function OrdersOperationsDashboard() {
         </div>
         <div className="w-full overflow-x-auto">
           <div className="flex min-w-max flex-nowrap items-center gap-2 pb-1 text-[var(--card-foreground)]">
-            <button
-            type="button"
-            disabled
-            title="غير متوفر حالياً — يتطلب تكامل نقطة بيع (POS)"
-            aria-disabled="true"
-            className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition opacity-50"
+            <Link
+              href="/admin/orders/new"
+              aria-disabled={!canWrite}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition",
+                !canWrite && "pointer-events-none opacity-50",
+              )}
             >
               <ShoppingCart className="h-4 w-4" aria-hidden />
               إنشاء طلب
-            </button>
+            </Link>
             <button
             type="button"
             onClick={exportPage}
@@ -160,14 +207,25 @@ export function OrdersOperationsDashboard() {
             </button>
             <button
             type="button"
-            disabled
-            title="استيراد CSV غير مفعّل بعد"
-            aria-disabled="true"
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-[rgb(51,0,0)] px-3 py-2 text-xs font-bold text-[var(--card-foreground)] shadow-sm opacity-50 dark:bg-[rgb(51,0,0)] dark:text-[var(--card-foreground)]"
+            disabled={!canWrite}
+            title={canWrite ? "استيراد تحديثات الحالة من CSV" : "صلاحية القراءة فقط"}
+            onClick={() => importRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-[rgb(51,0,0)] px-3 py-2 text-xs font-bold text-[var(--card-foreground)] shadow-sm disabled:opacity-50 dark:bg-[rgb(51,0,0)] dark:text-[var(--card-foreground)]"
             >
               <Upload className="h-4 w-4" aria-hidden />
               استيراد
             </button>
+            <input
+              ref={importRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) void applyCsvImports(f);
+              }}
+            />
             <button
             type="button"
             onClick={() => void loadOrders()}
@@ -178,10 +236,8 @@ export function OrdersOperationsDashboard() {
             </button>
             <button
             type="button"
-            disabled
-            title="الطباعة الجماعية غير متوفرة بعد"
-            aria-disabled="true"
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-[rgb(51,0,0)] px-3 py-2 text-xs font-bold text-[var(--card-foreground)] shadow-sm opacity-50 dark:bg-[rgb(51,0,0)] dark:text-[var(--card-foreground)]"
+            onClick={printPage}
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-[rgb(51,0,0)] px-3 py-2 text-xs font-bold text-[var(--card-foreground)] shadow-sm dark:bg-[rgb(51,0,0)] dark:text-[var(--card-foreground)]"
             >
               <Printer className="h-4 w-4" aria-hidden />
               طباعة

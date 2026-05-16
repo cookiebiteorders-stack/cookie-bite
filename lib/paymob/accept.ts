@@ -140,3 +140,28 @@ export function buildPaymobLineItems(
   }
   return items;
 }
+
+/**
+ * استرداد عبر Accept API — يتطلب معرف المعاملة الرقمي من Paymob (ليس معرف الطلب الداخلي).
+ * الوثائق / أمثلة SDK: POST `/acceptance/void_refund/refund`
+ */
+export async function paymobRefundTransaction(
+  authToken: string,
+  transactionId: number | string,
+  amountCents: number,
+): Promise<Record<string, unknown>> {
+  const res = await fetch(`${paymobApiBase()}/acceptance/void_refund/refund`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      auth_token: authToken,
+      transaction_id: transactionId,
+      amount_cents: amountCents,
+    }),
+  });
+  const data = (await res.json()) as Record<string, unknown> & { message?: string };
+  if (!res.ok) {
+    throw new Error(data.message ?? `Paymob refund failed (${res.status})`);
+  }
+  return data;
+}

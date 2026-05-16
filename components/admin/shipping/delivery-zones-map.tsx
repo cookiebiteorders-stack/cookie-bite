@@ -143,7 +143,7 @@ export function DeliveryZonesMap() {
 
   const [LRef, setLRef] = useState<LeafletStatic | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [geoStore, setGeoStore] = useState<Record<string, ZoneGeo>>({});
+  const [geoStore, setGeoStore] = useState<Record<string, ZoneGeo>>(() => loadZoneGeoStore());
 
   const [formOpen, setFormOpen] = useState(false);
   const [draft, setDraft] = useState<DraftState>(EMPTY_DRAFT);
@@ -168,10 +168,6 @@ export function DeliveryZonesMap() {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  useEffect(() => {
-    setGeoStore(loadZoneGeoStore());
   }, []);
 
   useEffect(() => {

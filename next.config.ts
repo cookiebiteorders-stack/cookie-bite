@@ -105,6 +105,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/gift-ideas", destination: "/gift-box", permanent: true },
+      { source: "/admin/design-library", destination: "/admin/template-library", permanent: false },
     ];
   },
   images: {

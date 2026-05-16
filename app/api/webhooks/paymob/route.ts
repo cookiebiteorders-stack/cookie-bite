@@ -1,5 +1,7 @@
 import { verifyPaymobTransactionHmac } from "@/lib/paymob/hmac";
+import { resolvePaymobHmacSecret } from "@/lib/paymob/env";
 import { updateOrderPaymentByPaymobAcceptOrderId } from "@/lib/db/orders";
+import { schedulePaymentConfirmed } from "@/lib/notifications/schedule";
 
 type PaymobCallbackBody = {
   obj?: Record<string, unknown>;
@@ -13,9 +15,9 @@ type PaymobCallbackBody = {
  * اضبط نفس المسار في لوحة Paymob (HTTPS عام).
  */
 export async function POST(req: Request) {
-  const secret = process.env.PAYMOB_HMAC_SECRET;
+  const secret = resolvePaymobHmacSecret();
   if (!secret) {
-    return new Response("Missing PAYMOB_HMAC_SECRET", { status: 500 });
+    return new Response("Missing PAYMOB_HMAC_SECRET (or legacy PAYMOB_HMAC)", { status: 500 });
   }
 
   let body: PaymobCallbackBody;
@@ -49,7 +51,7 @@ export async function POST(req: Request) {
   const paymobTransactionId =
     rawTxId == null || rawTxId === "" ? null : String(rawTxId);
 
-  await updateOrderPaymentByPaymobAcceptOrderId(
+  const updated = await updateOrderPaymentByPaymobAcceptOrderId(
     paymobOrderId,
     {
       payment_status: success ? "paid" : "failed",
@@ -57,6 +59,10 @@ export async function POST(req: Request) {
     },
     paymobTransactionId,
   );
+
+  if (success && updated.ok && updated.becamePaid) {
+    schedulePaymentConfirmed(updated.orderId);
+  }
 
   return Response.json({ ok: true });
 }

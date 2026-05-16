@@ -19,6 +19,8 @@ jest.mock("@/lib/config/production-lock", () => ({
     paymob: true,
     resend: true,
     internal_api: true,
+    ai_gemini: true,
+    cms_sanity: true,
   }),
 }));
 

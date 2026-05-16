@@ -18,7 +18,7 @@ import {
   type Part,
   type FunctionCall,
 } from "@google/generative-ai";
-import { TOOL_DECLARATIONS, runTool, type CopilotToolCall } from "@/lib/admin/copilot/tools";
+import { TOOL_DECLARATIONS, runTool, type CopilotToolActor, type CopilotToolCall } from "@/lib/admin/copilot/tools";
 
 export type CopilotMessage = {
   role: "user" | "assistant";
@@ -37,6 +37,7 @@ export async function runCopilot(opts: {
   history: CopilotMessage[];
   userMessage: string;
   temperature?: number;
+  actor: CopilotToolActor;
 }): Promise<CopilotRunResult> {
   const key = process.env.GEMINI_API_KEY;
   if (!key?.trim()) throw new Error("GEMINI_API_KEY is not set");
@@ -90,7 +91,7 @@ export async function runCopilot(opts: {
     const responseParts: Part[] = [];
     for (const call of functionCalls) {
       const args = (call.args ?? {}) as Record<string, unknown>;
-      const exec = await runTool(call.name, args);
+      const exec = await runTool(call.name, args, opts.actor);
       toolCalls.push(exec);
       responseParts.push({
         functionResponse: {

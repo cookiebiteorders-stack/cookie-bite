@@ -5,6 +5,8 @@
   "gift_boxes",
   "invoices",
   "notification_templates",
+  "notification_logs",
+  "notification_jobs",
   "order_items",
   "orders",
   "payments",

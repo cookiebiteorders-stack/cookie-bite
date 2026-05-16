@@ -6,6 +6,7 @@ export type AdminAnalyticsSnapshot = {
   week_orders: number;
   week_revenue_egp: number;
   top_product_names_week: string[];
+  pending_orders: number;
 };
 
 /**
@@ -24,15 +25,12 @@ export async function fetchAdminAnalyticsSnapshot(): Promise<AdminAnalyticsSnaps
   const dayIso = startToday.toISOString();
   const weekIso = startWeek.toISOString();
 
-  const { data: todayRows, error: e1 } = await supabase
-    .from("orders")
-    .select("total_egp")
-    .gte("created_at", dayIso);
-
-  const { data: weekOrderRows, error: e2 } = await supabase
-    .from("orders")
-    .select("id, total_egp")
-    .gte("created_at", weekIso);
+  const [{ count: pendingOrders }, { data: todayRows, error: e1 }, { data: weekOrderRows, error: e2 }] =
+    await Promise.all([
+      supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("orders").select("total_egp").gte("created_at", dayIso),
+      supabase.from("orders").select("id, total_egp").gte("created_at", weekIso),
+    ]);
 
   if (e1 || e2) {
     console.warn("mr-brownie analytics snapshot", e1 ?? e2);
@@ -81,5 +79,6 @@ export async function fetchAdminAnalyticsSnapshot(): Promise<AdminAnalyticsSnaps
     week_orders: weekOrders.length,
     week_revenue_egp,
     top_product_names_week,
+    pending_orders: pendingOrders ?? 0,
   };
 }

@@ -37,6 +37,7 @@ export function CustomerProfileDrawer({ open, onOpenChange, customerId, canWrite
       setDetail(res);
       setFullName(res.customer.full_name ?? "");
       setPoints(String(res.customer.points));
+      setNotes(res.admin_notes ?? "");
     }
     setLoading(false);
   }, [customerId, fetchCustomerDetail, pushToast]);
@@ -74,6 +75,12 @@ export function CustomerProfileDrawer({ open, onOpenChange, customerId, canWrite
           ? "لا طلبات بعد — أرسل ترحيباً بكوبون أول طلب."
           : "فرصة ترقية: قدّم نقاط مضاعفة على الفئة التالية.";
     pushToast(msg, "info");
+  };
+
+  const saveNotes = async () => {
+    if (!customerId || !canWrite) return;
+    const ok = await patchCustomer(customerId, { admin_notes: notes });
+    if (ok) void load();
   };
 
   return (
@@ -204,10 +211,20 @@ export function CustomerProfileDrawer({ open, onOpenChange, customerId, canWrite
                     </div>
                     <textarea
                       className="mt-2 min-h-24 w-full rounded-xl border border-cb-border bg-white px-3 py-2 text-sm dark:bg-stone-900"
-                      placeholder="مسودة داخلية — اربط بجدول ملاحظات لاحقاً للحفظ الدائم."
+                      placeholder="ملاحظات داخلية للفريق — تُحفظ في قاعدة البيانات."
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
+                      disabled={!canWrite}
                     />
+                    {canWrite ? (
+                      <button
+                        type="button"
+                        onClick={() => void saveNotes()}
+                        className="mt-2 w-full rounded-xl border border-violet-400 bg-violet-600 py-2 text-xs font-bold text-white hover:bg-violet-700"
+                      >
+                        حفظ الملاحظات
+                      </button>
+                    ) : null}
                   </section>
 
                   <section className="rounded-2xl border border-cb-border bg-white/90 p-4 dark:bg-stone-900/50">

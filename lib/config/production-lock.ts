@@ -17,6 +17,13 @@ export const PRODUCTION_HOST = PRIMARY_DOMAIN.replace(/^https?:\/\//, "")
 
 export const PRODUCTION_ORIGIN = `https://${PRODUCTION_HOST}`;
 
+/** Paymob HMAC: webhook + intention use PAYMOB_HMAC_SECRET; PAYMOB_HMAC is legacy alias. */
+export function hasPaymobHmacSecret(): boolean {
+  const a = process.env.PAYMOB_HMAC_SECRET?.trim();
+  const b = process.env.PAYMOB_HMAC?.trim();
+  return Boolean(a || b);
+}
+
 const REQUIRED_PROD_KEYS = [
   // App
   "NEXT_PUBLIC_APP_URL",
@@ -24,32 +31,50 @@ const REQUIRED_PROD_KEYS = [
   // Clerk
   "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
   "CLERK_SECRET_KEY",
+  "CLERK_WEBHOOK_SIGNING_SECRET",
   // Supabase
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_KEY",
   // Paymob
   "PAYMOB_API_KEY",
-  "PAYMOB_HMAC",
+  "PAYMOB_INTEGRATION_ID_CARD",
+  "PAYMOB_INTEGRATION_ID_WALLET",
   // Resend
   "RESEND_API_KEY",
   "RESEND_FROM_EMAIL",
-  // Internal
+  // Internal + ISR
   "INTERNAL_API_SECRET",
+  "REVALIDATE_SECRET",
 ] as const;
 
 /** مجموعات متغيرات الإنتاج لكل تكامل — تُستخدم في لوحة الصحة وليست قياسات ping. */
 export const INTEGRATION_ENV_GROUPS = {
   app_urls: ["NEXT_PUBLIC_APP_URL", "APP_BASE_URL"],
-  clerk: ["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "CLERK_SECRET_KEY"],
+  clerk: [
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+    "CLERK_SECRET_KEY",
+    "CLERK_WEBHOOK_SIGNING_SECRET",
+  ],
   supabase: ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_KEY"],
-  paymob: ["PAYMOB_API_KEY", "PAYMOB_HMAC"],
+  /** مرجع لواجهة الإعدادات؛ الجاهزية الفعلية لـ Paymob تستخدم hasPaymobHmacSecret() أيضاً */
+  paymob: [
+    "PAYMOB_API_KEY",
+    "PAYMOB_INTEGRATION_ID_CARD",
+    "PAYMOB_INTEGRATION_ID_WALLET",
+    "PAYMOB_HMAC_SECRET",
+  ],
   resend: ["RESEND_API_KEY", "RESEND_FROM_EMAIL"],
-  internal_api: ["INTERNAL_API_SECRET"],
+  internal_api: ["INTERNAL_API_SECRET", "REVALIDATE_SECRET"],
 } as const;
 
 export type IntegrationEnvStatus = {
   [K in keyof typeof INTEGRATION_ENV_GROUPS]: boolean;
+} & {
+  /** غير إلزامي للإقلاع — يُبلّغ في التحذيرات عند الغياب */
+  ai_gemini: boolean;
+  /** Sanity CMS — اختياري */
+  cms_sanity: boolean;
 };
 
 export type ProductionEnvCheck = {
@@ -62,7 +87,6 @@ function integrationGroupReady(missingKeys: ReadonlySet<string>, keys: readonly 
   return !keys.some((k) => missingKeys.has(k));
 }
 
-/** في التطوير: الكل سليم. في الإنتاج: وفق مجموعات المتغيرات المفقودة. */
 export function getIntegrationEnvStatus(check: ProductionEnvCheck): IntegrationEnvStatus {
   if (process.env.NODE_ENV !== "production") {
     return {
@@ -72,16 +96,27 @@ export function getIntegrationEnvStatus(check: ProductionEnvCheck): IntegrationE
       paymob: true,
       resend: true,
       internal_api: true,
+      ai_gemini: true,
+      cms_sanity: true,
     };
   }
   const m = new Set(check.missing);
+  const paymobReady =
+    integrationGroupReady(m, [
+      "PAYMOB_API_KEY",
+      "PAYMOB_INTEGRATION_ID_CARD",
+      "PAYMOB_INTEGRATION_ID_WALLET",
+    ]) && hasPaymobHmacSecret();
+
   return {
     app_urls: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.app_urls),
     clerk: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.clerk),
     supabase: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.supabase),
-    paymob: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.paymob),
+    paymob: paymobReady,
     resend: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.resend),
     internal_api: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.internal_api),
+    ai_gemini: Boolean(process.env.GEMINI_API_KEY?.trim()),
+    cms_sanity: Boolean(process.env.NEXT_PUBLIC_SANITY_PROJECT_ID?.trim()),
   };
 }
 
@@ -98,6 +133,25 @@ export function checkProductionEnv(): ProductionEnvCheck {
     if (!v || v.trim() === "" || v.includes("REPLACE_ME")) {
       missing.push(key);
     }
+  }
+
+  if (!hasPaymobHmacSecret()) {
+    missing.push("PAYMOB_HMAC_SECRET");
+  }
+
+  if (!process.env.GEMINI_API_KEY?.trim()) {
+    warnings.push(
+      "GEMINI_API_KEY missing — Mrs. Cookie, Mr. Brownie, and product assistant AI are disabled",
+    );
+  }
+
+  if (
+    !process.env.NEXT_PUBLIC_SANITY_PROJECT_ID?.trim() ||
+    !process.env.NEXT_PUBLIC_SANITY_DATASET?.trim()
+  ) {
+    warnings.push(
+      "Sanity CMS env incomplete — blog/content previews may be empty (NEXT_PUBLIC_SANITY_PROJECT_ID / DATASET)",
+    );
   }
 
   // sanity: NEXT_PUBLIC_APP_URL يجب أن يطابق الدومين الأساسي

@@ -146,7 +146,9 @@ export default function TemplateLibraryPage() {
 
   useEffect(() => {
     if (!selectedKey) return;
-    void loadPreview(selectedKey, lang);
+    queueMicrotask(() => {
+      void loadPreview(selectedKey, lang);
+    });
   }, [selectedKey, lang, loadPreview]);
 
   const filteredGroups = useMemo(() => {
