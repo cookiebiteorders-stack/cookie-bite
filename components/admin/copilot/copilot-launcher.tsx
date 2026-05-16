@@ -51,7 +51,7 @@ export function CopilotLauncher() {
         </span>
       </button>
 
-      {open && (
+      {open ? (
         <div
           className="fixed inset-0 z-50"
           dir={lang === "ar" ? "rtl" : "ltr"}
@@ -106,7 +106,7 @@ export function CopilotLauncher() {
             </div>
           </aside>
         </div>
-      )}
+      ) : null}
     </>
   );
 }
