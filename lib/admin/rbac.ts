@@ -137,5 +137,6 @@ export const adminRouteModuleMap: Record<string, ModuleKey> = {
   "/admin/audit-logs": "audit",
   "/admin/settings": "settings",
   "/admin/design-library": "templates",
+  "/admin/template-library": "templates",
 };
 

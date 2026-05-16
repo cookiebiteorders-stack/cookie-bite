@@ -6,6 +6,7 @@ import {
   CreditCard,
   FileText,
   LayoutDashboard,
+  LayoutTemplate,
   Receipt,
   Settings,
   Shield,
@@ -29,6 +30,7 @@ const iconByHref: Record<string, LucideIcon> = {
   "/admin/roles": Shield,
   "/admin/shipping": Truck,
   "/admin/audit-logs": FileText,
+  "/admin/template-library": LayoutTemplate,
   "/admin/settings": Settings,
 };
 

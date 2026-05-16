@@ -1,38 +1,63 @@
 import { EMAIL_CONFIG, getResend } from "@/lib/email/resend";
-import {
-  contactNotification,
-  orderConfirmationEmail,
-  welcomeEmail,
-} from "@/lib/email/templates";
+import { contactNotification } from "@/lib/email/templates";
+import { renderTemplate } from "@/lib/notification-library";
+
+type SendResult = Awaited<ReturnType<ReturnType<typeof getResend>["emails"]["send"]>>;
+
+async function dispatch(opts: {
+  to: string;
+  subject: string;
+  html: string;
+  replyTo?: string;
+}): Promise<SendResult> {
+  const resend = getResend();
+  return resend.emails.send({
+    from: EMAIL_CONFIG.from,
+    to: opts.to,
+    replyTo: opts.replyTo ?? EMAIL_CONFIG.replyTo,
+    subject: opts.subject,
+    html: opts.html,
+  });
+}
 
 export async function sendWelcomeEmail(opts: {
   to: string;
   name?: string;
   credentials?: { username: string; password: string };
 }) {
-  const resend = getResend();
-  const tpl = welcomeEmail({ name: opts.name, credentials: opts.credentials });
-  return resend.emails.send({
-    from: EMAIL_CONFIG.from,
-    to: opts.to,
-    replyTo: EMAIL_CONFIG.replyTo,
-    subject: tpl.subject,
-    html: tpl.html,
+  const firstName = opts.name?.split(/\s+/)[0] ?? "there";
+  const rendered = renderTemplate("welcome", {
+    first_name: firstName,
   });
+  if (!rendered) throw new Error("Template 'welcome' missing from registry");
+
+  let html = rendered.html;
+  if (opts.credentials) {
+    const credsBlock = `<div style="margin:18px 0;padding:16px;background:#FFF8F0;border-radius:12px;border:1px solid #E8B896">
+  <p style="margin:0 0 8px;font-weight:600;color:#B25336">Your login details</p>
+  <p style="margin:0 0 4px;font-size:14px"><strong>Username:</strong> ${escape(opts.credentials.username)}</p>
+  <p style="margin:0 0 8px;font-size:14px"><strong>Temporary password:</strong> ${escape(opts.credentials.password)}</p>
+  <p style="margin:0;font-size:12px;color:#6b4a3a">You can sign in with email + this password, or continue with Google/social. Please change your password after signing in.</p>
+  <p style="margin:10px 0 0;font-size:12px;color:#6b4a3a" dir="rtl">بيانات الدخول: اسم المستخدم وكلمة المرور أعلاه — يُفضّل تغيير كلمة المرور بعد أول تسجيل دخول.</p>
+</div>`;
+    html = html.replace(
+      /<div class="info-box">/,
+      `${credsBlock}<div class="info-box">`,
+    );
+  }
+  return dispatch({ to: opts.to, subject: rendered.subject, html });
 }
 
 export async function sendContactNotification(opts: {
   to: string;
   payload: { name: string; email: string; subject: string; message: string };
 }) {
-  const resend = getResend();
   const tpl = contactNotification(opts.payload);
-  return resend.emails.send({
-    from: EMAIL_CONFIG.from,
+  return dispatch({
     to: opts.to,
-    replyTo: opts.payload.email,
     subject: tpl.subject,
     html: tpl.html,
+    replyTo: opts.payload.email,
   });
 }
 
@@ -40,35 +65,75 @@ export async function sendOrderConfirmation(opts: {
   to: string;
   payload: { name: string; orderId: string; total: number; itemsHtml: string };
 }) {
-  const resend = getResend();
-  const tpl = orderConfirmationEmail(opts.payload);
-  return resend.emails.send({
-    from: EMAIL_CONFIG.from,
-    to: opts.to,
-    replyTo: EMAIL_CONFIG.replyTo,
-    subject: tpl.subject,
-    html: tpl.html,
+  const firstName = opts.payload.name?.split(/\s+/)[0] ?? "there";
+  const rendered = renderTemplate("order-confirmed", {
+    first_name: firstName,
+    order_number: opts.payload.orderId,
+    total_amount: `${opts.payload.total.toFixed(2)} EGP`,
+    customer_name: opts.payload.name,
+    items_rows: opts.payload.itemsHtml,
   });
+  if (!rendered) {
+    throw new Error("Template 'order-confirmed' missing from registry");
+  }
+  return dispatch({ to: opts.to, subject: rendered.subject, html: rendered.html });
 }
 
 export async function sendOrderStatusEmail(opts: {
   to: string;
   payload: { orderId: string; status: string; message: string };
 }) {
-  const resend = getResend();
-  const subject = `Order update — #${opts.payload.orderId}`;
-  const html = `<!doctype html><html><body style="font-family:DM Sans,system-ui,sans-serif;background:#FBF3EA;padding:24px;color:#3C2A21">
-  <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #F2DDC5;border-radius:16px;padding:24px">
-  <h2 style="margin:0 0 12px;color:#B25336">Order update</h2>
-  <p style="margin:0 0 8px"><strong>Order:</strong> #${opts.payload.orderId}</p>
-  <p style="margin:0 0 8px"><strong>Status:</strong> ${opts.payload.status}</p>
-  <p style="margin:16px 0 0">${opts.payload.message}</p>
-  </div></body></html>`;
-  return resend.emails.send({
-    from: EMAIL_CONFIG.from,
-    to: opts.to,
-    replyTo: EMAIL_CONFIG.replyTo,
-    subject,
-    html,
+  const rendered = renderTemplate("report-order-status", {
+    customer_name: "there",
+    report_date: new Date().toLocaleDateString("en-GB"),
+    order_rows: `<tr><td>#${escape(opts.payload.orderId)}</td><td>${escape(new Date().toLocaleDateString("en-GB"))}</td><td>—</td><td>—</td><td><span class="badge b">${escape(opts.payload.status)}</span></td></tr>`,
+    total_orders: 1,
+    total_spent: "—",
+    member_since: "—",
   });
+  if (!rendered) {
+    throw new Error("Template 'report-order-status' missing from registry");
+  }
+  const subject = `Order update — #${opts.payload.orderId}`;
+  const html = rendered.html.replace(
+    /(<\/table>)/,
+    `$1<div class="info-box"><p>${escape(opts.payload.message)}</p></div>`,
+  );
+  return dispatch({ to: opts.to, subject, html });
+}
+
+/**
+ * Generic dispatcher for any template in `lib/notification-library`.
+ *
+ * Use this whenever a new flow wants to send a notification — pass the
+ * template key + per-recipient variables and we'll handle rendering + Resend.
+ */
+export async function sendTemplateEmail(opts: {
+  to: string;
+  templateKey: string;
+  vars?: Record<string, string | number>;
+  lang?: "en" | "ar";
+  replyTo?: string;
+  subjectOverride?: string;
+}) {
+  const rendered = renderTemplate(opts.templateKey, opts.vars ?? {}, {
+    lang: opts.lang,
+  });
+  if (!rendered) {
+    throw new Error(`Template "${opts.templateKey}" not found in registry`);
+  }
+  return dispatch({
+    to: opts.to,
+    subject: opts.subjectOverride ?? rendered.subject,
+    html: rendered.html,
+    replyTo: opts.replyTo,
+  });
+}
+
+function escape(value: string): string {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
