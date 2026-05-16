@@ -17,7 +17,9 @@
     "test:ci": "jest --ci --coverage=false",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-    "deploy:github": "node scripts/git-sync.mjs"
+    "deploy:github": "node scripts/git-sync.mjs",
+    "email:check": "node scripts/email-diagnostics.mjs",
+    "email:finalize-dns": "node scripts/resend-dns-finalize.mjs"
   },
   "dependencies": {
     "@clerk/localizations": "^4.6.0",
