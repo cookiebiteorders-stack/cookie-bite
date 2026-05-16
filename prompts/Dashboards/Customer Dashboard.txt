@@ -1,0 +1,41 @@
+<div class="dash-wrap">
+        <div class="dash-nav">
+          <div class="store">YOUR STORE</div>
+          <div class="nav-items"><span>Sales</span><span>Orders</span><span class="act">Customers</span><span>Inventory</span></div>
+        </div>
+        <div class="dash-body">
+          <div class="dash-title">Customer overview</div>
+          <div class="dash-sub">{{period}} · Last updated {{last_updated}}</div>
+          <div class="dash-kpi">
+            <div class="dk"><div class="dl">Total</div><div class="dv">{{total_customers}}</div><div class="dc up">+{{cust_g}}%</div></div>
+            <div class="dk"><div class="dl">New</div><div class="dv">{{new_customers}}</div><div class="dc up">This month</div></div>
+            <div class="dk"><div class="dl">LTV</div><div class="dv">{{avg_ltv}}</div><div class="dc up">+{{ltv_g}}%</div></div>
+            <div class="dk"><div class="dl">Churn</div><div class="dv">{{churn}}%</div><div class="dc dn">Monitor</div></div>
+          </div>
+          <div class="dash-chart-area">
+            <h3>New customers by month</h3>
+            <div class="mini-bar-row"><span class="ml">Jan</span><div class="mini-bar-track"><div class="mini-bar-fill" style="width:45%;background:#1a1a2e;"></div></div><span class="mv">{{nc_m1}}</span></div>
+            <div class="mini-bar-row"><span class="ml">Feb</span><div class="mini-bar-track"><div class="mini-bar-fill" style="width:58%;background:#1a1a2e;"></div></div><span class="mv">{{nc_m2}}</span></div>
+            <div class="mini-bar-row"><span class="ml">Mar</span><div class="mini-bar-track"><div class="mini-bar-fill" style="width:72%;background:#1a1a2e;"></div></div><span class="mv">{{nc_m3}}</span></div>
+            <div class="mini-bar-row"><span class="ml">Apr</span><div class="mini-bar-track"><div class="mini-bar-fill" style="width:65%;background:#1a1a2e;"></div></div><span class="mv">{{nc_m4}}</span></div>
+            <div class="mini-bar-row"><span class="ml">May</span><div class="mini-bar-track"><div class="mini-bar-fill" style="width:85%;background:#1a1a2e;"></div></div><span class="mv">{{nc_m5}}</span></div>
+          </div>
+          <div class="dash-two">
+            <div class="dash-panel">
+              <h3>Customer segments</h3>
+              <div class="dash-row"><span class="dr-l"><span class="status-dot g"></span>VIP</span><span class="dr-r">{{seg_vip}}%</span></div>
+              <div class="dash-row"><span class="dr-l"><span class="status-dot g"></span>Loyal</span><span class="dr-r">{{seg_loyal}}%</span></div>
+              <div class="dash-row"><span class="dr-l"><span class="status-dot y"></span>At Risk</span><span class="dr-r">{{seg_risk}}%</span></div>
+              <div class="dash-row"><span class="dr-l"><span class="status-dot r"></span>Churned</span><span class="dr-r">{{seg_churn}}%</span></div>
+            </div>
+            <div class="dash-panel">
+              <h3>Satisfaction</h3>
+              <div class="dash-row"><span class="dr-l">NPS Score</span><span class="dr-r" style="color:#2e7d32;">{{nps}}</span></div>
+              <div class="dash-row"><span class="dr-l">Avg rating</span><span class="dr-r">{{avg_rating}} / 5</span></div>
+              <div class="dash-row"><span class="dr-l">Reviews</span><span class="dr-r">{{review_count}}</span></div>
+              <div class="dash-row"><span class="dr-l">Open tickets</span><span class="dr-r" style="color:#f57c00;">{{open_tickets}}</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="dash-footer"><p>[Your Store] · Customer Dashboard · {{period}}</p><p>Auto-refreshes every {{refresh_interval}}</p></div>
+      </div>

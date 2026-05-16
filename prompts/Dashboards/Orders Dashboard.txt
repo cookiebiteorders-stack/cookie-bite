@@ -1,0 +1,41 @@
+<div class="dash-wrap">
+        <div class="dash-nav">
+          <div class="store">YOUR STORE</div>
+          <div class="nav-items"><span>Sales</span><span class="act">Orders</span><span>Customers</span><span>Inventory</span></div>
+        </div>
+        <div class="dash-body">
+          <div class="dash-title">Orders overview</div>
+          <div class="dash-sub">{{period}} · Last updated {{last_updated}}</div>
+          <div class="dash-kpi">
+            <div class="dk"><div class="dl">Total Orders</div><div class="dv">{{total_orders}}</div><div class="dc up">+{{ord_g}}%</div></div>
+            <div class="dk"><div class="dl">Pending</div><div class="dv">{{pending}}</div><div class="dc up">Action needed</div></div>
+            <div class="dk"><div class="dl">Shipped</div><div class="dv">{{shipped}}</div><div class="dc up">In transit</div></div>
+            <div class="dk"><div class="dl">Refunds</div><div class="dv">{{refunds}}</div><div class="dc dn">{{ref_rate}}% rate</div></div>
+          </div>
+          <table class="dash-table"><thead><tr><th>Order #</th><th>Customer</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>{{order_1}}</td><td>{{cust_1}}</td><td>{{amt_1}}</td><td>{{date_1}}</td><td><span class="badge g">Delivered</span></td></tr>
+            <tr><td>{{order_2}}</td><td>{{cust_2}}</td><td>{{amt_2}}</td><td>{{date_2}}</td><td><span class="badge b">In Transit</span></td></tr>
+            <tr><td>{{order_3}}</td><td>{{cust_3}}</td><td>{{amt_3}}</td><td>{{date_3}}</td><td><span class="badge y">Processing</span></td></tr>
+            <tr><td>{{order_4}}</td><td>{{cust_4}}</td><td>{{amt_4}}</td><td>{{date_4}}</td><td><span class="badge r">Refunded</span></td></tr>
+            <tr><td>{{order_5}}</td><td>{{cust_5}}</td><td>{{amt_5}}</td><td>{{date_5}}</td><td><span class="badge g">Delivered</span></td></tr>
+          </tbody></table>
+          <div class="dash-two">
+            <div class="dash-panel">
+              <h3>Fulfillment status</h3>
+              <div class="dash-row"><span class="dr-l"><span class="status-dot g"></span>Delivered</span><span class="dr-r">{{pct_delivered}}%</span></div>
+              <div class="dash-row"><span class="dr-l"><span class="status-dot g"></span>Shipped</span><span class="dr-r">{{pct_shipped}}%</span></div>
+              <div class="dash-row"><span class="dr-l"><span class="status-dot y"></span>Processing</span><span class="dr-r">{{pct_processing}}%</span></div>
+              <div class="dash-row"><span class="dr-l"><span class="status-dot r"></span>Cancelled</span><span class="dr-r">{{pct_cancelled}}%</span></div>
+            </div>
+            <div class="dash-panel">
+              <h3>Delivery performance</h3>
+              <div class="dash-row"><span class="dr-l">On time</span><span class="dr-r" style="color:#2e7d32;">{{on_time}}%</span></div>
+              <div class="dash-row"><span class="dr-l">Late</span><span class="dr-r" style="color:#f57c00;">{{late}}%</span></div>
+              <div class="dash-row"><span class="dr-l">Avg delivery time</span><span class="dr-r">{{avg_days}} days</span></div>
+              <div class="dash-row"><span class="dr-l">Fastest carrier</span><span class="dr-r">{{top_carrier}}</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="dash-footer"><p>[Your Store] · Orders Dashboard · {{period}}</p><p>Auto-refreshes every {{refresh_interval}}</p></div>
+      </div>

@@ -1,0 +1,23 @@
+<div class="email-wrap">
+        <div class="email-head"><div class="store">YOUR STORE</div><div class="period">Weekly Report · {{week_range}}</div></div>
+        <div class="email-body">
+          <h1>Weekly sales summary</h1>
+          <p>Hi {{manager_name}}, here's your performance snapshot for the week of <strong>{{week_range}}</strong>.</p>
+          <div class="email-kpi">
+            <div class="ek"><div class="el">Revenue</div><div class="ev">{{weekly_revenue}}</div><div class="ec up">+{{rev_growth}}% vs last week</div></div>
+            <div class="ek"><div class="el">Orders</div><div class="ev">{{weekly_orders}}</div><div class="ec up">+{{ord_growth}}% vs last week</div></div>
+            <div class="ek"><div class="el">New Customers</div><div class="ev">{{new_customers}}</div><div class="ec up">+{{cust_growth}}%</div></div>
+            <div class="ek"><div class="el">Conversion Rate</div><div class="ev">{{conv_rate}}%</div><div class="ec dn">{{conv_change}}%</div></div>
+          </div>
+          <p style="font-size:12px;font-weight:700;color:#1a1a2e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Top products this week</p>
+          <table class="email-table"><thead><tr><th>Product</th><th>Units</th><th>Revenue</th></tr></thead>
+          <tbody>
+            <tr><td>{{product_1}}</td><td>{{units_1}}</td><td>{{rev_1}}</td></tr>
+            <tr><td>{{product_2}}</td><td>{{units_2}}</td><td>{{rev_2}}</td></tr>
+            <tr><td>{{product_3}}</td><td>{{units_3}}</td><td>{{rev_3}}</td></tr>
+          </tbody></table>
+          <a class="cta" href="#">View Full Report</a>
+          <p style="font-size:11px;color:#aaa;margin-top:8px;">This is an automated weekly report sent every {{send_day}}.</p>
+        </div>
+        <div class="email-footer-b"><p>© 2025 [Your Store] · <a href="#" style="color:#888;">Unsubscribe</a></p></div>
+      </div>

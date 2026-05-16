@@ -1,0 +1,18 @@
+<div class="email-wrapper">
+      <div class="email-header"><div class="logo">YOUR STORE</div></div>
+      <div class="email-body">
+        <span class="tag">Feedback</span>
+        <h1>How did we do?</h1>
+        <p class="greeting">Hi {{first_name}},</p>
+        <p>We hope you're loving your recent purchase from <strong>[Your Store]</strong>. Your feedback means the world to us — and to other shoppers!</p>
+        <p>It only takes 30 seconds. Click a star to rate your experience:</p>
+        <div style="text-align:center;">
+          <div class="stars">★ ★ ★ ★ ★</div>
+          <p style="font-size:13px;color:#888;margin-bottom:20px;">Tap a star to leave your rating</p>
+          <a class="cta-btn" href="#">Write a Review</a>
+        </div>
+        <hr class="divider">
+        <p style="font-size:13px;color:#888;">Reviewing your order: <strong>{{product_name}}</strong> (Order #{{order_number}})</p>
+      </div>
+      <div class="email-footer"><p>© 2025 [Your Store]. All rights reserved.<br>[Company Address]<br><a href="#">Unsubscribe</a> · <a href="#">Privacy Policy</a></p></div>
+    </div>

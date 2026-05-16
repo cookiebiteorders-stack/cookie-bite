@@ -1,0 +1,23 @@
+<div class="email-wrapper">
+      <div class="email-header"><div class="logo">YOUR STORE</div></div>
+      <div class="email-body">
+        <span class="tag">Order Confirmed</span>
+        <h1>Thank you for your order!</h1>
+        <p class="greeting">Hi {{first_name}},</p>
+        <p>We've received your order and it's being processed. Here's a summary:</p>
+        <table class="order-table">
+          <thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead>
+          <tbody>
+            <tr><td>{{product_name_1}}</td><td>{{qty_1}}</td><td>{{price_1}}</td></tr>
+            <tr><td>{{product_name_2}}</td><td>{{qty_2}}</td><td>{{price_2}}</td></tr>
+            <tr class="total-row"><td colspan="2">Total</td><td>{{total_amount}}</td></tr>
+          </tbody>
+        </table>
+        <div class="two-col">
+          <div class="col-box"><h4>Shipping to</h4><p>{{customer_name}}<br>{{shipping_address}}</p></div>
+          <div class="col-box"><h4>Payment</h4><p>{{payment_method}}<br>Paid: {{total_amount}}</p></div>
+        </div>
+        <div style="text-align:center;margin:20px 0;"><a class="cta-btn" href="#">View My Order</a></div>
+      </div>
+      <div class="email-footer"><p>© 2025 [Your Store]. All rights reserved.<br>[Company Address]<br><a href="#">Unsubscribe</a> · <a href="#">Privacy Policy</a></p></div>
+    </div>

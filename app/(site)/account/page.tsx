@@ -7,6 +7,7 @@ import { SignOutButton } from "@clerk/nextjs";
 import {
   Bell,
   CreditCard,
+  FileText,
   Heart,
   HelpCircle,
   LayoutDashboard,
@@ -483,29 +484,44 @@ export default async function AccountPage() {
 
               {orders.length ? (
                 <ul className="space-y-3">
-                  {orders.map((o) => (
-                    <li
-                      key={o.id}
-                      className="flex items-center justify-between gap-3 rounded-2xl border border-cb-border px-4 py-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-cb-text-strong">
-                          Order #{o.order_number}
-                        </p>
-                        <p className="mt-1 text-xs text-cb-text-muted">
-                          {Number(o.total_egp).toFixed(0)} EGP · {o.payment_status}
-                        </p>
-                      </div>
-                      <span
-                        className={cn(
-                          "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
-                          STATUS_BADGE[o.status] ?? "bg-slate-100 text-slate-800",
-                        )}
+                  {orders.map((o) => {
+                    const invoiceNumber = `INV-${String(o.order_number).padStart(8, "0")}`;
+                    return (
+                      <li
+                        key={o.id}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cb-border px-4 py-3"
                       >
-                        {o.status}
-                      </span>
-                    </li>
-                  ))}
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-cb-text-strong">
+                            Order #{o.order_number}
+                          </p>
+                          <p className="mt-1 text-xs text-cb-text-muted">
+                            {Number(o.total_egp).toFixed(0)} EGP · {o.payment_status}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/invoices/${invoiceNumber}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-cb-border bg-cb-surface px-3 py-1 text-[11px] font-semibold text-cb-text-strong transition hover:bg-cb-peach/40"
+                            title="View styled invoice"
+                          >
+                            <FileText className="h-3.5 w-3.5" />
+                            Invoice
+                          </Link>
+                          <span
+                            className={cn(
+                              "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                              STATUS_BADGE[o.status] ?? "bg-slate-100 text-slate-800",
+                            )}
+                          >
+                            {o.status}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
                 <div className="rounded-2xl bg-cb-cream p-6 text-center">

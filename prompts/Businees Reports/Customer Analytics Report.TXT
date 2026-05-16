@@ -1,0 +1,37 @@
+<div class="doc-wrap">
+        <div class="doc-head"><div class="store">YOUR STORE</div><div class="rtype">Analytics Report</div><div class="rtitle">Customer Analytics Report</div></div>
+        <div class="doc-meta">
+          <div class="doc-meta-item"><div class="lbl">Period</div><div class="val">{{period}}</div></div>
+          <div class="doc-meta-item"><div class="lbl">Segment</div><div class="val">{{customer_segment}}</div></div>
+          <div class="doc-meta-item"><div class="lbl">Issued</div><div class="val">{{issue_date}}</div></div>
+        </div>
+        <div class="doc-body">
+          <h2>Customer overview</h2>
+          <div class="kpi-row">
+            <div class="kpi"><div class="k-lbl">Total Customers</div><div class="k-val">{{total_customers}}</div><div class="k-chg up">+{{cust_growth}}% growth</div></div>
+            <div class="kpi"><div class="k-lbl">Repeat Buyers</div><div class="k-val">{{repeat_buyers}}%</div><div class="k-chg up">+{{repeat_growth}}%</div></div>
+            <div class="kpi"><div class="k-lbl">Customer LTV</div><div class="k-val">{{avg_ltv}}</div><div class="k-chg up">+{{ltv_growth}}%</div></div>
+          </div>
+          <div class="kpi-row">
+            <div class="kpi"><div class="k-lbl">Churn Rate</div><div class="k-val">{{churn_rate}}%</div><div class="k-chg g">Below target</div></div>
+            <div class="kpi"><div class="k-lbl">NPS Score</div><div class="k-val">{{nps_score}}</div><div class="k-chg up">+{{nps_change}} pts</div></div>
+            <div class="kpi"><div class="k-lbl">Support Tickets</div><div class="k-val">{{support_tickets}}</div><div class="k-chg dn">+{{ticket_change}}%</div></div>
+          </div>
+          <h2>Top customer segments</h2>
+          <div class="chart-bar-wrap">
+            <div class="bar-row"><span class="lbl">VIP</span><div class="bar-track"><div class="bar-fill" style="width:85%"></div></div><span class="bval">{{seg_vip}}</span></div>
+            <div class="bar-row"><span class="lbl">Loyal</span><div class="bar-track"><div class="bar-fill" style="width:65%"></div></div><span class="bval">{{seg_loyal}}</span></div>
+            <div class="bar-row"><span class="lbl">New</span><div class="bar-track"><div class="bar-fill" style="width:48%"></div></div><span class="bval">{{seg_new}}</span></div>
+            <div class="bar-row"><span class="lbl">At Risk</span><div class="bar-track"><div class="bar-fill" style="width:22%"></div></div><span class="bval">{{seg_at_risk}}</span></div>
+          </div>
+          <h2>Top customers by revenue</h2>
+          <table class="doc-table"><thead><tr><th>Customer</th><th>Orders</th><th>Total Spend</th><th>Segment</th></tr></thead>
+          <tbody>
+            <tr><td>{{cust_name_1}}</td><td>{{cust_orders_1}}</td><td>{{cust_spend_1}}</td><td><span class="badge b">VIP</span></td></tr>
+            <tr><td>{{cust_name_2}}</td><td>{{cust_orders_2}}</td><td>{{cust_spend_2}}</td><td><span class="badge b">VIP</span></td></tr>
+            <tr><td>{{cust_name_3}}</td><td>{{cust_orders_3}}</td><td>{{cust_spend_3}}</td><td><span class="badge g">Loyal</span></td></tr>
+          </tbody></table>
+          <div class="note-box"><p>{{analytics_notes}}</p></div>
+        </div>
+        <div class="doc-footer"><p>Confidential · [Your Store] · {{period}}</p><p>Page 1 of 1</p></div>
+      </div>

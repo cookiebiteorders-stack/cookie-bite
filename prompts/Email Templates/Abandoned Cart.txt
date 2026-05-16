@@ -1,0 +1,21 @@
+<div class="email-wrapper">
+      <div class="email-header"><div class="logo">YOUR STORE</div></div>
+      <div class="email-body">
+        <span class="tag warning">Reminder</span>
+        <h1>Your cart is waiting for you</h1>
+        <p class="greeting">Hi {{first_name}},</p>
+        <p>You left some items in your cart. Don't let them sell out — complete your purchase before they're gone.</p>
+        <table class="order-table">
+          <thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead>
+          <tbody>
+            <tr><td>{{product_name_1}}</td><td>{{qty_1}}</td><td>{{price_1}}</td></tr>
+            <tr><td>{{product_name_2}}</td><td>{{qty_2}}</td><td>{{price_2}}</td></tr>
+            <tr class="total-row"><td colspan="2">Cart Total</td><td>{{cart_total}}</td></tr>
+          </tbody>
+        </table>
+        <div style="text-align:center;margin:24px 0;"><a class="cta-btn" href="#">Complete My Purchase</a></div>
+        <div class="info-box"><p>🎁 <strong>Special offer:</strong> Use <strong>COMEBACK5</strong> for an extra 5% off your order today.</p></div>
+        <p style="font-size:13px;color:#888;">This offer expires in {{offer_expiry}}.</p>
+      </div>
+      <div class="email-footer"><p>© 2025 [Your Store]. All rights reserved.<br>[Company Address]<br><a href="#">Unsubscribe</a> · <a href="#">Privacy Policy</a></p></div>
+    </div>

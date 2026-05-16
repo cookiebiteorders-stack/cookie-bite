@@ -1,0 +1,21 @@
+<div class="email-wrapper">
+      <div class="email-header"><div class="logo">YOUR STORE</div></div>
+      <div class="email-body">
+        <span class="tag info">Refund Processed</span>
+        <h1>Your refund is on its way</h1>
+        <p class="greeting">Hi {{first_name}},</p>
+        <p>We've successfully processed your refund for order <strong>#{{order_number}}</strong>. Here are the details:</p>
+        <div class="two-col">
+          <div class="col-box"><h4>Refund Amount</h4><p><strong>{{refund_amount}}</strong></p></div>
+          <div class="col-box"><h4>Refunded To</h4><p>{{payment_method}}</p></div>
+        </div>
+        <div class="info-box"><p>⏳ Please allow <strong>{{processing_days}} business days</strong> for the refund to appear in your account, depending on your bank.</p></div>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-content"><h4>Refund initiated</h4><p>We've sent the refund from our end on {{refund_date}}.</p></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content"><h4>Processing</h4><p>Your bank or payment provider processes the amount.</p></div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-content"><h4>Received</h4><p>Funds arrive in your account within {{processing_days}} days.</p></div></div>
+        </div>
+        <div style="text-align:center;"><a class="cta-btn" href="#">View Refund Details</a></div>
+      </div>
+      <div class="email-footer"><p>© 2025 [Your Store]. All rights reserved.<br>[Company Address]<br><a href="#">Unsubscribe</a> · <a href="#">Privacy Policy</a></p></div>
+    </div>

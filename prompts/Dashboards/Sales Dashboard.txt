@@ -1,0 +1,41 @@
+<div class="dash-wrap">
+        <div class="dash-nav">
+          <div class="store">YOUR STORE</div>
+          <div class="nav-items"><span class="act">Sales</span><span>Orders</span><span>Customers</span><span>Inventory</span></div>
+        </div>
+        <div class="dash-body">
+          <div class="dash-title">Sales overview</div>
+          <div class="dash-sub">{{period}} · Last updated {{last_updated}}</div>
+          <div class="dash-kpi">
+            <div class="dk"><div class="dl">Revenue</div><div class="dv">{{revenue}}</div><div class="dc up">+{{rev_g}}%</div></div>
+            <div class="dk"><div class="dl">Orders</div><div class="dv">{{orders}}</div><div class="dc up">+{{ord_g}}%</div></div>
+            <div class="dk"><div class="dl">Avg Order</div><div class="dv">{{aov}}</div><div class="dc dn">{{aov_g}}%</div></div>
+            <div class="dk"><div class="dl">Conversion</div><div class="dv">{{conv}}%</div><div class="dc up">+{{conv_g}}%</div></div>
+          </div>
+          <div class="dash-chart-area">
+            <h3>Revenue by month</h3>
+            <div class="mini-bar-row"><span class="ml">Jan</span><div class="mini-bar-track"><div class="mini-bar-fill" style="width:55%;background:#1a1a2e;"></div></div><span class="mv">{{m1}}</span></div>
+            <div class="mini-bar-row"><span class="ml">Feb</span><div class="mini-bar-track"><div class="mini-bar-fill" style="width:63%;background:#1a1a2e;"></div></div><span class="mv">{{m2}}</span></div>
+            <div class="mini-bar-row"><span class="ml">Mar</span><div class="mini-bar-track"><div class="mini-bar-fill" style="width:78%;background:#1a1a2e;"></div></div><span class="mv">{{m3}}</span></div>
+            <div class="mini-bar-row"><span class="ml">Apr</span><div class="mini-bar-track"><div class="mini-bar-fill" style="width:70%;background:#1a1a2e;"></div></div><span class="mv">{{m4}}</span></div>
+            <div class="mini-bar-row"><span class="ml">May</span><div class="mini-bar-track"><div class="mini-bar-fill" style="width:90%;background:#1a1a2e;"></div></div><span class="mv">{{m5}}</span></div>
+          </div>
+          <div class="dash-two">
+            <div class="dash-panel">
+              <h3>Top products</h3>
+              <div class="dash-row"><span class="dr-l">{{prod_1}}</span><span class="dr-r">{{p1_rev}}</span></div>
+              <div class="dash-row"><span class="dr-l">{{prod_2}}</span><span class="dr-r">{{p2_rev}}</span></div>
+              <div class="dash-row"><span class="dr-l">{{prod_3}}</span><span class="dr-r">{{p3_rev}}</span></div>
+              <div class="dash-row"><span class="dr-l">{{prod_4}}</span><span class="dr-r">{{p4_rev}}</span></div>
+            </div>
+            <div class="dash-panel">
+              <h3>Sales by channel</h3>
+              <div class="dash-row"><span class="dr-l">Website</span><span class="dr-r">{{ch_web}}%</span></div>
+              <div class="dash-row"><span class="dr-l">Mobile app</span><span class="dr-r">{{ch_app}}%</span></div>
+              <div class="dash-row"><span class="dr-l">Marketplace</span><span class="dr-r">{{ch_mkt}}%</span></div>
+              <div class="dash-row"><span class="dr-l">Social</span><span class="dr-r">{{ch_soc}}%</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="dash-footer"><p>[Your Store] · Sales Dashboard · {{period}}</p><p>Auto-refreshes every {{refresh_interval}}</p></div>
+      </div>

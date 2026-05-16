@@ -1,0 +1,34 @@
+<div class="doc-wrap">
+        <div class="doc-head"><div class="store">YOUR STORE</div><div class="rtype">Operations Report</div><div class="rtitle">Inventory Status Report</div></div>
+        <div class="doc-meta">
+          <div class="doc-meta-item"><div class="lbl">Period</div><div class="val">{{report_date}}</div></div>
+          <div class="doc-meta-item"><div class="lbl">Warehouse</div><div class="val">{{warehouse_name}}</div></div>
+          <div class="doc-meta-item"><div class="lbl">Prepared by</div><div class="val">{{author_name}}</div></div>
+        </div>
+        <div class="doc-body">
+          <h2>Stock overview</h2>
+          <div class="kpi-row">
+            <div class="kpi"><div class="k-lbl">Total SKUs</div><div class="k-val">{{total_skus}}</div><div class="k-chg up">In catalog</div></div>
+            <div class="kpi"><div class="k-lbl">In Stock</div><div class="k-val">{{in_stock}}</div><div class="k-chg up">{{stock_pct}}% healthy</div></div>
+            <div class="kpi"><div class="k-lbl">Low Stock</div><div class="k-val">{{low_stock}}</div><div class="k-chg dn">Needs reorder</div></div>
+          </div>
+          <h2>Stock status by category</h2>
+          <table class="doc-table"><thead><tr><th>Category</th><th>SKUs</th><th>Units</th><th>Value</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>{{category_1}}</td><td>{{skus_1}}</td><td>{{units_1}}</td><td>{{value_1}}</td><td><span class="badge g">Healthy</span></td></tr>
+            <tr><td>{{category_2}}</td><td>{{skus_2}}</td><td>{{units_2}}</td><td>{{value_2}}</td><td><span class="badge y">Low</span></td></tr>
+            <tr><td>{{category_3}}</td><td>{{skus_3}}</td><td>{{units_3}}</td><td>{{value_3}}</td><td><span class="badge r">Critical</span></td></tr>
+            <tr><td>{{category_4}}</td><td>{{skus_4}}</td><td>{{units_4}}</td><td>{{value_4}}</td><td><span class="badge g">Healthy</span></td></tr>
+            <tr class="tot"><td>Total</td><td>{{total_skus}}</td><td>{{total_units}}</td><td>{{total_value}}</td><td></td></tr>
+          </tbody></table>
+          <h2>Items requiring immediate reorder</h2>
+          <table class="doc-table"><thead><tr><th>Product</th><th>SKU</th><th>Current Stock</th><th>Reorder Qty</th></tr></thead>
+          <tbody>
+            <tr><td>{{reorder_product_1}}</td><td>{{sku_1}}</td><td style="color:#c62828;font-weight:700;">{{stock_level_1}}</td><td>{{reorder_qty_1}}</td></tr>
+            <tr><td>{{reorder_product_2}}</td><td>{{sku_2}}</td><td style="color:#c62828;font-weight:700;">{{stock_level_2}}</td><td>{{reorder_qty_2}}</td></tr>
+            <tr><td>{{reorder_product_3}}</td><td>{{sku_3}}</td><td style="color:#f57c00;font-weight:700;">{{stock_level_3}}</td><td>{{reorder_qty_3}}</td></tr>
+          </tbody></table>
+          <div class="note-box"><p>{{inventory_notes}}</p></div>
+        </div>
+        <div class="doc-footer"><p>Confidential · [Your Store] · {{report_date}}</p><p>Page 1 of 1</p></div>
+      </div>

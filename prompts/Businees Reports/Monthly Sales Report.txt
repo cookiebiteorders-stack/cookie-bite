@@ -1,0 +1,41 @@
+<div class="doc-wrap">
+        <div class="doc-head"><div class="store">YOUR STORE</div><div class="rtype">Business Report</div><div class="rtitle">Monthly Sales Report</div></div>
+        <div class="doc-meta">
+          <div class="doc-meta-item"><div class="lbl">Period</div><div class="val">{{month_year}}</div></div>
+          <div class="doc-meta-item"><div class="lbl">Prepared by</div><div class="val">{{author_name}}</div></div>
+          <div class="doc-meta-item"><div class="lbl">Date issued</div><div class="val">{{issue_date}}</div></div>
+        </div>
+        <div class="doc-body">
+          <h2>Key performance indicators</h2>
+          <div class="kpi-row">
+            <div class="kpi"><div class="k-lbl">Total Revenue</div><div class="k-val">{{total_revenue}}</div><div class="k-chg up">+{{revenue_growth}}% vs last month</div></div>
+            <div class="kpi"><div class="k-lbl">Orders</div><div class="k-val">{{total_orders}}</div><div class="k-chg up">+{{order_growth}}% vs last month</div></div>
+            <div class="kpi"><div class="k-lbl">Avg Order Value</div><div class="k-val">{{avg_order_value}}</div><div class="k-chg dn">{{aov_change}}% vs last month</div></div>
+          </div>
+          <div class="kpi-row">
+            <div class="kpi"><div class="k-lbl">Conversion Rate</div><div class="k-val">{{conversion_rate}}%</div><div class="k-chg up">+{{conv_change}}%</div></div>
+            <div class="kpi"><div class="k-lbl">New Customers</div><div class="k-val">{{new_customers}}</div><div class="k-chg up">+{{cust_growth}}%</div></div>
+            <div class="kpi"><div class="k-lbl">Refund Rate</div><div class="k-val">{{refund_rate}}%</div><div class="k-chg g">Healthy</div></div>
+          </div>
+          <h2>Top products by revenue</h2>
+          <table class="doc-table"><thead><tr><th>Product</th><th>Units Sold</th><th>Revenue</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>{{product_1}}</td><td>{{units_1}}</td><td>{{revenue_1}}</td><td><span class="badge g">Top seller</span></td></tr>
+            <tr><td>{{product_2}}</td><td>{{units_2}}</td><td>{{revenue_2}}</td><td><span class="badge b">Growing</span></td></tr>
+            <tr><td>{{product_3}}</td><td>{{units_3}}</td><td>{{revenue_3}}</td><td><span class="badge y">Stable</span></td></tr>
+            <tr><td>{{product_4}}</td><td>{{units_4}}</td><td>{{revenue_4}}</td><td><span class="badge r">Declining</span></td></tr>
+            <tr class="tot"><td>Total</td><td>{{total_units}}</td><td>{{total_product_revenue}}</td><td></td></tr>
+          </tbody></table>
+          <h2>Revenue by channel</h2>
+          <div class="chart-bar-wrap">
+            <div class="bar-row"><span class="lbl">Website</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span class="bval">{{ch_web}}</span></div>
+            <div class="bar-row"><span class="lbl">Mobile App</span><div class="bar-track"><div class="bar-fill" style="width:52%"></div></div><span class="bval">{{ch_app}}</span></div>
+            <div class="bar-row"><span class="lbl">Marketplace</span><div class="bar-track"><div class="bar-fill" style="width:30%"></div></div><span class="bval">{{ch_market}}</span></div>
+            <div class="bar-row"><span class="lbl">Social</span><div class="bar-track"><div class="bar-fill" style="width:18%"></div></div><span class="bval">{{ch_social}}</span></div>
+          </div>
+          <hr class="divider">
+          <h2>Notes &amp; observations</h2>
+          <div class="note-box"><p>{{report_notes}}</p></div>
+        </div>
+        <div class="doc-footer"><p>Confidential · [Your Store] · {{month_year}}</p><p>Page 1 of 1</p></div>
+      </div>

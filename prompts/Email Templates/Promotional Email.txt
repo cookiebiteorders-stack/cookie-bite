@@ -1,0 +1,21 @@
+<div class="email-wrapper">
+      <div class="email-header" style="background:#1a1a2e;padding:32px;">
+        <div class="logo">YOUR STORE</div>
+        <div style="margin-top:16px;font-size:32px;font-weight:800;color:#fff;letter-spacing:-1px;font-family:Arial;">{{offer_percentage}}% OFF</div>
+        <div style="font-size:14px;color:rgba(255,255,255,0.7);margin-top:4px;font-family:Arial;">{{offer_name}} · Ends {{expiry_date}}</div>
+      </div>
+      <div class="email-body">
+        <h1>Exclusive offer just for you</h1>
+        <p class="greeting">Hi {{first_name}},</p>
+        <p>For a limited time, enjoy <strong>{{offer_percentage}}% off</strong> sitewide. Use the code below at checkout — no minimum order required.</p>
+        <div class="tracking-box">
+          <p style="font-size:12px;color:#888;margin-bottom:6px;">YOUR DISCOUNT CODE</p>
+          <div class="tracking-num" style="letter-spacing:4px;">{{promo_code}}</div>
+          <p>Valid until {{expiry_date}}</p>
+        </div>
+        <div style="text-align:center;margin:24px 0;"><a class="cta-btn" href="#">Shop the Sale</a></div>
+        <hr class="divider">
+        <p style="font-size:12px;color:#aaa;">Terms apply. Offer valid until {{expiry_date}} at 11:59 PM. Cannot be combined with other offers.</p>
+      </div>
+      <div class="email-footer"><p>© 2025 [Your Store]. All rights reserved.<br>[Company Address]<br><a href="#">Unsubscribe</a> · <a href="#">Privacy Policy</a></p></div>
+    </div>

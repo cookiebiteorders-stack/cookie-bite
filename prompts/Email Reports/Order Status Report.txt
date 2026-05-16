@@ -1,0 +1,19 @@
+<div class="email-wrap">
+        <div class="email-head"><div class="store">YOUR STORE</div><div class="period">Order Report · {{report_date}}</div></div>
+        <div class="email-body">
+          <h1>Your order status report</h1>
+          <p>Hi {{customer_name}}, here's a full summary of your recent orders with [Your Store].</p>
+          <table class="email-table"><thead><tr><th>Order #</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>{{order_1}}</td><td>{{date_1}}</td><td>{{items_1}}</td><td>{{total_1}}</td><td><span class="badge g">Delivered</span></td></tr>
+            <tr><td>{{order_2}}</td><td>{{date_2}}</td><td>{{items_2}}</td><td>{{total_2}}</td><td><span class="badge b">In Transit</span></td></tr>
+            <tr><td>{{order_3}}</td><td>{{date_3}}</td><td>{{items_3}}</td><td>{{total_3}}</td><td><span class="badge y">Processing</span></td></tr>
+          </tbody></table>
+          <div class="email-kpi">
+            <div class="ek"><div class="el">Total Orders</div><div class="ev">{{total_orders}}</div><div class="ec up">All time</div></div>
+            <div class="ek"><div class="el">Total Spent</div><div class="ev">{{total_spent}}</div><div class="ec up">Since {{member_since}}</div></div>
+          </div>
+          <a class="cta" href="#">View My Orders</a>
+        </div>
+        <div class="email-footer-b"><p>© 2025 [Your Store] · <a href="#" style="color:#888;">Unsubscribe</a> · <a href="#" style="color:#888;">Privacy Policy</a></p></div>
+      </div>

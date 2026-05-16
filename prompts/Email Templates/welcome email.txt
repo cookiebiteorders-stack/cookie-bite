@@ -1,0 +1,15 @@
+<div class="email-wrapper">
+      <div class="email-header"><div class="logo">YOUR STORE</div></div>
+      <div class="email-body">
+        <span class="tag">New Member</span>
+        <h1>Welcome aboard, {{first_name}}!</h1>
+        <p class="greeting">Hi {{first_name}},</p>
+        <p>Thank you for creating an account with <strong>[Your Store]</strong>. We're thrilled to have you as part of our community.</p>
+        <p>Your account is now ready. Start browsing our latest collections and enjoy a seamless shopping experience.</p>
+        <div style="text-align:center;margin:24px 0;"><a class="cta-btn" href="#">Start Shopping</a></div>
+        <div class="info-box"><p>🎁 <strong>Welcome Offer:</strong> Use code <strong>WELCOME10</strong> for 10% off your first order. Valid for 30 days.</p></div>
+        <hr class="divider">
+        <p style="font-size:13px;color:#888;">Need help? Reply to this email or visit our <a href="#" style="color:#1a1a2e;">Help Center</a>.</p>
+      </div>
+      <div class="email-footer"><p>© 2025 [Your Store]. All rights reserved.<br>[Company Address, City, Country]<br><a href="#">Unsubscribe</a> · <a href="#">Privacy Policy</a></p></div>
+    </div>

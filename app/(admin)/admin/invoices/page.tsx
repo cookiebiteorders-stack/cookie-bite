@@ -1,10 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { AlertTriangle, Download, FilePlus2, RefreshCw, Search, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Download,
+  ExternalLink,
+  FilePlus2,
+  RefreshCw,
+  Search,
+  X,
+} from "lucide-react";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { buttonClassName } from "@/components/ui/button";
+import { InvoiceView } from "@/components/invoices/invoice-view";
+import { toInvoiceViewModel } from "@/lib/invoices/to-invoice-view-model";
 import { cn } from "@/lib/utils";
 
 type InvoiceStatus = "paid" | "pending" | "failed" | "refunded";
@@ -123,15 +133,6 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
   );
 }
 
-function getPaymentLabel(method: string | null): string {
-  const value = (method ?? "").toLowerCase();
-  if (!value) return "—";
-  if (value.includes("card")) return "Card";
-  if (value.includes("stripe")) return "Stripe";
-  if (value.includes("cash")) return "Cash";
-  return method ?? "—";
-}
-
 function InvoiceDrawer({
   invoice,
   open,
@@ -143,9 +144,14 @@ function InvoiceDrawer({
 }) {
   const reduceMotion = useReducedMotion();
 
+  const viewModel = useMemo(
+    () => (invoice ? toInvoiceViewModel(invoice) : null),
+    [invoice],
+  );
+
   return (
     <AnimatePresence>
-      {open && invoice ? (
+      {open && invoice && viewModel ? (
         <motion.div
           className="fixed inset-0 z-[85] flex justify-end bg-black/45 backdrop-blur-[2px]"
           initial={{ opacity: 0 }}
@@ -159,111 +165,52 @@ function InvoiceDrawer({
             role="dialog"
             aria-modal="true"
             aria-labelledby="invoice-drawer-title"
-            className="flex h-full w-full max-w-2xl flex-col border-s border-cb-border bg-cb-surface-elevated shadow-2xl"
+            className="flex h-full w-full max-w-3xl flex-col border-s border-cb-border bg-[#f0ede6] shadow-2xl dark:bg-stone-950"
             initial={reduceMotion ? false : { x: 36, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={reduceMotion ? undefined : { x: 26, opacity: 0 }}
             transition={{ type: "spring", stiffness: 330, damping: 34 }}
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <header className="flex items-start justify-between gap-3 border-b border-cb-border px-5 py-4">
+            <header className="flex items-start justify-between gap-3 border-b border-cb-border bg-cb-surface-elevated px-5 py-4">
               <div>
-                <h2 id="invoice-drawer-title" className="font-serif text-xl font-bold text-cb-text-strong">
+                <h2
+                  id="invoice-drawer-title"
+                  className="font-serif text-xl font-bold text-cb-text-strong"
+                >
                   Invoice Details
                 </h2>
-                <p className="mt-1 font-mono text-sm text-cb-text-muted">{invoice.invoice_number}</p>
+                <p className="mt-1 font-mono text-sm text-cb-text-muted">
+                  {invoice.invoice_number}
+                </p>
               </div>
-              <button
-                type="button"
-                className="rounded-xl border border-cb-border p-2 text-cb-text-muted hover:bg-cb-surface-2"
-                onClick={onClose}
-                aria-label="Close drawer"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`/invoices/${invoice.invoice_number}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={buttonClassName(
+                    "outline",
+                    "min-h-0 px-3 py-1.5 text-xs",
+                  )}
+                  title="Open full invoice in a new tab"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Open full
+                </a>
+                <button
+                  type="button"
+                  className="rounded-xl border border-cb-border p-2 text-cb-text-muted hover:bg-cb-surface-2"
+                  onClick={onClose}
+                  aria-label="Close drawer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </header>
 
-            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
-              <section className="rounded-2xl border border-cb-border bg-cb-surface p-4">
-                <h3 className="text-xs font-bold uppercase tracking-wide text-cb-text-muted">Invoice Info</h3>
-                <dl className="mt-3 space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <dt className="text-cb-text-muted">Invoice ID</dt>
-                    <dd className="font-mono text-cb-text-strong">{invoice.invoice_number}</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <dt className="text-cb-text-muted">Date</dt>
-                    <dd className="text-cb-text-strong">{new Date(invoice.issued_at).toLocaleString()}</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <dt className="text-cb-text-muted">Status</dt>
-                    <dd><StatusBadge status={invoice.status} /></dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 border-t border-cb-border pt-2">
-                    <dt className="font-semibold text-cb-text-muted">Total</dt>
-                    <dd className="font-serif text-lg font-bold text-cb-text-strong">{money(invoice.amount_egp)}</dd>
-                  </div>
-                </dl>
-              </section>
-
-              <section className="rounded-2xl border border-cb-border bg-cb-surface p-4">
-                <h3 className="text-xs font-bold uppercase tracking-wide text-cb-text-muted">Order Info</h3>
-                <p className="mt-2 text-sm text-cb-text">
-                  Order: {invoice.order.order_code ?? invoice.order.id ?? "—"}
-                </p>
-                <ul className="mt-3 space-y-2">
-                  {invoice.order.items.length ? (
-                    invoice.order.items.map((item) => (
-                      <li key={item.id} className="rounded-xl border border-cb-border/80 bg-cb-surface-elevated p-3">
-                        <p className="text-sm font-semibold text-cb-text-strong">{item.product_name}</p>
-                        <p className="text-xs text-cb-text-muted">
-                          Qty {item.quantity} × {money(item.unit_price_egp)}
-                        </p>
-                      </li>
-                    ))
-                  ) : (
-                    <li className="rounded-xl border border-dashed border-cb-border p-3 text-sm text-cb-text-muted">
-                      No order items available.
-                    </li>
-                  )}
-                </ul>
-              </section>
-
-              <section className="rounded-2xl border border-cb-border bg-cb-surface p-4">
-                <h3 className="text-xs font-bold uppercase tracking-wide text-cb-text-muted">Payment Info</h3>
-                <dl className="mt-3 space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <dt className="text-cb-text-muted">Method</dt>
-                    <dd className="text-cb-text-strong">{getPaymentLabel(invoice.payment.method)}</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <dt className="text-cb-text-muted">Transaction ID</dt>
-                    <dd className="max-w-[60%] truncate text-end font-mono text-xs text-cb-text-strong">
-                      {invoice.payment.transaction_id ?? "—"}
-                    </dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <dt className="text-cb-text-muted">Payment Status</dt>
-                    <dd className="text-cb-text-strong">{invoice.payment.status ?? "—"}</dd>
-                  </div>
-                </dl>
-              </section>
-
-              <section className="rounded-2xl border border-cb-border bg-cb-surface p-4">
-                <h3 className="text-xs font-bold uppercase tracking-wide text-cb-text-muted">Customer Info</h3>
-                <dl className="mt-3 space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <dt className="text-cb-text-muted">Name</dt>
-                    <dd className="text-cb-text-strong">{invoice.customer_name ?? "Guest customer"}</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <dt className="text-cb-text-muted">Email</dt>
-                    <dd className="max-w-[65%] truncate text-end text-cb-text-strong">
-                      {invoice.customer_email ?? "—"}
-                    </dd>
-                  </div>
-                </dl>
-              </section>
+            <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5 sm:px-5">
+              <InvoiceView invoice={viewModel} />
             </div>
           </motion.aside>
         </motion.div>
@@ -620,16 +567,35 @@ export default function AdminInvoicesPage() {
                     <td className="px-4 py-3 text-cb-text-strong">{row.payment.status ?? "—"}</td>
                     <td className="px-4 py-3 text-xs text-cb-text-muted">{new Date(row.issued_at).toLocaleString()}</td>
                     <td className="px-4 py-3 text-end">
-                      <button
-                        type="button"
-                        className={buttonClassName("ghost", "min-h-0 rounded-lg px-3 py-1.5 text-xs")}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelected(row);
-                        }}
-                      >
-                        View
-                      </button>
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          className={buttonClassName(
+                            "ghost",
+                            "min-h-0 rounded-lg px-3 py-1.5 text-xs",
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelected(row);
+                          }}
+                        >
+                          Preview
+                        </button>
+                        <a
+                          href={`/invoices/${row.invoice_number}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={buttonClassName(
+                            "outline",
+                            "min-h-0 rounded-lg px-3 py-1.5 text-xs",
+                          )}
+                          onClick={(e) => e.stopPropagation()}
+                          title="Open the full styled invoice in a new tab"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Open
+                        </a>
+                      </div>
                     </td>
                   </motion.tr>
                 ))}

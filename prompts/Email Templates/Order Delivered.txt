@@ -1,0 +1,15 @@
+<div class="email-wrapper">
+      <div class="email-header"><div class="logo">YOUR STORE</div></div>
+      <div class="email-body">
+        <span class="tag">Delivered</span>
+        <h1>Your order has arrived!</h1>
+        <p class="greeting">Hi {{first_name}},</p>
+        <p>Your order <strong>#{{order_number}}</strong> was delivered on <strong>{{delivery_date}}</strong>. We hope everything arrived in perfect condition.</p>
+        <div class="info-box"><p><strong>Delivered to:</strong> {{shipping_address}}</p></div>
+        <p>If there's anything wrong with your order, we're here to help. You have <strong>{{return_window}} days</strong> to return any items.</p>
+        <div style="text-align:center;margin:20px 0;"><a class="cta-btn" href="#">View My Order</a></div>
+        <hr class="divider">
+        <p style="font-size:13px;color:#888;">Questions? <a href="#" style="color:#1a1a2e;">Contact our support team</a>.</p>
+      </div>
+      <div class="email-footer"><p>© 2025 [Your Store]. All rights reserved.<br>[Company Address]<br><a href="#">Unsubscribe</a> · <a href="#">Privacy Policy</a></p></div>
+    </div>

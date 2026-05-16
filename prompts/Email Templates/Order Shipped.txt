@@ -1,0 +1,18 @@
+<div class="email-wrapper">
+      <div class="email-header"><div class="logo">YOUR STORE</div></div>
+      <div class="email-body">
+        <span class="tag info">Shipped</span>
+        <h1>Your order is on its way!</h1>
+        <p class="greeting">Hi {{first_name}},</p>
+        <p>Great news! Your order <strong>#{{order_number}}</strong> has been shipped and is heading to you.</p>
+        <div class="tracking-box">
+          <p style="font-size:12px;color:#888;margin-bottom:6px;">TRACKING NUMBER</p>
+          <div class="tracking-num">{{tracking_number}}</div>
+          <p>via {{carrier_name}} · Est. delivery: {{estimated_delivery}}</p>
+        </div>
+        <div style="text-align:center;margin:20px 0;"><a class="cta-btn" href="#">Track My Package</a></div>
+        <hr class="divider">
+        <p style="font-size:13px;color:#888;">Didn't order this? Please <a href="#" style="color:#1a1a2e;">contact us</a> immediately.</p>
+      </div>
+      <div class="email-footer"><p>© 2025 [Your Store]. All rights reserved.<br>[Company Address]<br><a href="#">Unsubscribe</a> · <a href="#">Privacy Policy</a></p></div>
+    </div>
