@@ -50,6 +50,7 @@ export function SiteFooter() {
       id: "support",
       title: t("footer.customerCare"),
       items: [
+        { href: "/help", label: t("nav.helpCenter") },
         { href: "/help/faq", label: t("nav.faq") },
         { href: "/contact", label: t("footer.contactShipping") },
         { href: "/help/returns", label: t("footer.returnsRefunds") },

@@ -13,6 +13,7 @@ const staticRoutes: Array<{
   { path: "/our-cookies", changeFrequency: "weekly", priority: 0.85 },
   { path: "/our-story", changeFrequency: "monthly", priority: 0.8 },
   { path: "/contact", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/help", changeFrequency: "monthly", priority: 0.8 },
   { path: "/help/faq", changeFrequency: "monthly", priority: 0.75 },
   { path: "/help/returns", changeFrequency: "monthly", priority: 0.7 },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.4 },

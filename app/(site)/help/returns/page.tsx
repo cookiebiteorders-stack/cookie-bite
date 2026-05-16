@@ -19,7 +19,7 @@ export const metadata: Metadata = buildPageMetadata({
 export default function ReturnsPage() {
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: "Home", path: "/" },
-    { name: "Help", path: "/help/faq" },
+    { name: "Help center", path: "/help" },
     { name: "Returns", path: "/help/returns" },
   ]);
   return (
