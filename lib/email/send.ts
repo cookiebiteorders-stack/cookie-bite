@@ -1,5 +1,5 @@
 import { EMAIL_CONFIG, getResend } from "@/lib/email/resend";
-import { contactNotification } from "@/lib/email/templates";
+import { contactNotification, contactAutoReply } from "@/lib/email/templates";
 import { renderTemplate } from "@/lib/notification-library";
 
 type SendResult = Awaited<ReturnType<ReturnType<typeof getResend>["emails"]["send"]>>;
@@ -57,7 +57,26 @@ export async function sendContactNotification(opts: {
     to: opts.to,
     subject: tpl.subject,
     html: tpl.html,
+    // Replies on the team copy go straight back to the customer.
     replyTo: opts.payload.email,
+  });
+}
+
+/**
+ * Polite confirmation sent back to the customer right after they submit the
+ * contact form. Keeps them in the loop (and gives them a record of the
+ * subject they wrote about).
+ */
+export async function sendContactAutoReply(opts: {
+  to: string;
+  name: string;
+  subject: string;
+}) {
+  const tpl = contactAutoReply({ name: opts.name, subject: opts.subject });
+  return dispatch({
+    to: opts.to,
+    subject: tpl.subject,
+    html: tpl.html,
   });
 }
 
