@@ -13,6 +13,7 @@ const MODULE_LABEL_AR: Record<ModuleKey, string> = {
   discounts: "الخصومات",
   media: "الوسائط",
   cms: "المحتوى",
+  templates: "قوالب HTML والأدوات",
   analytics: "التقارير والتحليلات",
   financial: "المالية",
   invoices: "الفواتير",

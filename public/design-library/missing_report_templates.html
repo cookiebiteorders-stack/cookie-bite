@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css"/>
+<style>
+:root{
+  --font-sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --color-text-primary:#1c1917;
+  --color-text-secondary:#57534e;
+  --color-text-tertiary:#78716c;
+  --color-text-info:#1d4ed8;
+  --color-text-success:#15803d;
+  --color-text-warning:#9a3412;
+  --color-background-primary:#fafaf9;
+  --color-background-secondary:#f5f5f4;
+  --color-background-info:#eff6ff;
+  --color-background-success:#f0fdf4;
+  --color-background-warning:#fff7ed;
+  --color-border-secondary:#d6d3d1;
+  --color-border-tertiary:#e7e5e4;
+  --color-border-success:#86efac;
+  --border-radius-md:8px;
+  --border-radius-lg:12px;
+}
+html,body{min-height:100%;margin:0;background:var(--color-background-secondary);font-family:var(--font-sans);}
+body{padding:10px 12px 16px;}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+</style>
+</head>
+<body>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.app{display:flex;flex-direction:column;height:760px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;background:var(--color-background-primary);}
+.app-hdr{padding:10px 16px;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);display:flex;align-items:center;justify-content:space-between;}
+.app-hdr h2{font-size:13px;font-weight:500;color:var(--color-text-primary);}
+.app-hdr span{font-size:11px;color:var(--color-text-tertiary);}
+.tabs{display:flex;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);}
+.tab{flex:1;padding:9px 6px;border:none;background:none;cursor:pointer;font-size:11px;color:var(--color-text-secondary);display:flex;align-items:center;justify-content:center;gap:5px;border-bottom:2px solid transparent;transition:all .12s;}
+.tab.active{color:var(--color-text-primary);border-bottom:2px solid var(--color-text-primary);background:var(--color-background-primary);font-weight:500;}
+.body{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:205px;min-width:205px;border-right:0.5px solid var(--color-border-tertiary);overflow-y:auto;background:var(--color-background-secondary);}
+.tbtn{width:100%;text-align:left;background:none;border:none;border-bottom:0.5px solid var(--color-border-tertiary);padding:9px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .12s;}
+.tbtn:hover{background:var(--color-background-primary);}
+.tbtn.active{background:var(--color-background-primary);border-left:2px solid #1a1a2e;}
+.tbtn .ti{font-size:14px;color:var(--color-text-tertiary);}
+.tbtn.active .ti{color:#1a1a2e;}
+.tbtn span{font-size:12px;color:var(--color-text-secondary);line-height:1.3;}
+.tbtn.active span{color:var(--color-text-primary);font-weight:500;}
+.preview{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.phdr{padding:9px 14px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:space-between;}
+.phdr-l h3{font-size:13px;font-weight:500;color:var(--color-text-primary);}
+.phdr-l p{font-size:11px;color:var(--color-text-tertiary);margin-top:1px;}
+.cbtn{background:none;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:5px 10px;font-size:11px;cursor:pointer;color:var(--color-text-secondary);display:flex;align-items:center;gap:5px;}
+.cbtn:hover{background:var(--color-background-secondary);}
+.cbtn.ok{color:var(--color-text-success);border-color:var(--color-border-success);}
+.canvas{flex:1;overflow-y:auto;padding:18px;background:#e8e8e8;}
+
+.dw{max-width:540px;margin:0 auto;background:#fff;border-radius:6px;font-family:Arial,sans-serif;}
+.dh{background:#1a1a2e;padding:22px 26px;border-radius:6px 6px 0 0;}
+.dh .store{font-size:16px;font-weight:700;color:#fff;letter-spacing:2px;}
+.dh .rtype{font-size:10px;color:rgba(255,255,255,.55);margin-top:2px;text-transform:uppercase;letter-spacing:.08em;}
+.dh .rtitle{font-size:19px;font-weight:700;color:#fff;margin-top:7px;}
+.dmeta{display:flex;border-bottom:1px solid #eee;}
+.dmi{flex:1;padding:11px 14px;border-right:1px solid #eee;}
+.dmi:last-child{border-right:none;}
+.dmi .ml{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;}
+.dmi .mv{font-size:12px;color:#222;font-weight:700;margin-top:2px;}
+.db{padding:18px 22px;}
+.db h2{font-size:11px;font-weight:700;color:#1a1a2e;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px;}
+.db h2:first-child{margin-top:0;}
+.kpi3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.kpi3 .k{background:#f5f6fa;border-radius:5px;padding:10px 12px;}
+.kpi3 .k .kl{font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;}
+.kpi3 .k .kv{font-size:17px;font-weight:700;color:#1a1a2e;margin-top:2px;}
+.kpi3 .k .kc{font-size:10px;margin-top:1px;}
+.kpi3 .k .kc.up{color:#2e7d32;}
+.kpi3 .k .kc.dn{color:#c62828;}
+.kpi3 .k .kc.n{color:#888;}
+.kpi2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.kpi2 .k{background:#f5f6fa;border-radius:5px;padding:10px 12px;}
+.kpi2 .k .kl{font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;}
+.kpi2 .k .kv{font-size:17px;font-weight:700;color:#1a1a2e;margin-top:2px;}
+.kpi2 .k .kc{font-size:10px;margin-top:1px;}
+.kpi2 .k .kc.up{color:#2e7d32;}
+.kpi2 .k .kc.dn{color:#c62828;}
+.dtbl{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed;}
+.dtbl th{background:#f5f6fa;padding:7px 10px;text-align:left;color:#888;font-size:9px;text-transform:uppercase;letter-spacing:.05em;}
+.dtbl td{padding:7px 10px;border-bottom:1px solid #f0f0f0;color:#333;}
+.dtbl .tot td{font-weight:700;color:#1a1a2e;background:#f5f6fa;border-bottom:none;}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.bar-row .bl{font-size:10px;color:#666;width:80px;flex-shrink:0;text-align:right;}
+.bar-track{flex:1;background:#eee;border-radius:2px;height:12px;}
+.bar-fill{height:12px;border-radius:2px;background:#1a1a2e;}
+.bar-row .bv{font-size:10px;color:#222;font-weight:600;width:44px;flex-shrink:0;}
+.note{background:#f5f6fa;border-left:3px solid #1a1a2e;padding:10px 13px;border-radius:0 4px 4px 0;margin:10px 0;}
+.note p{font-size:12px;color:#444;line-height:1.6;margin:0;}
+.divider{border:none;border-top:1px solid #eee;margin:12px 0;}
+.df{background:#f5f6fa;padding:12px 22px;border-radius:0 0 6px 6px;display:flex;justify-content:space-between;}
+.df p{font-size:10px;color:#bbb;}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:600;}
+.badge.g{background:#e8f5e9;color:#2e7d32;}
+.badge.r{background:#fce4ec;color:#c62828;}
+.badge.b{background:#e3f2fd;color:#1565c0;}
+.badge.y{background:#fff8e1;color:#e65100;}
+.ew{max-width:520px;margin:0 auto;background:#fff;border-radius:6px;font-family:Arial,sans-serif;}
+.eh{background:#1a1a2e;padding:20px 26px;border-radius:6px 6px 0 0;}
+.eh .logo{font-size:16px;font-weight:700;color:#fff;letter-spacing:2px;}
+.eh .period{font-size:11px;color:rgba(255,255,255,.55);}
+.eb2{padding:22px 26px;}
+.eb2 h1{font-size:18px;font-weight:700;color:#1a1a2e;margin-bottom:8px;}
+.eb2 p{font-size:13px;color:#555;line-height:1.7;margin-bottom:10px;}
+.etbl{width:100%;border-collapse:collapse;font-size:12px;margin:10px 0;table-layout:fixed;}
+.etbl th{background:#f5f6fa;padding:7px 10px;text-align:left;color:#888;font-size:9px;text-transform:uppercase;}
+.etbl td{padding:7px 10px;border-bottom:1px solid #f0f0f0;color:#333;}
+.ekpi2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;}
+.ekpi2 .ek{background:#f5f6fa;border-radius:5px;padding:10px 12px;}
+.ekpi2 .ek .el{font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;}
+.ekpi2 .ek .ev{font-size:18px;font-weight:700;color:#1a1a2e;margin-top:2px;}
+.ekpi2 .ek .ec{font-size:10px;margin-top:1px;}
+.ekpi2 .ek .ec.up{color:#2e7d32;}
+.ekpi2 .ek .ec.dn{color:#c62828;}
+.cta{display:inline-block;background:#1a1a2e;color:#fff;padding:10px 22px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:600;margin:10px 0;}
+.ef2{background:#f5f6fa;padding:12px 26px;border-radius:0 0 6px 6px;text-align:center;}
+.ef2 p{font-size:11px;color:#aaa;}
+.ef2 a{color:#888;}
+.dash-wrap{max-width:580px;margin:0 auto;background:#fff;border-radius:6px;overflow:hidden;font-family:Arial,sans-serif;}
+.dash-nav{background:#1a1a2e;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;}
+.dash-nav .store{font-size:13px;font-weight:700;color:#fff;letter-spacing:1.5px;}
+.dash-nav .nav-items{display:flex;gap:14px;}
+.dash-nav .nav-items span{font-size:10px;color:rgba(255,255,255,.5);cursor:pointer;}
+.dash-nav .nav-items span.act{color:#fff;}
+.db2{padding:16px 18px;}
+.dt{font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:2px;}
+.ds{font-size:10px;color:#aaa;margin-bottom:14px;}
+.dk4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:16px;}
+.dk{background:#f5f6fa;border-radius:5px;padding:9px 11px;}
+.dk .dl{font-size:8px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;}
+.dk .dv{font-size:15px;font-weight:700;color:#1a1a2e;margin-top:2px;}
+.dk .dc{font-size:9px;margin-top:1px;}
+.dk .dc.up{color:#2e7d32;}
+.dk .dc.dn{color:#c62828;}
+.dk3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:16px;}
+.mini-bar-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;}
+.mini-bar-row .ml{font-size:9px;color:#888;width:30px;flex-shrink:0;text-align:right;}
+.mini-track{flex:1;background:#eee;border-radius:2px;height:9px;}
+.mini-fill{height:9px;border-radius:2px;}
+.mini-bar-row .mv{font-size:9px;color:#333;font-weight:600;width:38px;flex-shrink:0;}
+.dash-two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.dash-panel{background:#f5f6fa;border-radius:5px;padding:10px 12px;}
+.dash-panel h3{font-size:9px;font-weight:700;color:#1a1a2e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.dash-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:10px;}
+.dash-row .drl{color:#666;}
+.dash-row .drr{font-weight:600;color:#1a1a2e;}
+.dash-tbl{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:14px;}
+.dash-tbl th{padding:6px 7px;text-align:left;color:#aaa;font-size:8px;text-transform:uppercase;background:#f5f6fa;}
+.dash-tbl td{padding:6px 7px;border-bottom:1px solid #f0f0f0;color:#333;}
+.dash-footer{background:#f5f6fa;padding:9px 18px;display:flex;justify-content:space-between;}
+.dash-footer p{font-size:9px;color:#ccc;}
+.sdot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px;}
+.sdot.g{background:#2e7d32;}
+.sdot.y{background:#f57c00;}
+.sdot.r{background:#c62828;}
+.chart-area{margin-bottom:14px;}
+.chart-area h3{font-size:9px;font-weight:700;color:#1a1a2e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+</style>
+
+<h2 class="sr-only">Missing report templates: financial P&L, marketing, returns reports, campaign emails, and marketing/financial/inventory dashboards</h2>
+<div class="app">
+  <div class="app-hdr">
+    <h2>Missing report templates — 8 new additions</h2>
+    <span>Fills gaps in your existing 9 reports</span>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="body">
+    <div class="sidebar" id="sb"></div>
+    <div class="preview">
+      <div class="phdr">
+        <div class="phdr-l"><h3 id="pt"></h3><p id="ps"></p></div>
+        <button class="cbtn" id="cb" onclick="doCopy()"><i class="ti ti-copy" aria-hidden="true"></i> Copy HTML</button>
+      </div>
+      <div class="canvas" id="cv"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cats=[
+  {id:'doc',icon:'ti-file-text',label:'Business Docs'},
+  {id:'email',icon:'ti-mail',label:'Email Reports'},
+  {id:'dash',icon:'ti-layout-dashboard',label:'Dashboards'}
+];
+
+const T={
+  doc:{
+    'pnl':{icon:'ti-moneybag',label:'Profit & Loss Report',sub:'Business Doc · Finance / Management',html:`<div class="dw"><div class="dh"><div class="store">YOUR STORE</div><div class="rtype">Financial Report</div><div class="rtitle">Profit &amp; Loss Statement</div></div><div class="dmeta"><div class="dmi"><div class="ml">Period</div><div class="mv">{{period}}</div></div><div class="dmi"><div class="ml">Currency</div><div class="mv">{{currency}}</div></div><div class="dmi"><div class="ml">Issued</div><div class="mv">{{issue_date}}</div></div></div><div class="db"><div class="kpi3"><div class="k"><div class="kl">Gross Revenue</div><div class="kv">{{gross_revenue}}</div><div class="kc up">+{{rev_g}}% YoY</div></div><div class="k"><div class="kl">Net Profit</div><div class="kv">{{net_profit}}</div><div class="kc up">+{{profit_g}}%</div></div><div class="k"><div class="kl">Profit Margin</div><div class="kv">{{margin}}%</div><div class="kc n">Target: {{target_margin}}%</div></div></div><h2>Revenue breakdown</h2><table class="dtbl"><thead><tr><th>Source</th><th>Amount</th><th>% of Total</th></tr></thead><tbody><tr><td>Product Sales</td><td>{{rev_products}}</td><td>{{pct_products}}%</td></tr><tr><td>Shipping Fees</td><td>{{rev_shipping}}</td><td>{{pct_shipping}}%</td></tr><tr><td>Promotions / Discounts</td><td style="color:#c62828;">-{{discounts}}</td><td>{{pct_discounts}}%</td></tr><tr class="tot"><td>Net Revenue</td><td>{{net_revenue}}</td><td>100%</td></tr></tbody></table><h2>Cost of goods sold (COGS)</h2><table class="dtbl"><thead><tr><th>Item</th><th>Amount</th></tr></thead><tbody><tr><td>Product Cost</td><td>{{cogs_product}}</td></tr><tr><td>Packaging</td><td>{{cogs_packaging}}</td></tr><tr><td>Fulfillment / Shipping</td><td>{{cogs_fulfillment}}</td></tr><tr class="tot"><td>Total COGS</td><td>{{total_cogs}}</td></tr></tbody></table><h2>Operating expenses</h2><table class="dtbl"><thead><tr><th>Expense</th><th>Amount</th></tr></thead><tbody><tr><td>Marketing &amp; Ads</td><td>{{exp_marketing}}</td></tr><tr><td>Platform &amp; Software</td><td>{{exp_software}}</td></tr><tr><td>Staff / Freelancers</td><td>{{exp_staff}}</td></tr><tr><td>Other</td><td>{{exp_other}}</td></tr><tr class="tot"><td>Total OpEx</td><td>{{total_opex}}</td></tr></tbody></table><div class="divider"></div><div class="kpi2"><div class="k"><div class="kl">Gross Profit</div><div class="kv">{{gross_profit}}</div></div><div class="k"><div class="kl">Net Profit</div><div class="kv">{{net_profit}}</div></div></div><div class="note"><p>{{financial_notes}}</p></div></div><div class="df"><p>Confidential · [Your Store] · {{period}}</p><p>Page 1 of 1</p></div></div>`},
+    'marketing':{icon:'ti-speakerphone',label:'Marketing Performance',sub:'Business Doc · Marketing / Management',html:`<div class="dw"><div class="dh"><div class="store">YOUR STORE</div><div class="rtype">Marketing Report</div><div class="rtitle">Marketing Performance Report</div></div><div class="dmeta"><div class="dmi"><div class="ml">Period</div><div class="mv">{{period}}</div></div><div class="dmi"><div class="ml">Budget</div><div class="mv">{{total_budget}}</div></div><div class="dmi"><div class="ml">Issued</div><div class="mv">{{issue_date}}</div></div></div><div class="db"><div class="kpi3"><div class="k"><div class="kl">Total Spend</div><div class="kv">{{total_spend}}</div><div class="kc n">of {{total_budget}}</div></div><div class="k"><div class="kl">Revenue Generated</div><div class="kv">{{attributed_revenue}}</div><div class="kc up">+{{rev_g}}%</div></div><div class="k"><div class="kl">Blended ROAS</div><div class="kv">{{roas}}x</div><div class="kc up">Target: {{target_roas}}x</div></div></div><h2>Channel performance</h2><table class="dtbl"><thead><tr><th>Channel</th><th>Spend</th><th>Revenue</th><th>ROAS</th><th>Status</th></tr></thead><tbody><tr><td>Google Ads</td><td>{{google_spend}}</td><td>{{google_rev}}</td><td>{{google_roas}}x</td><td><span class="badge g">Strong</span></td></tr><tr><td>Meta Ads</td><td>{{meta_spend}}</td><td>{{meta_rev}}</td><td>{{meta_roas}}x</td><td><span class="badge b">Good</span></td></tr><tr><td>Email</td><td>{{email_spend}}</td><td>{{email_rev}}</td><td>{{email_roas}}x</td><td><span class="badge g">Strong</span></td></tr><tr><td>Influencer</td><td>{{inf_spend}}</td><td>{{inf_rev}}</td><td>{{inf_roas}}x</td><td><span class="badge y">Monitor</span></td></tr><tr class="tot"><td>Total</td><td>{{total_spend}}</td><td>{{attributed_revenue}}</td><td>{{roas}}x</td><td></td></tr></tbody></table><h2>Email campaign metrics</h2><div class="kpi3"><div class="k"><div class="kl">Open Rate</div><div class="kv">{{open_rate}}%</div><div class="kc up">Avg: {{avg_open}}%</div></div><div class="k"><div class="kl">Click Rate</div><div class="kv">{{click_rate}}%</div><div class="kc up">Avg: {{avg_click}}%</div></div><div class="k"><div class="kl">Unsubscribes</div><div class="kv">{{unsubs}}</div><div class="kc dn">{{unsub_rate}}%</div></div></div><h2>Spend by channel</h2><div class="bar-row"><span class="bl">Google Ads</span><div class="bar-track"><div class="bar-fill" style="width:72%"></div></div><span class="bv">{{google_spend}}</span></div><div class="bar-row"><span class="bl">Meta Ads</span><div class="bar-track"><div class="bar-fill" style="width:55%"></div></div><span class="bv">{{meta_spend}}</span></div><div class="bar-row"><span class="bl">Email</span><div class="bar-track"><div class="bar-fill" style="width:18%"></div></div><span class="bv">{{email_spend}}</span></div><div class="bar-row"><span class="bl">Influencer</span><div class="bar-track"><div class="bar-fill" style="width:30%"></div></div><span class="bv">{{inf_spend}}</span></div><div class="note"><p>{{marketing_notes}}</p></div></div><div class="df"><p>Confidential · [Your Store] · {{period}}</p><p>Page 1 of 1</p></div></div>`},
+    'returns':{icon:'ti-rotate',label:'Returns & Refunds Report',sub:'Business Doc · Operations / Finance',html:`<div class="dw"><div class="dh"><div class="store">YOUR STORE</div><div class="rtype">Operations Report</div><div class="rtitle">Returns &amp; Refunds Report</div></div><div class="dmeta"><div class="dmi"><div class="ml">Period</div><div class="mv">{{period}}</div></div><div class="dmi"><div class="ml">Issued</div><div class="mv">{{issue_date}}</div></div><div class="dmi"><div class="ml">Prepared by</div><div class="mv">{{author}}</div></div></div><div class="db"><div class="kpi3"><div class="k"><div class="kl">Total Returns</div><div class="kv">{{total_returns}}</div><div class="kc dn">{{return_rate}}% rate</div></div><div class="k"><div class="kl">Refund Value</div><div class="kv">{{total_refunds}}</div><div class="kc dn">of {{gross_revenue}}</div></div><div class="k"><div class="kl">Avg Processing</div><div class="kv">{{avg_days}}d</div><div class="kc n">Target: {{target_days}}d</div></div></div><h2>Returns by reason</h2><div class="bar-row"><span class="bl">Wrong size</span><div class="bar-track"><div class="bar-fill" style="width:65%"></div></div><span class="bv">{{r_size}}%</span></div><div class="bar-row"><span class="bl">Defective</span><div class="bar-track"><div class="bar-fill" style="width:45%"></div></div><span class="bv">{{r_defect}}%</span></div><div class="bar-row"><span class="bl">Not as described</span><div class="bar-track"><div class="bar-fill" style="width:30%"></div></div><span class="bv">{{r_desc}}%</span></div><div class="bar-row"><span class="bl">Changed mind</span><div class="bar-track"><div class="bar-fill" style="width:20%"></div></div><span class="bv">{{r_mind}}%</span></div><div class="bar-row"><span class="bl">Other</span><div class="bar-track"><div class="bar-fill" style="width:10%"></div></div><span class="bv">{{r_other}}%</span></div><h2>Returns by category</h2><table class="dtbl"><thead><tr><th>Category</th><th>Orders</th><th>Returns</th><th>Rate</th><th>Status</th></tr></thead><tbody><tr><td>{{cat_1}}</td><td>{{ord_1}}</td><td>{{ret_1}}</td><td>{{rate_1}}%</td><td><span class="badge g">Healthy</span></td></tr><tr><td>{{cat_2}}</td><td>{{ord_2}}</td><td>{{ret_2}}</td><td>{{rate_2}}%</td><td><span class="badge y">Monitor</span></td></tr><tr><td>{{cat_3}}</td><td>{{ord_3}}</td><td>{{ret_3}}</td><td>{{rate_3}}%</td><td><span class="badge r">High</span></td></tr><tr><td>{{cat_4}}</td><td>{{ord_4}}</td><td>{{ret_4}}</td><td>{{rate_4}}%</td><td><span class="badge g">Healthy</span></td></tr></tbody></table><div class="note"><p>{{returns_notes}}</p></div></div><div class="df"><p>Confidential · [Your Store] · {{period}}</p><p>Page 1 of 1</p></div></div>`}
+  },
+  email:{
+    'campaign':{icon:'ti-chart-pie',label:'Campaign Performance',sub:'Email Report · Marketing team',html:`<div class="ew"><div class="eh"><div class="logo">YOUR STORE</div><div class="period">Campaign Report · {{period}}</div></div><div class="eb2"><h1>Campaign performance report</h1><p>Hi {{manager_name}}, here's how your campaigns performed during <strong>{{period}}</strong>.</p><div class="ekpi2"><div class="ek"><div class="el">Total Reach</div><div class="ev">{{total_reach}}</div><div class="ec up">+{{reach_g}}%</div></div><div class="ek"><div class="el">Revenue Attributed</div><div class="ev">{{attributed_rev}}</div><div class="ec up">+{{rev_g}}%</div></div><div class="ek"><div class="el">Blended ROAS</div><div class="ev">{{roas}}x</div><div class="ec up">Target: {{target_roas}}x</div></div><div class="ek"><div class="el">Total Spend</div><div class="ev">{{total_spend}}</div><div class="ec n">Budget: {{budget}}</div></div></div><p style="font-size:11px;font-weight:700;color:#1a1a2e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Campaign breakdown</p><table class="etbl"><thead><tr><th>Campaign</th><th>Spend</th><th>Revenue</th><th>ROAS</th></tr></thead><tbody><tr><td>{{camp_1}}</td><td>{{sp_1}}</td><td>{{rv_1}}</td><td>{{roas_1}}x</td></tr><tr><td>{{camp_2}}</td><td>{{sp_2}}</td><td>{{rv_2}}</td><td>{{roas_2}}x</td></tr><tr><td>{{camp_3}}</td><td>{{sp_3}}</td><td>{{rv_3}}</td><td>{{roas_3}}x</td></tr></tbody></table><a class="cta" href="#">View Full Report</a><p style="font-size:11px;color:#aaa;margin-top:8px;">Automated report sent every {{send_day}}.</p></div><div class="ef2"><p>© 2025 [Your Store] · <a href="#">Unsubscribe</a></p></div></div>`},
+    'supplier':{icon:'ti-truck',label:'Supplier Reorder Summary',sub:'Email Report · Operations team',html:`<div class="ew"><div class="eh" style="background:#1a3a1a;"><div class="logo">YOUR STORE</div><div class="period">Reorder Report · {{report_date}}</div></div><div class="eb2"><h1>Supplier reorder summary</h1><p>Hi {{ops_manager}}, here are the items that need to be reordered based on current stock levels and sales velocity.</p><div class="ekpi2"><div class="ek"><div class="el">Items to Reorder</div><div class="ev">{{total_items}}</div><div class="ec dn">Urgent</div></div><div class="ek"><div class="el">Est. Reorder Cost</div><div class="ev">{{total_cost}}</div><div class="ec n">Across {{supplier_count}} suppliers</div></div></div><p style="font-size:11px;font-weight:700;color:#1a1a2e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Items requiring reorder</p><table class="etbl"><thead><tr><th>Product</th><th>SKU</th><th>Stock</th><th>Reorder Qty</th><th>Supplier</th></tr></thead><tbody><tr><td>{{prod_1}}</td><td>{{sku_1}}</td><td style="color:#c62828;font-weight:700;">{{stock_1}}</td><td>{{qty_1}}</td><td>{{sup_1}}</td></tr><tr><td>{{prod_2}}</td><td>{{sku_2}}</td><td style="color:#c62828;font-weight:700;">{{stock_2}}</td><td>{{qty_2}}</td><td>{{sup_2}}</td></tr><tr><td>{{prod_3}}</td><td>{{sku_3}}</td><td style="color:#f57c00;font-weight:700;">{{stock_3}}</td><td>{{qty_3}}</td><td>{{sup_3}}</td></tr><tr><td>{{prod_4}}</td><td>{{sku_4}}</td><td style="color:#f57c00;font-weight:700;">{{stock_4}}</td><td>{{qty_4}}</td><td>{{sup_4}}</td></tr></tbody></table><a class="cta" style="background:#1a3a1a;" href="#">Open Purchase Orders</a></div><div class="ef2"><p>© 2025 [Your Store] · Automated reorder report · Sent {{send_frequency}}</p></div></div>`}
+  },
+  dash:{
+    'marketing-dash':{icon:'ti-ad',label:'Marketing Dashboard',sub:'Dashboard · Marketing team',html:`<div class="dash-wrap"><div class="dash-nav"><div class="store">YOUR STORE</div><div class="nav-items"><span>Sales</span><span>Orders</span><span>Customers</span><span class="act">Marketing</span><span>Finance</span></div></div><div class="db2"><div class="dt">Marketing overview</div><div class="ds">{{period}} · Last updated {{last_updated}}</div><div class="dk4"><div class="dk"><div class="dl">Total Spend</div><div class="dv">{{spend}}</div><div class="dc n">Budget left: {{remaining}}</div></div><div class="dk"><div class="dl">Revenue</div><div class="dv">{{revenue}}</div><div class="dc up">+{{rev_g}}%</div></div><div class="dk"><div class="dl">ROAS</div><div class="dv">{{roas}}x</div><div class="dc up">Target: {{target}}x</div></div><div class="dk"><div class="dl">New Visitors</div><div class="dv">{{visitors}}</div><div class="dc up">+{{vis_g}}%</div></div></div><div class="chart-area"><h3>Revenue by channel</h3><div class="mini-bar-row"><span class="ml">Google</span><div class="mini-track"><div class="mini-fill" style="width:75%;background:#1a1a2e;"></div></div><span class="mv">{{g_rev}}</span></div><div class="mini-bar-row"><span class="ml">Meta</span><div class="mini-track"><div class="mini-fill" style="width:55%;background:#1a1a2e;"></div></div><span class="mv">{{m_rev}}</span></div><div class="mini-bar-row"><span class="ml">Email</span><div class="mini-track"><div class="mini-fill" style="width:40%;background:#1a1a2e;"></div></div><span class="mv">{{e_rev}}</span></div><div class="mini-bar-row"><span class="ml">Influencer</span><div class="mini-track"><div class="mini-fill" style="width:22%;background:#1a1a2e;"></div></div><span class="mv">{{i_rev}}</span></div></div><div class="dash-two"><div class="dash-panel"><h3>Email metrics</h3><div class="dash-row"><span class="drl">Open rate</span><span class="drr">{{open_rate}}%</span></div><div class="dash-row"><span class="drl">Click rate</span><span class="drr">{{click_rate}}%</span></div><div class="dash-row"><span class="drl">Unsubs</span><span class="drr">{{unsub_rate}}%</span></div><div class="dash-row"><span class="drl">Revenue</span><span class="drr">{{email_rev}}</span></div></div><div class="dash-panel"><h3>Ad performance</h3><div class="dash-row"><span class="drl">Impressions</span><span class="drr">{{impressions}}</span></div><div class="dash-row"><span class="drl">Clicks</span><span class="drr">{{clicks}}</span></div><div class="dash-row"><span class="drl">CTR</span><span class="drr">{{ctr}}%</span></div><div class="dash-row"><span class="drl">CPC</span><span class="drr">{{cpc}}</span></div></div></div></div><div class="dash-footer"><p>[Your Store] · Marketing Dashboard · {{period}}</p><p>Refreshes every {{refresh}}</p></div></div>`},
+    'finance-dash':{icon:'ti-currency-dollar',label:'Financial Dashboard',sub:'Dashboard · Finance / Management',html:`<div class="dash-wrap"><div class="dash-nav"><div class="store">YOUR STORE</div><div class="nav-items"><span>Sales</span><span>Orders</span><span>Customers</span><span>Marketing</span><span class="act">Finance</span></div></div><div class="db2"><div class="dt">Financial overview</div><div class="ds">{{period}} · Last updated {{last_updated}}</div><div class="dk4"><div class="dk"><div class="dl">Gross Revenue</div><div class="dv">{{gross_rev}}</div><div class="dc up">+{{rev_g}}%</div></div><div class="dk"><div class="dl">Net Profit</div><div class="dv">{{net_profit}}</div><div class="dc up">+{{prof_g}}%</div></div><div class="dk"><div class="dl">Margin</div><div class="dv">{{margin}}%</div><div class="dc up">Target: {{target_m}}%</div></div><div class="dk"><div class="dl">Total Refunds</div><div class="dv">{{refunds}}</div><div class="dc dn">{{ref_rate}}%</div></div></div><div class="chart-area"><h3>Revenue vs expenses by month</h3><div class="mini-bar-row"><span class="ml">Jan</span><div class="mini-track"><div class="mini-fill" style="width:60%;background:#1a1a2e;"></div></div><span class="mv">{{r_m1}}</span></div><div class="mini-bar-row"><span class="ml">Feb</span><div class="mini-track"><div class="mini-fill" style="width:70%;background:#1a1a2e;"></div></div><span class="mv">{{r_m2}}</span></div><div class="mini-bar-row"><span class="ml">Mar</span><div class="mini-track"><div class="mini-fill" style="width:82%;background:#1a1a2e;"></div></div><span class="mv">{{r_m3}}</span></div><div class="mini-bar-row"><span class="ml">Apr</span><div class="mini-track"><div class="mini-fill" style="width:75%;background:#1a1a2e;"></div></div><span class="mv">{{r_m4}}</span></div><div class="mini-bar-row"><span class="ml">May</span><div class="mini-track"><div class="mini-fill" style="width:90%;background:#1a1a2e;"></div></div><span class="mv">{{r_m5}}</span></div></div><div class="dash-two"><div class="dash-panel"><h3>Cost breakdown</h3><div class="dash-row"><span class="drl">COGS</span><span class="drr">{{cogs}}</span></div><div class="dash-row"><span class="drl">Marketing</span><span class="drr">{{mkt_cost}}</span></div><div class="dash-row"><span class="drl">Operations</span><span class="drr">{{ops_cost}}</span></div><div class="dash-row"><span class="drl">Platform fees</span><span class="drr">{{platform_cost}}</span></div></div><div class="dash-panel"><h3>Payment methods</h3><div class="dash-row"><span class="drl">Credit card</span><span class="drr">{{pct_cc}}%</span></div><div class="dash-row"><span class="drl">PayPal</span><span class="drr">{{pct_pp}}%</span></div><div class="dash-row"><span class="drl">Bank transfer</span><span class="drr">{{pct_bt}}%</span></div><div class="dash-row"><span class="drl">Wallet</span><span class="drr">{{pct_w}}%</span></div></div></div></div><div class="dash-footer"><p>[Your Store] · Financial Dashboard · {{period}}</p><p>Refreshes every {{refresh}}</p></div></div>`},
+    'inventory-dash':{icon:'ti-package',label:'Inventory Dashboard',sub:'Dashboard · Operations team',html:`<div class="dash-wrap"><div class="dash-nav"><div class="store">YOUR STORE</div><div class="nav-items"><span>Sales</span><span>Orders</span><span class="act">Inventory</span><span>Marketing</span><span>Finance</span></div></div><div class="db2"><div class="dt">Inventory overview</div><div class="ds">{{period}} · Last updated {{last_updated}}</div><div class="dk3"><div class="dk"><div class="dl">Total SKUs</div><div class="dv">{{total_skus}}</div><div class="dc n">Active catalog</div></div><div class="dk"><div class="dl">Low Stock</div><div class="dv">{{low_stock}}</div><div class="dc dn">Action needed</div></div><div class="dk"><div class="dl">Out of Stock</div><div class="dv">{{out_stock}}</div><div class="dc dn">Revenue loss</div></div></div><div class="chart-area"><h3>Stock health by category</h3><div class="mini-bar-row"><span class="ml">{{cat_1}}</span><div class="mini-track"><div class="mini-fill" style="width:88%;background:#2e7d32;"></div></div><span class="mv">{{s1}} ok</span></div><div class="mini-bar-row"><span class="ml">{{cat_2}}</span><div class="mini-track"><div class="mini-fill" style="width:60%;background:#f57c00;"></div></div><span class="mv">{{s2}} low</span></div><div class="mini-bar-row"><span class="ml">{{cat_3}}</span><div class="mini-track"><div class="mini-fill" style="width:30%;background:#c62828;"></div></div><span class="mv">{{s3}} crit</span></div><div class="mini-bar-row"><span class="ml">{{cat_4}}</span><div class="mini-track"><div class="mini-fill" style="width:75%;background:#2e7d32;"></div></div><span class="mv">{{s4}} ok</span></div></div><div class="dash-two"><div class="dash-panel"><h3>Stock alerts</h3><div class="dash-row"><span class="drl"><span class="sdot r"></span>Critical (&lt;5)</span><span class="drr" style="color:#c62828;">{{crit_count}}</span></div><div class="dash-row"><span class="drl"><span class="sdot y"></span>Low (&lt;20)</span><span class="drr" style="color:#f57c00;">{{low_count}}</span></div><div class="dash-row"><span class="drl"><span class="sdot g"></span>Healthy</span><span class="drr" style="color:#2e7d32;">{{healthy_count}}</span></div><div class="dash-row"><span class="drl">Overstock</span><span class="drr">{{overstock}}</span></div></div><div class="dash-panel"><h3>Reorder queue</h3><div class="dash-row"><span class="drl">Pending orders</span><span class="drr">{{pending_orders}}</span></div><div class="dash-row"><span class="drl">Est. arrival</span><span class="drr">{{est_arrival}}</span></div><div class="dash-row"><span class="drl">Suppliers active</span><span class="drr">{{active_sups}}</span></div><div class="dash-row"><span class="drl">Lead time avg</span><span class="drr">{{lead_time}} days</span></div></div></div><div class="dash-tbl"><thead><tr><th>Product</th><th>SKU</th><th>Stock</th><th>Status</th><th>Action</th></tr></thead><tbody><tr><td>{{p1}}</td><td>{{sk1}}</td><td>{{st1}}</td><td><span class="badge r">Critical</span></td><td style="color:#c62828;font-weight:600;">Reorder now</td></tr><tr><td>{{p2}}</td><td>{{sk2}}</td><td>{{st2}}</td><td><span class="badge y">Low</span></td><td style="color:#f57c00;font-weight:600;">Schedule reorder</td></tr><tr><td>{{p3}}</td><td>{{sk3}}</td><td>{{st3}}</td><td><span class="badge g">OK</span></td><td style="color:#888;">Monitor</td></tr></tbody></div></div><div class="dash-footer"><p>[Your Store] · Inventory Dashboard · {{period}}</p><p>Refreshes every {{refresh}}</p></div></div>`}
+  }
+};
+
+let activeCat='doc', activeId='pnl';
+
+function getT(){ return T[activeCat][activeId]; }
+
+function renderTabs(){
+  document.getElementById('tabs').innerHTML=cats.map(c=>`
+    <button class="tab ${c.id===activeCat?'active':''}" onclick="selCat('${c.id}')">
+      <i class="ti ${c.icon}" aria-hidden="true"></i>${c.label}
+    </button>`).join('');
+}
+
+function renderSb(){
+  document.getElementById('sb').innerHTML=Object.entries(T[activeCat]).map(([id,t])=>`
+    <button class="tbtn ${id===activeId?'active':''}" onclick="selT('${id}')">
+      <i class="ti ${t.icon}" aria-hidden="true"></i>
+      <span>${t.label}</span>
+    </button>`).join('');
+}
+
+function renderPrev(){
+  const t=getT();
+  document.getElementById('pt').textContent=t.label;
+  document.getElementById('ps').textContent=t.sub;
+  document.getElementById('cv').innerHTML=t.html;
+  const b=document.getElementById('cb');
+  b.classList.remove('ok');
+  b.innerHTML='<i class="ti ti-copy" aria-hidden="true"></i> Copy HTML';
+}
+
+function selCat(id){
+  activeCat=id;
+  activeId=Object.keys(T[id])[0];
+  renderTabs();renderSb();renderPrev();
+}
+
+function selT(id){
+  activeId=id;
+  renderSb();renderPrev();
+}
+
+function doCopy(){
+  navigator.clipboard.writeText(getT().html).then(()=>{
+    const b=document.getElementById('cb');
+    b.classList.add('ok');
+    b.innerHTML='<i class="ti ti-check" aria-hidden="true"></i> Copied!';
+    setTimeout(()=>{b.classList.remove('ok');b.innerHTML='<i class="ti ti-copy" aria-hidden="true"></i> Copy HTML';},2000);
+  });
+}
+
+renderTabs();renderSb();renderPrev();
+</script>
+</body></html>

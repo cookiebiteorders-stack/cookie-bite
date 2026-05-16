@@ -84,6 +84,7 @@ export const translations: Record<Lang, Dictionary> = {
       settings: "Settings",
       media: "Media",
       cms: "Content",
+      templates: "Templates",
     },
     language: {
       switch: "Switch Language",
@@ -525,6 +526,18 @@ export const translations: Record<Lang, Dictionary> = {
         exploreBoxes: "Explore Gift Boxes",
         corporate: "Corporate Orders",
       },
+      designLibrary: {
+        title: "Design & document templates",
+        intro:
+          "Preview the HTML toolkits for delivery zones, customer emails, internal reports, and printable invoices. Use “Copy HTML” inside each preview when building Resend or PDF flows.",
+        tabDelivery: "Delivery zones",
+        tabEmailCore: "Email templates (9)",
+        tabEmailMore: "More emails (10)",
+        tabReports: "Report templates",
+        tabReportsMore: "More reports (8)",
+        tabInvoice: "Invoice print",
+        openNewTab: "Open in new tab",
+      },
     },
     footer: {
       hoursLine: "Sun–Thu · 10am – 8pm",
@@ -636,6 +649,7 @@ export const translations: Record<Lang, Dictionary> = {
       settings: "الإعدادات",
       media: "الوسائط",
       cms: "المحتوى",
+      templates: "القوالب",
     },
     language: {
       switch: "تبديل اللغة",
@@ -1073,6 +1087,18 @@ export const translations: Record<Lang, Dictionary> = {
           "استكشف صناديق هدايانا المختارة لكل مناسبة — من أعياد الميلاد إلى فعاليات الشركات.",
         exploreBoxes: "استكشف صناديق الهدايا",
         corporate: "طلبات الشركات",
+      },
+      designLibrary: {
+        title: "قوالب التصميم والمستندات",
+        intro:
+          "معاينة أدوات HTML لمناطق التوصيل، رسائل البريد للعملاء، التقارير الداخلية، وفاتورة الطباعة. استخدم «نسخ HTML» داخل كل معاينة عند ربط Resend أو تصدير PDF.",
+        tabDelivery: "مناطق التوصيل",
+        tabEmailCore: "قوالب البريد (9)",
+        tabEmailMore: "بريد إضافي (10)",
+        tabReports: "قوالب التقارير",
+        tabReportsMore: "تقارير إضافية (8)",
+        tabInvoice: "فاتورة الطباعة",
+        openNewTab: "فتح في تبويب جديد",
       },
     },
     footer: {

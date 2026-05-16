@@ -77,7 +77,7 @@ const PRODUCTION_SECURITY_HEADERS = [
   {
     key: "Content-Security-Policy",
     value:
-      "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net https://*.clerk.accounts.dev https://*.clerk.com https://*.clerk.dev https://*.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com https://cdn.sanity.io https://images.unsplash.com https://img.clerk.com https://images.clerk.dev; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.clerk.accounts.dev wss://*.clerk.accounts.dev https://*.clerk.com wss://*.clerk.com https://*.clerk.dev wss://*.clerk.dev; font-src 'self' https://fonts.gstatic.com;",
+      "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com https://*.clerk.accounts.dev https://*.clerk.com https://*.clerk.dev https://*.googletagmanager.com; style-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: blob: https://res.cloudinary.com https://cdn.sanity.io https://images.unsplash.com https://img.clerk.com https://images.clerk.dev https://*.tile.openstreetmap.org https://tile.openstreetmap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.clerk.accounts.dev wss://*.clerk.accounts.dev https://*.clerk.com wss://*.clerk.com https://*.clerk.dev wss://*.clerk.dev; font-src 'self' https://fonts.gstatic.com cdn.jsdelivr.net;",
   },
   {
     key: "Permissions-Policy",

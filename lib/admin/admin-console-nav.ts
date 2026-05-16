@@ -20,6 +20,7 @@ export const ADMIN_CONSOLE_NAV_ITEMS: AdminConsoleNavItem[] = [
   { href: "/admin/roles", label: "Roles", module: "roles" },
   { href: "/admin/shipping", label: "Shipping", module: "shipping" },
   { href: "/admin/audit-logs", label: "Audit Logs", module: "audit" },
+  { href: "/admin/design-library", label: "Templates", module: "templates" },
   { href: "/admin/settings", label: "Settings", module: "settings" },
 ];
 

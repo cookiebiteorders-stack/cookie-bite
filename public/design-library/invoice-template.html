@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Invoice {{INVOICE_NUMBER}} — {{STORE_NAME}}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --orange:       #FF6B00;
+    --orange-dark:  #e05e00;
+    --dark-bg:      #1a1a0e;
+    --white:        #ffffff;
+    --text-primary: #1a1a1a;
+    --text-muted:   #666666;
+    --border:       rgba(0,0,0,0.10);
+    --surface:      #f7f6f3;
+    --green:        #22a06b;
+    --green-bg:     #e6f9f0;
+    --green-border: #b7edce;
+  }
+
+  body {
+    background: #f0ede6;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text-primary);
+    padding: 40px 20px;
+    min-height: 100vh;
+  }
+
+  /* ── Print styles ── */
+  @media print {
+    body { background: white; padding: 0; }
+    .inv-wrap { box-shadow: none; border: none; border-radius: 0; }
+    .no-print { display: none !important; }
+    @page { margin: 0; size: A4; }
+  }
+
+  /* ── Invoice Card ── */
+  .inv-wrap {
+    background: var(--white);
+    border-radius: 16px;
+    overflow: hidden;
+    max-width: 760px;
+    margin: 0 auto;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+  }
+
+  /* ── Header ── */
+  .inv-header {
+    background: var(--dark-bg);
+    padding: 40px 48px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .inv-header::before {
+    content: '';
+    position: absolute;
+    top: -70px; right: -70px;
+    width: 240px; height: 240px;
+    border-radius: 50%;
+    background: var(--orange);
+    opacity: 0.08;
+  }
+  .inv-header::after {
+    content: '';
+    position: absolute;
+    bottom: -50px; left: 35%;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: var(--orange);
+    opacity: 0.05;
+  }
+
+  .inv-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+    z-index: 1;
+  }
+
+  .brand-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--white);
+    letter-spacing: -0.5px;
+    display: block;
+  }
+  .brand-sub {
+    font-size: 10px;
+    color: var(--orange);
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-top: 4px;
+    display: block;
+  }
+
+  .inv-badge {
+    background: var(--orange);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 7px 20px;
+    border-radius: 6px;
+  }
+
+  .inv-meta {
+    display: flex;
+    gap: 48px;
+    margin-top: 32px;
+    position: relative;
+    z-index: 1;
+    flex-wrap: wrap;
+  }
+  .inv-meta-item { display: flex; flex-direction: column; gap: 4px; }
+  .inv-meta-label {
+    font-size: 9px;
+    color: #888;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .inv-meta-val {
+    font-size: 14px;
+    color: var(--white);
+    font-weight: 500;
+  }
+  .inv-meta-val.accent { color: var(--orange); font-weight: 700; }
+
+  /* ── Body ── */
+  .inv-body { padding: 36px 48px; }
+
+  .party-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 36px;
+  }
+  .party-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    display: block;
+  }
+  .party-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .party-detail {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 0 28px;
+  }
+
+  /* ── Payment status bar ── */
+  .pay-status-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .section-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .status-paid {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--green-bg);
+    color: var(--green);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--green-border);
+  }
+  .status-unpaid {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff4e6;
+    color: #b45309;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: 1px solid #fcd0a1;
+  }
+  .txn-info {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* ── Items table ── */
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 28px;
+    table-layout: fixed;
+  }
+  .items-table thead tr {
+    border-bottom: 1.5px solid var(--border);
+  }
+  .items-table th {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0 0 12px;
+    text-align: left;
+  }
+  .items-table th:nth-child(2) { text-align: center; width: 10%; }
+  .items-table th:nth-child(3) { text-align: right; width: 20%; }
+  .items-table th:nth-child(4) { text-align: right; width: 22%; }
+  .items-table th:first-child  { width: 48%; }
+
+  .items-table tbody tr {
+    border-bottom: 1px solid var(--border);
+  }
+  .items-table tbody tr:last-child { border-bottom: none; }
+  .items-table td {
+    padding: 16px 0;
+    font-size: 13px;
+    color: var(--text-primary);
+    vertical-align: middle;
+  }
+  .items-table td:nth-child(2) { text-align: center; }
+  .items-table td:nth-child(3) { text-align: right; color: var(--text-muted); }
+  .items-table td:nth-child(4) { text-align: right; font-weight: 600; }
+
+  .item-name { font-weight: 600; display: block; margin-bottom: 3px; }
+  .item-sku  { font-size: 11px; color: var(--text-muted); display: block; }
+
+  .qty-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--surface);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  /* ── Totals ── */
+  .totals-section {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 32px;
+  }
+  .totals-box { width: 300px; }
+
+  .totals-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .totals-row:last-of-type { border-bottom: none; }
+  .totals-row .val { color: var(--text-primary); font-weight: 600; }
+  .totals-row.discount .val { color: var(--green); }
+
+  .totals-grand {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: var(--dark-bg);
+    border-radius: 10px;
+    margin-top: 10px;
+  }
+  .totals-grand .label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #aaa;
+  }
+  .totals-grand .amount {
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px;
+    color: var(--orange);
+    letter-spacing: -0.5px;
+  }
+
+  /* ── Notes ── */
+  .notes-block {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 8px;
+  }
+  .notes-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .notes-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  /* ── Footer ── */
+  .inv-footer {
+    padding: 24px 48px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .footer-note {
+    font-size: 11px;
+    color: var(--text-muted);
+    max-width: 380px;
+    line-height: 1.7;
+  }
+  .footer-actions { display: flex; gap: 10px; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .btn:hover { background: var(--surface); }
+  .btn-primary {
+    background: var(--orange);
+    color: var(--white);
+    border-color: var(--orange);
+  }
+  .btn-primary:hover { background: var(--orange-dark); }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .inv-body, .inv-header, .inv-footer { padding-left: 24px; padding-right: 24px; }
+    .party-grid { grid-template-columns: 1fr; gap: 20px; }
+    .inv-meta { gap: 24px; }
+    .totals-section { justify-content: flex-start; }
+    .totals-box { width: 100%; }
+    .inv-footer { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="inv-wrap">
+
+  <!-- ═══════════════════ HEADER ═══════════════════ -->
+  <div class="inv-header">
+    <div class="inv-top">
+      <div>
+        <span class="brand-name">{{STORE_NAME}}</span>
+        <span class="brand-sub">Official Invoice</span>
+      </div>
+      <span class="inv-badge">Invoice</span>
+    </div>
+
+    <div class="inv-meta">
+      <div class="inv-meta-item">
+        <span class="inv-meta-label">Invoice No.</span>
+        <span class="inv-meta-val accent">{{INVOICE_NUMBER}}</span>
+      </div>
+      <div class="inv-meta-item">
+        <span class="inv-meta-label">Order Ref.</span>
+        <span class="inv-meta-val">{{ORDER_NUMBER}}</span>
+      </div>
+      <div class="inv-meta-item">
+        <span class="inv-meta-label">Issue Date</span>
+        <span class="inv-meta-val">{{ISSUE_DATE}}</span>
+      </div>
+      <div class="inv-meta-item">
+        <span class="inv-meta-label">Due Date</span>
+        <span class="inv-meta-val">{{DUE_DATE}}</span>
+      </div>
+    </div>
+  </div>
+  <!-- ════════════════════════════════════════════════ -->
+
+  <div class="inv-body">
+
+    <!-- ── From / To ── -->
+    <div class="party-grid">
+      <div>
+        <span class="party-label">From</span>
+        <div class="party-name">{{STORE_NAME}}</div>
+        <div class="party-detail">
+          {{STORE_ADDRESS}}<br>
+          {{STORE_CITY}}, {{STORE_COUNTRY}}<br>
+          {{STORE_EMAIL}}<br>
+          Tax No: {{STORE_TAX_NUMBER}}
+        </div>
+      </div>
+      <div>
+        <span class="party-label">Billed To</span>
+        <div class="party-name">{{CUSTOMER_NAME}}</div>
+        <div class="party-detail">
+          {{CUSTOMER_ADDRESS}}<br>
+          {{CUSTOMER_CITY}}, {{CUSTOMER_COUNTRY}}<br>
+          {{CUSTOMER_EMAIL}}<br>
+          {{CUSTOMER_PHONE}}
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── Payment Status ── -->
+    <div class="pay-status-row">
+      <span class="section-label">Payment Status</span>
+
+      <!-- PAID version — toggle comment/uncomment as needed -->
+      <span class="status-paid">
+        ✓ &nbsp;Paid
+      </span>
+
+      <!-- UNPAID version — toggle comment/uncomment as needed -->
+      <!--
+      <span class="status-unpaid">
+        ⏳ &nbsp;Awaiting Payment
+      </span>
+      -->
+
+      <span class="txn-info">via {{PAYMENT_METHOD}} &nbsp;·&nbsp; Txn: {{TRANSACTION_ID}}</span>
+    </div>
+
+    <!-- ── Line Items ── -->
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Qty</th>
+          <th>Unit Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- ─────────────────────────────────────────────────
+             REPEAT THIS BLOCK FOR EACH ORDER ITEM
+             Replace with your template engine loop, e.g.:
+             {% for item in order.items %} ... {% endfor %}
+        ───────────────────────────────────────────────── -->
+        <tr>
+          <td>
+            <span class="item-name">{{ITEM_NAME}}</span>
+            <span class="item-sku">{{ITEM_SKU}} &nbsp;·&nbsp; {{ITEM_VARIANT}}</span>
+          </td>
+          <td><span class="qty-pill">{{ITEM_QTY}}</span></td>
+          <td>{{CURRENCY}} {{ITEM_UNIT_PRICE}}</td>
+          <td>{{CURRENCY}} {{ITEM_TOTAL}}</td>
+        </tr>
+        <!-- ─── End repeat block ─── -->
+      </tbody>
+    </table>
+
+    <!-- ── Totals ── -->
+    <div class="totals-section">
+      <div class="totals-box">
+        <div class="totals-row">
+          <span>Subtotal</span>
+          <span class="val">{{CURRENCY}} {{SUBTOTAL}}</span>
+        </div>
+        <!-- Show only if discount is applied -->
+        <div class="totals-row discount">
+          <span>Discount ({{DISCOUNT_CODE}})</span>
+          <span class="val">− {{CURRENCY}} {{DISCOUNT_AMOUNT}}</span>
+        </div>
+        <div class="totals-row">
+          <span>Tax ({{TAX_RATE}}%)</span>
+          <span class="val">{{CURRENCY}} {{TAX_AMOUNT}}</span>
+        </div>
+        <div class="totals-row">
+          <span>Shipping</span>
+          <span class="val">{{CURRENCY}} {{SHIPPING_AMOUNT}}</span>
+        </div>
+        <div class="totals-grand">
+          <span class="label">Total Due</span>
+          <span class="amount">{{CURRENCY}} {{TOTAL_AMOUNT}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Notes ── -->
+    <div class="notes-block">
+      <div class="notes-label">Notes</div>
+      <div class="notes-text">
+        {{INVOICE_NOTES}}
+        <!-- Default fallback: -->
+        <!-- Thank you for your order! For questions about this invoice, contact us at {{STORE_EMAIL}}. -->
+      </div>
+    </div>
+
+  </div>
+  <!-- end inv-body -->
+
+  <!-- ═══════════════════ FOOTER ═══════════════════ -->
+  <div class="inv-footer">
+    <div class="footer-note">
+      This invoice was auto-generated by {{STORE_NAME}}.
+      All prices are in {{CURRENCY_FULL}} ({{CURRENCY}}).
+      Thank you for your business!
+    </div>
+    <div class="footer-actions no-print">
+      <button class="btn" onclick="window.print()">
+        🖨 &nbsp;Print
+      </button>
+      <a class="btn btn-primary" href="/api/invoices/{{INVOICE_NUMBER}}/download">
+        ⬇ &nbsp;Download PDF
+      </a>
+    </div>
+  </div>
+  <!-- ════════════════════════════════════════════════ -->
+
+</div><!-- end inv-wrap -->
+
+</body>
+</html>
+
+<!--
+════════════════════════════════════════════════════════════════
+  TEMPLATE VARIABLES — replace these with your backend values
+════════════════════════════════════════════════════════════════
+
+  {{STORE_NAME}}         — Your Store LLC
+  {{STORE_ADDRESS}}      — 123 Business Ave
+  {{STORE_CITY}}         — Cairo
+  {{STORE_COUNTRY}}      — Egypt
+  {{STORE_EMAIL}}        — support@yourstore.com
+  {{STORE_TAX_NUMBER}}   — 123-456-789
+
+  {{INVOICE_NUMBER}}     — INV-2025-0001
+  {{ORDER_NUMBER}}       — ORD-202505-00142
+  {{ISSUE_DATE}}         — May 16, 2025
+  {{DUE_DATE}}           — May 16, 2025
+
+  {{CUSTOMER_NAME}}      — Ahmed Hassan
+  {{CUSTOMER_ADDRESS}}   — 456 El-Tahrir Street, Apt 5
+  {{CUSTOMER_CITY}}      — Cairo
+  {{CUSTOMER_COUNTRY}}   — Egypt
+  {{CUSTOMER_EMAIL}}     — ahmed@example.com
+  {{CUSTOMER_PHONE}}     — +20 101 234 5678
+
+  {{PAYMENT_METHOD}}     — Visa Card ending in 4242
+  {{TRANSACTION_ID}}     — TXN-9A8B7C6D
+
+  Per item (loop):
+  {{ITEM_NAME}}          — Classic Leather Wallet
+  {{ITEM_SKU}}           — SKU-001
+  {{ITEM_VARIANT}}       — Brown / Standard
+  {{ITEM_QTY}}           — 2
+  {{ITEM_UNIT_PRICE}}    — 250.00
+  {{ITEM_TOTAL}}         — 500.00
+
+  {{CURRENCY}}           — EGP
+  {{CURRENCY_FULL}}      — Egyptian Pound
+  {{SUBTOTAL}}           — 755.00
+  {{DISCOUNT_CODE}}      — SAVE50
+  {{DISCOUNT_AMOUNT}}    — 50.00
+  {{TAX_RATE}}           — 9
+  {{TAX_AMOUNT}}         — 63.45
+  {{SHIPPING_AMOUNT}}    — 30.00
+  {{TOTAL_AMOUNT}}       — 798.45
+
+  {{INVOICE_NOTES}}      — Custom note text or leave default
+
+════════════════════════════════════════════════════════════════
+  BACKEND INTEGRATION EXAMPLES
+════════════════════════════════════════════════════════════════
+
+  Node.js (Handlebars):
+    const template = Handlebars.compile(fs.readFileSync('invoice-template.html', 'utf8'));
+    const html = template({ STORE_NAME: 'YourStore', INVOICE_NUMBER: 'INV-2025-0001', ... });
+
+  Python (Jinja2):
+    from jinja2 import Template
+    html = Template(open('invoice-template.html').read()).render(store_name='YourStore', ...)
+
+  PHP (str_replace):
+    $html = str_replace('{{INVOICE_NUMBER}}', $invoice->number, file_get_contents('invoice-template.html'));
+
+  Convert to PDF (Node.js + Puppeteer):
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    const pdf = await page.pdf({ format: 'A4', printBackground: true });
+    await browser.close();
+
+════════════════════════════════════════════════════════════════
+-->

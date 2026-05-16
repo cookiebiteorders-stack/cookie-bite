@@ -10,6 +10,7 @@ export type ModuleKey =
   | "discounts"
   | "media"
   | "cms"
+  | "templates"
   | "analytics"
   | "financial"
   | "invoices"
@@ -28,6 +29,7 @@ export const roleMatrix: Record<UserRole, Record<ModuleKey, PermissionLevel>> = 
     discounts: "full",
     media: "full",
     cms: "full",
+    templates: "full",
     analytics: "full",
     financial: "full",
     invoices: "full",
@@ -45,6 +47,7 @@ export const roleMatrix: Record<UserRole, Record<ModuleKey, PermissionLevel>> = 
     discounts: "full",
     media: "full",
     cms: "full",
+    templates: "full",
     analytics: "full",
     financial: "full",
     invoices: "full",
@@ -62,6 +65,7 @@ export const roleMatrix: Record<UserRole, Record<ModuleKey, PermissionLevel>> = 
     discounts: "none",
     media: "view",
     cms: "none",
+    templates: "none",
     analytics: "limited",
     financial: "none",
     invoices: "view",
@@ -79,6 +83,7 @@ export const roleMatrix: Record<UserRole, Record<ModuleKey, PermissionLevel>> = 
     discounts: "none",
     media: "none",
     cms: "none",
+    templates: "none",
     analytics: "none",
     financial: "none",
     invoices: "view",
@@ -131,5 +136,6 @@ export const adminRouteModuleMap: Record<string, ModuleKey> = {
   "/admin/shipping": "shipping",
   "/admin/audit-logs": "audit",
   "/admin/settings": "settings",
+  "/admin/design-library": "templates",
 };
 

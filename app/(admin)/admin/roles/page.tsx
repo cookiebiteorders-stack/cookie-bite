@@ -38,6 +38,7 @@ const modules: ModuleKey[] = [
   "discounts",
   "media",
   "cms",
+  "templates",
   "analytics",
   "financial",
   "invoices",

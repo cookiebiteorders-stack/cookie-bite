@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css"/>
+<style>
+:root{
+  --font-sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --color-text-primary:#1c1917;
+  --color-text-secondary:#57534e;
+  --color-text-tertiary:#78716c;
+  --color-text-info:#1d4ed8;
+  --color-text-success:#15803d;
+  --color-text-warning:#9a3412;
+  --color-background-primary:#fafaf9;
+  --color-background-secondary:#f5f5f4;
+  --color-background-info:#eff6ff;
+  --color-background-success:#f0fdf4;
+  --color-background-warning:#fff7ed;
+  --color-border-secondary:#d6d3d1;
+  --color-border-tertiary:#e7e5e4;
+  --color-border-success:#86efac;
+  --border-radius-md:8px;
+  --border-radius-lg:12px;
+}
+html,body{min-height:100%;margin:0;background:var(--color-background-secondary);font-family:var(--font-sans);}
+body{padding:10px 12px 16px;}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+</style>
+</head>
+<body>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.dz-root{font-family:var(--font-sans);color:var(--color-text-primary);padding:1rem 0;display:flex;flex-direction:column;gap:12px}
+.dz-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.dz-stat{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px}
+.dz-stat-lbl{font-size:11px;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:1px;font-weight:500;margin-bottom:4px}
+.dz-stat-val{font-size:20px;font-weight:500}
+.dz-main{display:grid;grid-template-columns:268px 1fr;gap:12px}
+.dz-side{display:flex;flex-direction:column;gap:8px;min-width:0}
+.dz-add-btn{width:100%;padding:10px;background:#FF6B00;color:#fff;border:none;border-radius:var(--border-radius-md);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--font-sans)}
+.dz-add-btn:hover{background:#e05e00}
+.dz-add-btn:disabled{background:#ccc;cursor:not-allowed}
+.dz-form{background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-lg);padding:14px;display:flex;flex-direction:column;gap:10px}
+.dz-lbl{font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--color-text-secondary);display:block;margin-bottom:3px}
+.dz-input{width:100%;padding:7px 9px;font-size:13px;border:0.5px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-secondary);color:var(--color-text-primary);font-family:var(--font-sans);outline:none}
+.dz-input:focus{border-color:#FF6B00;box-shadow:0 0 0 2px rgba(255,107,0,0.15)}
+.dz-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dz-colors{display:flex;gap:6px;flex-wrap:wrap}
+.dz-col{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color 0.1s,transform 0.1s}
+.dz-col:hover{transform:scale(1.15)}
+.dz-col.on{border-color:var(--color-text-primary);transform:scale(1.1)}
+.dz-hint{font-size:11px;padding:7px 10px;border-radius:6px;background:var(--color-background-info);color:var(--color-text-info);display:flex;align-items:center;gap:6px}
+.dz-hint.ok{background:var(--color-background-success);color:var(--color-text-success)}
+.dz-hint.warn{background:var(--color-background-warning);color:var(--color-text-warning)}
+.dz-factions{display:flex;gap:6px}
+.dz-cancel{flex:1;padding:8px;background:none;border:0.5px solid var(--color-border-secondary);border-radius:6px;font-size:13px;cursor:pointer;color:var(--color-text-primary);font-family:var(--font-sans)}
+.dz-save{flex:1;padding:8px;background:#1a1a0e;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-sans)}
+.dz-save:hover{background:#333}
+.dz-list{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto}
+.dz-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px 12px;display:flex;align-items:center;gap:9px;cursor:pointer;transition:border-color 0.15s}
+.dz-card:hover{border-color:var(--color-border-secondary)}
+.dz-card.hi{border-color:#FF6B00}
+.dz-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.dz-info{flex:1;min-width:0}
+.dz-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dz-meta{font-size:11px;color:var(--color-text-secondary);margin-top:1px}
+.dz-acts{display:flex;gap:3px}
+.dz-ibtn{width:26px;height:26px;border-radius:6px;border:0.5px solid var(--color-border-tertiary);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-secondary);font-size:13px;font-family:var(--font-sans)}
+.dz-ibtn:hover{background:var(--color-background-secondary);color:var(--color-text-primary)}
+.dz-ibtn.del:hover{background:#fff0f0;color:#c0392b;border-color:#f5c6c6}
+.dz-empty{font-size:12px;color:var(--color-text-secondary);text-align:center;padding:16px 8px;border:0.5px dashed var(--color-border-secondary);border-radius:8px;line-height:1.6}
+#dz-map{border-radius:var(--border-radius-lg);overflow:hidden;border:0.5px solid var(--color-border-tertiary);height:460px}
+#dz-map.pick{cursor:crosshair !important;border-color:#FF6B00}
+</style>
+
+<h2 class="sr-only">Delivery zones manager — add zones by clicking on the map, set name, fee, radius, and delivery days</h2>
+
+<div class="dz-root">
+  <div class="dz-stats">
+    <div class="dz-stat"><div class="dz-stat-lbl">Total zones</div><div class="dz-stat-val" id="s-count">0</div></div>
+    <div class="dz-stat"><div class="dz-stat-lbl">Avg. delivery fee</div><div class="dz-stat-val" id="s-avg">—</div></div>
+    <div class="dz-stat"><div class="dz-stat-lbl">Fastest delivery</div><div class="dz-stat-val" id="s-fast">—</div></div>
+  </div>
+
+  <div class="dz-main">
+    <div class="dz-side">
+      <button class="dz-add-btn" id="btn-add">
+        <i class="ti ti-plus" aria-hidden="true" style="font-size:15px"></i>
+        Add delivery zone
+      </button>
+
+      <div class="dz-form" id="dz-form" style="display:none">
+        <div>
+          <label class="dz-lbl" for="f-name">Zone name</label>
+          <input class="dz-input" id="f-name" placeholder="e.g. Downtown Cairo" />
+        </div>
+        <div class="dz-row">
+          <div>
+            <label class="dz-lbl" for="f-price">Fee (EGP)</label>
+            <input class="dz-input" id="f-price" type="number" placeholder="30" min="0" />
+          </div>
+          <div>
+            <label class="dz-lbl" for="f-days">Est. days</label>
+            <input class="dz-input" id="f-days" type="number" placeholder="1" min="1" max="30" />
+          </div>
+        </div>
+        <div>
+          <label class="dz-lbl" for="f-radius">Radius (km)</label>
+          <input class="dz-input" id="f-radius" type="number" placeholder="5" min="1" max="200" value="5" step="1" />
+        </div>
+        <div>
+          <label class="dz-lbl">Zone color</label>
+          <div class="dz-colors" id="dz-colors">
+            <div class="dz-col on" style="background:#FF6B00" data-c="#FF6B00"></div>
+            <div class="dz-col" style="background:#3B82F6" data-c="#3B82F6"></div>
+            <div class="dz-col" style="background:#10B981" data-c="#10B981"></div>
+            <div class="dz-col" style="background:#8B5CF6" data-c="#8B5CF6"></div>
+            <div class="dz-col" style="background:#EF4444" data-c="#EF4444"></div>
+            <div class="dz-col" style="background:#F59E0B" data-c="#F59E0B"></div>
+            <div class="dz-col" style="background:#EC4899" data-c="#EC4899"></div>
+            <div class="dz-col" style="background:#14B8A6" data-c="#14B8A6"></div>
+          </div>
+        </div>
+        <div class="dz-hint" id="dz-hint">
+          <i class="ti ti-map-pin" aria-hidden="true" style="font-size:14px;flex-shrink:0"></i>
+          Click on the map to place this zone
+        </div>
+        <div class="dz-factions">
+          <button class="dz-cancel" id="btn-cancel">Cancel</button>
+          <button class="dz-save" id="btn-save">Save zone</button>
+        </div>
+      </div>
+
+      <div class="dz-list" id="dz-list">
+        <div class="dz-empty" id="dz-empty">No delivery zones yet.<br>Click "Add delivery zone" to start.</div>
+      </div>
+    </div>
+
+    <div id="dz-map"></div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const map = L.map('dz-map',{zoomControl:true}).setView([30.0444,31.2357],10);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:18}).addTo(map);
+
+let zones=[],layers={},pick=false,editId=null,pendingLL=null,tempC=null,tempM=null;
+let selColor='#FF6B00';
+
+const formEl=document.getElementById('dz-form');
+const mapEl=document.getElementById('dz-map');
+const hint=document.getElementById('dz-hint');
+const listEl=document.getElementById('dz-list');
+
+document.getElementById('dz-colors').querySelectorAll('.dz-col').forEach(d=>{
+  d.addEventListener('click',()=>{
+    document.querySelectorAll('.dz-col').forEach(x=>x.classList.remove('on'));
+    d.classList.add('on');
+    selColor=d.dataset.c;
+    if(tempC){tempC.setStyle({color:selColor,fillColor:selColor});tempM&&tempM.setStyle({fillColor:selColor});}
+  });
+});
+
+document.getElementById('btn-add').addEventListener('click',()=>{
+  editId=null;pendingLL=null;clearTemp();clearForm();
+  formEl.style.display='flex';startPick();
+});
+document.getElementById('btn-cancel').addEventListener('click',cancel);
+
+document.getElementById('f-radius').addEventListener('input',function(){
+  if(tempC&&pendingLL) tempC.setRadius((parseFloat(this.value)||5)*1000);
+});
+
+function startPick(){pick=true;mapEl.classList.add('pick');setHint('map','Click on the map to place this zone');}
+function stopPick(){pick=false;mapEl.classList.remove('pick');}
+function cancel(){formEl.style.display='none';stopPick();clearTemp();editId=null;pendingLL=null;}
+function setHint(t,msg){hint.className='dz-hint'+(t==='ok'?' ok':t==='warn'?' warn':'');hint.innerHTML=`<i class="ti ti-${t==='ok'?'circle-check':t==='warn'?'alert-triangle':'map-pin'}" aria-hidden="true" style="font-size:14px;flex-shrink:0"></i>${msg}`;}
+
+map.on('click',function(e){
+  if(!pick)return;
+  pendingLL=e.latlng;
+  const r=(parseFloat(document.getElementById('f-radius').value)||5)*1000;
+  clearTemp();
+  tempC=L.circle(e.latlng,{radius:r,color:selColor,fillColor:selColor,fillOpacity:0.15,weight:2,dashArray:'6,4'}).addTo(map);
+  tempM=L.circleMarker(e.latlng,{radius:7,color:'#fff',fillColor:selColor,fillOpacity:1,weight:2}).addTo(map);
+  setHint('ok','Location set — fill in the details and save');
+});
+
+document.getElementById('btn-save').addEventListener('click',()=>{
+  const name=document.getElementById('f-name').value.trim();
+  const price=parseFloat(document.getElementById('f-price').value)||0;
+  const days=parseInt(document.getElementById('f-days').value)||1;
+  const radius=parseFloat(document.getElementById('f-radius').value)||5;
+  if(!name){document.getElementById('f-name').style.borderColor='#EF4444';return;}
+  if(!pendingLL&&!editId){setHint('warn','Click on the map first to set the zone location');return;}
+  document.getElementById('f-name').style.borderColor='';
+
+  if(editId){
+    const z=zones.find(x=>x.id===editId);
+    if(z){
+      z.name=name;z.price=price;z.days=days;z.radius=radius;z.color=selColor;
+      if(pendingLL)z.ll=pendingLL;
+      const ly=layers[z.id];
+      if(ly){
+        ly.c.setStyle({color:selColor,fillColor:selColor});
+        ly.c.setRadius(radius*1000);
+        ly.m.setStyle({fillColor:selColor});
+        if(pendingLL){ly.c.setLatLng(pendingLL);ly.m.setLatLng(pendingLL);}
+        ly.m.getPopup()&&ly.m.setPopupContent(popupHTML(z));
+      }
+    }
+    editId=null;
+  } else {
+    const id='z'+Date.now();
+    const z={id,name,price,days,radius,color:selColor,ll:pendingLL};
+    zones.push(z);
+    addLayer(z);
+  }
+  clearTemp();formEl.style.display='none';stopPick();pendingLL=null;
+  renderList();updateStats();
+});
+
+function addLayer(z){
+  const c=L.circle(z.ll,{radius:z.radius*1000,color:z.color,fillColor:z.color,fillOpacity:0.13,weight:2}).addTo(map);
+  const m=L.circleMarker(z.ll,{radius:7,color:'#fff',fillColor:z.color,fillOpacity:1,weight:2}).addTo(map);
+  m.bindPopup(L.popup({closeButton:false,offset:[0,-10]}).setContent(popupHTML(z)));
+  layers[z.id]={c,m};
+}
+
+function popupHTML(z){
+  return `<div style="font-family:sans-serif;font-size:12px;min-width:120px"><strong style="color:#1a1a1a">${z.name}</strong><br><span style="color:#666">EGP ${z.price} &middot; ${z.days} day${z.days>1?'s':''} &middot; ${z.radius}km</span></div>`;
+}
+
+function clearTemp(){
+  if(tempC){map.removeLayer(tempC);tempC=null;}
+  if(tempM){map.removeLayer(tempM);tempM=null;}
+}
+
+function clearForm(){
+  ['f-name','f-price','f-days'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-radius').value='5';
+  selColor='#FF6B00';
+  document.querySelectorAll('.dz-col').forEach(d=>d.classList.toggle('on',d.dataset.c==='#FF6B00'));
+  setHint('map','Click on the map to place this zone');
+}
+
+function renderList(){
+  const empty=document.getElementById('dz-empty');
+  if(zones.length===0){if(!empty){listEl.innerHTML='<div class="dz-empty" id="dz-empty">No delivery zones yet.<br>Click "Add delivery zone" to start.</div>';}return;}
+  listEl.innerHTML=zones.map(z=>`
+    <div class="dz-card" id="card-${z.id}" onclick="focusZ('${z.id}')">
+      <div class="dz-dot" style="background:${z.color}"></div>
+      <div class="dz-info">
+        <div class="dz-name">${z.name}</div>
+        <div class="dz-meta">EGP ${z.price} &middot; ${z.days}d &middot; ${z.radius}km</div>
+      </div>
+      <div class="dz-acts" onclick="event.stopPropagation()">
+        <button class="dz-ibtn" onclick="editZ('${z.id}')" aria-label="Edit zone"><i class="ti ti-edit" aria-hidden="true"></i></button>
+        <button class="dz-ibtn del" onclick="delZ('${z.id}')" aria-label="Delete zone"><i class="ti ti-trash" aria-hidden="true"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function focusZ(id){
+  const z=zones.find(x=>x.id===id);if(!z||!layers[id])return;
+  map.flyTo(z.ll,13,{duration:0.7});
+  layers[id].m.openPopup();
+  document.querySelectorAll('.dz-card').forEach(c=>c.classList.remove('hi'));
+  const card=document.getElementById('card-'+id);if(card)card.classList.add('hi');
+}
+
+function editZ(id){
+  const z=zones.find(x=>x.id===id);if(!z)return;
+  editId=id;pendingLL=null;clearTemp();clearForm();
+  document.getElementById('f-name').value=z.name;
+  document.getElementById('f-price').value=z.price;
+  document.getElementById('f-days').value=z.days;
+  document.getElementById('f-radius').value=z.radius;
+  selColor=z.color;
+  document.querySelectorAll('.dz-col').forEach(d=>d.classList.toggle('on',d.dataset.c===z.color));
+  formEl.style.display='flex';startPick();
+  map.flyTo(z.ll,12,{duration:0.5});
+  setHint('map','Click map to move zone, or save to keep current location');
+}
+
+function delZ(id){
+  zones=zones.filter(x=>x.id!==id);
+  if(layers[id]){map.removeLayer(layers[id].c);map.removeLayer(layers[id].m);delete layers[id];}
+  renderList();updateStats();
+}
+
+function updateStats(){
+  document.getElementById('s-count').textContent=zones.length;
+  if(zones.length){
+    const avg=zones.reduce((s,z)=>s+z.price,0)/zones.length;
+    document.getElementById('s-avg').textContent='EGP '+Math.round(avg);
+    const f=zones.reduce((a,z)=>z.days<a.days?z:a,zones[0]);
+    document.getElementById('s-fast').textContent=f.days+'d';
+  } else {
+    document.getElementById('s-avg').textContent='—';
+    document.getElementById('s-fast').textContent='—';
+  }
+}
+
+setTimeout(()=>{
+  const samples=[
+    {name:'Cairo downtown',price:25,days:1,radius:8,color:'#FF6B00',ll:[30.0444,31.2357]},
+    {name:'Giza & Haram',price:35,days:2,radius:11,color:'#3B82F6',ll:[29.9870,31.1118]},
+    {name:'Heliopolis',price:40,days:2,radius:7,color:'#10B981',ll:[30.0871,31.3418]},
+    {name:'New Cairo',price:55,days:3,radius:14,color:'#8B5CF6',ll:[30.0311,31.4700]},
+  ];
+  samples.forEach(s=>{
+    const id='z'+Date.now()+Math.random();
+    const z={...s,id,ll:L.latLng(s.ll[0],s.ll[1])};
+    zones.push(z);addLayer(z);
+  });
+  renderList();updateStats();
+},400);
+</script>
+</body></html>
