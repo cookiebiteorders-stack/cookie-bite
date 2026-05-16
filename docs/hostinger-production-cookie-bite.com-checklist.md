@@ -18,6 +18,7 @@
 - [ ] Clerk keys
 - [ ] Paymob keys
 - [ ] Resend keys
+- [ ] `GEMINI_API_KEY` (Mrs. Cookie admin copilot + Mr. Brownie) — optional `MR_BROWNIE_GEMINI_MODEL=gemini-flash-latest`
 - [ ] `INTERNAL_API_SECRET`, `REVALIDATE_SECRET`
 
 ## 3) Clerk
