@@ -80,13 +80,17 @@ const BOUNCE_HOST = process.env.RESEND_REGION_HOST || "feedback-smtp.eu-west-1.a
 
 // ─── call Hostinger DNS API ────────────────────────────────────────────────
 async function updateZone() {
+  // Resend currently issues THREE records during domain verification:
+  //   1. DKIM TXT at  resend._domainkey
+  //   2. Bounce MX at send
+  //   3. SPF TXT  at send  (so DSN/bounce mail from amazonses passes SPF)
   const body = {
     overwrite: true,
     zone: [
       {
         name: "resend._domainkey",
         type: "TXT",
-        ttl: 3600,
+        ttl: 14400,
         records: [{ content: dkimValue }],
       },
       {
@@ -94,6 +98,12 @@ async function updateZone() {
         type: "MX",
         ttl: 3600,
         records: [{ content: `10 ${BOUNCE_HOST}.` }],
+      },
+      {
+        name: "send",
+        type: "TXT",
+        ttl: 3600,
+        records: [{ content: "v=spf1 include:amazonses.com ~all" }],
       },
     ],
   };

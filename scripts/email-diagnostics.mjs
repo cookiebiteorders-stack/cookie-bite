@@ -138,6 +138,10 @@ if (!HOSTINGER_TOKEN) {
       if (!sendMx) warn("bounce MX (send)", "missing — added automatically by resend-dns-finalize.mjs");
       else pass("bounce MX (send)", sendMx.records[0].content);
 
+      const sendSpf = records.find((x) => x.name === "send" && x.type === "TXT");
+      if (!sendSpf) warn("bounce SPF (send)", "missing — added by resend-dns-finalize.mjs");
+      else pass("bounce SPF (send)", sendSpf.records[0].content.replace(/^"|"$/g, ""));
+
       const inboxMx = records.find((x) => x.name === "@" && x.type === "MX");
       if (!inboxMx) fail("inbox MX (@)", "missing — Hostinger mailbox can't receive replies");
       else pass("inbox MX (@)", inboxMx.records.map((rr) => rr.content).join(", "));

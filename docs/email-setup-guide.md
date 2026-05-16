@@ -4,23 +4,25 @@
 
 ---
 
-## ⚡ TL;DR — ما تبقّى عليك
+## ⚡ TL;DR — ما تبقّى عليك (30 ثانية)
 
 ```
 ✅ DNS Provider:       Hostinger (apollo/athena.dns-parking.com)
 ✅ Domain:             cookie-bite.com (active until 2028)
-✅ MX Inbox:           mx1/mx2.hostinger.com (يعمل)
-✅ SPF:                v=spf1 include:_spf.resend.com include:_spf.mail.hostinger.com ~all
-✅ DMARC:              p=quarantine + rua reporting إلى cookie-bite@cookie-bite.com
-✅ Resend API key:     send-only key حيّ يرسل من onboarding@resend.dev
-✅ Codebase:           جاهز بالكامل — 23 قالب + 3 سكربتات تشخيص
+✅ MX Inbox:           mx1/mx2.hostinger.com
+✅ SPF (@):            v=spf1 include:_spf.resend.com include:_spf.mail.hostinger.com ~all
+✅ DMARC:              p=quarantine + rua=cookie-bite@cookie-bite.com
+✅ DKIM (resend._domainkey): مضاف عبر Hostinger API
+✅ Bounce MX (send):   10 feedback-smtp.eu-west-1.amazonses.com
+✅ Bounce SPF (send):  v=spf1 include:amazonses.com ~all
+✅ Resend API key:     send-only key، يرسل من onboarding@resend.dev بنجاح
+✅ Codebase:           جاهز — 23 قالب + سكربتي تشخيص
 
-⏳ ما تبقّى يدوياً (دقيقتان):
-   1. https://resend.com/domains → Add Domain → cookie-bite.com
-   2. انسخ قيمة DKIM (تبدأ بـ "p=...")
-   3. npm run email:finalize-dns -- "<paste DKIM here>"
-   4. ارجع لـ Resend → اضغط "Verify DNS"
-   5. npm run email:check للتأكد
+⏳ آخر خطوة (نقرة واحدة في Resend Dashboard):
+   1. افتح https://resend.com/domains/cookie-bite.com
+   2. اضغط "Verify DNS Records" (سيتحقّق فوراً من السجلات المضافة)
+   3. الحالة ستتحوّل إلى Verified ✓ خلال ثوانٍ
+   4. شغّل: npm run email:check  → سترى "PASS  send from verified domain"
 ```
 
 ---
@@ -73,8 +75,9 @@ Resend API → بريد العميل
 | **DMARC** `_dmarc` TXT | `v=DMARC1; p=quarantine; pct=100; rua=mailto:cookie-bite@cookie-bite.com; ruf=mailto:cookie-bite@cookie-bite.com; aspf=s; adkim=s; fo=1` | ✅ |
 | **Inbox MX** `@` | `5 mx1.hostinger.com`, `10 mx2.hostinger.com` | ✅ (كان موجود) |
 | **Hostinger DKIM** | `hostingermail-a/b/c._domainkey` CNAMEs | ✅ (كان موجود) |
-| **Resend DKIM** `resend._domainkey` TXT | يحتاج النسخ من Resend Dashboard | ⏳ |
-| **Resend bounce MX** `send` | `10 feedback-smtp.eu-west-1.amazonses.com` | ⏳ |
+| **Resend DKIM** `resend._domainkey` TXT | `p=MIGfMA0GCSq…AQAB` (RSA 1024-bit) | ✅ |
+| **Resend bounce MX** `send` | `10 feedback-smtp.eu-west-1.amazonses.com` | ✅ |
+| **Resend bounce SPF** `send` TXT | `v=spf1 include:amazonses.com ~all` | ✅ |
 
 ### في `.env`
 ```env
@@ -87,55 +90,34 @@ RESEND_DOMAIN=cookie-bite.com
 
 ---
 
-## ⏳ الخطوات اليدوية المتبقّية (دقيقتان)
+## ⏳ الخطوة الوحيدة المتبقّية (نقرة في Resend)
 
-### 1. أضف الدومين في Resend Dashboard
+كل سجلات DNS أُضيفت آلياً عبر Hostinger API. Resend الآن يحتاج فقط أن تطلب منه إعادة التحقّق:
 
-1. ادخل: <https://resend.com/domains>
-2. اضغط **Add Domain** → اكتب: `cookie-bite.com`
-3. اختر **Region**: `eu-west-1` (الأقرب للشرق الأوسط).
-4. Resend ستعرض 3 سجلات. **ركّز فقط على الـ DKIM** — هو السطر الطويل التي تحت `Type: TXT, Name: resend._domainkey`.
-5. انسخ كامل القيمة (تبدأ بـ `p=…` وقد تكون 300+ حرفاً).
+1. افتح <https://resend.com/domains/cookie-bite.com>
+2. اضغط زر **Verify DNS Records** (أو **Verify** بجوار الدومين)
+3. Resend سيفحص السجلات من نظامه ويُحدّث الحالة إلى **Verified ✓** خلال ثوانٍ
+4. تأكيد نهائي:
+   ```powershell
+   npm run email:check
+   ```
+   يجب أن ترى:
+   ```
+   [2] Resend domain send (using your From address)
+     PASS  send from verified domain — message id: <uuid>
+   ```
 
-### 2. أضف الـ DKIM إلى Hostinger DNS
-
-من جذر المشروع:
-
-```powershell
-npm run email:finalize-dns -- "p=MIGfMA0GCS...الـDKIMالطويلة...AQAB"
-```
-
-السكربت سيُضيف:
-- **DKIM TXT** `resend._domainkey` → القيمة التي ألصقتها
-- **Bounce MX** `send` → `10 feedback-smtp.eu-west-1.amazonses.com`
-
-### 3. ارجع لـ Resend Dashboard
-
-- اضغط **Verify DNS Records** → الحالة تتحوّل إلى **Verified ✓** خلال 1–5 دقائق.
-
-### 4. تحقّق
-
-```powershell
-npm run email:check
-```
-
-يجب أن يظهر:
-```
-[2] Resend domain send (using your From address)
-  PASS  send from verified domain — message id: <uuid>
-```
-
-### 5. (اختياري) فعّل قوالب Clerk بهوية Cookie Bite
+### (اختياري) فعّل قوالب Clerk بهوية Cookie Bite
 
 في **Clerk Dashboard → Customization → Emails**:
 1. اختر قالب (Welcome / OTP / Password Reset).
 2. ادخل `/admin/template-library` في موقعك → اضغط **Copy HTML** على القالب المُكافئ.
 3. الصق في Clerk + استبدل `{{variables}}` بمتغيّرات Clerk.
 
-### 6. (اختياري) أنشئ Clerk Webhook signing secret
+### (اختياري) أنشئ Clerk Webhook signing secret
 
 - Clerk Dashboard → **Webhooks** → **Add Endpoint** → `https://cookie-bite.com/api/webhooks/clerk`
-- انسخ الـ Signing Secret → ضعه في `.env`:  
+- انسخ الـ Signing Secret → ضعه في `.env`:
   `CLERK_WEBHOOK_SIGNING_SECRET=whsec_…`
 
 ---
