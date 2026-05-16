@@ -4,25 +4,25 @@
 
 ---
 
-## ⚡ TL;DR — ما تبقّى عليك (30 ثانية)
+## ⚡ TL;DR — النظام **LIVE** ✅
 
 ```
 ✅ DNS Provider:       Hostinger (apollo/athena.dns-parking.com)
-✅ Domain:             cookie-bite.com (active until 2028)
+✅ Domain:             cookie-bite.com (active until 2028, verified in Resend)
 ✅ MX Inbox:           mx1/mx2.hostinger.com
 ✅ SPF (@):            v=spf1 include:_spf.resend.com include:_spf.mail.hostinger.com ~all
 ✅ DMARC:              p=quarantine + rua=cookie-bite@cookie-bite.com
 ✅ DKIM (resend._domainkey): مضاف عبر Hostinger API
 ✅ Bounce MX (send):   10 feedback-smtp.eu-west-1.amazonses.com
 ✅ Bounce SPF (send):  v=spf1 include:amazonses.com ~all
-✅ Resend API key:     send-only key، يرسل من onboarding@resend.dev بنجاح
-✅ Codebase:           جاهز — 23 قالب + سكربتي تشخيص
+✅ Click-tracking:     cookie-bite.cookie-bite.com → links1.resend-dns.com
+✅ Resend domain:      Verified ✓ — الإرسال من orders@cookie-bite.com يعمل
+✅ Codebase:           23 قالب + سكربتي تشخيص + integration كاملة
 
-⏳ آخر خطوة (نقرة واحدة في Resend Dashboard):
-   1. افتح https://resend.com/domains/cookie-bite.com
-   2. اضغط "Verify DNS Records" (سيتحقّق فوراً من السجلات المضافة)
-   3. الحالة ستتحوّل إلى Verified ✓ خلال ثوانٍ
-   4. شغّل: npm run email:check  → سترى "PASS  send from verified domain"
+📨 Last live send: message id 398f5acb-8f73-4581-830d-dd231ce99998
+   (افتح cookie.bite.orders@gmail.com للتأكد)
+
+🎯 Diagnostics: 8 pass · 0 warn · 0 fail
 ```
 
 ---
@@ -78,6 +78,7 @@ Resend API → بريد العميل
 | **Resend DKIM** `resend._domainkey` TXT | `p=MIGfMA0GCSq…AQAB` (RSA 1024-bit) | ✅ |
 | **Resend bounce MX** `send` | `10 feedback-smtp.eu-west-1.amazonses.com` | ✅ |
 | **Resend bounce SPF** `send` TXT | `v=spf1 include:amazonses.com ~all` | ✅ |
+| **Click-tracking** `cookie-bite` CNAME | `links1.resend-dns.com` | ✅ |
 
 ### في `.env`
 ```env
@@ -90,22 +91,24 @@ RESEND_DOMAIN=cookie-bite.com
 
 ---
 
-## ⏳ الخطوة الوحيدة المتبقّية (نقرة في Resend)
+## 🎯 النظام يعمل — تأكّد بنفسك
 
-كل سجلات DNS أُضيفت آلياً عبر Hostinger API. Resend الآن يحتاج فقط أن تطلب منه إعادة التحقّق:
+أحدث diagnostic:
+```
+[1] Resend API key
+  PASS  send via onboarding@resend.dev
+[2] Resend domain send (using your From address)
+  PASS  send from verified domain   ← الإرسال من orders@cookie-bite.com يعمل ✓
+[3] Hostinger DNS zone records
+  PASS  SPF · DMARC · DKIM · bounce MX · bounce SPF · inbox MX · click-tracking CNAME
 
-1. افتح <https://resend.com/domains/cookie-bite.com>
-2. اضغط زر **Verify DNS Records** (أو **Verify** بجوار الدومين)
-3. Resend سيفحص السجلات من نظامه ويُحدّث الحالة إلى **Verified ✓** خلال ثوانٍ
-4. تأكيد نهائي:
-   ```powershell
-   npm run email:check
-   ```
-   يجب أن ترى:
-   ```
-   [2] Resend domain send (using your From address)
-     PASS  send from verified domain — message id: <uuid>
-   ```
+Summary: 8 pass · 0 warn · 0 fail
+```
+
+شغّل بنفسك في أي وقت:
+```powershell
+npm run email:check
+```
 
 ### (اختياري) فعّل قوالب Clerk بهوية Cookie Bite
 

@@ -145,6 +145,19 @@ if (!HOSTINGER_TOKEN) {
       const inboxMx = records.find((x) => x.name === "@" && x.type === "MX");
       if (!inboxMx) fail("inbox MX (@)", "missing — Hostinger mailbox can't receive replies");
       else pass("inbox MX (@)", inboxMx.records.map((rr) => rr.content).join(", "));
+
+      // Optional: click-tracking CNAME (Resend rewrites links through here).
+      const clickCname = records.find(
+        (x) => x.type === "CNAME" && /resend-dns\.com/i.test(x.records?.[0]?.content || ""),
+      );
+      if (clickCname) {
+        pass(
+          `click-tracking CNAME (${clickCname.name})`,
+          clickCname.records[0].content,
+        );
+      } else {
+        warn("click-tracking CNAME", "not configured (optional, only needed if you want click analytics)");
+      }
     }
   } catch (e) {
     fail("zone fetch", e.message);
