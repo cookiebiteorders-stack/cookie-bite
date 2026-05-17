@@ -5,6 +5,10 @@ import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-
 import { writeAuditLog } from "@/lib/admin/audit";
 import { bilingualError } from "@/lib/validations";
 import { fetchOrderItemsByOrderIds } from "@/lib/db/order-items-fetch";
+import {
+  fetchLatestPaymentsByOrderIds,
+  isMissingInvoicesTableError,
+} from "@/lib/db/payments-fetch";
 
 type InvoiceStatus = "paid" | "pending" | "failed" | "refunded";
 
@@ -141,13 +145,6 @@ export async function GET(request: NextRequest) {
         status,
         guest_email,
         user_id
-      ),
-      payments (
-        id,
-        status,
-        method,
-        transaction_id,
-        created_at
       )
     `,
       { count: "exact" },
@@ -156,6 +153,20 @@ export async function GET(request: NextRequest) {
     .range(from, to);
 
   const { data: invoicesData, error: invoicesError, count: invoicesCount } = await invoicesQuery;
+
+  if (invoicesError && isMissingInvoicesTableError(invoicesError.message)) {
+    return NextResponse.json(
+      {
+        ...bilingualError(
+          "Invoices table is missing. Run Supabase migration 0019_invoices_payments_ensure.sql (or 0008).",
+          "جدول الفواتير غير موجود. شغّل ترحيل Supabase 0019_invoices_payments_ensure.sql (أو 0008).",
+        ),
+        code: "invoices_table_missing",
+        migration: "0019_invoices_payments_ensure.sql",
+      },
+      { status: 503 },
+    );
+  }
 
   if (!invoicesError) {
     total = invoicesCount ?? 0;
@@ -184,6 +195,7 @@ export async function GET(request: NextRequest) {
       })
       .filter((x): x is string => Boolean(x));
     const itemsByOrderId = await fetchOrderItemsByOrderIds(supabase, orderIds);
+    const paymentsByOrderId = await fetchLatestPaymentsByOrderIds(supabase, orderIds);
 
     invoiceRows = (invoicesData ?? []).map((raw) => {
       const row = raw as unknown as Record<string, unknown>;
@@ -191,7 +203,8 @@ export async function GET(request: NextRequest) {
       const order = ((Array.isArray(orderRaw) ? orderRaw[0] : orderRaw) as Record<string, unknown> | null) ?? null;
       const userId = order?.user_id != null ? String(order.user_id) : null;
       const user = userId ? userLookup.get(userId) : undefined;
-      const payment = Array.isArray(row.payments) ? (row.payments[0] as Record<string, unknown> | undefined) : undefined;
+      const orderIdForPay = typeof order?.id === "string" ? order.id : null;
+      const payment = orderIdForPay ? paymentsByOrderId.get(orderIdForPay) : undefined;
       const issuedAt =
         (typeof row.issued_at === "string" ? row.issued_at : null) ??
         (typeof row.created_at === "string" ? row.created_at : null) ??
@@ -224,14 +237,15 @@ export async function GET(request: NextRequest) {
           })),
         },
         payment: {
-          id: typeof payment?.id === "string" ? payment.id : null,
-          method: typeof payment?.method === "string" ? payment.method : null,
-          transaction_id: typeof payment?.transaction_id === "string" ? payment.transaction_id : null,
-          status: typeof payment?.status === "string" ? payment.status : null,
-          paid_at: typeof payment?.created_at === "string" ? payment.created_at : null,
+          id: payment?.id ?? null,
+          method: payment?.method ?? null,
+          transaction_id: payment?.transaction_id ?? null,
+          status: payment?.status ?? null,
+          paid_at: payment?.created_at ?? null,
         },
       };
     });
+    debug.source = "invoices";
   } else {
     debug.fallback_reason = invoicesError.message;
     debug.fallback_code = invoicesError.code;
@@ -426,6 +440,18 @@ export async function POST(req: NextRequest) {
 
   if (error || !data) {
     console.error("invoice insert", error);
+    if (error && isMissingInvoicesTableError(error.message)) {
+      return NextResponse.json(
+        {
+          ...bilingualError(
+            "Invoices table is missing. Run migration 0019_invoices_payments_ensure.sql on Supabase.",
+            "جدول الفواتير غير موجود. طبّق ترحيل 0019 على Supabase.",
+          ),
+          code: "invoices_table_missing",
+        },
+        { status: 503 },
+      );
+    }
     return NextResponse.json(bilingualError("Failed to create invoice", "فشل إنشاء الفاتورة"), {
       status: 500,
     });

@@ -268,12 +268,23 @@ export default function AdminInvoicesPage() {
 
         const res = await fetch(`/api/admin/invoices?${params.toString()}`, { cache: "no-store" });
         const payload = (await res.json()) as ApiPayload & {
-          error?: { en?: string };
+          error?: { en?: string; ar?: string };
           details?: string;
+          code?: string;
+          migration?: string;
         };
         if (!res.ok) {
-          const message = payload.error?.en ?? "Failed to load invoices";
-          throw new Error(payload.details ? `${message} (${payload.details})` : message);
+          const message =
+            payload.error?.ar && document.documentElement.lang === "ar"
+              ? payload.error.ar
+              : (payload.error?.en ?? "Failed to load invoices");
+          const hint =
+            payload.code === "invoices_table_missing" && payload.migration
+              ? ` · Supabase: supabase/migrations/${payload.migration}`
+              : "";
+          throw new Error(
+            payload.details ? `${message}${hint} (${payload.details})` : `${message}${hint}`,
+          );
         }
 
         setRows((prev) => (reset ? payload.invoices ?? [] : [...prev, ...(payload.invoices ?? [])]));
@@ -501,8 +512,20 @@ export default function AdminInvoicesPage() {
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 text-red-700 dark:text-red-300" />
             <div className="min-w-0 flex-1">
-              <h2 className="text-base font-bold text-red-900 dark:text-red-100">Failed to load invoices</h2>
+              <h2 className="text-base font-bold text-red-900 dark:text-red-100">
+                {error.includes("جدول الفواتير") || error.includes("Invoices table")
+                  ? "قاعدة بيانات الفواتير غير مكتملة"
+                  : "Failed to load invoices"}
+              </h2>
               <p className="mt-1 text-sm text-red-800 dark:text-red-200">{error}</p>
+              {error.includes("0019") ? (
+                <p className="mt-2 text-xs text-red-900/90 dark:text-red-100/90" dir="rtl">
+                  من Supabase SQL Editor أو محلياً:{" "}
+                  <code className="rounded bg-red-100 px-1 dark:bg-red-900/50">
+                    node scripts/supabase-run-migrations.mjs
+                  </code>
+                </p>
+              ) : null}
               <div className="mt-3 flex flex-wrap gap-2">
                 <button type="button" className={buttonClassName("primary", "px-4 py-2 text-xs")} onClick={() => void loadInvoices({ reset: true })}>
                   Retry
