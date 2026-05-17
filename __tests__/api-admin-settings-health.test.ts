@@ -24,6 +24,17 @@ jest.mock("@/lib/config/production-lock", () => ({
   }),
 }));
 
+jest.mock("@/lib/db/schema-health", () => ({
+  probeAppDatabaseTables: jest.fn().mockResolvedValue({
+    ok: true,
+    configured: true,
+    missing_tables: [],
+    failed_tables: [],
+    probes: [],
+  }),
+  probeAdminRlsHelper: jest.fn().mockResolvedValue({ ok: true }),
+}));
+
 describe("api/admin/settings/health GET", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -46,6 +57,7 @@ describe("api/admin/settings/health GET", () => {
     expect(body.canonical_host).toBe("cookie-bite.com");
     expect(body.env.ok).toBe(true);
     expect(body.integrations.supabase).toBe(true);
+    expect(body.database.ok).toBe(true);
     expect(requireAdminAccessMock).toHaveBeenCalledWith("settings");
   });
 });

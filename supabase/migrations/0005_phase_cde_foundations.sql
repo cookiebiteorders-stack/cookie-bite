@@ -40,6 +40,10 @@ create table if not exists public.shipping_zones (
   updated_at timestamptz not null default now()
 );
 
+alter table public.shipping_zones
+  add column if not exists is_active boolean not null default true,
+  add column if not exists updated_at timestamptz not null default now();
+
 create index if not exists shipping_zones_active_idx
   on public.shipping_zones (is_active);
 

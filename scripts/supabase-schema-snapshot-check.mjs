@@ -48,7 +48,9 @@ const expectedPath = path.join(
   process.cwd(),
   "supabase",
   "checks",
-  "expected-core-tables.json",
+  fs.existsSync(path.join(process.cwd(), "supabase", "checks", "expected-app-tables.json"))
+    ? "expected-app-tables.json"
+    : "expected-core-tables.json",
 );
 const expected = JSON.parse(fs.readFileSync(expectedPath, "utf8"));
 if (!Array.isArray(expected) || expected.some((x) => typeof x !== "string")) {

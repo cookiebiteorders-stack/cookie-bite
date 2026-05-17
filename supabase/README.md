@@ -50,7 +50,19 @@ node scripts/supabase-run-migrations.mjs --force=0019_invoices_payments_ensure.s
 node scripts/supabase-security-check.mjs
 ```
 
-### 4) فحص وجود الجداول الأساسية (snapshot)
+### 4) فحص شامل (جداول + ترحيلات + RLS)
+
+```bash
+npm run supabase:healthcheck
+```
+
+مع تطبيق الإصلاحات تلقائياً:
+
+```bash
+npm run supabase:healthcheck -- --fix
+```
+
+### 5) فحص وجود الجداول الأساسية (snapshot)
 
 ```bash
 node scripts/supabase-schema-snapshot-check.mjs
@@ -58,7 +70,7 @@ node scripts/supabase-schema-snapshot-check.mjs
 
 يعتمد على `supabase/checks/expected-core-tables.json` ويجب تحديثه عند إضافة جداول أساسية جديدة للتطبيق.
 
-### 5) تشغيل seed يدويًا
+### 6) تشغيل seed يدويًا
 
 - افتح `supabase/seed/core.sql` و `supabase/seed/products.sql` في SQL Editor.
 - أو استخدم سكربت query الحالي لتنفيذهما عبر Management API.

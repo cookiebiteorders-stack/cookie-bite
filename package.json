@@ -25,7 +25,8 @@
     "supabase:list-migrations": "node scripts/supabase-list-migrations.mjs",
     "supabase:migrate": "node scripts/supabase-run-migrations.mjs",
     "supabase:ensure-schema": "node scripts/supabase-ensure-schema.mjs",
-    "supabase:check-schema": "node scripts/supabase-schema-snapshot-check.mjs"
+    "supabase:check-schema": "node scripts/supabase-schema-snapshot-check.mjs",
+    "supabase:healthcheck": "node scripts/supabase-full-healthcheck.mjs"
   },
   "dependencies": {
     "@clerk/localizations": "^4.6.0",
