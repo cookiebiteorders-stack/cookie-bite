@@ -22,7 +22,10 @@
     "email:finalize-dns": "node scripts/resend-dns-finalize.mjs",
     "copilot:check": "node scripts/copilot-check.mjs",
     "hostinger:export-gemini-env": "node scripts/hostinger-export-gemini-env.mjs",
-    "supabase:list-migrations": "node scripts/supabase-list-migrations.mjs"
+    "supabase:list-migrations": "node scripts/supabase-list-migrations.mjs",
+    "supabase:migrate": "node scripts/supabase-run-migrations.mjs",
+    "supabase:ensure-schema": "node scripts/supabase-ensure-schema.mjs",
+    "supabase:check-schema": "node scripts/supabase-schema-snapshot-check.mjs"
   },
   "dependencies": {
     "@clerk/localizations": "^4.6.0",
