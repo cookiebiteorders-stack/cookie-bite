@@ -290,6 +290,9 @@ export async function dispatchPaymentConfirmed(
     }
   } else if (!ctx.customerEmail) {
     errors.push("no_email");
+  } else if (!process.env.RESEND_API_KEY) {
+    errors.push("resend_not_configured");
+    console.warn("[notifications] payment_confirmation email skipped — RESEND_API_KEY missing");
   }
 
   if (ctx.customerPhone) {

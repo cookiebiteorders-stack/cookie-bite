@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node scripts/copy-standalone-assets.mjs",
     "start": "node server.mjs",
     "start:standalone": "node .next/standalone/server.js",
     "lint": "eslint",
@@ -22,6 +23,8 @@
     "email:finalize-dns": "node scripts/resend-dns-finalize.mjs",
     "copilot:check": "node scripts/copilot-check.mjs",
     "hostinger:export-gemini-env": "node scripts/hostinger-export-gemini-env.mjs",
+    "hostinger:env-audit": "node scripts/hostinger-production-env-audit.mjs",
+    "hostinger:checklist": "node scripts/hostinger-sync-checklist.mjs",
     "supabase:list-migrations": "node scripts/supabase-list-migrations.mjs",
     "supabase:migrate": "node scripts/supabase-run-migrations.mjs",
     "supabase:ensure-schema": "node scripts/supabase-ensure-schema.mjs",

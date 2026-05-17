@@ -75,6 +75,10 @@ export type IntegrationEnvStatus = {
   ai_gemini: boolean;
   /** Sanity CMS — اختياري */
   cms_sanity: boolean;
+  /** Meta Cloud API — اختياري */
+  whatsapp: boolean;
+  /** BullMQ — اختياري؛ بدونه يُستخدم طابور DB + cron */
+  redis_queue: boolean;
 };
 
 export type ProductionEnvCheck = {
@@ -98,6 +102,8 @@ export function getIntegrationEnvStatus(check: ProductionEnvCheck): IntegrationE
       internal_api: true,
       ai_gemini: true,
       cms_sanity: true,
+      whatsapp: true,
+      redis_queue: true,
     };
   }
   const m = new Set(check.missing);
@@ -117,6 +123,11 @@ export function getIntegrationEnvStatus(check: ProductionEnvCheck): IntegrationE
     internal_api: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.internal_api),
     ai_gemini: Boolean(process.env.GEMINI_API_KEY?.trim()),
     cms_sanity: Boolean(process.env.NEXT_PUBLIC_SANITY_PROJECT_ID?.trim()),
+    whatsapp: Boolean(
+      process.env.WHATSAPP_CLOUD_API_TOKEN?.trim() &&
+        process.env.WHATSAPP_PHONE_NUMBER_ID?.trim(),
+    ),
+    redis_queue: Boolean(process.env.REDIS_URL?.trim()),
   };
 }
 

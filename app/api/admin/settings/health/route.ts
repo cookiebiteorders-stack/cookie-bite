@@ -14,10 +14,18 @@ export async function GET() {
   const database = await probeAppDatabaseTables();
   const rls_helper = await probeAdminRlsHelper();
 
+  const cronConfigured = Boolean(process.env.INTERNAL_API_SECRET?.trim());
+
   return NextResponse.json({
     canonical_host: PRODUCTION_HOST,
     env,
     integrations,
+    cron: {
+      configured: cronConfigured,
+      endpoint: "POST /api/cron/notification-jobs",
+      schedule_hint: "every 5 minutes (Hostinger cron)",
+      auth_header: "x-internal-secret",
+    },
     database: {
       ok: database.ok && rls_helper.ok,
       configured: database.configured,

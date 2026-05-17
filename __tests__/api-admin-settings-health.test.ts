@@ -21,6 +21,8 @@ jest.mock("@/lib/config/production-lock", () => ({
     internal_api: true,
     ai_gemini: true,
     cms_sanity: true,
+    whatsapp: true,
+    redis_queue: true,
   }),
 }));
 
@@ -58,6 +60,7 @@ describe("api/admin/settings/health GET", () => {
     expect(body.env.ok).toBe(true);
     expect(body.integrations.supabase).toBe(true);
     expect(body.database.ok).toBe(true);
+    expect(body.cron.endpoint).toBe("POST /api/cron/notification-jobs");
     expect(requireAdminAccessMock).toHaveBeenCalledWith("settings");
   });
 });

@@ -43,6 +43,20 @@ npm run hostinger:export-gemini-env
 | `NEXT_PUBLIC_SANITY_DATASET` | عادة `production` |
 | `SANITY_WEBHOOK_SECRET` | إعادة بناء عند النشر من Sanity |
 
+## Cron — طابور الإشعارات (بدون Redis)
+
+| الإعداد | القيمة |
+|---------|--------|
+| التكرار | كل **5 دقائق** |
+| الطريقة | `POST` |
+| الرابط | `https://cookie-bite.com/api/cron/notification-jobs?limit=20` |
+| الترويسة | `x-internal-secret: <INTERNAL_API_SECRET>` |
+
+```bash
+npm run hostinger:env-audit
+npm run hostinger:checklist
+```
+
 ## صارم عند الإقلاع
 
 اضبط `COOKIE_BITE_FAIL_ON_MISSING_ENV=true` لرفض التشغيل إن نقص متغير إلزامي (انظر `lib/config/production-lock.ts`).

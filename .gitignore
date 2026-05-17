@@ -49,6 +49,7 @@ debug-*.log
 /.swc
 hostinger-deploy.zip
 hostinger-gemini.env
+hostinger-production.env
 
 # typescript
 *.tsbuildinfo

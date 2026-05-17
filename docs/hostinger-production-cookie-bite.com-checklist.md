@@ -52,7 +52,13 @@
 - [ ] Sender valid:
   - `Cookie Bite <orders@cookie-bite.com>`
 
-## 7) Final Validation
+## 7) Notification cron (DB queue)
+
+- [ ] Hostinger cron every 5 min: `POST https://cookie-bite.com/api/cron/notification-jobs?limit=20`
+- [ ] Header `x-internal-secret` = `INTERNAL_API_SECRET`
+- [ ] Run locally: `npm run hostinger:checklist`
+
+## 8) Final Validation
 - [ ] `npm run build` passes on production config
 - [ ] Auth flows work end-to-end
 - [ ] Order creation + payment callback works

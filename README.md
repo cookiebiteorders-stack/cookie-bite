@@ -40,6 +40,20 @@ The project is configured with:
    - `COOKIE_BITE_PRIMARY_DOMAIN=cookie-bite.com`
 5. Point the domain DNS to Hostinger deployment and enable SSL.
 
+### Environment audit & checklist
+
+```bash
+npm run hostinger:env-audit    # writes hostinger-production.env (gitignored) for hPanel import
+npm run hostinger:checklist    # actionable deploy steps (Clerk, Paymob, cron, …)
+```
+
+### Notification cron (Hostinger)
+
+When `REDIS_URL` is unset, order/payment emails use the DB queue. Schedule a cron job every **5 minutes**:
+
+- **URL:** `POST https://cookie-bite.com/api/cron/notification-jobs?limit=20`
+- **Header:** `x-internal-secret: <INTERNAL_API_SECRET>`
+
 ## Documentation
 
 - **[Full site reference (AR)](docs/WEBSITE_COMPLETE_REFERENCE.md)** — pages, API routes, database, security, env vars, and architecture.
