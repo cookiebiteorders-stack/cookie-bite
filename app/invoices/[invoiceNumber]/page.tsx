@@ -90,7 +90,14 @@ export default function PublicInvoicePage() {
           </div>
         ) : null}
 
-        {!loading && !error && viewModel ? <InvoiceView invoice={viewModel} /> : null}
+        {!loading && !error && viewModel ? (
+          <InvoiceView
+            invoice={{
+              ...viewModel,
+              downloadUrl: `/api/invoices/${encodeURIComponent(invoiceNumber)}/pdf`,
+            }}
+          />
+        ) : null}
       </div>
     </main>
   );

@@ -1,0 +1,167 @@
+/**
+ * Global print / Save-as-PDF rules — preserves brand colors and hides site chrome.
+ */
+
+@page {
+  size: A4;
+  margin: 10mm 12mm 14mm;
+}
+
+@media print {
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #1a1a1a !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  /* Site & admin chrome */
+  .cb-no-print,
+  .cb-ambient-orbs,
+  .cb-skip-link,
+  .desktop-header,
+  .desktop-footer,
+  .desktop-whatsapp-fab,
+  .mobile-header,
+  .mobile-footer,
+  .mobile-tab-bar,
+  .announcement-bar,
+  .admin-console > aside,
+  .admin-console nav[aria-label],
+  [data-mr-brownie],
+  [data-cart-drawer],
+  .copilot-launcher,
+  nav,
+  footer:not(.inv-footer):not(.doc-footer):not(.df) {
+    display: none !important;
+  }
+
+  .admin-console {
+    display: block !important;
+  }
+
+  .admin-console > .min-h-0 {
+    display: block !important;
+  }
+
+  .admin-console main,
+  #main-content,
+  #admin-main-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    max-width: none !important;
+  }
+
+  /* Focused print: only show marked root (drawers, modals) */
+  body.cb-print-active * {
+    visibility: hidden;
+  }
+
+  body.cb-print-active [data-cb-print-root],
+  body.cb-print-active [data-cb-print-root] * {
+    visibility: visible;
+  }
+
+  body.cb-print-active [data-cb-print-root] {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    z-index: 99999 !important;
+  }
+
+  body.cb-print-active .fixed.inset-0 {
+    position: static !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+  }
+
+  body.cb-print-active aside[role="dialog"] > header {
+    display: none !important;
+  }
+
+  body.cb-print-active aside[role="dialog"] {
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  /* Printable documents */
+  .cb-print-document,
+  .inv-root,
+  .doc-wrap,
+  .dw {
+    break-inside: avoid-page;
+  }
+
+  .cb-print-page-break {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .cb-print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  table {
+    break-inside: auto;
+  }
+
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  a[href]::after {
+    content: none !important;
+  }
+
+  /* Template library / notification reports (embedded in print window too) */
+  .doc-wrap,
+  .dw {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .doc-head,
+  .dh {
+    break-after: avoid;
+  }
+
+  .kpi-row,
+  .kpi3 {
+    break-inside: avoid;
+  }
+}

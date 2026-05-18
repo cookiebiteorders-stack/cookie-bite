@@ -14,6 +14,7 @@ import {
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { buttonClassName } from "@/components/ui/button";
 import { InvoiceView } from "@/components/invoices/invoice-view";
+import { PrintActions } from "@/components/print/print-actions";
 import { toInvoiceViewModel } from "@/lib/invoices/to-invoice-view-model";
 import { cn } from "@/lib/utils";
 
@@ -184,7 +185,12 @@ function InvoiceDrawer({
                   {invoice.invoice_number}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <PrintActions
+                  printRootSelector=".inv-root"
+                  pdfHref={`/api/invoices/${encodeURIComponent(invoice.invoice_number)}/pdf`}
+                  size="sm"
+                />
                 <a
                   href={`/invoices/${invoice.invoice_number}`}
                   target="_blank"

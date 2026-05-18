@@ -14,6 +14,7 @@ import { CartDrawer } from "@/components/cart/cart-drawer";
 import { CartProvider } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { CopilotLauncher } from "@/components/admin/copilot/copilot-launcher";
+import { cn } from "@/lib/utils";
 
 type AdminShellProps = {
   role: UserRole;
@@ -32,21 +33,29 @@ export function AdminShell({ role, children }: AdminShellProps) {
           <a href="#admin-main-content" className="cb-skip-link">
             {t("actions.skipToMain")}
           </a>
-          <AnnouncementBar />
+          <div className="cb-no-print">
+            <AnnouncementBar />
+          </div>
 
-          <div className="desktop-header">
+          <div className="desktop-header cb-no-print">
             <SiteHeader />
           </div>
           <div className="hidden h-16 md:block" aria-hidden />
 
-          <MobileHeader />
-
-          <AdminConsoleNavbar />
+          <div className="cb-no-print">
+            <MobileHeader />
+            <AdminConsoleNavbar />
+          </div>
 
           <div className="min-h-0 flex-1">
             <div className="mx-auto grid max-w-[1600px] grid-cols-1 lg:grid-cols-[260px_1fr]">
-              <aside className="hidden border-r border-cb-border bg-cb-surface-2 px-4 py-6 backdrop-blur-md lg:block lg:min-h-screen">
-              <div className="mb-8 rounded-2xl border border-cb-border bg-cb-surface p-4 shadow-sm cb-shadow-editorial">
+              <aside
+                className={cn(
+                  "cb-no-print sticky top-16 z-20 hidden h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] flex-col overflow-hidden",
+                  "border-r border-cb-border bg-cb-surface-2 px-4 py-4 backdrop-blur-md lg:flex",
+                )}
+              >
+                <div className="mb-4 shrink-0 rounded-2xl border border-cb-border bg-cb-surface p-4 shadow-sm cb-shadow-editorial">
                 <div className="flex items-center gap-2">
                   <LogoMark className="h-9 w-9 text-cb-brand-logo" title="Cookie Bite" />
                   <p className="font-playful text-2xl leading-none text-cb-brand-logo">
@@ -61,8 +70,10 @@ export function AdminShell({ role, children }: AdminShellProps) {
                 </span>
               </div>
 
-              <AdminConsoleNavLinks items={navItems} pathname={pathname} />
-            </aside>
+                <div className="admin-sidebar-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain pe-1 [scrollbar-gutter:stable]">
+                  <AdminConsoleNavLinks items={navItems} pathname={pathname} />
+                </div>
+              </aside>
 
             <div className="min-w-0">
               <main id="admin-main-content" className="border-t border-transparent px-4 py-6 sm:px-6">

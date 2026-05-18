@@ -37,6 +37,8 @@ export function SignInForm({ afterAuth }: SignInFormProps) {
       },
       elements: {
         ...clerkAuthAppearance.elements,
+        /** العنوان يُعرض في AuthLayout — نخفي رأس Clerk لتجنب التكرار */
+        header: "hidden",
         /** إخفاء صف «ليس لديك حساب؟ / Create account» — القسم السفلي يُدار من التطبيق عند الحاجة */
         footerAction: "hidden",
       },

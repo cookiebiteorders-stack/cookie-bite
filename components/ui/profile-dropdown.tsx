@@ -18,6 +18,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useTheme } from "@/components/providers/theme-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { useStaffAdminNav } from "@/components/providers/staff-admin-nav-provider";
+import { usePathname } from "next/navigation";
 import { SITE } from "@/lib/data";
 import { duration, easeSoft } from "@/lib/motion/presets";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,9 @@ export function UserAccountDropdown() {
   const { resolvedTheme, setTheme } = useTheme();
   const { t } = useLanguage();
   const { items: staffAdminNavItems } = useStaffAdminNav();
+  const pathname = usePathname();
+  const inAdminShell = pathname.startsWith("/admin");
+  const showProfileAdminLinks = staffAdminNavItems.length > 0 && !inAdminShell;
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -126,11 +130,11 @@ export function UserAccountDropdown() {
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: duration.short, ease: easeSoft }}
             className={cn(
-              "absolute end-0 top-[calc(100%+0.5rem)] w-[min(calc(100vw-1.5rem),19.5rem)] origin-top",
+              "absolute end-0 top-[calc(100%+0.5rem)] flex w-[min(calc(100vw-1.5rem),19.5rem)] max-h-[min(85vh,32rem)] flex-col origin-top",
               menuSurface,
             )}
           >
-            <div className="border-b border-cb-border px-4 py-3 dark:border-cb-border">
+            <div className="shrink-0 border-b border-cb-border px-4 py-3 dark:border-cb-border">
               <div className="flex items-start gap-3">
                 <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full ring-2 ring-cb-peach-deep/70 dark:ring-cb-border">
                   {user.imageUrl ? (
@@ -156,6 +160,7 @@ export function UserAccountDropdown() {
               </div>
             </div>
 
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
             <div className="border-b border-cb-border px-3 py-3 dark:border-cb-border">
               <div className="rounded-xl border border-cb-border/80 bg-cb-cream/90 px-3 py-3 dark:border-cb-border dark:bg-cb-surface-elevated/90">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-cb-terracotta-dark dark:text-cb-terracotta">
@@ -231,13 +236,19 @@ export function UserAccountDropdown() {
               </Link>
             </div>
 
-            {staffAdminNavItems.length > 0 ? (
+            {showProfileAdminLinks ? (
               <div className="border-b border-cb-border px-3 py-2 dark:border-cb-border">
                 <p className="mb-2 flex items-center gap-2 px-1 text-[10px] font-bold uppercase tracking-wider text-cb-text-muted">
                   <Shield className="h-3.5 w-3.5 text-cb-terracotta-dark dark:text-cb-terracotta" aria-hidden />
                   {t("nav.adminMenu")}
                 </p>
-                <div className="flex flex-col gap-0.5">
+                <div
+                  className={cn(
+                    "flex flex-col gap-0.5",
+                    staffAdminNavItems.length > 5 &&
+                      "max-h-[min(50vh,14rem)] overflow-y-auto overscroll-y-contain",
+                  )}
+                >
                   {staffAdminNavItems.map((item) => (
                     <Link
                       key={item.href}
@@ -252,8 +263,9 @@ export function UserAccountDropdown() {
                 </div>
               </div>
             ) : null}
+            </div>
 
-            <div className="border-t border-cb-border dark:border-cb-border">
+            <div className="shrink-0 border-t border-cb-border dark:border-cb-border">
               <button
                 type="button"
                 role="menuitem"
@@ -268,7 +280,7 @@ export function UserAccountDropdown() {
               </button>
             </div>
 
-            <div className="flex items-center justify-between gap-2 border-t border-cb-border px-4 py-2.5 dark:border-cb-border">
+            <div className="flex shrink-0 items-center justify-between gap-2 border-t border-cb-border px-4 py-2.5 dark:border-cb-border">
               <span className="truncate text-xs font-semibold text-cb-text-muted">{t("userMenu.brandFoot")}</span>
               <span className="hidden max-w-[9rem] truncate text-[10px] text-cb-text-muted/90 sm:inline">
                 {SITE.tagline}

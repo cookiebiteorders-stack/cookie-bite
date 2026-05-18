@@ -36,6 +36,15 @@ import { cn } from "@/lib/utils";
 const iconBtn =
   "cb-touch-manipulation inline-flex h-11 min-h-[2.75rem] w-11 min-w-[2.75rem] items-center justify-center rounded-xl text-cb-text transition-[transform,box-shadow,color,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:bg-cb-hover-overlay hover:text-cb-terracotta-dark hover:shadow-sm active:scale-[0.97] dark:hover:bg-cb-peach/15";
 
+const navLinkActive =
+  "text-cb-text-strong underline decoration-[1.5px] underline-offset-[10px] decoration-cb-terracotta-dark/80 dark:decoration-cb-terracotta/70";
+
+const storeNavGroupClass =
+  "flex items-center gap-0.5 rounded-2xl border border-cb-border/50 bg-cb-surface-2/30 p-0.5 dark:border-cb-border/60 dark:bg-cb-surface-elevated/20";
+
+const utilityGroupClass =
+  "flex items-center gap-0.5 rounded-2xl border border-cb-border/50 bg-cb-surface-2/25 p-0.5 sm:gap-1 dark:border-cb-border/60";
+
 export function SiteHeader() {
   const pathname = usePathname();
   const { itemCount, openDrawer } = useCart();
@@ -83,7 +92,7 @@ export function SiteHeader() {
   }, [pathname]);
 
   const linkBase =
-    "text-sm font-medium text-cb-text-strong transition-colors duration-300 hover:text-cb-terracotta-dark dark:hover:text-cb-terracotta";
+    "rounded-lg px-2.5 py-1.5 text-sm font-medium text-cb-text-strong transition-colors duration-300 hover:bg-cb-hover-overlay hover:text-cb-terracotta-dark dark:hover:text-cb-terracotta";
 
   const shopActive = pathname.startsWith("/shop");
   const giftsActive =
@@ -159,76 +168,70 @@ export function SiteHeader() {
                 )}
               </button>
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                <SiteLogoLink />
+                <SiteLogoLink showTagline={!admin} className={admin ? "max-w-[min(180px,38vw)]" : undefined} />
                 {admin ? (
-                  <div className="hidden min-w-0 max-w-[10rem] flex-col justify-center border-s border-cb-border/60 ps-3 sm:max-w-[12rem] sm:ps-4 md:flex lg:max-w-[14rem]">
-                    <p className="truncate text-sm font-bold leading-tight text-cb-text-strong">
+                  <Link
+                    href={currentAdminPage?.href ?? "/admin"}
+                    className="hidden min-w-0 max-w-[9.5rem] flex-col justify-center rounded-xl border border-cb-border/60 bg-cb-surface-2/40 px-2.5 py-1.5 transition-colors hover:bg-cb-peach/25 sm:max-w-[11rem] md:flex lg:max-w-[12.5rem]"
+                    title={consoleLabel}
+                  >
+                    <p className="truncate text-xs font-bold leading-tight text-cb-text-strong">
                       {currentAdminPage?.label ?? "Dashboard"}
                     </p>
-                    <p className="truncate text-[10px] font-semibold uppercase leading-tight tracking-[0.12em] text-cb-terracotta-dark dark:text-cb-terracotta">
-                      {consoleLabel} · {getRoleLabel(admin.role)}
+                    <p className="truncate text-[9px] font-semibold uppercase leading-tight tracking-[0.14em] text-cb-terracotta-dark dark:text-cb-terracotta">
+                      {getRoleLabel(admin.role)}
                     </p>
-                  </div>
+                  </Link>
                 ) : null}
               </div>
             </div>
 
             <nav
-              className="hidden items-center gap-8 lg:flex"
+              className="hidden min-w-0 flex-1 items-center justify-center px-2 lg:flex xl:px-4"
               aria-label={t("nav.primary")}
             >
-              <Link
-                href="/shop"
-                className={cn(
-                  linkBase,
-                  shopActive &&
-                    "text-cb-text-strong underline decoration-[1.5px] underline-offset-[10px] decoration-cb-terracotta-dark/80 dark:decoration-cb-terracotta/70",
-                )}
-              >
-                {t("nav.shop")}
-              </Link>
-              <Link
-                href="/gift-box"
-                className={cn(
-                  linkBase,
-                  giftsActive &&
-                    "text-cb-text-strong underline decoration-[1.5px] underline-offset-[10px] decoration-cb-terracotta-dark/80 dark:decoration-cb-terracotta/70",
-                )}
-              >
-                {t("nav.gifts")}
-              </Link>
-              <NavDropdown label={t("nav.discover")} items={discoverLinks} />
-              <NavDropdown label={t("nav.help")} items={helpLinks} />
-              {adminNavForMenu.length > 0 ? (
+              <div className={storeNavGroupClass}>
+                <Link href="/shop" className={cn(linkBase, shopActive && navLinkActive)}>
+                  {t("nav.shop")}
+                </Link>
+                <Link href="/gift-box" className={cn(linkBase, giftsActive && navLinkActive)}>
+                  {t("nav.gifts")}
+                </Link>
+                <span className="mx-0.5 hidden h-5 w-px bg-cb-border/70 sm:block" aria-hidden />
+                <NavDropdown label={t("nav.discover")} items={discoverLinks} />
+                <NavDropdown label={t("nav.help")} items={helpLinks} />
+              </div>
+              {!admin && adminNavForMenu.length > 0 ? (
                 <NavDropdown
+                  className="ms-2 shrink-0"
                   label={t("nav.adminMenu")}
                   items={adminNavForMenu}
                   isActive={adminNavActive}
+                  align="end"
                 />
               ) : null}
             </nav>
 
-            <div className="flex items-center gap-1 sm:gap-2">
-              <ThemeToggle className="inline-flex" />
-              <LanguageToggle className="hidden md:inline-flex" />
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <div className={utilityGroupClass}>
+                <ThemeToggle className="inline-flex" />
+                <LanguageToggle className="hidden md:inline-flex" />
+              </div>
               {admin ? (
                 <Link
                   href="/"
                   className={cn(
                     iconBtn,
-                    "hidden gap-2 px-3 sm:inline-flex sm:w-auto sm:min-w-0 sm:shrink-0",
+                    "hidden gap-2 border border-cb-border/50 bg-cb-surface-2/30 px-3 sm:inline-flex sm:w-auto sm:min-w-0 sm:shrink-0 dark:border-cb-border/60",
                   )}
                   aria-label={storeLabel}
                 >
                   <Store className="h-5 w-5 shrink-0" aria-hidden />
-                  <span className="hidden text-sm font-semibold sm:inline">{storeLabel}</span>
+                  <span className="hidden text-sm font-semibold lg:inline">{storeLabel}</span>
                 </Link>
               ) : null}
-              <Link
-                href="/search"
-                className={iconBtn}
-                aria-label={t("actions.search")}
-              >
+              <span className="hidden h-6 w-px bg-cb-border/60 sm:block" aria-hidden />
+              <Link href="/search" className={iconBtn} aria-label={t("actions.search")}>
                 <Search className="h-5 w-5" aria-hidden />
               </Link>
 
@@ -352,7 +355,7 @@ export function SiteHeader() {
                     </Link>
                   </motion.div>
                 ))}
-                {!admin && staffAdminNavItems.length > 0 ? (
+                {!admin && staffAdminNavItems.length > 0 && adminNavForMenu.length > 0 ? (
                   <>
                     <div className="px-1 pt-4">
                       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cb-text-muted">

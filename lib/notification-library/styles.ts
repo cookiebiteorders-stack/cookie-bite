@@ -299,7 +299,13 @@ body{background:#EFE8DC;font-family:${FONT_STACK};color:${BRAND.inkSoft};padding
 
 @media print{
   body{background:#ffffff;padding:0;}
-  .doc-wrap,.dw{border:none;box-shadow:none;border-radius:0;}
+  .doc-wrap,.dw{border:none;box-shadow:none;border-radius:0;max-width:none;margin:0;}
+  .doc-head,.dh,.doc-head::before,.dh::before,.bar-fill,.kpi,.badge{
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+  .doc-head,.dh,.kpi-row,.kpi3,.note-box,.note{break-inside:avoid;page-break-inside:avoid;}
+  .doc-table tr,.dtbl tr{break-inside:avoid;}
 }
 
 @media only screen and (max-width:640px){

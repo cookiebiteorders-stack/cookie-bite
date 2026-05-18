@@ -18,24 +18,29 @@ html {
 /* stylelint-disable */
 /* تمرير أنحف لنماذج المصادقة — Firefox تحت @supports؛ WebKit دائماً */
 @supports (scrollbar-width: thin) {
-  .auth-form-scroll {
+  .auth-form-scroll,
+  .admin-sidebar-scroll {
     scrollbar-width: thin;
     scrollbar-color: color-mix(in oklab, var(--cb-peach-deep) 45%, transparent)
       transparent;
   }
-  .dark .auth-form-scroll {
+  .dark .auth-form-scroll,
+  .dark .admin-sidebar-scroll {
     scrollbar-color: color-mix(in oklab, var(--cb-border-strong) 55%, transparent)
       transparent;
   }
 }
-.auth-form-scroll::-webkit-scrollbar {
+.auth-form-scroll::-webkit-scrollbar,
+.admin-sidebar-scroll::-webkit-scrollbar {
   width: 6px;
 }
-.auth-form-scroll::-webkit-scrollbar-thumb {
+.auth-form-scroll::-webkit-scrollbar-thumb,
+.admin-sidebar-scroll::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background: color-mix(in oklab, var(--cb-peach-deep) 40%, transparent);
 }
-.dark .auth-form-scroll::-webkit-scrollbar-thumb {
+.dark .auth-form-scroll::-webkit-scrollbar-thumb,
+.dark .admin-sidebar-scroll::-webkit-scrollbar-thumb {
   background: color-mix(in oklab, var(--cb-border-strong) 50%, transparent);
 }
 /* stylelint-enable */

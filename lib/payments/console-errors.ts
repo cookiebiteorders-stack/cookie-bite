@@ -20,10 +20,12 @@ function classify(msg: string): FriendlyConsoleError {
     };
   }
   if (m.includes("column") && m.includes("does not exist")) {
+    const paymentCol = m.includes("payment_status");
     return {
-      title: "مخطط قاعدة البيانات غير متطابق",
-      description:
-        "عمود مطلوب غير موجود بعد الترحيل. شغّل أحدث ترحيلات المشروع أو راجع إعدادات Supabase.",
+      title: paymentCol ? "عمود payment_status غير موجود" : "مخطط قاعدة البيانات غير متطابق",
+      description: paymentCol
+        ? "شغّل ترحيلات Supabase (مثلاً 0022_orders_payment_status_ensure.sql) عبر: npm run supabase:ensure-schema"
+        : "عمود مطلوب غير موجود بعد الترحيل. شغّل أحدث ترحيلات المشروع أو راجع إعدادات Supabase.",
       severity: "medium",
       technical: msg,
     };

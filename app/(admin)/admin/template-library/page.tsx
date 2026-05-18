@@ -13,6 +13,7 @@ import {
   Sparkles,
   XCircle,
 } from "lucide-react";
+import { PrintActions } from "@/components/print/print-actions";
 
 type TemplateCategory =
   | "transactional"
@@ -384,6 +385,19 @@ export default function TemplateLibraryPage() {
                     <Copy className="h-3.5 w-3.5" />
                     Copy HTML
                   </button>
+                  {previewHtml ? (
+                    <PrintActions
+                      html={previewHtml}
+                      title={previewSubject || selectedMeta.name}
+                      size="sm"
+                      onPrintBlocked={() =>
+                        setToast({
+                          kind: "error",
+                          text: "Allow pop-ups to print this template with full design.",
+                        })
+                      }
+                    />
+                  ) : null}
                 </div>
               </div>
 

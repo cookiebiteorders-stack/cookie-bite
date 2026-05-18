@@ -40,6 +40,13 @@ type HealthResponse = {
     resend: boolean;
     internal_api: boolean;
   };
+  database?: {
+    ok: boolean;
+    configured: boolean;
+    missing_tables: string[];
+    failed_tables: string[];
+    migrate_hint?: string;
+  };
 };
 
 /** بطاقات العرض ← مفتاح `integrations` من الـ API (أزمن ثابتة توضيحية). */
@@ -186,13 +193,35 @@ export default function AdminSettingsPage() {
   const activeStaff = 6 + (templates.length % 5);
 
   const statusRows = HEALTH_CARD_DEFS.map(({ name, key, latencyOk, latencyIssue }) => {
-    const ok = health ? health.integrations[key] : false;
+    let ok = health ? health.integrations[key] : false;
+    if (key === "supabase" && health?.database) {
+      ok = ok && health.database.ok;
+    }
     return {
       name,
+      key,
       ok,
       latency: ok ? latencyOk : latencyIssue,
     };
   });
+
+  const integrationFixHints: Record<(typeof HEALTH_CARD_DEFS)[number]["key"], string[]> = {
+    internal_api: ["INTERNAL_API_SECRET", "REVALIDATE_SECRET"],
+    supabase: ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_KEY"],
+    paymob: [
+      "PAYMOB_API_KEY",
+      "PAYMOB_INTEGRATION_ID_CARD",
+      "PAYMOB_INTEGRATION_ID_WALLET",
+      "PAYMOB_HMAC_SECRET",
+    ],
+    app_urls: ["NEXT_PUBLIC_APP_URL", "APP_BASE_URL"],
+    resend: ["RESEND_API_KEY", "RESEND_FROM_EMAIL"],
+    clerk: [
+      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+      "CLERK_SECRET_KEY",
+      "CLERK_WEBHOOK_SIGNING_SECRET",
+    ],
+  };
 
   const aiMessages = [
     warningCount > 0
@@ -342,26 +371,73 @@ export default function AdminSettingsPage() {
                   الحالة تُشتق من مجموعات متغيرات الإنتاج (ليست pings). الأزمن المعروضة ثابتة وتوضيحية وليست
                   قياسات شبكة حية.
                 </p>
+                {health.env.missing.length > 0 ? (
+                  <div className="mt-4 rounded-2xl border border-rose-300/80 bg-rose-50/90 p-4 text-sm text-rose-950 dark:border-rose-800/60 dark:bg-rose-950/35 dark:text-rose-100">
+                    <p className="font-bold">Missing on server (hPanel → Environment variables)</p>
+                    <p className="mt-1 text-xs opacity-90" dir="rtl">
+                      متغيرات ناقصة — أضفها ثم Redeploy. محلياً:{" "}
+                      <code className="rounded bg-black/10 px-1">npm run hostinger:env-audit</code>
+                    </p>
+                    <ul className="mt-2 list-inside list-disc font-mono text-xs">
+                      {health.env.missing.map((key) => (
+                        <li key={key}>{key}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {health.database && !health.database.ok ? (
+                  <div className="mt-4 rounded-2xl border border-amber-300/80 bg-amber-50/90 p-4 text-sm text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/35 dark:text-amber-100">
+                    <p className="font-bold">Database schema needs attention</p>
+                    {health.database.missing_tables.length > 0 ? (
+                      <p className="mt-1 text-xs">
+                        Missing tables: {health.database.missing_tables.join(", ")}
+                      </p>
+                    ) : null}
+                    {health.database.failed_tables.length > 0 ? (
+                      <p className="mt-1 text-xs">
+                        Failed probes: {health.database.failed_tables.join(", ")}
+                      </p>
+                    ) : null}
+                    <p className="mt-2 text-xs" dir="rtl">
+                      {health.database.migrate_hint ?? "شغّل: npm run supabase:ensure-schema"}
+                    </p>
+                  </div>
+                ) : null}
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {statusRows.map((row) => (
-                    <article key={row.name} className="rounded-2xl border border-cb-border bg-white/90 p-4 dark:bg-stone-900/70">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-bold text-stone-900 dark:text-stone-100">{row.name}</p>
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold",
-                            row.ok
-                              ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200"
-                              : "bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-200",
-                          )}
-                        >
-                          <span className={cn("h-1.5 w-1.5 rounded-full", row.ok ? "bg-emerald-500" : "bg-rose-500")} />
-                          {row.ok ? "Healthy" : "Issue"}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-xs text-stone-700 dark:text-stone-300">Latency: {row.latency}</p>
-                    </article>
-                  ))}
+                  {statusRows.map((row) => {
+                    const missingForCard = integrationFixHints[row.key].filter((k) =>
+                      health.env.missing.includes(k),
+                    );
+                    return (
+                      <article
+                        key={row.name}
+                        className="rounded-2xl border border-cb-border bg-white/90 p-4 dark:bg-stone-900/70"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-bold text-stone-900 dark:text-stone-100">{row.name}</p>
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold",
+                              row.ok
+                                ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200"
+                                : "bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-200",
+                            )}
+                          >
+                            <span
+                              className={cn("h-1.5 w-1.5 rounded-full", row.ok ? "bg-emerald-500" : "bg-rose-500")}
+                            />
+                            {row.ok ? "Healthy" : "Issue"}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-xs text-stone-700 dark:text-stone-300">Latency: {row.latency}</p>
+                        {!row.ok && missingForCard.length > 0 ? (
+                          <p className="mt-2 font-mono text-[10px] leading-relaxed text-rose-800 dark:text-rose-200">
+                            Set: {missingForCard.join(", ")}
+                          </p>
+                        ) : null}
+                      </article>
+                    );
+                  })}
                 </div>
               </section>
 

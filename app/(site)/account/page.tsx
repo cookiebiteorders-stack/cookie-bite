@@ -52,7 +52,7 @@ const customerNavItems = [
   { label: "Payment Methods", href: "/account#pay", icon: CreditCard },
   { label: "Wishlist", href: "/account#wish", icon: Heart },
   { label: "Rewards & Points", href: "/account#rewards", icon: Star },
-  { label: "Profile & security", href: "/account#profile", icon: User },
+  { label: "Profile & settings", href: "/account/settings", icon: User },
   { label: "My comments", href: "/account#feedback", icon: MessageSquare },
   { label: "Notifications", href: "/account#notifications", icon: Bell },
   { label: "Help & Support", href: "/contact", icon: HelpCircle },

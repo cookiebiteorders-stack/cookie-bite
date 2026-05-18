@@ -1,7 +1,11 @@
 import { enUS } from "@clerk/localizations";
 
-/** يظهر في عناوين Clerk بدل اسم التطبيق القادم من لوحة Clerk (مثل «Clerk» في التطوير). */
-const SITE_HOST = "cookie-bite.com";
+/** يظهر في عناوين Clerk وصفحة تسجيل الدخول بدل اسم التطبيق من لوحة Clerk. */
+export const SITE_HOST = "cookie-bite.com";
+
+export const SIGN_IN_TITLE = `Sign in to ${SITE_HOST}`;
+export const SIGN_IN_SUBTITLE =
+  "Sign in with email or Google, Apple, or X — your connection is encrypted.";
 
 /**
  * نسخة إنجليزية مخصصة لـ Cookie Bite — تستبدل اسم التطبيق الافتراضي من لوحة Clerk
@@ -37,10 +41,9 @@ export const cookieBiteClerkLocalization = {
     },
     start: {
       ...enUS.signIn!.start,
-      title: `Sign in to ${SITE_HOST}`,
+      title: SIGN_IN_TITLE,
       titleCombined: `Continue to ${SITE_HOST}`,
-      subtitle:
-        "Sign in with email or Google, Apple, or X — your connection is encrypted.",
+      subtitle: SIGN_IN_SUBTITLE,
       alternativePhoneCodeProvider: {
         ...(enUS.signIn!.start?.alternativePhoneCodeProvider ?? {}),
         title: `Sign in to ${SITE_HOST} with {{provider}}`,

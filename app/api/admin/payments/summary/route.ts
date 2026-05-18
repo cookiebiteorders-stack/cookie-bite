@@ -7,56 +7,8 @@ import {
   buildGatewayHealth,
   buildMethodMix,
 } from "@/lib/payments/build-payment-analytics";
-import type {
-  PaymentSummaryResponse,
-  PaymentTransactionRow,
-} from "@/lib/payments/payment-summary-types";
-
-type RawOrder = Record<string, unknown>;
-
-function isMissingColumnError(err: { message?: string; code?: string }): boolean {
-  const m = (err.message ?? "").toLowerCase();
-  return (
-    err.code === "42703" ||
-    err.code === "PGRST204" ||
-    (m.includes("column") && m.includes("does not exist"))
-  );
-}
-
-function num(v: unknown): number {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function normalizeRow(raw: RawOrder): PaymentTransactionRow {
-  return {
-    id: String(raw.id ?? ""),
-    order_code: raw.order_code == null ? null : String(raw.order_code),
-    guest_email: raw.guest_email == null ? null : String(raw.guest_email),
-    user_id: raw.user_id == null ? null : String(raw.user_id),
-    total_egp: num(raw.total_egp),
-    payment_status: String(raw.payment_status ?? "unknown"),
-    payment_method: raw.payment_method == null ? null : String(raw.payment_method),
-    paymob_transaction_id:
-      raw.paymob_transaction_id == null || raw.paymob_transaction_id === ""
-        ? null
-        : String(raw.paymob_transaction_id),
-    paymob_accept_order_id: (() => {
-      if (raw.paymob_accept_order_id == null || raw.paymob_accept_order_id === "") return null;
-      const n = Number(raw.paymob_accept_order_id);
-      return Number.isFinite(n) ? n : null;
-    })(),
-    created_at: String(raw.created_at ?? new Date().toISOString()),
-  };
-}
-
-const SELECT_ATTEMPTS = [
-  "id,order_code,guest_email,user_id,total_egp,payment_status,payment_method,paymob_transaction_id,paymob_accept_order_id,created_at",
-  "id,order_code,guest_email,user_id,total_egp,payment_status,payment_method,paymob_transaction_id,created_at",
-  "id,order_code,guest_email,total_egp,payment_status,payment_method,paymob_transaction_id,created_at",
-  "id,total_egp,payment_status,payment_method,paymob_transaction_id,created_at",
-  "id,total_egp,payment_status,payment_method,created_at",
-] as const;
+import { loadPaymentOrdersForSummary } from "@/lib/payments/load-payment-orders";
+import type { PaymentSummaryResponse } from "@/lib/payments/payment-summary-types";
 
 export async function GET() {
   await requireAdminAccess("payments");
@@ -78,48 +30,27 @@ export async function GET() {
     return NextResponse.json(body, { status: 503 });
   }
 
-  let data: RawOrder[] | null = null;
-  let lastError: { message: string; code?: string; details?: string; hint?: string } | null = null;
+  const loaded = await loadPaymentOrdersForSummary(supabase, 500);
 
-  for (const sel of SELECT_ATTEMPTS) {
-    const res = await supabase
-      .from("orders")
-      .select(sel)
-      .order("created_at", { ascending: false })
-      .limit(500);
-    if (!res.error) {
-      data = ((res.data as unknown) as RawOrder[] | null) ?? [];
-      lastError = null;
-      break;
-    }
-    lastError = {
-      message: res.error.message,
-      code: res.error.code,
-      details: res.error.details,
-      hint: res.error.hint,
-    };
-    if (!isMissingColumnError(res.error)) {
-      break;
-    }
-  }
-
-  if (lastError || data === null) {
-    const err = lastError ?? { message: "Unknown Supabase error" };
+  if (!loaded.ok) {
+    const err = loaded.error;
     console.error("[api/admin/payments/summary] Supabase:", err);
     const body: Record<string, unknown> = {
       ...bilingualError("Database error", "خطأ في قاعدة البيانات"),
+      code: "orders_read_failed",
     };
     if (process.env.NODE_ENV === "development") {
       body.debug = {
         message: err.message,
         code: err.code,
         hint: err.hint,
+        migrate_hint: "npm run supabase:ensure-schema",
       };
     }
     return NextResponse.json(body, { status: 500 });
   }
 
-  const rows: PaymentTransactionRow[] = data.map((raw) => normalizeRow(raw));
+  const rows = loaded.rows;
 
   const byStatus = rows.reduce<Record<string, number>>((acc, r) => {
     const k = r.payment_status ?? "unknown";

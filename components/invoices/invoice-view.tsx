@@ -1,6 +1,7 @@
 "use client";
 
 import { Download, Printer } from "lucide-react";
+import { printInvoiceElement } from "@/lib/print/print-document";
 import { cn } from "@/lib/utils";
 
 export type InvoiceItem = {
@@ -151,7 +152,7 @@ export function InvoiceView({
   const total = invoice.total_amount_egp;
 
   return (
-    <div className={cn("inv-root", className)} dir="ltr" lang="en">
+    <div className={cn("inv-root cb-print-document", className)} dir="ltr" lang="en">
       <style jsx>{`
         .inv-root {
           --inv-orange: #ff6b00;
@@ -623,10 +624,34 @@ export function InvoiceView({
           .inv-no-print {
             display: none !important;
           }
+          .inv-root {
+            background: #fff !important;
+          }
           .inv-wrap {
-            box-shadow: none;
-            border-radius: 0;
-            max-width: none;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            max-width: none !important;
+          }
+          .inv-header {
+            background: var(--inv-dark-bg) !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .inv-badge,
+          .totals-grand,
+          .inv-status-paid,
+          .inv-status-pending,
+          .inv-status-failed,
+          .inv-status-refunded {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .party-grid,
+          .pay-status-row,
+          .totals-grand,
+          .items-table thead tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
           }
         }
       `}</style>
@@ -833,9 +858,7 @@ export function InvoiceView({
               <button
                 type="button"
                 className="inv-btn"
-                onClick={() => {
-                  if (typeof window !== "undefined") window.print();
-                }}
+                onClick={() => printInvoiceElement()}
               >
                 <Printer className="h-4 w-4" />
                 Print
