@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   BellRing,
@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { fetchJson } from "@/lib/http/fetch-json";
+import { renderTemplateString } from "@/lib/notifications/template-vars";
+import { WHATSAPP_TEMPLATE_CATALOG } from "@/lib/notifications/whatsapp-template-catalog";
 import { cn } from "@/lib/utils";
 
 type HealthResponse = {
@@ -87,12 +89,15 @@ export default function AdminSettingsPage() {
     ar: string;
   } | null>(null);
 
-  const [tplChannel, setTplChannel] = useState<"email" | "sms" | "whatsapp" | "push">("email");
-  const [tplKey, setTplKey] = useState("order_confirmed");
-  const [tplLanguage, setTplLanguage] = useState<"en" | "ar">("en");
+  const [tplChannel, setTplChannel] = useState<"email" | "sms" | "whatsapp" | "push">("whatsapp");
+  const [tplKey, setTplKey] = useState("order_confirm");
+  const [tplLanguage, setTplLanguage] = useState<"en" | "ar">("ar");
   const [tplSubject, setTplSubject] = useState("");
   const [tplBody, setTplBody] = useState("");
-  const [templateTab, setTemplateTab] = useState<"email" | "sms" | "whatsapp" | "push" | "in-app">("email");
+  const [templateTab, setTemplateTab] = useState<"email" | "sms" | "whatsapp" | "push" | "in-app">("whatsapp");
+  const [tplSaveStatus, setTplSaveStatus] = useState<string | null>(null);
+  const [tplBusy, setTplBusy] = useState(false);
+  const [waPresetKey, setWaPresetKey] = useState("order_confirm");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "dark" | "rtl">("desktop");
   const [activeLocale, setActiveLocale] = useState<"en" | "ar">("en");
   const [activeFlags, setActiveFlags] = useState<string[]>(["smart_retries", "high_contrast_mode"]);
@@ -158,6 +163,12 @@ export default function AdminSettingsPage() {
   }, []);
 
   async function upsertTemplate() {
+    if (!tplBody.trim() || tplKey.trim().length < 2) {
+      setTplSaveStatus("أدخل مفتاحاً ونص القالب");
+      return;
+    }
+    setTplBusy(true);
+    setTplSaveStatus(null);
     setError(null);
     try {
       await fetchJson<{ ok: boolean }>("/api/admin/notifications/templates", {
@@ -167,22 +178,97 @@ export default function AdminSettingsPage() {
         retryDelayMs: 250,
         jsonBody: {
           channel: tplChannel,
-          key: tplKey,
+          key: tplKey.trim(),
           language: tplLanguage,
           subject: tplSubject || undefined,
           body: tplBody,
           is_active: true,
         },
       });
+      setTplSaveStatus("تم الحفظ");
+      await load();
     } catch (err) {
-      setTemplatesError(
+      setTplSaveStatus(
         err instanceof Error ? err.message : "Failed to save template",
       );
-      return;
+    } finally {
+      setTplBusy(false);
     }
-    setTplBody("");
-    await load();
   }
+
+  async function seedWhatsAppTemplates() {
+    setTplBusy(true);
+    setTplSaveStatus(null);
+    try {
+      const res = await fetchJson<{ seeded: number }>(
+        "/api/admin/notifications/templates/seed",
+        {
+          method: "POST",
+          jsonBody: { channel: "whatsapp", languages: ["ar", "en"] },
+        },
+      );
+      setTplSaveStatus(`تم استيراد ${res.seeded} قالب واتساب`);
+      await load();
+    } catch (err) {
+      setTplSaveStatus(err instanceof Error ? err.message : "فشل الاستيراد");
+    } finally {
+      setTplBusy(false);
+    }
+  }
+
+  function selectTemplateTab(tab: typeof templateTab) {
+    setTemplateTab(tab);
+    if (tab !== "in-app") setTplChannel(tab);
+  }
+
+  function loadWaPreset(key: string) {
+    const def = WHATSAPP_TEMPLATE_CATALOG.find((d) => d.key === key);
+    if (!def) return;
+    setWaPresetKey(key);
+    setTplChannel("whatsapp");
+    setTplKey(def.key);
+    setTplBody(tplLanguage === "ar" ? def.defaultBodyAr : def.defaultBodyEn);
+    setTplSaveStatus(null);
+  }
+
+  function loadTemplateForEdit(t: Template) {
+    setTplChannel(t.channel);
+    setTplKey(t.key);
+    setTplLanguage(t.language);
+    setTplSubject(t.subject ?? "");
+    setTplBody(t.body);
+    if (t.channel === "whatsapp") setWaPresetKey(t.key);
+    setTplSaveStatus(null);
+  }
+
+  function insertTemplateVar(name: string) {
+    const token = `{{${name}}}`;
+    setTplBody((prev) => (prev ? `${prev}${prev.endsWith("\n") ? "" : " "}${token}` : token));
+  }
+
+  const channelForTab =
+    templateTab === "in-app" ? "push" : templateTab;
+  const filteredTemplates = useMemo(
+    () => templates.filter((t) => t.channel === channelForTab),
+    [templates, channelForTab],
+  );
+  const waCatalogEntry = WHATSAPP_TEMPLATE_CATALOG.find((d) => d.key === waPresetKey);
+  const waPreviewBody = useMemo(() => {
+    const sample: Record<string, string> = {
+      name: "أحمد",
+      orderNumber: "CB-1042",
+      orderDate: "19 مايو 2026",
+      total: "450 ج.م",
+      items: "• كوكيز x2",
+      address: "القاهرة",
+      paymentMethod: "بطاقة",
+      customerName: "أحمد",
+      invoiceNumber: "INV-99",
+      grandTotal: "450 ج.م",
+      invoiceLink: "https://cookie-bite.com/account",
+    };
+    return renderTemplateString(tplBody || waCatalogEntry?.defaultBodyAr || "", sample);
+  }, [tplBody, waCatalogEntry]);
 
   const activeTemplates = templates.filter((t) => t.is_active).length;
   const serviceHealth = health?.env.ok ? "Healthy" : "Degraded";
@@ -486,7 +572,7 @@ export default function AdminSettingsPage() {
                   <button
                     key={tab}
                     type="button"
-                    onClick={() => setTemplateTab(tab)}
+                    onClick={() => selectTemplateTab(tab)}
                     className={cn(
                       "w-full rounded-2xl border px-3 py-2 text-left text-sm font-bold capitalize transition",
                       templateTab === tab
@@ -499,15 +585,45 @@ export default function AdminSettingsPage() {
                 ))}
               </div>
               <div className="mt-4 rounded-2xl border border-cb-border bg-white/90 p-3 text-xs text-stone-700 dark:bg-stone-900/80 dark:text-stone-300">
-                Active templates: <span className="font-bold">{activeTemplates}</span>
+                نشطة: <span className="font-bold">{filteredTemplates.filter((t) => t.is_active).length}</span>
+                <span className="mx-1">·</span>
+                الكل: <span className="font-bold">{activeTemplates}</span>
               </div>
+              {templateTab === "whatsapp" ? (
+                <button
+                  type="button"
+                  disabled={tplBusy}
+                  onClick={() => void seedWhatsAppTemplates()}
+                  className="mt-3 w-full rounded-2xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-100 disabled:opacity-60 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
+                >
+                  استيراد قوالب واتساب الافتراضية
+                </button>
+              ) : null}
             </aside>
 
             <article className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
               <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
                 <Wrench className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                Notification Studio
+                استوديو القوالب النصية
               </h3>
+              {templateTab === "whatsapp" ? (
+                <div className="mt-3">
+                  <label className="text-xs font-bold text-stone-600 dark:text-stone-400">
+                    قالب واتساب جاهز
+                  </label>
+                  <select
+                    value={waPresetKey}
+                    onChange={(e) => loadWaPreset(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-cb-border bg-white px-3 py-2 text-sm dark:bg-stone-900"
+                  >
+                    {WHATSAPP_TEMPLATE_CATALOG.map((d) => (
+                      <option key={d.key} value={d.key}>
+                        {d.labelAr} ({d.key})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
               <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                 <select
                   value={tplChannel}
@@ -527,7 +643,14 @@ export default function AdminSettingsPage() {
                 />
                 <select
                   value={tplLanguage}
-                  onChange={(e) => setTplLanguage(e.target.value as "en" | "ar")}
+                  onChange={(e) => {
+                    const lang = e.target.value as "en" | "ar";
+                    setTplLanguage(lang);
+                    const def = WHATSAPP_TEMPLATE_CATALOG.find((d) => d.key === waPresetKey);
+                    if (tplChannel === "whatsapp" && def) {
+                      setTplBody(lang === "ar" ? def.defaultBodyAr : def.defaultBodyEn);
+                    }
+                  }}
                   className="rounded-xl border border-cb-border bg-white px-3 py-2 text-sm dark:bg-stone-900"
                 >
                   <option value="en">en</option>
@@ -541,19 +664,39 @@ export default function AdminSettingsPage() {
                 />
                 <button
                   type="button"
+                  disabled={tplBusy}
                   onClick={() => void upsertTemplate()}
-                  className="rounded-xl bg-[#E67E22] px-4 py-2 text-sm font-bold text-white shadow-[0_8px_24px_-14px_rgba(230,126,34,0.6)] hover:bg-[#d56c12]"
+                  className="rounded-xl bg-[#E67E22] px-4 py-2 text-sm font-bold text-white shadow-[0_8px_24px_-14px_rgba(230,126,34,0.6)] hover:bg-[#d56c12] disabled:opacity-60"
                 >
-                  Save
+                  {tplBusy ? "…" : "حفظ"}
                 </button>
               </div>
+              {tplSaveStatus ? (
+                <p className="mt-2 text-xs font-bold text-amber-800 dark:text-amber-200">{tplSaveStatus}</p>
+              ) : null}
               <textarea
                 value={tplBody}
                 onChange={(e) => setTplBody(e.target.value)}
-                placeholder="Use variables: {{customer_name}}, {{order_id}}, {{tracking_url}}, {{discount_code}}"
-                className="mt-3 w-full rounded-xl border border-cb-border bg-white px-3 py-2 text-sm dark:bg-stone-900"
-                rows={6}
+                placeholder="استخدم متغيرات مثل {{name}} و {{orderNumber}} — *نص عريض* في واتساب"
+                className="mt-3 w-full rounded-xl border border-cb-border bg-white px-3 py-2 font-mono text-sm dark:bg-stone-900"
+                rows={8}
+                dir={tplLanguage === "ar" ? "rtl" : "ltr"}
               />
+              <div className="mt-2 flex flex-wrap gap-1">
+                {(tplChannel === "whatsapp" && waCatalogEntry
+                  ? waCatalogEntry.variables
+                  : ["customer_name", "order_id", "tracking_url"]
+                ).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => insertTemplateVar(v)}
+                    className="rounded-full border border-cb-border bg-stone-100 px-2 py-0.5 font-mono text-[10px] font-bold text-stone-800 dark:bg-stone-800 dark:text-stone-200"
+                  >
+                    {`{{${v}}}`}
+                  </button>
+                ))}
+              </div>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
@@ -584,15 +727,24 @@ export default function AdminSettingsPage() {
                   Locale completeness: {templates.length > 2 ? "Good" : "Needs expansion"}
                 </span>
               </div>
-              <div className="mt-4 space-y-2">
-                {templates.map((t) => (
-                  <article key={t.id} className="rounded-xl border border-cb-border bg-cb-surface-2/80 p-3 text-sm">
-                    <p className="font-semibold text-stone-900 dark:text-stone-100">
-                      {t.channel}:{t.key} ({t.language})
-                    </p>
-                    <p className="mt-1 text-xs text-stone-700 dark:text-stone-300">{t.subject ?? "No subject"}</p>
-                  </article>
-                ))}
+              <div className="mt-4 max-h-64 space-y-2 overflow-y-auto">
+                {filteredTemplates.length === 0 ? (
+                  <p className="text-xs text-stone-600 dark:text-stone-400">لا توجد قوالب لهذه القناة.</p>
+                ) : (
+                  filteredTemplates.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => loadTemplateForEdit(t)}
+                      className="w-full rounded-xl border border-cb-border bg-cb-surface-2/80 p-3 text-left text-sm hover:border-amber-400"
+                    >
+                      <p className="font-semibold text-stone-900 dark:text-stone-100">
+                        {t.key} ({t.language})
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-xs text-stone-700 dark:text-stone-300">{t.body}</p>
+                    </button>
+                  ))
+                )}
               </div>
             </article>
 
@@ -628,9 +780,13 @@ export default function AdminSettingsPage() {
                   )}
                   dir={previewMode === "rtl" ? "rtl" : "ltr"}
                 >
-                  <p className="font-bold">{tplSubject || "Order update from Cookie Bite"}</p>
-                  <p className="mt-1 text-xs opacity-90">
-                    {tplBody || "Hello {{customer_name}}, your order {{order_id}} is now in progress."}
+                  {tplChannel !== "whatsapp" && tplSubject ? (
+                    <p className="font-bold">{tplSubject}</p>
+                  ) : null}
+                  <p className="mt-1 whitespace-pre-wrap text-xs opacity-90">
+                    {tplChannel === "whatsapp"
+                      ? waPreviewBody
+                      : tplBody || "Hello {{customer_name}}, your order {{order_id}} is in progress."}
                   </p>
                 </div>
               </article>

@@ -1,4 +1,5 @@
 import { postWhatsAppBridge } from "@/lib/whatsapp/bridge-client";
+import { sendWhatsAppFromDbTemplate } from "@/lib/whatsapp/send-from-template";
 import type { WhatsAppSendResult } from "@/lib/whatsapp/send";
 
 type OrderConfirmBridgePayload = {
@@ -23,10 +24,33 @@ type PaymentInvoiceBridgePayload = {
   invoiceLink: string;
 };
 
+function formatOrderItems(
+  items?: Array<{ name: string; qty: number; price: string }>,
+): string {
+  if (!items?.length) return "• —";
+  return items.map((i) => `• ${i.name} x${i.qty} — ${i.price}`).join("\n");
+}
+
 /** Rich Arabic templates via whatsapp-web.js bridge (40+ routes in services/whatsapp-bridge). */
 export async function sendOrderConfirmedViaBridge(
   payload: OrderConfirmBridgePayload,
 ): Promise<WhatsAppSendResult> {
+  const fromDb = await sendWhatsAppFromDbTemplate({
+    key: "order_confirm",
+    phone: payload.phone,
+    language: "ar",
+    vars: {
+      name: payload.name,
+      orderNumber: payload.orderNumber,
+      orderDate: payload.orderDate,
+      paymentMethod: payload.paymentMethod ?? "",
+      items: formatOrderItems(payload.items),
+      total: payload.total,
+      address: payload.address ?? "",
+    },
+  });
+  if (fromDb.usedTemplate) return fromDb;
+
   const result = await postWhatsAppBridge("/send/order-confirm", {
     ...payload,
     trackingLink: payload.trackingLink ?? "https://cookie-bite.com/track",
@@ -34,9 +58,31 @@ export async function sendOrderConfirmedViaBridge(
   return { ...result, mode: "bridge" };
 }
 
+function formatInvoiceItems(
+  items?: Array<{ name: string; qty: number; total: string }>,
+): string {
+  if (!items?.length) return "• —";
+  return items.map((i) => `• ${i.name} x${i.qty} — ${i.total}`).join("\n");
+}
+
 export async function sendPaymentInvoiceViaBridge(
   payload: PaymentInvoiceBridgePayload,
 ): Promise<WhatsAppSendResult> {
+  const fromDb = await sendWhatsAppFromDbTemplate({
+    key: "invoice",
+    phone: payload.phone,
+    language: "ar",
+    vars: {
+      customerName: payload.customerName,
+      invoiceNumber: payload.invoiceNumber,
+      invoiceDate: payload.invoiceDate,
+      items: formatInvoiceItems(payload.items),
+      grandTotal: payload.grandTotal,
+      invoiceLink: payload.invoiceLink,
+    },
+  });
+  if (fromDb.usedTemplate) return fromDb;
+
   const result = await postWhatsAppBridge("/send/invoice", {
     phone: payload.phone,
     customerName: payload.customerName,
