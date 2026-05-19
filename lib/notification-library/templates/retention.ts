@@ -48,7 +48,7 @@ export const backInStockTemplate: TemplateBuilder = {
       first_name: "Sara",
       product_name: "Vanilla Cookie Box (24)",
       product_price: "420.00 EGP",
-      product_url: "https://cookie-bite.com/p/vanilla-cookie-box-24",
+      product_url: "https://cookie-bite.com/shop/vanilla-cookie-box-24",
       manage_url: "https://cookie-bite.com/account",
       unsubscribe_url: "#",
       privacy_url: "https://cookie-bite.com/privacy",

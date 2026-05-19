@@ -99,7 +99,7 @@ const ARTICLES: Article[] = [
   { key: "shelfLife", category: "products", href: "/help/faq", keywords: "fresh shelf life طزاج صلاحية" },
   // Gifting
   { key: "giftNotes", category: "gifting", href: "/help/faq", keywords: "gift note handwritten ملاحظة هدية خط يد" },
-  { key: "giftBoxes", category: "gifting", href: "/gift-ideas", keywords: "gift box set صندوق هدية" },
+  { key: "giftBoxes", category: "gifting", href: "/gift-box", keywords: "gift box set صندوق هدية" },
   { key: "corporate", category: "gifting", href: "/contact", keywords: "corporate bulk شركات كميات" },
   { key: "customCookies", category: "gifting", href: "/contact", keywords: "custom design تصميم مخصص" },
 ];

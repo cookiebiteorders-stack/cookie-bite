@@ -161,7 +161,7 @@ export function MobileHeader() {
       <div className="mobile-header__right">
         {variant === "account" ? (
           <Link
-            href="/account#profile"
+            href="/account/settings"
             className="mobile-header__icon-btn"
             aria-label={t("mobileHeader.settings")}
           >

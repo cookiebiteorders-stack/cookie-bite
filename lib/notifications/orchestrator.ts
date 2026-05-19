@@ -105,7 +105,7 @@ export async function dispatchOrderConfirmed(
             order_url: confirmUrl,
             company_address: BRAND.location,
             privacy_url: `${base}/privacy`,
-            unsubscribe_url: "#",
+            unsubscribe_url: `${base}/unsubscribe`,
           },
           lang: ctx.lang,
         });
