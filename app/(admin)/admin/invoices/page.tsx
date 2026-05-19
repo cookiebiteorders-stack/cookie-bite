@@ -189,7 +189,9 @@ function InvoiceDrawer({
                 <PrintActions
                   printRootSelector=".inv-root"
                   pdfHref={`/api/invoices/${encodeURIComponent(invoice.invoice_number)}/pdf`}
+                  pdfFilename={`${invoice.invoice_number.replace(/[^\w.-]+/g, "_")}.pdf`}
                   size="sm"
+                  onDownloadError={(msg) => alert(msg)}
                 />
                 <a
                   href={`/invoices/${invoice.invoice_number}`}

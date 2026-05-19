@@ -17,54 +17,59 @@ function injectPrintGuard(html: string): string {
 }
 
 /**
- * Opens a dedicated window with the document HTML and triggers the system print
- * dialog (Save as PDF keeps embedded styles & colors).
+ * Opens HTML in a new tab via Blob URL and triggers the print dialog.
+ * (Do not use noopener — it blocks document.write; Blob URL avoids that.)
  */
 export function openPrintDocument(opts: { html: string; title?: string }): boolean {
   if (typeof window === "undefined") return false;
 
-  const popup = window.open(
-    "",
-    "_blank",
-    "noopener,noreferrer,width=920,height=1180",
-  );
+  const docHtml = injectPrintGuard(opts.html);
+  const blob = new Blob([docHtml], { type: "text/html;charset=utf-8" });
+  const blobUrl = URL.createObjectURL(blob);
+
+  const popup = window.open(blobUrl, "_blank");
   if (!popup) {
+    URL.revokeObjectURL(blobUrl);
     return false;
   }
 
-  const docHtml = injectPrintGuard(opts.html);
-  popup.document.open();
-  popup.document.write(docHtml);
-  popup.document.close();
+  let printed = false;
 
-  if (opts.title) {
+  const runPrint = () => {
+    if (printed) return;
+    printed = true;
     try {
-      popup.document.title = opts.title;
+      if (opts.title) {
+        popup.document.title = opts.title;
+      }
     } catch {
-      /* cross-origin guard */
+      /* ignore */
     }
-  }
-
-  const trigger = () => {
-    popup.focus();
-    setTimeout(() => {
+    try {
+      popup.focus();
       popup.print();
-    }, 400);
+    } catch {
+      /* popup closed */
+    }
   };
 
-  if (popup.document.readyState === "complete") {
-    trigger();
-  } else {
-    popup.addEventListener("load", trigger, { once: true });
+  const revokeLater = () => {
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+  };
+
+  try {
+    popup.addEventListener("load", () => {
+      revokeLater();
+      window.setTimeout(runPrint, 350);
+    }, { once: true });
+  } catch {
+    /* ignore */
   }
 
-  popup.addEventListener(
-    "afterprint",
-    () => {
-      setTimeout(() => popup.close(), 300);
-    },
-    { once: true },
-  );
+  window.setTimeout(() => {
+    revokeLater();
+    runPrint();
+  }, 900);
 
   return true;
 }

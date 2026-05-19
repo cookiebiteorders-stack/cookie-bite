@@ -1,6 +1,8 @@
 "use client";
 
-import { Download, Printer } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Download, Loader2, Printer } from "lucide-react";
+import { downloadPdfFromUrl } from "@/lib/print/download-pdf";
 import { printInvoiceElement } from "@/lib/print/print-document";
 import { cn } from "@/lib/utils";
 
@@ -150,6 +152,23 @@ export function InvoiceView({
   const taxRate = invoice.tax_rate ?? 0;
   const shipping = invoice.shipping_amount_egp ?? 0;
   const total = invoice.total_amount_egp;
+
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  const handleDownloadPdf = useCallback(async () => {
+    if (!invoice.downloadUrl) return;
+    setDownloadingPdf(true);
+    setDownloadError(null);
+    try {
+      const name = `${invoice.invoice_number.replace(/[^\w.-]+/g, "_")}.pdf`;
+      await downloadPdfFromUrl(invoice.downloadUrl, name);
+    } catch (e) {
+      setDownloadError(e instanceof Error ? e.message : "PDF download failed");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  }, [invoice.downloadUrl, invoice.invoice_number]);
 
   return (
     <div className={cn("inv-root cb-print-document", className)} dir="ltr" lang="en">
@@ -864,16 +883,25 @@ export function InvoiceView({
                 Print
               </button>
               {invoice.downloadUrl ? (
-                <a
+                <button
+                  type="button"
                   className="inv-btn inv-btn-primary"
-                  href={invoice.downloadUrl}
+                  disabled={downloadingPdf}
+                  onClick={() => void handleDownloadPdf()}
                 >
-                  <Download className="h-4 w-4" />
-                  Download PDF
-                </a>
+                  {downloadingPdf ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Download className="h-4 w-4" aria-hidden />
+                  )}
+                  {downloadingPdf ? "Downloading…" : "Download PDF"}
+                </button>
               ) : null}
             </div>
           )}
+          {downloadError ? (
+            <p className="inv-no-print mt-2 text-xs font-medium text-red-600">{downloadError}</p>
+          ) : null}
         </div>
       </div>
     </div>
