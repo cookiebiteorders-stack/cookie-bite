@@ -15,6 +15,11 @@ import {
   orderDisplayNumber,
 } from "@/lib/notifications/order-context";
 import {
+  sendOrderConfirmedViaBridge,
+  sendPaymentInvoiceViaBridge,
+} from "@/lib/whatsapp/bridge-notifications";
+import { isWhatsAppBridgeConfigured } from "@/lib/whatsapp/bridge-client";
+import {
   buildOrderConfirmedWhatsAppBody,
   buildPaymentConfirmedWhatsAppBody,
   orderConfirmedTemplateName,
@@ -150,7 +155,7 @@ export async function dispatchOrderConfirmed(
         totalEgp: ctx.totalEgp,
         trackUrl,
       });
-      const wa = await sendWhatsAppTemplate({
+      let wa = await sendWhatsAppTemplate({
         toE164: ctx.customerPhone,
         templateName: orderConfirmedTemplateName(),
         components: [
@@ -166,6 +171,22 @@ export async function dispatchOrderConfirmed(
         ],
         fallbackBody: fallback,
       });
+      if (!wa.ok && isWhatsAppBridgeConfigured()) {
+        wa = await sendOrderConfirmedViaBridge({
+          phone: ctx.customerPhone,
+          name: ctx.customerName,
+          orderNumber: orderNum,
+          orderDate: new Date().toLocaleDateString("ar-EG", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
+          total: `${ctx.totalEgp.toFixed(0)} ${BRAND.currency}`,
+          address: ctx.shippingAddressLine,
+          paymentMethod: paymentMethodLabel(ctx.paymentMethod),
+          trackingLink: trackUrl,
+        });
+      }
       await writeNotificationLog({
         orderId,
         notificationType: "order_confirmation",
@@ -311,7 +332,7 @@ export async function dispatchPaymentConfirmed(
         totalEgp: ctx.totalEgp,
         invoiceUrl,
       });
-      const wa = await sendWhatsAppTemplate({
+      let wa = await sendWhatsAppTemplate({
         toE164: ctx.customerPhone,
         templateName: paymentConfirmedTemplateName(),
         components: [
@@ -327,6 +348,20 @@ export async function dispatchPaymentConfirmed(
         ],
         fallbackBody: fallback,
       });
+      if (!wa.ok && isWhatsAppBridgeConfigured() && invoice) {
+        wa = await sendPaymentInvoiceViaBridge({
+          phone: ctx.customerPhone,
+          customerName: ctx.customerName,
+          invoiceNumber: invoice.invoiceNumber,
+          invoiceDate: new Date().toLocaleDateString("ar-EG", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
+          grandTotal: `${ctx.totalEgp.toFixed(0)} ${BRAND.currency}`,
+          invoiceLink: invoiceUrl,
+        });
+      }
       await writeNotificationLog({
         orderId,
         notificationType: "payment_confirmation",

@@ -29,7 +29,9 @@
     "supabase:migrate": "node scripts/supabase-run-migrations.mjs",
     "supabase:ensure-schema": "node scripts/supabase-ensure-schema.mjs",
     "supabase:check-schema": "node scripts/supabase-schema-snapshot-check.mjs",
-    "supabase:healthcheck": "node scripts/supabase-full-healthcheck.mjs"
+    "supabase:healthcheck": "node scripts/supabase-full-healthcheck.mjs",
+    "whatsapp:bridge:extract": "node scripts/extract-whatsapp-bridge.mjs",
+    "whatsapp:bridge": "npm --prefix services/whatsapp-bridge start"
   },
   "dependencies": {
     "@clerk/localizations": "^4.6.0",

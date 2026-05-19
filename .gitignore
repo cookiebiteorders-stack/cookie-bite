@@ -51,6 +51,11 @@ hostinger-deploy.zip
 hostinger-gemini.env
 hostinger-production.env
 
+# WhatsApp bridge (whatsapp-web.js session)
+services/whatsapp-bridge/node_modules/
+services/whatsapp-bridge/.wwebjs_auth/
+services/whatsapp-bridge/.wwebjs_cache/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -1,4 +1,6 @@
 import { BRAND } from "@/lib/brand";
+import { postWhatsAppBridge } from "@/lib/whatsapp/bridge-client";
+import { normalizeEgyptPhone } from "@/lib/whatsapp/phone";
 
 type WhatsAppTextPayload = {
   toE164: string;
@@ -10,13 +12,12 @@ export type WhatsAppTemplateComponent = {
   parameters: Array<{ type: "text"; text: string }>;
 };
 
-function normalizeEgyptPhone(phone: string): string | null {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.startsWith("20") && digits.length >= 12) return digits;
-  if (digits.startsWith("0") && digits.length === 11) return `20${digits.slice(1)}`;
-  if (digits.length === 10 && digits.startsWith("1")) return `20${digits}`;
-  return null;
-}
+export type WhatsAppSendResult = {
+  ok: boolean;
+  skipped?: boolean;
+  error?: string;
+  mode?: "template" | "text" | "bridge";
+};
 
 function whatsAppConfig() {
   const token = process.env.WHATSAPP_CLOUD_API_TOKEN?.trim();
@@ -58,40 +59,47 @@ export async function sendWhatsAppTemplate(opts: {
   templateName: string | undefined;
   components?: WhatsAppTemplateComponent[];
   fallbackBody: string;
-}): Promise<{ ok: boolean; skipped?: boolean; error?: string; mode?: "template" | "text" }> {
+}): Promise<WhatsAppSendResult> {
   const { token, phoneNumberId, language } = whatsAppConfig();
-  if (!token || !phoneNumberId) {
-    return { ok: false, skipped: true, error: "WhatsApp not configured" };
-  }
-
   const to = normalizeEgyptPhone(opts.toE164);
   if (!to) {
     return { ok: false, error: "Invalid phone number" };
   }
 
-  if (opts.templateName) {
-    const result = await postWhatsAppMessage({
+  if (token && phoneNumberId) {
+    if (opts.templateName) {
+      const result = await postWhatsAppMessage({
+        messaging_product: "whatsapp",
+        to,
+        type: "template",
+        template: {
+          name: opts.templateName,
+          language: { code: language },
+          components: opts.components ?? [],
+        },
+      });
+      if (result.ok) return { ok: true, mode: "template" };
+      console.warn("[whatsapp] template failed, falling back to text", result.error);
+    }
+
+    const textResult = await postWhatsAppMessage({
       messaging_product: "whatsapp",
       to,
-      type: "template",
-      template: {
-        name: opts.templateName,
-        language: { code: language },
-        components: opts.components ?? [],
-      },
+      type: "text",
+      text: { body: opts.fallbackBody },
     });
-    if (result.ok) return { ok: true, mode: "template" };
-    console.warn("[whatsapp] template failed, falling back to text", result.error);
+    if (textResult.ok) return { ok: true, mode: "text" };
   }
 
-  const textResult = await postWhatsAppMessage({
-    messaging_product: "whatsapp",
-    to,
-    type: "text",
-    text: { body: opts.fallbackBody },
+  const bridge = await postWhatsAppBridge("/send/raw", {
+    phone: to,
+    message: opts.fallbackBody,
   });
-  if (textResult.ok) return { ok: true, mode: "text" };
-  return { ok: false, error: textResult.error, mode: "text" };
+  if (bridge.ok) return { ok: true, mode: "bridge" };
+  if (bridge.skipped) {
+    return { ok: false, skipped: true, error: "WhatsApp not configured", mode: "bridge" };
+  }
+  return { ok: false, error: bridge.error ?? "WhatsApp send failed", mode: bridge.mode };
 }
 
 /** @deprecated Use sendWhatsAppTemplate */

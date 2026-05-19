@@ -1,0 +1,21 @@
+{
+  "name": "cookie-bite-whatsapp-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Self-hosted WhatsApp sender (whatsapp-web.js) — optional bridge for Cookie Bite",
+  "type": "commonjs",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.26.0"
+  }
+}
