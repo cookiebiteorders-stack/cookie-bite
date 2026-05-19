@@ -21,6 +21,7 @@ import type { FunctionDeclaration } from "@google/generative-ai";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import type { UserRole } from "@/lib/admin/rbac";
+import { buildIlikeOrClause } from "@/lib/security/sanitize-filter";
 
 /* -------------------------------------------------------------------------- *
  * Helpers                                                                     *
@@ -299,7 +300,8 @@ async function search_customers(args: Record<string, unknown>, _actor: CopilotTo
 
     let q = sb.from("users").select("id,email,name,phone,created_at,points").eq("role", "customer").limit(limit);
     if (query) {
-      q = q.or(`email.ilike.%${query}%,name.ilike.%${query}%,phone.ilike.%${query}%`);
+      const clause = buildIlikeOrClause(["email", "name", "phone"], query);
+      if (clause) q = q.or(clause);
     }
     const { data, error } = await q.order("created_at", { ascending: false });
     if (error) return { warning: error.message, customers: [] };

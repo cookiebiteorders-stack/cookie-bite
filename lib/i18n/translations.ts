@@ -385,6 +385,10 @@ export const translations: Record<Lang, Dictionary> = {
         errorNetwork:
           "Network issue while loading products. Please retry.",
         errorLoad: "Failed to load products",
+        trendingEyebrow: "Trending now",
+        trendingTitle: "What everyone’s biting",
+        trendingSubtitle:
+          "Picked from real orders and browsing — updated as Cookie Bite bakes.",
       },
       contact: {
         eyebrow: "Contact",
@@ -1096,6 +1100,10 @@ export const translations: Record<Lang, Dictionary> = {
         loadingCookies: "جاري تحميل الكوكيز...",
         errorNetwork: "مشكلة في الشبكة أثناء تحميل المنتجات. أعد المحاولة.",
         errorLoad: "فشل تحميل المنتجات",
+        trendingEyebrow: "الأكثر رواجاً الآن",
+        trendingTitle: "ما يطلبه الجميع",
+        trendingSubtitle:
+          "مختار من الطلبات والتصفّح الحقيقي — يتحدّث مع كل دفعة نخبزها.",
       },
       contact: {
         eyebrow: "تواصل",

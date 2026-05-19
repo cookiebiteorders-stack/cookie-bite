@@ -69,6 +69,9 @@ export default clerkMiddleware(async (auth, request) => {
       request.headers.get("x-real-ip") ||
       "unknown";
 
+    // حدّ عام يحمي ضد flood على كل المسارات بغض النظر عن النوع
+    if (!rateOk(`all:${ip}`, 240, 60_000)) return tooMany();
+
     if (
       path.startsWith("/api/checkout") ||
       path.startsWith("/api/payments") ||
@@ -77,6 +80,8 @@ export default clerkMiddleware(async (auth, request) => {
       if (!rateOk(`pay:${ip}`, 8, 60_000)) return tooMany();
     } else if (path.startsWith("/api/promo")) {
       if (!rateOk(`promo:${ip}`, 12, 60_000)) return tooMany();
+    } else if (path.startsWith("/api/events")) {
+      if (!rateOk(`events:${ip}`, 60, 60_000)) return tooMany();
     } else if (
       path.startsWith("/api/contact") ||
       path.startsWith("/api/newsletter")
@@ -92,6 +97,17 @@ export default clerkMiddleware(async (auth, request) => {
       if (!rateOk(`chat:${ip}`, 24, 60_000)) return tooMany();
     } else if (path.startsWith("/api/admin/")) {
       if (!rateOk(`admin:${ip}`, 60, 60_000)) return tooMany();
+    } else if (path.startsWith("/api/revalidate")) {
+      // tight limit — secret rotation/abuse مقاومة
+      if (!rateOk(`reval:${ip}`, 10, 60_000)) return tooMany();
+    }
+  }
+
+  // Cleanup العالم للذاكرة من entries منتهية (يحدث كل 5 دقائق تقريبياً)
+  if (Math.random() < 0.001) {
+    const now = Date.now();
+    for (const [k, v] of rateBuckets) {
+      if (v.reset < now) rateBuckets.delete(k);
     }
   }
 

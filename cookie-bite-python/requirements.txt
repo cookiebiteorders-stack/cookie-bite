@@ -1,0 +1,30 @@
+# Cookie Bite Python layer — Phase 1 (api-gateway)
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# Database (shared Supabase Postgres)
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+
+# Cache
+redis[hiredis]==5.2.1
+
+# Auth
+PyJWT[crypto]==2.10.1
+
+# HTTP
+httpx==0.28.1
+
+# Rate limiting
+slowapi==0.1.9
+
+# Monitoring (optional metrics on /metrics later)
+prometheus-fastapi-instrumentator==7.0.0
+
+# Recommendations (Phase 3)
+numpy==2.1.3
+pandas==2.2.3
+scipy==1.14.1
+scikit-learn==1.5.2

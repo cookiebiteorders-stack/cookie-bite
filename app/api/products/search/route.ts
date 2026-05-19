@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { buildIlikeOrClause } from "@/lib/security/sanitize-filter";
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
@@ -24,16 +25,18 @@ export async function GET(req: NextRequest) {
   }
 
   // fallback: ilike على الاسم (لو search_vector لم يُملأ بعد)
-  const pattern = `%${q.replace(/[%_]/g, "\\$&")}%`;
+  // يستخدم sanitize-filter لمنع PostgREST filter injection
+  const clause = buildIlikeOrClause(["name", "title_en", "title_ar"], q);
+  if (!clause) {
+    return NextResponse.json({ results: [] });
+  }
   const { data, error } = await supabase
     .from("products")
     .select(
       "id, slug, name, title_en, title_ar, price_egp, image_url, images",
     )
     .eq("is_active", true)
-    .or(
-      `name.ilike.${pattern},title_en.ilike.${pattern},title_ar.ilike.${pattern}`,
-    )
+    .or(clause)
     .limit(10);
 
   if (error) {

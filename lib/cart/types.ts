@@ -1,7 +1,10 @@
 import type { Product } from "@/lib/data";
 
 export type CartLine = {
+  /** slug — used in checkout API */
   productId: string;
+  /** UUID — used for analytics / recommendations */
+  productUuid?: string;
   name: string;
   priceEgp: number;
   image: string;
@@ -11,6 +14,7 @@ export type CartLine = {
 export function lineFromProduct(product: Product, quantity: number): CartLine {
   return {
     productId: product.id,
+    productUuid: product.productUuid,
     name: product.name,
     priceEgp: product.price,
     image: product.image,

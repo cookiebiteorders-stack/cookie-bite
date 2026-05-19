@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Minus, Plus, ShoppingBag } from "lucide-react";
 import type { Product } from "@/lib/data";
+import { trackProductEvent } from "@/lib/analytics/track-event";
 import { useCart } from "@/components/providers/cart-provider";
 import { buttonClassName } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -55,6 +56,19 @@ export function PdpActions({ product }: Props) {
         onClick={() => {
           if (outOfStock) return;
           addItem(product, qty);
+          if (product.productUuid) {
+            trackProductEvent({
+              product_id: product.productUuid,
+              event_type: "add_to_cart",
+              metadata: { quantity: qty, slug: product.id },
+            });
+          } else {
+            trackProductEvent({
+              product_slug: product.id,
+              event_type: "add_to_cart",
+              metadata: { quantity: qty },
+            });
+          }
           setQty(1);
         }}
       >

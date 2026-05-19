@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { Product } from "@/lib/data";
+import { trackProductEvent } from "@/lib/analytics/track-event";
 import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,22 @@ export function AddToCartButton({
       type="button"
       variant={variant === "outline" ? "outline" : "primary"}
       className={cn("inline-flex items-center justify-center gap-2", className)}
-      onClick={() => addItem(product, quantity)}
+      onClick={() => {
+        addItem(product, quantity);
+        if (product.productUuid) {
+          trackProductEvent({
+            product_id: product.productUuid,
+            event_type: "add_to_cart",
+            metadata: { quantity, slug: product.id },
+          });
+        } else {
+          trackProductEvent({
+            product_slug: product.id,
+            event_type: "add_to_cart",
+            metadata: { quantity },
+          });
+        }
+      }}
     >
       {children ?? t("product.addToCart")}
     </Button>

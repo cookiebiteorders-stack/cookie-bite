@@ -8,6 +8,7 @@ import {
 } from "@/lib/admin/require-admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { bilingualError } from "@/lib/validations";
+import { buildIlikeOrClause } from "@/lib/security/sanitize-filter";
 
 const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -144,10 +145,11 @@ export async function GET(req: NextRequest) {
     .order("updated_at", { ascending: false });
 
   if (search?.trim()) {
-    const q = search.trim();
-    db = db.or(
-      `slug.ilike.%${q}%,name.ilike.%${q}%,sku.ilike.%${q}%,category.ilike.%${q}%`,
+    const clause = buildIlikeOrClause(
+      ["slug", "name", "sku", "category"],
+      search,
     );
+    if (clause) db = db.or(clause);
   }
   if (typeof low_stock === "boolean" && low_stock) db = db.lte("stock", 10);
   if (typeof active === "boolean") db = db.eq("is_active", active);

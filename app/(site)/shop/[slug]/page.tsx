@@ -8,11 +8,9 @@ import { ProductCard } from "@/components/product/product-card";
 import { buttonClassName } from "@/components/ui/button";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { ShareButtons } from "@/components/seo/share-buttons";
-import {
-  getActivePdpProduct,
-  getRelatedStorefrontProducts,
-  listAllActiveSlugs,
-} from "@/lib/storefront/pdp-data";
+import { PdpViewTracker } from "@/components/shop/pdp-view-tracker";
+import { getCartBasedRecommendations } from "@/lib/recommendations/fetch-recommendations";
+import { getActivePdpProduct, listAllActiveSlugs } from "@/lib/storefront/pdp-data";
 
 type Props = { params: Promise<{ slug: string }> };
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
@@ -58,8 +56,8 @@ export default async function ProductPage({ params }: Props) {
   const product = await getActivePdpProduct(slug);
   if (!product) notFound();
 
-  const carousel = await getRelatedStorefrontProducts(
-    product.category,
+  const carousel = await getCartBasedRecommendations(
+    product.productUuid ? [product.productUuid] : [],
     product.id,
     3,
   );
@@ -87,6 +85,9 @@ export default async function ProductPage({ params }: Props) {
 
   return (
     <div className="bg-cb-cream pb-20 pt-8">
+      {product.productUuid ? (
+        <PdpViewTracker productUuid={product.productUuid} />
+      ) : null}
       <div className="mx-auto max-w-7xl cb-gutter">
         <JsonLdScript id={`pdp-product-jsonld-${product.id}`} json={JSON.stringify(productJsonLd)} />
         <Link

@@ -81,8 +81,11 @@ const PRODUCTION_SECURITY_HEADERS = [
   },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(self)",
+    value: "camera=(), microphone=(), geolocation=(self), payment=(self), usb=(), interest-cohort=()",
   },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+  { key: "Cross-Origin-Resource-Policy", value: "same-site" },
+  { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
 ];
 
 const DEVELOPMENT_BASIC_HEADERS = [
@@ -106,6 +109,16 @@ const nextConfig: NextConfig = {
     return [
       { source: "/gift-ideas", destination: "/gift-box", permanent: true },
       { source: "/admin/design-library", destination: "/admin/template-library", permanent: false },
+    ];
+  },
+  async rewrites() {
+    const pythonBase = process.env.PYTHON_API_URL?.trim().replace(/\/$/, "");
+    if (!pythonBase) return [];
+    return [
+      {
+        source: "/api/python/:path*",
+        destination: `${pythonBase}/:path*`,
+      },
     ];
   },
   images: {

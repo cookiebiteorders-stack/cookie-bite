@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PurchaseEventsTracker } from "@/components/checkout/purchase-events-tracker";
 import { buttonClassName } from "@/components/ui/button";
 import { buildPageMetadata } from "@/lib/seo";
 
@@ -26,6 +27,7 @@ export default async function OrderConfirmationPage({ searchParams }: Props) {
 
   return (
     <div className="bg-cb-cream px-4 py-20 text-center">
+      <PurchaseEventsTracker enabled />
       <p className="text-4xl" aria-hidden>
         🍪
       </p>

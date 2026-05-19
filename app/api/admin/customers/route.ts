@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { bilingualError } from "@/lib/validations";
 import type { AdminCustomerRow, CustomerSegments, CustomerStats } from "@/lib/admin/crm-types";
+import { buildIlikeOrClause } from "@/lib/security/sanitize-filter";
 
 const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -131,8 +132,8 @@ export async function GET(req: NextRequest) {
     .order("created_at", { ascending: false });
 
   if (search?.trim()) {
-    const q = search.trim();
-    usersQuery = usersQuery.or(`email.ilike.%${q}%,full_name.ilike.%${q}%`);
+    const clause = buildIlikeOrClause(["email", "full_name"], search);
+    if (clause) usersQuery = usersQuery.or(clause);
   }
   if (typeof points_min === "number") usersQuery = usersQuery.gte("points", points_min);
   if (typeof points_max === "number") usersQuery = usersQuery.lte("points", points_max);

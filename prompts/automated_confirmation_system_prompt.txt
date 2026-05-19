@@ -1,0 +1,775 @@
+================================================================================
+     AUTOMATED CONFIRMATION & NOTIFICATION SYSTEM — FULL IMPLEMENTATION PROMPT
+     Order Confirmation | Payment Confirmation | Invoice Creator |
+     Email Notifications | WhatsApp Notifications
+================================================================================
+
+You are a senior full-stack engineer. Build a complete, production-ready
+automated notification and document generation system for an e-commerce or
+business admin dashboard. This system must be integrated into both the backend
+(API/server) and the frontend (admin dashboard + customer-facing pages).
+
+The system covers five core pillars:
+  1. Order Confirmation
+  2. Payment Confirmation
+  3. Invoice Generation (PDF)
+  4. Email Notification System
+  5. WhatsApp Notification System
+
+================================================================================
+SECTION 1 — SYSTEM ARCHITECTURE OVERVIEW
+================================================================================
+
+FLOW:
+  Customer Places Order
+        ↓
+  Backend receives order → saves to DB → triggers Order Confirmation event
+        ↓
+  Payment is processed → triggers Payment Confirmation event
+        ↓
+  Invoice is auto-generated (PDF) → stored + linked to order
+        ↓
+  Email is sent to customer (order details + invoice attachment)
+        ↓
+  WhatsApp message is sent to customer (summary + order tracking link)
+        ↓
+  Admin dashboard shows real-time notification of all events
+
+TECH STACK (adapt to your existing stack):
+  Backend:   Node.js (Express) OR Python (Django/FastAPI) — specify yours
+  Database:  PostgreSQL OR MongoDB
+  Email:     Nodemailer + SMTP (Gmail / SendGrid / Mailgun)
+  WhatsApp:  Twilio WhatsApp API OR Meta (Facebook) Cloud API
+  PDF:       PDFKit (Node.js) OR WeasyPrint/ReportLab (Python)
+  Queue:     Bull (Node.js) OR Celery (Python) for async job processing
+  Frontend:  React / Next.js OR any existing frontend framework
+  Storage:   Local disk OR AWS S3 / Cloudinary for PDF invoices
+
+================================================================================
+SECTION 2 — DATABASE SCHEMA
+================================================================================
+
+Create or extend the following tables/collections:
+
+── TABLE: orders ───────────────────────────────────────────────────────────────
+  id                  UUID / auto-increment primary key
+  order_number        String (unique, human-readable, e.g. "ORD-20250001")
+  customer_id         FK → customers table
+  status              Enum: pending | confirmed | processing | shipped |
+                            delivered | cancelled | refunded
+  subtotal            Decimal
+  discount_amount     Decimal (default 0)
+  tax_amount          Decimal
+  shipping_amount     Decimal
+  total_amount        Decimal
+  currency            String (e.g. "USD", "EGP")
+  notes               Text (optional customer notes)
+  created_at          Timestamp
+  updated_at          Timestamp
+
+── TABLE: order_items ──────────────────────────────────────────────────────────
+  id                  UUID
+  order_id            FK → orders
+  product_id          FK → products
+  product_name        String (snapshot at time of order)
+  product_sku         String
+  quantity            Integer
+  unit_price          Decimal
+  total_price         Decimal
+
+── TABLE: payments ─────────────────────────────────────────────────────────────
+  id                  UUID
+  order_id            FK → orders
+  payment_method      Enum: card | cash | bank_transfer | wallet | cod
+  payment_gateway     String (e.g. "Stripe", "PayMob", "Fawry", "Manual")
+  gateway_transaction_id  String (from payment provider)
+  amount              Decimal
+  currency            String
+  status              Enum: pending | completed | failed | refunded
+  paid_at             Timestamp (nullable)
+  created_at          Timestamp
+
+── TABLE: invoices ─────────────────────────────────────────────────────────────
+  id                  UUID
+  invoice_number      String (unique, e.g. "INV-2025-0001")
+  order_id            FK → orders
+  customer_id         FK → customers
+  issued_at           Timestamp
+  due_date            Timestamp (nullable, for B2B)
+  status              Enum: draft | issued | paid | overdue | void
+  pdf_url             String (path or cloud URL to generated PDF)
+  subtotal            Decimal
+  tax_amount          Decimal
+  total_amount        Decimal
+  notes               Text
+
+── TABLE: notification_logs ────────────────────────────────────────────────────
+  id                  UUID
+  order_id            FK → orders
+  type                Enum: order_confirmation | payment_confirmation |
+                            invoice | shipping_update | whatsapp | email
+  channel             Enum: email | whatsapp | sms | push
+  recipient           String (email address or phone number)
+  status              Enum: queued | sent | delivered | failed
+  sent_at             Timestamp
+  error_message       Text (nullable, for debugging failed sends)
+  created_at          Timestamp
+
+================================================================================
+SECTION 3 — BACKEND IMPLEMENTATION
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+3A. ORDER CONFIRMATION MODULE
+────────────────────────────────────────────────────────────────────────────────
+
+TRIGGER: Fired automatically when a new order is saved with status "confirmed".
+
+LOGIC:
+  1. Validate order exists and has all required fields.
+  2. Generate a unique, human-readable order number if not already assigned:
+       Format: ORD-{YEAR}{MONTH}-{PADDED_ID}   e.g. ORD-202505-00142
+  3. Update order status to "confirmed".
+  4. Log the event in notification_logs.
+  5. Dispatch async jobs: EMAIL_JOB + WHATSAPP_JOB + INVOICE_JOB.
+
+ENDPOINT:
+  POST /api/orders
+  Body: { customer_id, items: [...], shipping_address, notes, coupon_code }
+  Response: { success: true, order: { id, order_number, total, status } }
+
+  POST /api/orders/:id/confirm   (manual confirm from admin)
+  Response: { success: true, message: "Order confirmed and notifications sent." }
+
+ORDER CONFIRMATION DATA PAYLOAD (passed to notification jobs):
+  {
+    order_number:    "ORD-202505-00142",
+    order_date:      "May 16, 2025 at 3:22 PM",
+    customer_name:   "Ahmed Hassan",
+    customer_email:  "ahmed@example.com",
+    customer_phone:  "+201012345678",
+    items: [
+      { name: "Leather Wallet", sku: "SKU-001", qty: 2, price: 250.00 },
+      { name: "Canvas Tote Bag", sku: "SKU-004", qty: 1, price: 180.00 }
+    ],
+    subtotal:        680.00,
+    discount:        50.00,
+    tax:             63.00,
+    shipping:        30.00,
+    total:           723.00,
+    currency:        "EGP",
+    shipping_address: "123 El-Tahrir St, Cairo, Egypt",
+    estimated_delivery: "May 19–21, 2025",
+    tracking_link:   "https://yourstore.com/track/ORD-202505-00142"
+  }
+
+────────────────────────────────────────────────────────────────────────────────
+3B. PAYMENT CONFIRMATION MODULE
+────────────────────────────────────────────────────────────────────────────────
+
+TRIGGER: Fired automatically when a payment record is saved with
+         status "completed". Also fires when a payment webhook is received
+         from your payment gateway.
+
+LOGIC:
+  1. Receive payment confirmation (from gateway webhook or manual entry).
+  2. Find linked order → update order payment status.
+  3. Save payment record to payments table.
+  4. If payment is first successful payment for order → trigger invoice
+     generation + send payment confirmation email + WhatsApp.
+  5. Log in notification_logs.
+
+WEBHOOK ENDPOINT (for payment gateways):
+  POST /api/webhooks/payment
+  Headers: { X-Signature: "<gateway_signature>" }   ← always verify this
+  Body: gateway-specific payload (Stripe, PayMob, Fawry, etc.)
+
+  Internal handler:
+    - Verify webhook signature
+    - Extract order reference + amount + status
+    - Call internal confirmPayment(orderId, paymentData)
+
+MANUAL PAYMENT ENDPOINT (for cash/bank transfer):
+  POST /api/payments/manual
+  Body: { order_id, method: "bank_transfer", amount, reference_number, paid_at }
+  Response: { success: true, payment_id, invoice_url }
+
+PAYMENT CONFIRMATION DATA PAYLOAD:
+  {
+    order_number:       "ORD-202505-00142",
+    invoice_number:     "INV-2025-0001",
+    customer_name:      "Ahmed Hassan",
+    customer_email:     "ahmed@example.com",
+    customer_phone:     "+201012345678",
+    payment_method:     "Visa Card ending in 4242",
+    payment_date:       "May 16, 2025 at 3:28 PM",
+    amount_paid:        723.00,
+    currency:           "EGP",
+    transaction_id:     "TXN-9A8B7C6D",
+    invoice_url:        "https://yourstore.com/invoices/INV-2025-0001.pdf",
+    support_email:      "support@yourstore.com"
+  }
+
+────────────────────────────────────────────────────────────────────────────────
+3C. INVOICE GENERATOR MODULE
+────────────────────────────────────────────────────────────────────────────────
+
+TRIGGER: Auto-fires after successful payment confirmation.
+         Can also be triggered manually from admin dashboard.
+
+LIBRARY:
+  Node.js  → PDFKit  (npm install pdfkit)
+  Python   → ReportLab OR WeasyPrint (pip install reportlab / weasyprint)
+
+INVOICE PDF CONTENTS:
+  ┌─────────────────────────────────────────────────────────────┐
+  │  [STORE LOGO]                     INVOICE                   │
+  │  Your Store Name                  INV-2025-0001             │
+  │  Address, City, Country           Date: May 16, 2025        │
+  │  Phone | Email | Website          Due: May 16, 2025 (Paid)  │
+  ├──────────────────────┬──────────────────────────────────────┤
+  │  BILL TO             │  ORDER REFERENCE                     │
+  │  Ahmed Hassan        │  ORD-202505-00142                    │
+  │  123 El-Tahrir St    │  Payment: Visa *4242                 │
+  │  Cairo, Egypt        │  Status: PAID ✓                      │
+  │  +201012345678       │                                      │
+  ├──────────────────────┴──────────────────────────────────────┤
+  │  ITEM           SKU        QTY    UNIT PRICE    TOTAL       │
+  │  ─────────────────────────────────────────────────────────  │
+  │  Leather Wallet  SKU-001    2      EGP 250       EGP 500    │
+  │  Canvas Tote Bag SKU-004    1      EGP 180       EGP 180    │
+  ├─────────────────────────────────────────────────────────────┤
+  │                             Subtotal:          EGP 680.00   │
+  │                             Discount:         -EGP  50.00   │
+  │                             Tax (9%):          EGP  63.00   │
+  │                             Shipping:          EGP  30.00   │
+  │                             ─────────────────────────────   │
+  │                             TOTAL:             EGP 723.00   │
+  │                             STATUS:         ✅ PAID         │
+  ├─────────────────────────────────────────────────────────────┤
+  │  Thank you for your order! Questions? support@yourstore.com │
+  │  Terms & Conditions: yourstore.com/terms                    │
+  └─────────────────────────────────────────────────────────────┘
+
+INVOICE GENERATION LOGIC:
+  1. Pull order + payment + customer data from DB.
+  2. Generate invoice number: INV-{YEAR}-{PADDED_SEQUENCE}
+  3. Render PDF using chosen library.
+  4. Save PDF to:
+       Local:  /storage/invoices/INV-2025-0001.pdf
+       Cloud:  Upload to S3/Cloudinary → store URL in invoices.pdf_url
+  5. Save invoice record to invoices table.
+  6. Return PDF URL to calling function.
+
+ENDPOINTS:
+  POST /api/invoices/generate
+  Body: { order_id }
+  Response: { success: true, invoice_number, pdf_url }
+
+  GET /api/invoices/:invoice_number/download
+  Response: PDF file stream (Content-Type: application/pdf)
+
+  GET /api/invoices/:invoice_number/preview
+  Response: Inline PDF or HTML preview
+
+  GET /api/invoices                    ← list all invoices (admin)
+  GET /api/invoices?order_id=xyz       ← filter by order
+  PATCH /api/invoices/:id/void         ← void an invoice
+  POST /api/invoices/:id/resend        ← resend invoice email
+
+────────────────────────────────────────────────────────────────────────────────
+3D. EMAIL NOTIFICATION MODULE
+────────────────────────────────────────────────────────────────────────────────
+
+LIBRARY:
+  Node.js  → Nodemailer (npm install nodemailer)
+  Python   → smtplib + email.mime OR sendgrid-python
+
+EMAIL PROVIDER (choose one):
+  - Gmail SMTP (for small scale / testing)
+  - SendGrid   (recommended for production — free tier 100/day)
+  - Mailgun    (reliable, pay-per-use)
+  - AWS SES    (cheapest at scale — $0.10/1000 emails)
+
+SMTP CONFIG EXAMPLE (Node.js / Nodemailer):
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,           // e.g. smtp.sendgrid.net
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    }
+  });
+
+EMAIL TYPES TO BUILD — 4 TEMPLATES:
+
+┌──────────────────────────────────────────────────────────────────┐
+│ EMAIL 1: ORDER CONFIRMATION                                       │
+│ Subject: "✅ Your Order #ORD-202505-00142 is Confirmed!"          │
+│ Trigger: Order status → confirmed                                 │
+│ Contents:                                                         │
+│   - Header with store logo and brand color                        │
+│   - "Hi Ahmed, thanks for your order!" greeting                   │
+│   - Order number + date                                           │
+│   - Itemized order summary (product name, qty, price)             │
+│   - Subtotal / discount / tax / shipping / total                  │
+│   - Shipping address                                              │
+│   - Estimated delivery date                                       │
+│   - "Track Your Order" CTA button                                 │
+│   - Footer with support email and social links                    │
+└──────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│ EMAIL 2: PAYMENT CONFIRMATION                                     │
+│ Subject: "💳 Payment Received — Order #ORD-202505-00142"          │
+│ Trigger: Payment status → completed                               │
+│ Contents:                                                         │
+│   - Payment success confirmation message                          │
+│   - Amount paid + payment method + transaction ID                 │
+│   - Order reference number                                        │
+│   - Link to view/download invoice (PDF attachment optional)       │
+│   - "What happens next?" section (processing → ship → deliver)    │
+│   - Contact support link                                          │
+└──────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│ EMAIL 3: INVOICE EMAIL                                            │
+│ Subject: "🧾 Your Invoice INV-2025-0001 from [Store Name]"        │
+│ Trigger: Invoice generated after payment                          │
+│ Contents:                                                         │
+│   - Short message: "Please find your invoice attached."           │
+│   - Key details: Invoice #, Order #, Date, Total, Status          │
+│   - PDF invoice attached to email                                 │
+│   - "Download Invoice" button link                                │
+│   - Tax registration number (if applicable)                       │
+│   - Return/refund policy reminder                                 │
+└──────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│ EMAIL 4: SHIPPING CONFIRMATION (bonus — include it)               │
+│ Subject: "🚚 Your Order is On Its Way! #ORD-202505-00142"         │
+│ Trigger: Order status → shipped                                   │
+│ Contents:                                                         │
+│   - "Your order has been shipped!" header                         │
+│   - Carrier name + tracking number                                │
+│   - "Track Package" CTA button (with real tracking URL)           │
+│   - Estimated delivery window                                     │
+│   - Order summary (compact version)                               │
+└──────────────────────────────────────────────────────────────────┘
+
+EMAIL HTML TEMPLATE REQUIREMENTS:
+  - Responsive HTML (works on mobile + desktop email clients)
+  - Inline CSS only (Gmail strips <style> tags)
+  - Max width: 600px, centered
+  - Match brand colors from admin dashboard (dark background #1a1a0f,
+    orange accent #FF6B00 — or customize per your brand)
+  - All images hosted via URL (no embedded base64 in email)
+  - Unsubscribe link in footer (CAN-SPAM / GDPR compliance)
+  - Plain text fallback version for all emails
+
+EMAIL SEND FUNCTION:
+  async function sendEmail({ to, subject, html, text, attachments }) {
+    await transporter.sendMail({
+      from: '"Your Store" <noreply@yourstore.com>',
+      to,
+      subject,
+      html,
+      text,
+      attachments   // e.g. [{ filename: 'invoice.pdf', path: pdfPath }]
+    });
+    await logNotification({ type, channel: 'email', recipient: to, status: 'sent' });
+  }
+
+────────────────────────────────────────────────────────────────────────────────
+3E. WHATSAPP NOTIFICATION MODULE
+────────────────────────────────────────────────────────────────────────────────
+
+PROVIDER OPTIONS (choose one):
+  OPTION A — Twilio WhatsApp API (easiest to set up, pay-per-message)
+    Docs: https://www.twilio.com/docs/whatsapp
+    Free sandbox available for testing
+
+  OPTION B — Meta (Facebook) WhatsApp Cloud API (free tier available)
+    Docs: https://developers.facebook.com/docs/whatsapp/cloud-api
+    Requires: Meta Business account + phone number verification
+
+  OPTION C — Third-party: Wassenger, WATI, ChatAPI (simpler setup)
+    Best if you want a no-code/low-code approach
+
+RECOMMENDED FOR PRODUCTION: Meta WhatsApp Cloud API (official, free up to
+  1000 conversations/month, no per-message fee for template messages)
+
+WHATSAPP MESSAGE TYPES:
+  All business-initiated messages MUST use pre-approved Templates.
+  Customer-initiated replies can use free-form messages.
+
+TEMPLATE 1: ORDER CONFIRMATION
+─────────────────────────────────────────────────────────────────────
+  Template Name: order_confirmation_v1
+  Language: en_US (and ar if you have Arabic customers)
+  Category: TRANSACTIONAL
+
+  Message Body:
+  ┌────────────────────────────────────────────────────────────────┐
+  │ ✅ *Order Confirmed!*                                          │
+  │                                                                │
+  │ Hi {{1}}, thank you for your order! 🎉                         │
+  │                                                                │
+  │ 📦 *Order:* {{2}}                                              │
+  │ 📅 *Date:* {{3}}                                               │
+  │ 💰 *Total:* {{4}} {{5}}                                        │
+  │                                                                │
+  │ We'll notify you when it ships!                                │
+  │                                                                │
+  │ 🔗 Track your order: {{6}}                                     │
+  │                                                                │
+  │ Questions? Reply to this message or contact us at {{7}}        │
+  └────────────────────────────────────────────────────────────────┘
+  Variables: [customer_name, order_number, order_date, total, currency,
+              tracking_link, support_contact]
+
+TEMPLATE 2: PAYMENT CONFIRMATION
+─────────────────────────────────────────────────────────────────────
+  Template Name: payment_confirmation_v1
+  Message Body:
+  ┌────────────────────────────────────────────────────────────────┐
+  │ 💳 *Payment Received!*                                         │
+  │                                                                │
+  │ Hi {{1}},                                                      │
+  │                                                                │
+  │ We've received your payment of *{{2}} {{3}}* for               │
+  │ order *{{4}}*.                                                  │
+  │                                                                │
+  │ 🧾 Your invoice: {{5}}                                          │
+  │ 📋 Transaction ID: {{6}}                                        │
+  │                                                                │
+  │ Your order is now being processed. 🚀                          │
+  └────────────────────────────────────────────────────────────────┘
+  Variables: [customer_name, amount, currency, order_number,
+              invoice_url, transaction_id]
+
+TEMPLATE 3: INVOICE READY
+─────────────────────────────────────────────────────────────────────
+  Template Name: invoice_ready_v1
+  Message Body:
+  ┌────────────────────────────────────────────────────────────────┐
+  │ 🧾 *Your Invoice is Ready*                                     │
+  │                                                                │
+  │ Invoice *{{1}}* for order *{{2}}*                              │
+  │ Amount: *{{3}} {{4}}*                                          │
+  │                                                                │
+  │ 📥 Download: {{5}}                                              │
+  │                                                                │
+  │ Thank you for shopping with us! 🙏                              │
+  └────────────────────────────────────────────────────────────────┘
+
+TEMPLATE 4: SHIPPING NOTIFICATION
+─────────────────────────────────────────────────────────────────────
+  Template Name: shipping_update_v1
+  Message Body:
+  ┌────────────────────────────────────────────────────────────────┐
+  │ 🚚 *Your Order is On Its Way!*                                 │
+  │                                                                │
+  │ Hi {{1}},                                                      │
+  │                                                                │
+  │ Order *{{2}}* has been shipped via *{{3}}*.                    │
+  │ 📍 Tracking: {{4}}                                              │
+  │                                                                │
+  │ Estimated delivery: *{{5}}*                                    │
+  └────────────────────────────────────────────────────────────────┘
+
+WHATSAPP SEND FUNCTION (Meta Cloud API — Node.js):
+  async function sendWhatsApp(phone, templateName, parameters) {
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_ID}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: phone,                     // format: "201012345678" (no +)
+          type: 'template',
+          template: {
+            name: templateName,
+            language: { code: 'en_US' },
+            components: [{
+              type: 'body',
+              parameters: parameters.map(p => ({ type: 'text', text: p }))
+            }]
+          }
+        })
+      }
+    );
+    const data = await response.json();
+    await logNotification({ channel: 'whatsapp', status: data.messages ? 'sent' : 'failed' });
+    return data;
+  }
+
+PHONE NUMBER FORMAT:
+  Always strip the + sign and any spaces/dashes.
+  Egypt:    +201012345678  →  "201012345678"
+  UAE:      +971501234567  →  "971501234567"
+  Validate format before sending using a phone normalization library.
+
+================================================================================
+SECTION 4 — ASYNC JOB QUEUE SETUP
+================================================================================
+
+Never send emails or WhatsApp messages synchronously in the order creation
+request — this will slow down the API response and fail if the notification
+service is down.
+
+Use a job queue to handle all notifications asynchronously.
+
+QUEUE SETUP (Node.js — Bull + Redis):
+  npm install bull ioredis
+
+  const Queue = require('bull');
+  const notificationQueue = new Queue('notifications', {
+    redis: { host: process.env.REDIS_HOST, port: 6379 }
+  });
+
+  // Add jobs to queue
+  notificationQueue.add('order_confirmation', { orderId: order.id }, {
+    attempts: 3,          // retry 3 times if it fails
+    backoff: { type: 'exponential', delay: 5000 }
+  });
+
+  // Process jobs
+  notificationQueue.process('order_confirmation', async (job) => {
+    const order = await getOrderWithDetails(job.data.orderId);
+    await sendOrderConfirmationEmail(order);
+    await sendOrderConfirmationWhatsApp(order);
+  });
+
+  notificationQueue.process('payment_confirmation', async (job) => {
+    const order = await getOrderWithDetails(job.data.orderId);
+    await generateInvoice(order);
+    await sendPaymentConfirmationEmail(order);
+    await sendInvoiceEmail(order);
+    await sendPaymentConfirmationWhatsApp(order);
+    await sendInvoiceWhatsApp(order);
+  });
+
+JOB TYPES:
+  - order_confirmation      → email + whatsapp
+  - payment_confirmation    → email + whatsapp + trigger invoice job
+  - invoice_generation      → generate PDF, upload, save URL
+  - invoice_delivery        → email (with PDF attached) + whatsapp (with URL)
+  - shipping_update         → email + whatsapp
+
+================================================================================
+SECTION 5 — FRONTEND IMPLEMENTATION
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+5A. ADMIN DASHBOARD — NOTIFICATION CENTER
+────────────────────────────────────────────────────────────────────────────────
+
+BUILD A NOTIFICATIONS PANEL in the admin dashboard with:
+
+  Component: <NotificationCenter />
+  Location: Top-right corner of admin header (bell icon with badge count)
+
+  PANEL CONTENTS:
+  ┌─────────────────────────────────────────────────────────────┐
+  │  🔔 Notifications                      Mark all read        │
+  │  ─────────────────────────────────────────────────────────  │
+  │  ✅  Order #ORD-202505-00142 confirmed         2 min ago     │
+  │  💳  Payment received — EGP 723.00             5 min ago     │
+  │  🧾  Invoice INV-2025-0001 generated           5 min ago     │
+  │  📧  Email sent to ahmed@example.com           6 min ago     │
+  │  💬  WhatsApp sent to +201012345678            6 min ago     │
+  │  ─────────────────────────────────────────────────────────  │
+  │  📦  Order #ORD-202505-00141 shipped           1 hour ago    │
+  └─────────────────────────────────────────────────────────────┘
+
+  STATE: Pull from GET /api/notification-logs?limit=20&unread=true
+  REALTIME: Use WebSockets (Socket.io) or polling (every 30 seconds)
+
+────────────────────────────────────────────────────────────────────────────────
+5B. ADMIN DASHBOARD — ORDER DETAIL PAGE
+────────────────────────────────────────────────────────────────────────────────
+
+On the order detail page, add a NOTIFICATION STATUS SECTION:
+
+  NOTIFICATION HISTORY for Order #ORD-202505-00142:
+  ┌─────────────────────────────────────────────────────────────┐
+  │  TYPE               CHANNEL   STATUS     SENT AT            │
+  │  ─────────────────────────────────────────────────────────  │
+  │  Order Confirmation  Email    ✅ Sent    May 16, 3:22 PM    │
+  │  Order Confirmation  WhatsApp ✅ Sent    May 16, 3:22 PM    │
+  │  Payment Confirm.    Email    ✅ Sent    May 16, 3:28 PM    │
+  │  Invoice Delivery    Email    ✅ Sent    May 16, 3:28 PM    │
+  │  Invoice Delivery    WhatsApp ✅ Sent    May 16, 3:28 PM    │
+  └─────────────────────────────────────────────────────────────┘
+
+  ADMIN ACTIONS (buttons):
+  [Resend Order Confirmation Email]  [Resend Invoice]  [Regenerate Invoice]
+  [Send WhatsApp Update]  [Download Invoice PDF]  [Preview Invoice]
+
+────────────────────────────────────────────────────────────────────────────────
+5C. ADMIN DASHBOARD — INVOICE MANAGEMENT PAGE
+────────────────────────────────────────────────────────────────────────────────
+
+Route: /admin/invoices
+
+  FILTERS: Status | Date Range | Customer | Amount Range | Payment Method
+  SEARCH: By invoice number, order number, or customer name
+
+  TABLE COLUMNS:
+  Invoice #  |  Order #  |  Customer  |  Date  |  Total  |  Status  |  Actions
+
+  ACTIONS PER ROW:
+  [👁 Preview]  [⬇ Download]  [📧 Resend]  [❌ Void]
+
+  BULK ACTIONS:
+  [Export Selected as CSV]  [Export Selected as ZIP (PDFs)]
+  [Send reminders to all overdue]
+
+  STATS CARDS (top of page):
+  ┌─────────┬──────────┬────────────┬──────────┐
+  │ Total   │  Paid    │  Overdue   │  Void    │
+  │ 142     │  138     │  3         │  1       │
+  │ invoices│ invoices │  invoices  │ invoices │
+  └─────────┴──────────┴────────────┴──────────┘
+
+────────────────────────────────────────────────────────────────────────────────
+5D. CUSTOMER-FACING PAGES
+────────────────────────────────────────────────────────────────────────────────
+
+BUILD THESE PAGES for customers:
+
+PAGE 1: Order Confirmation Page  (shown after checkout)
+  Route: /order-confirmation?order=ORD-202505-00142
+  Contents:
+    - Large animated checkmark ✅
+    - "Thank you, Ahmed! Your order is confirmed."
+    - Order number, date, estimated delivery
+    - Itemized order summary
+    - Shipping address
+    - "A confirmation email has been sent to ahmed@example.com"
+    - "Track your order" button → links to tracking page
+
+PAGE 2: Order Tracking Page
+  Route: /track/:order_number
+  Contents:
+    - Order status progress bar:
+      [✅ Confirmed] → [✅ Payment] → [🔄 Processing] → [ Shipped] → [ Delivered]
+    - Shipment details and tracking number
+    - Estimated delivery date
+    - Link to invoice PDF
+
+PAGE 3: Invoice View Page
+  Route: /invoices/:invoice_number
+  Contents:
+    - HTML-rendered invoice (same content as PDF)
+    - "Download PDF" button
+    - "Print" button
+    - Paid/Unpaid badge
+    - Order and payment summary
+
+================================================================================
+SECTION 6 — ENVIRONMENT VARIABLES
+================================================================================
+
+Create a .env file with these keys:
+
+  # App
+  APP_URL=https://yourstore.com
+  PORT=3000
+  NODE_ENV=production
+
+  # Database
+  DATABASE_URL=postgresql://user:pass@host:5432/dbname
+
+  # Redis (for job queue)
+  REDIS_HOST=localhost
+  REDIS_PORT=6379
+
+  # Email (SendGrid example)
+  SMTP_HOST=smtp.sendgrid.net
+  SMTP_PORT=587
+  SMTP_USER=apikey
+  SMTP_PASS=SG.xxxxxxxxxxxxxxxxxx
+  EMAIL_FROM=noreply@yourstore.com
+  EMAIL_FROM_NAME=Your Store Name
+
+  # WhatsApp (Meta Cloud API)
+  WHATSAPP_TOKEN=EAAxxxxxxxxxxxxxxxxxx
+  WHATSAPP_PHONE_ID=1234567890123456
+  WHATSAPP_VERIFY_TOKEN=your_webhook_verify_token
+
+  # Storage
+  STORAGE_TYPE=local                    # or "s3"
+  INVOICE_STORAGE_PATH=./storage/invoices
+  AWS_S3_BUCKET=yourstore-invoices      # if using S3
+  AWS_ACCESS_KEY_ID=xxxx
+  AWS_SECRET_ACCESS_KEY=xxxx
+
+  # Store Info (used in emails and invoices)
+  STORE_NAME=Your Store Name
+  STORE_ADDRESS=123 Street, Cairo, Egypt
+  STORE_PHONE=+20XXXXXXXXXX
+  STORE_EMAIL=support@yourstore.com
+  STORE_LOGO_URL=https://yourstore.com/logo.png
+  TAX_RATE=0.09                        # 9%
+  STORE_TAX_NUMBER=123-456-789         # optional
+
+================================================================================
+SECTION 7 — TESTING PLAN
+================================================================================
+
+TEST EACH FLOW END-TO-END:
+
+  ✅ Test 1 — New order created via API
+     → Check: order saved in DB, job queued, email received, WhatsApp received
+
+  ✅ Test 2 — Payment webhook received
+     → Check: payment saved, invoice generated (PDF opens correctly),
+              payment email received (with invoice attached),
+              WhatsApp message received with invoice link
+
+  ✅ Test 3 — Invoice PDF
+     → Open generated PDF: verify all fields, formatting, totals math
+
+  ✅ Test 4 — Resend from admin
+     → Click "Resend Invoice Email" from admin order page
+     → Check: email received again, log updated in notification_logs
+
+  ✅ Test 5 — Failed notification
+     → Simulate a bad phone number / invalid email
+     → Check: job retries 3 times, error logged in notification_logs,
+              admin sees ❌ Failed status in notification history
+
+  ✅ Test 6 — Customer pages
+     → Open /order-confirmation, /track/:id, /invoices/:id in browser
+     → Check: correct data displayed, PDF download works, mobile responsive
+
+================================================================================
+SECTION 8 — DEPLOYMENT CHECKLIST
+================================================================================
+
+  □ All .env variables are set in production environment
+  □ Redis is running and accessible
+  □ WhatsApp templates submitted and approved by Meta
+  □ Email domain is verified in SendGrid/Mailgun (SPF + DKIM + DMARC records)
+  □ Webhook endpoint is publicly accessible (HTTPS only)
+  □ Webhook signature verification is implemented and tested
+  □ Invoice storage directory is writable OR S3 bucket permissions are set
+  □ All PDF invoices are served over HTTPS (not plain HTTP)
+  □ Rate limiting enabled on notification endpoints
+  □ Duplicate notification prevention logic in place
+      (check: was order_confirmation already sent for this order_id?)
+  □ GDPR/Privacy: Unsubscribe link in all emails
+  □ Arabic translations ready if serving Arabic-speaking customers
+  □ Load test: simulate 100 simultaneous orders, verify queue handles load
+  □ Monitoring set up: alert if notification failure rate > 5%
+
+================================================================================
+END OF SYSTEM PROMPT — AUTOMATED CONFIRMATION & NOTIFICATION SYSTEM
+================================================================================

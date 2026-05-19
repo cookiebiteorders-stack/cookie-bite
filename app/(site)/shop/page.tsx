@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { ShopLoadingFallback } from "@/components/i18n/suspense-loading";
 import { ShopClient } from "@/components/shop/shop-client";
+import { LANG_COOKIE } from "@/lib/preferences/client-cookies";
+import { getTrendingRecommendations } from "@/lib/recommendations/fetch-recommendations";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
 
@@ -25,10 +28,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ShopPage() {
+export default async function ShopPage() {
+  const cookieStore = await cookies();
+  const lang = cookieStore.get(LANG_COOKIE)?.value === "ar" ? "ar" : "en";
+  const trending = await getTrendingRecommendations(8, lang);
+
   return (
     <Suspense fallback={<ShopLoadingFallback />}>
-      <ShopClient />
+      <ShopClient initialTrending={trending} />
     </Suspense>
   );
 }

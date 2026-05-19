@@ -5,6 +5,7 @@ import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-
 import { bilingualError } from "@/lib/validations";
 import { writeAuditLog } from "@/lib/admin/audit";
 import type { AdminOrderRow, OrderStats } from "@/lib/admin/orders-operations-types";
+import { buildIlikeOrClause } from "@/lib/security/sanitize-filter";
 
 const querySchema = z.object({
   status: z.string().optional(),
@@ -113,8 +114,8 @@ export async function GET(req: NextRequest) {
   if (q.status) db = db.eq("status", q.status);
   if (q.payment_status) db = db.eq("payment_status", q.payment_status);
   if (q.search?.trim()) {
-    const s = q.search.trim();
-    db = db.or(`order_code.ilike.%${s}%,guest_email.ilike.%${s}%`);
+    const clause = buildIlikeOrClause(["order_code", "guest_email"], q.search);
+    if (clause) db = db.or(clause);
   }
   if (q.date_from) db = db.gte("created_at", q.date_from);
   if (q.date_to) db = db.lte("created_at", q.date_to);

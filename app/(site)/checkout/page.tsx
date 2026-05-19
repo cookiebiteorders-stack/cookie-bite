@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCart } from "@/components/providers/cart-provider";
 import { FreeDeliveryBar } from "@/components/cart/free-delivery-bar";
 import { buttonClassName } from "@/components/ui/button";
+import { stashPendingPurchaseEvents } from "@/components/checkout/purchase-events-tracker";
 import { siteConfig } from "@/lib/site-config";
 
 type Step = 1 | 2 | 3;
@@ -51,6 +52,11 @@ export default function CheckoutPage() {
         return;
       }
       if (data.configured && data.paymentUrl) {
+        stashPendingPurchaseEvents(
+          lines
+            .filter((l) => l.productUuid)
+            .map((l) => ({ product_id: l.productUuid!, quantity: l.quantity })),
+        );
         window.location.href = data.paymentUrl as string;
         return;
       }
@@ -59,6 +65,11 @@ export default function CheckoutPage() {
           typeof data.orderId === "string" && data.orderId.length > 0
             ? data.orderId
             : "demo";
+        stashPendingPurchaseEvents(
+          lines
+            .filter((l) => l.productUuid)
+            .map((l) => ({ product_id: l.productUuid!, quantity: l.quantity })),
+        );
         clearCart();
         router.push(`/checkout/thank-you?order=${encodeURIComponent(oid)}`);
         return;

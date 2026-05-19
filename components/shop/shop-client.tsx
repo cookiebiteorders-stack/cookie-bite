@@ -100,7 +100,12 @@ async function fetchAllProducts(): Promise<ApiProduct[]> {
   return all;
 }
 
-export function ShopClient() {
+type ShopClientProps = {
+  /** من الخادم — محرك التوصيات أو fallback */
+  initialTrending?: Product[];
+};
+
+export function ShopClient({ initialTrending = [] }: ShopClientProps) {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -333,6 +338,32 @@ export function ShopClient() {
           title={t("pages.shop.title")}
           subtitle={t("pages.shop.subtitle")}
         />
+
+        {initialTrending.length > 0 ? (
+          <section className="mb-12" aria-labelledby="shop-trending-heading">
+            <SectionHeading
+              align="left"
+              className="mb-6 text-start"
+              eyebrow={t("pages.shop.trendingEyebrow")}
+              title={
+                <span id="shop-trending-heading">{t("pages.shop.trendingTitle")}</span>
+              }
+              subtitle={t("pages.shop.trendingSubtitle")}
+              variant="editorial"
+            />
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {initialTrending.map((p) => (
+                <ProductCard
+                  key={`trending-${p.id}`}
+                  product={p}
+                  layout="compact"
+                  wishlisted={p.productUuid ? wishlistUuids.has(p.productUuid) : false}
+                  onWishlistToggled={onWishlistToggled}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <div
           ref={filterAnchorRef}
