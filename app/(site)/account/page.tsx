@@ -32,6 +32,7 @@ import {
 } from "@/lib/account/account-role-dashboard";
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 import { listRecentOrdersForUser } from "@/lib/db/orders";
+import { trySendWelcomeEmailOnce } from "@/lib/email/welcome-onboarding";
 import { getUserByClerkId, upsertUserFromClerk } from "@/lib/db/users";
 import { cn } from "@/lib/utils";
 import { buildPageMetadata } from "@/lib/seo";
@@ -143,6 +144,7 @@ export default async function AccountPage() {
     "Cookie Bite friend";
 
   let dbUser = await getUserByClerkId(userId);
+  const createdDbUserThisVisit = !dbUser;
   if (!dbUser && email) {
     dbUser = await upsertUserFromClerk({
       clerkUserId: userId,
@@ -150,6 +152,20 @@ export default async function AccountPage() {
       fullName,
       avatarUrl: user?.imageUrl ?? null,
     });
+  }
+
+  if (dbUser && email && !dbUser.welcome_email_sent_at) {
+    try {
+      await trySendWelcomeEmailOnce({
+        userId: dbUser.id,
+        to: email,
+        name: user?.firstName ?? undefined,
+        force: createdDbUserThisVisit,
+        createdAt: dbUser.created_at,
+      });
+    } catch (err) {
+      console.error("AccountPage welcome email failed:", err);
+    }
   }
 
   const accountRole = await resolveAccountRole(dbUser, email, userId);

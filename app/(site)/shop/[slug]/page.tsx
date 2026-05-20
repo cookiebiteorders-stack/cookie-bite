@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { PdpSharedHero } from "@/components/shop/pdp-shared-hero";
+import { PdpMediaGallery } from "@/components/shop/pdp-media-gallery";
 import { PdpActions } from "@/components/shop/pdp-actions";
 import { ProductCard } from "@/components/product/product-card";
 import { buttonClassName } from "@/components/ui/button";
@@ -66,7 +66,7 @@ export default async function ProductPage({ params }: Props) {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    image: [product.image],
+    image: product.images?.length ? product.images : [product.image],
     description: product.description,
     sku: product.productUuid ?? product.id,
     brand: { "@type": "Brand", name: "Cookie Bite" },
@@ -99,10 +99,11 @@ export default async function ProductPage({ params }: Props) {
         </Link>
 
         <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
-          <PdpSharedHero
+          <PdpMediaGallery
             productId={product.id}
-            src={product.image}
-            alt={product.name}
+            productName={product.name}
+            images={product.images ?? [product.image]}
+            videoUrl={product.videoUrl}
             sizes="(max-width:1024px) 100vw, 50vw"
           />
 

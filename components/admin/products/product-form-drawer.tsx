@@ -1,39 +1,21 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Sparkles, X } from "lucide-react";
 import { fetchJson } from "@/lib/http/fetch-json";
 import type { AdminProductRow } from "@/lib/admin/products-dashboard-types";
-import { EMPTY_PRODUCT_FORM, type ProductFormState } from "@/lib/admin/products-dashboard-types";
+import {
+  EMPTY_PRODUCT_FORM,
+  formToApiPayload,
+  rowToProductForm,
+  type ProductFormState,
+} from "@/lib/admin/products-dashboard-types";
+import { ProductMediaEditor } from "@/components/admin/products/product-media-editor";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
 import { cn } from "@/lib/utils";
 
 type FormErrors = Partial<Record<keyof ProductFormState, string>>;
-
-function rowToForm(item: AdminProductRow): ProductFormState {
-  return {
-    name: item.name ?? "",
-    title_en: item.title_en ?? "",
-    title_ar: item.title_ar ?? "",
-    description_en: item.description_en ?? "",
-    description_ar: item.description_ar ?? "",
-    ingredients: (item.dietary ?? []).join(", "),
-    category: item.category ?? "",
-    sku: item.sku ?? "",
-    price_egp: String(item.price_egp ?? ""),
-    compare_price_egp:
-      item.compare_price_egp != null && Number.isFinite(Number(item.compare_price_egp))
-        ? String(item.compare_price_egp)
-        : "",
-    stock: String(item.stock ?? 0),
-    low_stock_threshold: "10",
-    image_url: item.image_url ?? "",
-    is_active: item.is_active,
-    meta_title: (item.title_en ?? item.name ?? "").slice(0, 70),
-    meta_description: (item.description_en ?? "").slice(0, 160),
-  };
-}
 
 type Props = {
   open: boolean;
@@ -47,17 +29,22 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
   const pushToast = useProductsDashboardStore((s) => s.pushToast);
   const loadProducts = useProductsDashboardStore((s) => s.loadProducts);
 
-  const [form, setForm] = useState<ProductFormState>(() =>
-    editing ? rowToForm(editing) : EMPTY_PRODUCT_FORM,
-  );
+  const [form, setForm] = useState<ProductFormState>(EMPTY_PRODUCT_FORM);
   const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
   const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(editing ? rowToProductForm(editing) : EMPTY_PRODUCT_FORM);
+    setFormStep(1);
+  }, [open, editing]);
 
   const formErrors = useMemo<FormErrors>(() => {
     const errors: FormErrors = {};
     if (form.name.trim().length < 2) errors.name = "الاسم مطلوب (حرفان على الأقل).";
+    if (form.slug.trim() && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug.trim())) {
+      errors.slug = "Slug: أحرف إنجليزية صغيرة وأرقام وشرطات فقط.";
+    }
     const price = Number(form.price_egp);
     if (!Number.isFinite(price) || price <= 0) errors.price_egp = "سعر صالح مطلوب.";
     const stock = Number(form.stock);
@@ -67,9 +54,15 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       const cpn = Number(cp);
       if (!Number.isFinite(cpn) || cpn <= 0) errors.compare_price_egp = "سعر مقارنة غير صالح.";
     }
-    if (form.image_url.trim() && !URL.canParse(form.image_url.trim())) {
-      errors.image_url = "رابط الصورة غير صالح.";
+    for (const img of form.images) {
+      const u = img.url.trim();
+      if (u && !URL.canParse(u)) {
+        errors.images = "أحد روابط الصور غير صالح.";
+        break;
+      }
     }
+    const video = form.video_url.trim();
+    if (video && !URL.canParse(video)) errors.video_url = "رابط الفيديو غير صالح.";
     if (form.description_en.length > 3000) errors.description_en = "الحد الأقصى 3000 حرف.";
     if (form.description_ar.length > 3000) errors.description_ar = "الحد الأقصى 3000 حرف.";
     return errors;
@@ -77,10 +70,12 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
 
   const hasBlockingErrors =
     Boolean(formErrors.name) ||
+    Boolean(formErrors.slug) ||
     Boolean(formErrors.price_egp) ||
     Boolean(formErrors.stock) ||
     Boolean(formErrors.compare_price_egp) ||
-    Boolean(formErrors.image_url) ||
+    Boolean(formErrors.images) ||
+    Boolean(formErrors.video_url) ||
     Boolean(formErrors.description_en) ||
     Boolean(formErrors.description_ar);
 
@@ -89,6 +84,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       1:
         form.name.trim().length >= 2 &&
         !formErrors.name &&
+        !formErrors.slug &&
         (!form.sku.trim() || form.sku.trim().length >= 2),
       2:
         !formErrors.description_en &&
@@ -97,7 +93,8 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       3:
         !formErrors.price_egp &&
         !formErrors.stock &&
-        !formErrors.image_url &&
+        !formErrors.images &&
+        !formErrors.video_url &&
         !formErrors.compare_price_egp &&
         Number(form.price_egp) > 0 &&
         Number(form.stock) >= 0,
@@ -112,31 +109,6 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       3: stepDone[1] && stepDone[2],
     }),
     [stepDone],
-  );
-
-  const handleImageUpload = useCallback(
-    async (file: File | null) => {
-      if (!file || !canWrite) return;
-      setUploadingImage(true);
-      setUploadError(null);
-      try {
-        const fd = new FormData();
-        fd.append("file", file);
-        const res = await fetch("/api/admin/products/upload-image", { method: "POST", body: fd });
-        const data = (await res.json().catch(() => null)) as
-          | { image?: { url?: string }; error?: { en?: string } }
-          | null;
-        if (!res.ok || !data?.image?.url) {
-          throw new Error(data?.error?.en || "فشل رفع الصورة");
-        }
-        setForm((f) => ({ ...f, image_url: data.image?.url ?? "" }));
-      } catch (e) {
-        setUploadError(e instanceof Error ? e.message : "فشل الرفع");
-      } finally {
-        setUploadingImage(false);
-      }
-    },
-    [canWrite],
   );
 
   const applyAiDescription = useCallback(() => {
@@ -164,30 +136,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
     }
     setSaving(true);
     try {
-      const ingredientsList = form.ingredients
-        .split(/[\n,]/g)
-        .map((x) => x.trim())
-        .filter(Boolean);
-      const compareRaw = form.compare_price_egp.trim();
-      const compare_price_egp =
-        compareRaw && Number.isFinite(Number(compareRaw)) ? Number(compareRaw) : null;
-
-      const payload = {
-        name: form.name.trim(),
-        title_en: form.title_en.trim() || null,
-        title_ar: form.title_ar.trim() || null,
-        description_en: form.description_en.trim() || null,
-        description_ar: form.description_ar.trim() || null,
-        description: form.description_en.trim() || form.description_ar.trim() || null,
-        dietary: ingredientsList,
-        category: form.category.trim() || null,
-        sku: form.sku.trim() || null,
-        price_egp: Number(form.price_egp),
-        compare_price_egp,
-        stock: Number(form.stock || 0),
-        image_url: form.image_url.trim() || null,
-        is_active: form.is_active,
-      };
+      const payload = formToApiPayload(form);
       if (!payload.name || !Number.isFinite(payload.price_egp) || payload.price_egp <= 0) {
         throw new Error("الاسم والسعر مطلوبان");
       }
@@ -199,7 +148,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       } else {
         await fetchJson("/api/admin/products", { method: "POST", jsonBody: payload });
       }
-      pushToast(editing ? "تم تحديث المنتج." : "تم إنشاء المنتج.", "success");
+      pushToast(editing ? "تم تحديث المنتج — يمكنك تعديله مجدداً من الجدول." : "تم إنشاء المنتج.", "success");
       onOpenChange(false);
       await loadProducts();
     } catch (e) {
@@ -241,7 +190,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   {editing ? "تعديل منتج" : "إضافة منتج"}
                 </h2>
                 <p className="mt-1 text-xs text-cb-text-muted">
-                  مسارات منظمة — وسّع الحقول لاحقاً بربط أعمدة SEO إن رغبت.
+                  تحكم كامل — صور (5)، فيديو، slug، شارات، مواسم، وزن، قطع. احفظ ثم عدّل من «تعديل».
                 </p>
               </div>
               <button
@@ -294,6 +243,18 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   {formErrors.name ? <p className="text-xs text-red-600">{formErrors.name}</p> : null}
                 </label>
                 <label className={cn("space-y-1", formStep !== 1 && "hidden")}>
+                  <span className="text-xs font-semibold text-cb-text-muted">
+                    Slug (رابط المتجر){editing ? " — قابل للتعديل" : ""}
+                  </span>
+                  <input
+                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
+                    placeholder="chocolate-chip-cookie"
+                    value={form.slug}
+                    onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                  />
+                  {formErrors.slug ? <p className="text-xs text-red-600">{formErrors.slug}</p> : null}
+                </label>
+                <label className={cn("space-y-1", formStep !== 1 && "hidden")}>
                   <span className="text-xs font-semibold text-cb-text-muted">SKU</span>
                   <input
                     className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
@@ -315,6 +276,24 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
                     value={form.title_ar}
                     onChange={(e) => setForm((f) => ({ ...f, title_ar: e.target.value }))}
+                  />
+                </label>
+                <label className={cn("space-y-1", formStep !== 1 && "hidden")}>
+                  <span className="text-xs font-semibold text-cb-text-muted">شارات (مثل: featured, bestseller)</span>
+                  <input
+                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm"
+                    placeholder="featured, new"
+                    value={form.badges}
+                    onChange={(e) => setForm((f) => ({ ...f, badges: e.target.value }))}
+                  />
+                </label>
+                <label className={cn("space-y-1", formStep !== 1 && "hidden")}>
+                  <span className="text-xs font-semibold text-cb-text-muted">مواسم</span>
+                  <input
+                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm"
+                    placeholder="ramadan, summer"
+                    value={form.seasons}
+                    onChange={(e) => setForm((f) => ({ ...f, seasons: e.target.value }))}
                   />
                 </label>
 
@@ -354,43 +333,13 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   ) : null}
                 </label>
                 <label className={cn("space-y-1 sm:col-span-2", formStep !== 2 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">المكونات (مفصولة بفاصلة)</span>
+                  <span className="text-xs font-semibold text-cb-text-muted">المكونات / dietary (مفصولة بفاصلة)</span>
                   <textarea
                     className="min-h-20 w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
                     value={form.ingredients}
                     onChange={(e) => setForm((f) => ({ ...f, ingredients: e.target.value }))}
                   />
                 </label>
-
-                <div
-                  className={cn(
-                    "sm:col-span-2 rounded-xl border border-dashed border-amber-200/80 bg-amber-50/30 p-3 dark:border-amber-900/50 dark:bg-amber-950/10",
-                    formStep !== 2 && "hidden",
-                  )}
-                >
-                  <p className="text-xs font-bold text-amber-900 dark:text-amber-200">SEO (معاينة)</p>
-                  <p className="mt-1 text-[11px] text-cb-text-muted">
-                    الحقول التالية للتخطيط فقط؛ يُنصح بمزامنة العنوان والوصف أعلاه مع محركات البحث.
-                  </p>
-                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                    <label className="space-y-1">
-                      <span className="text-[11px] font-semibold text-cb-text-muted">Meta title</span>
-                      <input
-                        className="w-full rounded-lg border border-cb-border bg-cb-surface-elevated px-2 py-1.5 text-xs text-cb-text-strong"
-                        value={form.meta_title}
-                        onChange={(e) => setForm((f) => ({ ...f, meta_title: e.target.value }))}
-                      />
-                    </label>
-                    <label className="space-y-1 sm:col-span-2">
-                      <span className="text-[11px] font-semibold text-cb-text-muted">Meta description</span>
-                      <textarea
-                        className="min-h-16 w-full rounded-lg border border-cb-border bg-cb-surface-elevated px-2 py-1.5 text-xs text-cb-text-strong"
-                        value={form.meta_description}
-                        onChange={(e) => setForm((f) => ({ ...f, meta_description: e.target.value }))}
-                      />
-                    </label>
-                  </div>
-                </div>
 
                 <label className={cn("space-y-1", formStep !== 3 && "hidden")}>
                   <span className="text-xs font-semibold text-cb-text-muted">التصنيف</span>
@@ -413,13 +362,12 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   {formErrors.price_egp ? <p className="text-xs text-red-600">{formErrors.price_egp}</p> : null}
                 </label>
                 <label className={cn("space-y-1", formStep !== 3 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">سعر مقارنة / خصم (اختياري)</span>
+                  <span className="text-xs font-semibold text-cb-text-muted">سعر مقارنة / خصم</span>
                   <input
                     className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
                     type="number"
                     min="0"
                     step="0.01"
-                    placeholder="اتركه فارغاً إن لم يُستخدم"
                     value={form.compare_price_egp}
                     onChange={(e) => setForm((f) => ({ ...f, compare_price_egp: e.target.value }))}
                   />
@@ -440,18 +388,28 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   {formErrors.stock ? <p className="text-xs text-red-600">{formErrors.stock}</p> : null}
                 </label>
                 <label className={cn("space-y-1", formStep !== 3 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">عتبة تنبيه مخزون (واجهة فقط)</span>
+                  <span className="text-xs font-semibold text-cb-text-muted">الوزن (جرام)</span>
                   <input
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-3 py-2 text-sm opacity-70"
+                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm"
                     type="number"
-                    disabled
-                    value={form.low_stock_threshold}
-                    readOnly
+                    min="1"
+                    value={form.weight_grams}
+                    onChange={(e) => setForm((f) => ({ ...f, weight_grams: e.target.value }))}
+                  />
+                </label>
+                <label className={cn("space-y-1", formStep !== 3 && "hidden")}>
+                  <span className="text-xs font-semibold text-cb-text-muted">عدد القطع</span>
+                  <input
+                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm"
+                    type="number"
+                    min="1"
+                    value={form.pieces_count}
+                    onChange={(e) => setForm((f) => ({ ...f, pieces_count: e.target.value }))}
                   />
                 </label>
                 <label
                   className={cn(
-                    "inline-flex items-center gap-2 rounded-xl border border-cb-border px-3 py-2 text-sm",
+                    "inline-flex items-center gap-2 rounded-xl border border-cb-border px-3 py-2 text-sm sm:col-span-2",
                     formStep !== 3 && "hidden",
                   )}
                 >
@@ -463,37 +421,18 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   نشط (ظاهر للعملاء)
                 </label>
 
-                <div className={cn("sm:col-span-2 rounded-xl border border-cb-border bg-cb-surface/50 p-3", formStep !== 3 && "hidden")}>
-                  <p className="text-xs font-semibold text-cb-text-muted">صورة المنتج</p>
-                  <div className="mt-2 grid gap-3 sm:grid-cols-[1fr_auto]">
-                    <input
-                      className="rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
-                      placeholder="https://..."
-                      value={form.image_url}
-                      onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
-                    />
-                    <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-cb-border px-4 py-2 text-sm font-semibold hover:bg-cb-surface-2">
-                      {uploadingImage ? "جاري الرفع…" : "رفع من الجهاز"}
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp,image/gif"
-                        className="hidden"
-                        disabled={uploadingImage || !canWrite}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0] ?? null;
-                          void handleImageUpload(file);
-                          e.currentTarget.value = "";
-                        }}
-                      />
-                    </label>
-                  </div>
-                  {uploadError ? <p className="mt-2 text-xs text-red-600">{uploadError}</p> : null}
-                  {formErrors.image_url ? <p className="mt-2 text-xs text-red-600">{formErrors.image_url}</p> : null}
-                  {form.image_url ? (
-                    <div className="mt-3 overflow-hidden rounded-xl border border-cb-border">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={form.image_url} alt="" className="h-36 w-full object-cover" />
-                    </div>
+                <div className={cn("sm:col-span-2", formStep !== 3 && "hidden")}>
+                  <ProductMediaEditor
+                    images={form.images}
+                    videoUrl={form.video_url}
+                    canWrite={canWrite}
+                    onImagesChange={(images) => setForm((f) => ({ ...f, images }))}
+                    onVideoUrlChange={(video_url) => setForm((f) => ({ ...f, video_url }))}
+                    onLegacyImageUrlChange={(image_url) => setForm((f) => ({ ...f, image_url }))}
+                  />
+                  {formErrors.images ? <p className="mt-1 text-xs text-red-600">{formErrors.images}</p> : null}
+                  {formErrors.video_url ? (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.video_url}</p>
                   ) : null}
                 </div>
               </div>
@@ -529,7 +468,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                 className="rounded-xl bg-cb-terracotta-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50"
                 onClick={() => void submitForm()}
               >
-                {saving ? "جاري الحفظ…" : editing ? "تحديث" : "إنشاء"}
+                {saving ? "جاري الحفظ…" : editing ? "حفظ التعديلات" : "إنشاء"}
               </button>
             </div>
           </motion.aside>

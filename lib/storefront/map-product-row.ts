@@ -1,5 +1,10 @@
 import type { Product } from "@/lib/data";
 import type { ProductRow } from "@/lib/db/types";
+import {
+  galleryUrlsFromProduct,
+  normalizeProductImages,
+  primaryImageFromProduct,
+} from "@/lib/products/media";
 
 const BADGE_SET = new Set(["bestseller", "new", "trending"]);
 
@@ -18,10 +23,11 @@ export function productRowToStorefrontProduct(
     row.description_ar?.trim() ||
     row.description?.trim() ||
     descriptionFallback;
+  const imagesNormalized = normalizeProductImages(row.images, row.image_url);
+  const gallery = galleryUrlsFromProduct(imagesNormalized, row.image_url);
   const mainImage =
-    (row.images ?? []).find((img) => typeof img?.url === "string" && img.url)?.url ??
-    row.image_url ??
-    "/images/web-logo.png";
+    primaryImageFromProduct(imagesNormalized, row.image_url) ?? "/images/web-logo.png";
+  const videoUrl = row.video_url?.trim() || null;
   const badges = (row.badges ?? []).filter(
     (b): b is NonNullable<Product["badges"]>[number] => BADGE_SET.has(String(b)),
   );
@@ -33,6 +39,8 @@ export function productRowToStorefrontProduct(
     description,
     price: Number(row.price_egp),
     image: mainImage,
+    images: gallery.length ? gallery : [mainImage],
+    videoUrl,
     category: row.category ?? "Classic",
     badges: badges.length ? badges : undefined,
     stock: row.stock,

@@ -59,6 +59,10 @@ export type Product = {
   description: string;
   price: number;
   image: string;
+  /** معرض PDP — حتى 5 صور */
+  images?: string[];
+  /** فيديو اختياري في المعرض */
+  videoUrl?: string | null;
   category: string;
   badges?: ("bestseller" | "new" | "trending")[];
   /** مخزون تقريبي لعرض حالة التوفر في الواجهة */

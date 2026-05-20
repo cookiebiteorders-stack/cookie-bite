@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -9,6 +10,16 @@ import {
 import { writeAuditLog } from "@/lib/admin/audit";
 import { bilingualError } from "@/lib/validations";
 import { buildIlikeOrClause } from "@/lib/security/sanitize-filter";
+import {
+  normalizeProductImages,
+  primaryImageFromProduct,
+} from "@/lib/products/media";
+import {
+  productBadgesSchema,
+  productImagesSchema,
+  productSeasonsSchema,
+  productVideoUrlSchema,
+} from "@/lib/validations/product-media";
 
 const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -39,7 +50,14 @@ const bulkPatchSchema = z.object({
       is_active: z.boolean().optional(),
       category: z.string().max(100).nullable().optional(),
       sku: z.string().max(80).nullable().optional(),
+      slug: z.string().min(2).max(180).optional(),
       image_url: z.string().url().nullable().optional(),
+      images: productImagesSchema,
+      video_url: productVideoUrlSchema,
+      badges: productBadgesSchema,
+      seasons: productSeasonsSchema,
+      weight_grams: z.number().int().positive().nullable().optional(),
+      pieces_count: z.number().int().positive().nullable().optional(),
       dietary: z.array(z.string().max(120)).optional(),
       compare_price_egp: z.number().positive().nullable().optional(),
     })
@@ -61,9 +79,42 @@ const createProductSchema = z.object({
   stock: z.number().int().min(0).default(0),
   is_active: z.boolean().default(true),
   image_url: z.string().url().optional().nullable(),
+  images: productImagesSchema,
+  video_url: productVideoUrlSchema,
+  badges: productBadgesSchema,
+  seasons: productSeasonsSchema,
+  weight_grams: z.number().int().positive().nullable().optional(),
+  pieces_count: z.number().int().positive().nullable().optional(),
   dietary: z.array(z.string().max(120)).optional(),
   compare_price_egp: z.number().positive().nullable().optional(),
 });
+
+function resolveProductMedia(input: {
+  images?: z.infer<typeof productImagesSchema>;
+  image_url?: string | null;
+}) {
+  const images = normalizeProductImages(input.images, input.image_url ?? null);
+  const image_url = primaryImageFromProduct(images, input.image_url ?? null);
+  return { images, image_url };
+}
+
+function applyPatchMedia(
+  patch: z.infer<typeof bulkPatchSchema>["patch"],
+): Record<string, unknown> {
+  const next: Record<string, unknown> = { ...patch };
+  if ("images" in patch || "image_url" in patch) {
+    const { images, image_url } = resolveProductMedia({
+      images: patch.images,
+      image_url: patch.image_url ?? null,
+    });
+    next.images = images;
+    next.image_url = image_url;
+  }
+  if ("slug" in patch && patch.slug) {
+    next.slug = slugify(patch.slug);
+  }
+  return next;
+}
 
 const deleteSchema = z.object({
   ids: z.array(z.string().uuid()).min(1),
@@ -216,6 +267,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const { images, image_url } = resolveProductMedia({
+    images: payload.images,
+    image_url: payload.image_url ?? null,
+  });
+
   const row = {
     slug,
     name: payload.name.trim(),
@@ -230,7 +286,13 @@ export async function POST(req: NextRequest) {
     compare_price_egp: payload.compare_price_egp ?? null,
     stock: payload.stock,
     is_active: payload.is_active,
-    image_url: payload.image_url ?? null,
+    image_url,
+    images,
+    video_url: payload.video_url ?? null,
+    badges: payload.badges ?? [],
+    seasons: payload.seasons ?? [],
+    weight_grams: payload.weight_grams ?? null,
+    pieces_count: payload.pieces_count ?? null,
     dietary: payload.dietary ?? [],
   };
 
@@ -257,6 +319,14 @@ export async function POST(req: NextRequest) {
     request: req,
   });
 
+  try {
+    revalidatePath("/shop");
+    revalidatePath(`/shop/${data.slug}`);
+    revalidatePath("/api/products");
+  } catch {
+    /* non-fatal */
+  }
+
   return NextResponse.json({ ok: true, product: data }, { status: 201 });
 }
 
@@ -273,11 +343,12 @@ export async function PATCH(req: NextRequest) {
   }
 
   const { ids, patch } = parsed.data;
+  const dbPatch = applyPatchMedia(patch);
   const supabase = createSupabaseAdminClient();
   const { data: before } = await supabase.from("products").select("*").in("id", ids);
   const { data, error } = await supabase
     .from("products")
-    .update(patch)
+    .update(dbPatch)
     .in("id", ids)
     .select("*");
 
@@ -297,6 +368,16 @@ export async function PATCH(req: NextRequest) {
     after: data ?? null,
     request: req,
   });
+
+  try {
+    revalidatePath("/shop");
+    for (const row of data ?? []) {
+      if (row?.slug) revalidatePath(`/shop/${row.slug}`);
+    }
+    revalidatePath("/api/products");
+  } catch {
+    /* non-fatal */
+  }
 
   return NextResponse.json({ ok: true, updated: data ?? [] });
 }

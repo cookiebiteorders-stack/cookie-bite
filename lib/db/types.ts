@@ -6,6 +6,7 @@ export type UserRow = {
   avatar_url: string | null;
   role: "owner" | "admin" | "staff" | "customer";
   points: number;
+  welcome_email_sent_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -36,6 +37,8 @@ export type ProductRow = {
   image_url: string | null;
   /** صور JSONB الحديثة */
   images: ProductImage[];
+  /** فيديو عرض المنتج (Cloudinary URL) */
+  video_url: string | null;
   badges: string[] | null;
   dietary: string[];
   seasons: string[];
