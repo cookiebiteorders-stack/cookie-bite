@@ -26,7 +26,7 @@ export function SignInForm({ afterAuth }: SignInFormProps) {
               colorSuccess: "#86efac",
               colorText: "#f5f5f4",
               colorTextSecondary: "#a8a29e",
-              colorBackground: "transparent",
+              colorBackground: "#1c1917",
               colorInputBackground: "#1c1917",
               colorInputText: "#fafaf9",
             }
@@ -37,8 +37,9 @@ export function SignInForm({ afterAuth }: SignInFormProps) {
       },
       elements: {
         ...clerkAuthAppearance.elements,
-        /** العنوان يُعرض في AuthLayout — نخفي رأس Clerk لتجنب التكرار */
-        header: "hidden",
+        /** العنوان في AuthLayout — لا نخفي `header` بالكامل (قد يكسر `main` في بعض إصدارات Clerk) */
+        headerTitle: "!hidden",
+        headerSubtitle: "!hidden",
         /** إخفاء صف «ليس لديك حساب؟ / Create account» — القسم السفلي يُدار من التطبيق عند الحاجة */
         footerAction: "hidden",
       },
@@ -46,6 +47,7 @@ export function SignInForm({ afterAuth }: SignInFormProps) {
   }, [resolvedTheme]);
 
   return (
+    <div className="auth-form-scroll w-full min-h-[min(18rem,42vh)]">
     <SignIn
       routing="path"
       path="/sign-in"
@@ -59,6 +61,7 @@ export function SignInForm({ afterAuth }: SignInFormProps) {
       signUpFallbackRedirectUrl={afterAuth}
       signUpForceRedirectUrl={afterAuth}
     />
+    </div>
   );
 }
 

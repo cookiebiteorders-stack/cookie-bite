@@ -26,7 +26,7 @@ export function SignUpForm({ afterAuth }: SignUpFormProps) {
               colorSuccess: "#86efac",
               colorText: "#f5f5f4",
               colorTextSecondary: "#a8a29e",
-              colorBackground: "transparent",
+              colorBackground: "#1c1917",
               colorInputBackground: "#1c1917",
               colorInputText: "#fafaf9",
             }
@@ -49,6 +49,7 @@ export function SignUpForm({ afterAuth }: SignUpFormProps) {
   }, [afterAuth]);
 
   return (
+    <div className="auth-form-scroll w-full min-h-[min(18rem,42vh)]">
     <SignUp
       routing="path"
       path="/sign-up"
@@ -61,6 +62,7 @@ export function SignUpForm({ afterAuth }: SignUpFormProps) {
       signInFallbackRedirectUrl={afterAuth}
       signInForceRedirectUrl={afterAuth}
     />
+    </div>
   );
 }
 

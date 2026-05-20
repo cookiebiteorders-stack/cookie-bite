@@ -24,7 +24,7 @@ export const clerkAuthAppearance = {
     rootBox:
       "mx-auto w-full !max-w-[28rem] min-w-0 box-border overflow-x-hidden motion-safe:transition-[opacity,transform] motion-safe:duration-300",
     card: [
-      "shadow-[0_8px_32px_-8px_rgba(91,58,36,0.12)] ring-1 ring-cb-peach-deep/80 bg-cb-surface dark:bg-transparent dark:ring-cb-border/60",
+      "shadow-[0_8px_32px_-8px_rgba(91,58,36,0.12)] ring-1 ring-cb-peach-deep/80 bg-cb-surface dark:bg-stone-900/95 dark:ring-cb-border/60",
       "!w-full !max-w-[28rem] min-w-0 mx-auto",
       "rounded-2xl p-4 sm:p-5 box-border gap-3 sm:gap-4",
       "max-h-none overflow-x-hidden overflow-y-visible overscroll-x-none",

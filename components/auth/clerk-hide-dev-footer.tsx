@@ -4,40 +4,47 @@ import { useEffect } from "react";
 
 const ROOT_ID = "main-auth";
 
+/** عناصر تفاعلية لنموذج Clerk — لا نخفي أي حاوية تحتويها */
+function containsAuthFormControls(el: HTMLElement): boolean {
+  return Boolean(
+    el.querySelector(
+      [
+        'input:not([type="hidden"])',
+        'button[type="submit"]',
+        'button[type="button"]',
+        "iframe",
+        '[class*="cl-socialButtons"]',
+        '[class*="cl-formButton"]',
+        '[class*="cl-formField"]',
+      ].join(", "),
+    ),
+  );
+}
+
 /**
- * يخفي شريط Clerk «Secured by / Development mode» داخل `#main-auth` عندما لا يُطبَّق
- * `appearance.layout.unsafe_disableDevelopmentModeWarnings` (إصدارات أو ترتيب دمج).
+ * يخفي شريط Clerk «Secured by / Development mode» فقط — لا يمسّ بطاقة النموذج.
+ * النسخة السابقة كانت تخفي `div` أب يحتوي النموذج بالكامل عندما يتأخر تحميل الحقول.
  */
 function suppressClerkDevChrome(root: HTMLElement) {
   root.querySelectorAll<HTMLAnchorElement>('a[href*="clerk.com"]').forEach((a) => {
-    let el: HTMLElement | null = a;
-    for (let d = 0; d < 12 && el; d++) {
-      const t = (el.textContent ?? "").replace(/\s+/g, " ").trim();
-      if (
-        t.includes("Development mode") &&
-        (t.includes("Secured") || /clerk/i.test(t)) &&
-        t.length < 200
-      ) {
-        el.style.setProperty("display", "none", "important");
-        el.setAttribute("data-cb-clerk-dev-hidden", "1");
-        break;
-      }
-      el = el.parentElement;
-    }
-  });
+    const row =
+      a.closest<HTMLElement>(
+        '[class*="cl-footer"], [class*="cl-internal"], footer, p, span, div',
+      ) ?? a.parentElement;
+    if (!row || row.getAttribute("data-cb-clerk-dev-hidden") === "1") return;
+    if (containsAuthFormControls(row)) return;
 
-  root.querySelectorAll<HTMLElement>("div,footer,aside,section").forEach((el) => {
-    if (el.querySelector("a[href*='clerk.com']")) return;
-    const t = (el.textContent ?? "").replace(/\s+/g, " ").trim();
-    if (
-      t.includes("Development mode") &&
-      t.includes("Secured") &&
-      t.length < 200 &&
-      el.offsetHeight < 140
-    ) {
-      el.style.setProperty("display", "none", "important");
-      el.setAttribute("data-cb-clerk-dev-hidden", "1");
-    }
+    const text = (row.textContent ?? "").replace(/\s+/g, " ").trim();
+    const looksLikeDevFooter =
+      /Secured/i.test(text) &&
+      (/Development mode/i.test(text) || /clerk/i.test(text)) &&
+      text.length < 220;
+
+    if (!looksLikeDevFooter) return;
+    if (row.offsetHeight > 80) return;
+
+    row.style.setProperty("display", "none", "important");
+    row.setAttribute("data-cb-clerk-dev-hidden", "1");
   });
 }
 
@@ -49,7 +56,7 @@ export function ClerkHideDevFooter() {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const schedule = () => {
       clearTimeout(timer);
-      timer = setTimeout(() => suppressClerkDevChrome(root as HTMLElement), 60);
+      timer = setTimeout(() => suppressClerkDevChrome(root as HTMLElement), 120);
     };
 
     schedule();
