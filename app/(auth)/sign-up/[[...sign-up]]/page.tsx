@@ -10,7 +10,7 @@ type Props = {
 
 export default async function SignUpPage({ searchParams }: Props) {
   const { redirect_url } = await searchParams;
-  const afterAuth = safeAuthRedirectPath(redirect_url, "/account");
+  const afterAuth = safeAuthRedirectPath(redirect_url, "/account/complete-profile");
 
   return (
     <AuthLayout

@@ -1,6 +1,10 @@
-import { headers } from "next/headers";
 import { Webhook } from "svix";
 import { provisionClerkUsernameAndPassword } from "@/lib/auth/clerk-provision-credentials";
+import {
+  clerkWebhookSecretLooksValid,
+  clerkWebhookSecretMisconfigurationHint,
+  resolveClerkWebhookSigningSecret,
+} from "@/lib/auth/clerk-webhook-secret";
 import { deleteUserByClerkId, upsertUserFromClerk } from "@/lib/db/users";
 import { trySendWelcomeEmailOnce } from "@/lib/email/welcome-onboarding";
 
@@ -29,15 +33,20 @@ function pickPrimaryEmail(data: ClerkUserEvent["data"]): string | null {
 }
 
 export async function POST(req: Request) {
-  const secret = process.env.CLERK_WEBHOOK_SIGNING_SECRET;
+  const secret = resolveClerkWebhookSigningSecret();
   if (!secret) {
     return new Response("Missing CLERK_WEBHOOK_SIGNING_SECRET", { status: 500 });
   }
 
-  const h = await headers();
-  const svix_id = h.get("svix-id");
-  const svix_timestamp = h.get("svix-timestamp");
-  const svix_signature = h.get("svix-signature");
+  const misconfig = clerkWebhookSecretMisconfigurationHint(secret);
+  if (misconfig) {
+    console.error("Clerk webhook secret misconfigured:", misconfig);
+    return new Response(misconfig, { status: 500 });
+  }
+
+  const svix_id = req.headers.get("svix-id");
+  const svix_timestamp = req.headers.get("svix-timestamp");
+  const svix_signature = req.headers.get("svix-signature");
 
   if (!svix_id || !svix_timestamp || !svix_signature) {
     return new Response("Missing Svix headers", { status: 400 });
@@ -53,7 +62,11 @@ export async function POST(req: Request) {
     }) as ClerkUserEvent;
   } catch (err) {
     console.error("Clerk webhook verification failed", err);
-    return new Response("Invalid signature", { status: 400 });
+    const hint = clerkWebhookSecretLooksValid(secret)
+      ? "Invalid signature — paste the Signing Secret from this exact webhook endpoint in Clerk (whsec_…), then Redeploy Hostinger. Each endpoint has its own secret."
+      : clerkWebhookSecretMisconfigurationHint(secret) ??
+        "Invalid signing secret format.";
+    return new Response(hint, { status: 400 });
   }
 
   if (evt.type === "user.deleted") {

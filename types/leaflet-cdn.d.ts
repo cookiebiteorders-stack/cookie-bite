@@ -57,6 +57,14 @@ declare global {
     addTo(map: LeafletMap): LeafletTileLayer;
   }
 
+  interface LeafletMarker {
+    addTo(map: LeafletMap): LeafletMarker;
+    setLatLng(latlng: LeafletLatLngExpression | [number, number]): LeafletMarker;
+    getLatLng(): LeafletLatLng;
+    on(event: "dragend", handler: () => void): LeafletMarker;
+    remove(): void;
+  }
+
   interface LeafletMap {
     setView(center: [number, number], zoom: number): LeafletMap;
     on(event: "click", handler: (e: LeafletMouseEvent) => void): LeafletMap;
@@ -74,8 +82,12 @@ declare global {
   interface LeafletStatic {
     map(
       el: HTMLElement,
-      opts?: { zoomControl?: boolean },
+      opts?: { zoomControl?: boolean; center?: [number, number]; zoom?: number; scrollWheelZoom?: boolean },
     ): LeafletMap;
+    marker(
+      latlng: LeafletLatLngExpression | [number, number],
+      opts?: { draggable?: boolean },
+    ): LeafletMarker;
     tileLayer(
       url: string,
       opts?: { attribution?: string; maxZoom?: number },

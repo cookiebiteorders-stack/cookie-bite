@@ -32,8 +32,9 @@ import {
 } from "@/lib/account/account-role-dashboard";
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 import { listRecentOrdersForUser } from "@/lib/db/orders";
+import { requireCustomerProfileComplete } from "@/lib/account/require-complete-profile";
 import { trySendWelcomeEmailOnce } from "@/lib/email/welcome-onboarding";
-import { getUserByClerkId, upsertUserFromClerk } from "@/lib/db/users";
+import { getUserByClerkId } from "@/lib/db/users";
 import { cn } from "@/lib/utils";
 import { buildPageMetadata } from "@/lib/seo";
 
@@ -143,16 +144,12 @@ export default async function AccountPage() {
     email ||
     "Cookie Bite friend";
 
-  let dbUser = await getUserByClerkId(userId);
-  const createdDbUserThisVisit = !dbUser;
-  if (!dbUser && email) {
-    dbUser = await upsertUserFromClerk({
-      clerkUserId: userId,
-      email,
-      fullName,
-      avatarUrl: user?.imageUrl ?? null,
-    });
-  }
+  let dbUser = await requireCustomerProfileComplete(userId, {
+    email,
+    fullName,
+    avatarUrl: user?.imageUrl ?? null,
+  });
+  const createdDbUserThisVisit = false;
 
   if (dbUser && email && !dbUser.welcome_email_sent_at) {
     try {

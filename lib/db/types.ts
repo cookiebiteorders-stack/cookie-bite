@@ -3,6 +3,12 @@ export type UserRow = {
   clerk_user_id: string;
   email: string;
   full_name: string | null;
+  full_name_en: string | null;
+  full_name_ar: string | null;
+  phone: string | null;
+  phone_secondary: string | null;
+  profile_notes: string | null;
+  profile_completed_at: string | null;
   avatar_url: string | null;
   role: "owner" | "admin" | "staff" | "customer";
   points: number;
