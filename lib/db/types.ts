@@ -13,6 +13,8 @@ export type UserRow = {
   role: "owner" | "admin" | "staff" | "customer";
   points: number;
   welcome_email_sent_at: string | null;
+  staff_signup_alert_sent_at: string | null;
+  staff_profile_alert_sent_at: string | null;
   created_at: string;
   updated_at: string;
 };

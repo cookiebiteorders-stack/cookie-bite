@@ -19,6 +19,7 @@ import {
   sendPaymentInvoiceViaBridge,
 } from "@/lib/whatsapp/bridge-notifications";
 import { isWhatsAppBridgeConfigured } from "@/lib/whatsapp/bridge-client";
+import { tryNotifyStaffNewOrder } from "@/lib/notifications/new-order-staff-alert";
 import {
   buildOrderConfirmedWhatsAppBody,
   buildPaymentConfirmedWhatsAppBody,
@@ -198,6 +199,12 @@ export async function dispatchOrderConfirmed(
       });
       if (!wa.ok && !wa.skipped) errors.push(wa.error ?? "whatsapp_failed");
     }
+  }
+
+  try {
+    await tryNotifyStaffNewOrder(ctx, orderId);
+  } catch (e) {
+    console.error("[notifications] staff new order alert", e);
   }
 
   return { ok: errors.length === 0, skipped: errors.includes("no_email"), errors };

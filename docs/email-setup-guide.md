@@ -64,6 +64,8 @@ Resend API → بريد العميل
 | نموذج اتصال + رد تلقائي للعميل | `app/api/contact/route.ts` |
 | تأكيد طلب (Paymob) | `app/api/checkout/paymob/intention/route.ts` |
 | Welcome عند تسجيل عميل جديد | `app/api/webhooks/clerk/route.ts` |
+| تنبيه المالك/الأدمن — عميل جديد (تسجيل + إكمال الملف) | `lib/notifications/new-customer-staff-alert.ts` |
+| تنبيه المالك/الأدمن — طلب جديد | `lib/notifications/new-order-staff-alert.ts` |
 | Admin "Send test" UI | `/admin/template-library` |
 | سكربت تشخيص شامل | `scripts/email-diagnostics.mjs` |
 | سكربت إنهاء DNS | `scripts/resend-dns-finalize.mjs` |
@@ -87,7 +89,11 @@ RESEND_FROM_EMAIL="Cookie Bite <orders@cookie-bite.com>"
 RESEND_REPLY_TO=cookie-bite@cookie-bite.com   # ← تم إصلاحه (كان gmail)
 CONTACT_INBOX=cookie-bite@cookie-bite.com
 RESEND_DOMAIN=cookie-bite.com
+OWNER_BOOTSTRAP_EMAIL=cookie.bite.orders@gmail.com
+ADMIN_BOOTSTRAP_EMAILS=admin1@example.com,admin2@example.com
 ```
+
+`OWNER_BOOTSTRAP_EMAIL` و`ADMIN_BOOTSTRAP_EMAILS` يُستخدمان أيضاً كقائمة بريد لتنبيهات **عميل جديد** و**طلب جديد** (بالإضافة إلى كل حساب `owner`/`admin` في جدول `users`).
 
 ---
 

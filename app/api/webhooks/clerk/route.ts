@@ -7,6 +7,7 @@ import {
 } from "@/lib/auth/clerk-webhook-secret";
 import { deleteUserByClerkId, upsertUserFromClerk } from "@/lib/db/users";
 import { trySendWelcomeEmailOnce } from "@/lib/email/welcome-onboarding";
+import { tryNotifyStaffNewCustomer } from "@/lib/notifications/new-customer-staff-alert";
 
 type ClerkUserEvent = {
   type: "user.created" | "user.updated" | "user.deleted";
@@ -120,6 +121,19 @@ export async function POST(req: Request) {
         }
       } catch (err) {
         console.error("welcome email failed", err);
+      }
+
+      try {
+        const staffResult = await tryNotifyStaffNewCustomer({
+          kind: "signup",
+          user: dbUser,
+          clerkUsername: evt.data.username ?? null,
+        });
+        if (staffResult.sent === 0 && staffResult.reason !== "already_sent") {
+          console.warn("staff signup alert skipped", staffResult.reason);
+        }
+      } catch (err) {
+        console.error("staff signup alert failed", err);
       }
     }
   }

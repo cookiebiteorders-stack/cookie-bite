@@ -9,6 +9,15 @@ export type EmailAttachment = {
   content: Buffer | string;
 };
 
+export async function sendInternalEmail(opts: {
+  to: string;
+  subject: string;
+  html: string;
+  replyTo?: string;
+}): Promise<SendResult> {
+  return dispatch(opts);
+}
+
 async function dispatch(opts: {
   to: string;
   subject: string;

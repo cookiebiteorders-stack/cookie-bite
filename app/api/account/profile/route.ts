@@ -9,6 +9,7 @@ import {
   upsertUserFromClerk,
 } from "@/lib/db/users";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { tryNotifyStaffNewCustomer } from "@/lib/notifications/new-customer-staff-alert";
 import { bilingualError } from "@/lib/validations";
 
 export async function GET() {
@@ -140,6 +141,34 @@ export async function POST(req: NextRequest) {
   }
 
   const completed = await markProfileCompleted(dbUser.id);
+
+  const profileUser = completed ?? updated;
+  try {
+    const staffResult = await tryNotifyStaffNewCustomer({
+      kind: "profile_complete",
+      user: profileUser,
+      address: {
+        label: addr.label,
+        recipient: addr.recipient,
+        phone: addr.phone,
+        phone_secondary: addr.phone_secondary,
+        street: addr.street,
+        building: addr.building,
+        floor: addr.floor,
+        apartment: addr.apartment,
+        city: addr.city,
+        governorate: addr.governorate,
+        delivery_notes: addr.delivery_notes,
+        latitude: addr.latitude,
+        longitude: addr.longitude,
+      },
+    });
+    if (staffResult.sent === 0 && staffResult.reason !== "already_sent") {
+      console.warn("staff profile alert skipped", staffResult.reason);
+    }
+  } catch (err) {
+    console.error("staff profile alert failed", err);
+  }
 
   try {
     const client = await clerkClient();
