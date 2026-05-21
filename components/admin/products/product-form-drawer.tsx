@@ -303,7 +303,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
             animate={{ x: 0, opacity: 1 }}
             exit={reduceMotion ? undefined : { x: 32, opacity: 0 }}
             transition={{ type: "spring", stiffness: 380, damping: 34 }}
-            className="flex h-full w-full max-w-2xl flex-col overflow-hidden border-s border-cb-border/80 bg-gradient-to-b from-[#FFFBF5] via-cb-surface-elevated to-[#F8EDE0] shadow-[-16px_0_40px_-10px_rgba(61,40,20,0.35)]"
+            className="admin-product-drawer-light flex h-full w-full max-w-2xl flex-col overflow-hidden border-s border-cb-border/80 bg-gradient-to-b from-[#FFFBF5] via-[#FFFBF5] to-[#F8EDE0] shadow-[-16px_0_40px_-10px_rgba(61,40,20,0.35)] dark:from-[#FFFBF5] dark:via-[#FFFBF5] dark:to-[#F8EDE0]"
             onMouseDown={(e) => e.stopPropagation()}
           >
             {/* منطقة تمرير واحدة: رأس مضغوط + خطوات + نموذج */}
