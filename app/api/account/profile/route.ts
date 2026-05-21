@@ -1,7 +1,12 @@
 import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { isProfileComplete } from "@/lib/account/profile-complete";
-import { completeProfileSchema } from "@/lib/account/profile-schema";
+import {
+  completeProfileSchema,
+  firstProfileSchemaError,
+  hasAnyProfileFields,
+  hasMeaningfulAddress,
+} from "@/lib/account/profile-schema";
 import {
   getUserByClerkId,
   markProfileCompleted,
@@ -64,10 +69,8 @@ export async function POST(req: NextRequest) {
 
   const parsed = completeProfileSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json(
-      bilingualError("Invalid profile data", "بيانات الملف غير صالحة"),
-      { status: 400 },
-    );
+    const { en, ar } = firstProfileSchemaError(parsed.error);
+    return NextResponse.json({ ...bilingualError(en, ar) }, { status: 400 });
   }
 
   let dbUser = await getUserByClerkId(userId);
@@ -83,7 +86,7 @@ export async function POST(req: NextRequest) {
     dbUser = await upsertUserFromClerk({
       clerkUserId: userId,
       email,
-      fullName: parsed.data.full_name_en,
+      fullName: parsed.data.full_name_en ?? null,
       avatarUrl: clerkUser?.imageUrl ?? null,
     });
   }
@@ -95,73 +98,106 @@ export async function POST(req: NextRequest) {
   }
 
   const body = parsed.data;
-  const updated = await updateUserProfile(dbUser.id, {
-    full_name_en: body.full_name_en,
-    full_name_ar: body.full_name_ar,
-    full_name: body.full_name_en,
-    phone: body.phone,
-    phone_secondary: body.phone_secondary,
-    profile_notes: body.profile_notes,
-  });
-  if (!updated) {
-    return NextResponse.json(
-      bilingualError("Could not save profile", "تعذّر حفظ الملف"),
-      { status: 500 },
-    );
+
+  if (!body.skip_profile && hasAnyProfileFields(body)) {
+    const updated = await updateUserProfile(dbUser.id, {
+      ...(body.full_name_en != null ? { full_name_en: body.full_name_en } : {}),
+      ...(body.full_name_ar != null ? { full_name_ar: body.full_name_ar } : {}),
+      ...(body.phone != null ? { phone: body.phone } : {}),
+      ...(body.phone_secondary != null
+        ? { phone_secondary: body.phone_secondary }
+        : {}),
+      ...(body.profile_notes != null ? { profile_notes: body.profile_notes } : {}),
+      ...(body.full_name_en
+        ? { full_name: body.full_name_en }
+        : body.full_name_ar
+          ? { full_name: body.full_name_ar }
+          : {}),
+    });
+    if (!updated && hasAnyProfileFields(body)) {
+      return NextResponse.json(
+        bilingualError("Could not save profile", "تعذّر حفظ الملف"),
+        { status: 500 },
+      );
+    }
+    if (updated) dbUser = updated;
   }
 
-  const supabase = createSupabaseAdminClient();
-  await supabase.from("addresses").update({ is_default: false }).eq("user_id", dbUser.id);
+  let savedAddress: {
+    label: string | null;
+    recipient: string | null;
+    phone: string | null;
+    phone_secondary: string | null;
+    street: string | null;
+    building: string | null;
+    floor: string | null;
+    apartment: string | null;
+    city: string | null;
+    governorate: string | null;
+    delivery_notes: string | null;
+    latitude: number;
+    longitude: number;
+  } | null = null;
 
-  const addr = body.address;
-  const { error: addrError } = await supabase.from("addresses").insert({
-    user_id: dbUser.id,
-    label: addr.label ?? "Home",
-    recipient: addr.recipient,
-    phone: addr.phone,
-    phone_secondary: addr.phone_secondary,
-    street: addr.street,
-    building: addr.building,
-    floor: addr.floor,
-    apartment: addr.apartment,
-    city: addr.city,
-    governorate: addr.governorate,
-    delivery_notes: addr.delivery_notes,
-    latitude: addr.latitude,
-    longitude: addr.longitude,
-    is_default: true,
-  });
+  if (!body.skip_profile && hasMeaningfulAddress(body.address)) {
+    const addr = body.address!;
+    const lat = addr.latitude ?? 30.0444;
+    const lng = addr.longitude ?? 31.2357;
 
-  if (addrError) {
-    console.error("complete profile address insert", addrError);
-    return NextResponse.json(
-      bilingualError("Could not save address", "تعذّر حفظ العنوان"),
-      { status: 500 },
-    );
+    const supabase = createSupabaseAdminClient();
+    await supabase.from("addresses").update({ is_default: false }).eq("user_id", dbUser.id);
+
+    const { error: addrError } = await supabase.from("addresses").insert({
+      user_id: dbUser.id,
+      label: addr.label ?? "Home",
+      recipient: addr.recipient ?? dbUser.full_name_en ?? dbUser.full_name ?? "Customer",
+      phone: addr.phone ?? body.phone ?? "",
+      phone_secondary: addr.phone_secondary,
+      street: addr.street ?? "",
+      building: addr.building,
+      floor: addr.floor,
+      apartment: addr.apartment,
+      city: addr.city ?? "New Cairo",
+      governorate: addr.governorate ?? "Cairo",
+      delivery_notes: addr.delivery_notes,
+      latitude: lat,
+      longitude: lng,
+      is_default: true,
+    });
+
+    if (addrError) {
+      console.error("complete profile address insert", addrError);
+      return NextResponse.json(
+        bilingualError("Could not save address", "تعذّر حفظ العنوان"),
+        { status: 500 },
+      );
+    }
+
+    savedAddress = {
+      label: addr.label,
+      recipient: addr.recipient,
+      phone: addr.phone,
+      phone_secondary: addr.phone_secondary,
+      street: addr.street,
+      building: addr.building,
+      floor: addr.floor,
+      apartment: addr.apartment,
+      city: addr.city,
+      governorate: addr.governorate,
+      delivery_notes: addr.delivery_notes,
+      latitude: lat,
+      longitude: lng,
+    };
   }
 
   const completed = await markProfileCompleted(dbUser.id);
+  const profileUser = completed ?? dbUser;
 
-  const profileUser = completed ?? updated;
   try {
     const staffResult = await tryNotifyStaffNewCustomer({
       kind: "profile_complete",
       user: profileUser,
-      address: {
-        label: addr.label,
-        recipient: addr.recipient,
-        phone: addr.phone,
-        phone_secondary: addr.phone_secondary,
-        street: addr.street,
-        building: addr.building,
-        floor: addr.floor,
-        apartment: addr.apartment,
-        city: addr.city,
-        governorate: addr.governorate,
-        delivery_notes: addr.delivery_notes,
-        latitude: addr.latitude,
-        longitude: addr.longitude,
-      },
+      address: savedAddress,
     });
     if (staffResult.sent === 0 && staffResult.reason !== "already_sent") {
       console.warn("staff profile alert skipped", staffResult.reason);
@@ -170,22 +206,25 @@ export async function POST(req: NextRequest) {
     console.error("staff profile alert failed", err);
   }
 
-  try {
-    const client = await clerkClient();
-    const parts = body.full_name_en.trim().split(/\s+/);
-    const firstName = parts[0] ?? body.full_name_en;
-    const lastName = parts.slice(1).join(" ") || undefined;
-    await client.users.updateUser(userId, {
-      firstName,
-      lastName: lastName || undefined,
-    });
-  } catch (err) {
-    console.error("sync clerk name after profile complete", err);
+  if (body.full_name_en) {
+    try {
+      const client = await clerkClient();
+      const parts = body.full_name_en.trim().split(/\s+/);
+      const firstName = parts[0] ?? body.full_name_en;
+      const lastName = parts.slice(1).join(" ") || undefined;
+      await client.users.updateUser(userId, {
+        firstName,
+        lastName: lastName || undefined,
+      });
+    } catch (err) {
+      console.error("sync clerk name after profile complete", err);
+    }
   }
 
   return NextResponse.json({
     ok: true,
-    profile: completed ?? updated,
+    profile: profileUser,
     complete: true,
+    skipped: Boolean(body.skip_profile),
   });
 }

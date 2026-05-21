@@ -10,12 +10,12 @@ type UpsertInput = {
 };
 
 export type ProfileUpdateInput = {
-  full_name_en: string;
-  full_name_ar: string;
-  phone: string;
+  full_name_en?: string | null;
+  full_name_ar?: string | null;
+  phone?: string | null;
   phone_secondary?: string | null;
   profile_notes?: string | null;
-  full_name?: string;
+  full_name?: string | null;
 };
 
 export async function upsertUserFromClerk(input: UpsertInput): Promise<UserRow | null> {
@@ -77,17 +77,29 @@ export async function updateUserProfile(
 ): Promise<UserRow | null> {
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return null;
-  const full_name = input.full_name ?? input.full_name_en;
+
+  const patch: Record<string, string | null> = {};
+  if (input.full_name_en !== undefined) patch.full_name_en = input.full_name_en;
+  if (input.full_name_ar !== undefined) patch.full_name_ar = input.full_name_ar;
+  if (input.phone !== undefined) patch.phone = input.phone;
+  if (input.phone_secondary !== undefined) {
+    patch.phone_secondary = input.phone_secondary;
+  }
+  if (input.profile_notes !== undefined) patch.profile_notes = input.profile_notes;
+  if (input.full_name !== undefined) {
+    patch.full_name = input.full_name;
+  } else if (input.full_name_en !== undefined) {
+    patch.full_name = input.full_name_en;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    const { data } = await supabase.from("users").select("*").eq("id", userId).maybeSingle();
+    return (data as UserRow) ?? null;
+  }
+
   const { data, error } = await supabase
     .from("users")
-    .update({
-      full_name_en: input.full_name_en,
-      full_name_ar: input.full_name_ar,
-      full_name,
-      phone: input.phone,
-      phone_secondary: input.phone_secondary ?? null,
-      profile_notes: input.profile_notes ?? null,
-    })
+    .update(patch)
     .eq("id", userId)
     .select("*")
     .single();

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AddressMapPicker } from "@/components/account/address-map-picker";
 import { buttonClassName } from "@/components/ui/button";
 import { fetchJson } from "@/lib/http/fetch-json";
+import { normalizeEgyptPhone } from "@/lib/account/profile-schema";
 import { cn } from "@/lib/utils";
 
 const EGYPT_GOVERNORATES = [
@@ -139,38 +140,55 @@ export function CompleteProfileForm() {
     setForm((f) => ({ ...f, latitude: lat, longitude: lng }));
   }, []);
 
-  const submit = useCallback(async () => {
-    setError(null);
-    if (form.latitude == null || form.longitude == null) {
-      setError("حدّد موقعك على الخريطة.");
-      return;
-    }
-    setSaving(true);
-    try {
-      await fetchJson("/api/account/profile", {
-        method: "POST",
-        jsonBody: {
-          full_name_en: form.full_name_en.trim(),
-          full_name_ar: form.full_name_ar.trim(),
-          phone: form.phone.trim(),
-          phone_secondary: form.phone_secondary.trim() || null,
-          profile_notes: form.profile_notes.trim() || null,
-          address: {
+  const buildPayload = useCallback(() => {
+    const phone = normalizeEgyptPhone(form.phone);
+    const phoneSecondary = normalizeEgyptPhone(form.phone_secondary);
+    const addressPhone = normalizeEgyptPhone(
+      form.address_phone || form.phone,
+    );
+    const addressPhoneSecondary = normalizeEgyptPhone(
+      form.address_phone_secondary,
+    );
+
+    const hasAddress =
+      form.street.trim() &&
+      form.recipient.trim() &&
+      addressPhone &&
+      form.city.trim();
+
+    return {
+      full_name_en: form.full_name_en.trim() || null,
+      full_name_ar: form.full_name_ar.trim() || null,
+      phone: phone || null,
+      phone_secondary: phoneSecondary || null,
+      profile_notes: form.profile_notes.trim() || null,
+      address: hasAddress
+        ? {
             label: form.label.trim() || "Home",
             recipient: form.recipient.trim(),
-            phone: form.address_phone.trim() || form.phone.trim(),
-            phone_secondary: form.address_phone_secondary.trim() || null,
+            phone: addressPhone,
+            phone_secondary: addressPhoneSecondary || null,
             street: form.street.trim(),
             building: form.building.trim() || null,
             floor: form.floor.trim() || null,
             apartment: form.apartment.trim() || null,
             city: form.city.trim(),
-            governorate: form.governorate.trim(),
+            governorate: form.governorate.trim() || null,
             delivery_notes: form.delivery_notes.trim() || null,
-            latitude: form.latitude,
-            longitude: form.longitude,
-          },
-        },
+            latitude: form.latitude ?? undefined,
+            longitude: form.longitude ?? undefined,
+          }
+        : null,
+    };
+  }, [form]);
+
+  const submit = useCallback(async () => {
+    setError(null);
+    setSaving(true);
+    try {
+      await fetchJson("/api/account/profile", {
+        method: "POST",
+        jsonBody: buildPayload(),
       });
       router.replace("/account");
       router.refresh();
@@ -179,7 +197,24 @@ export function CompleteProfileForm() {
     } finally {
       setSaving(false);
     }
-  }, [form, router]);
+  }, [buildPayload, router]);
+
+  const skip = useCallback(async () => {
+    setError(null);
+    setSaving(true);
+    try {
+      await fetchJson("/api/account/profile", {
+        method: "POST",
+        jsonBody: { skip_profile: true },
+      });
+      router.replace("/account");
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "تعذّر المتابعة");
+    } finally {
+      setSaving(false);
+    }
+  }, [router]);
 
   if (loading) {
     return (
@@ -196,8 +231,8 @@ export function CompleteProfileForm() {
           أكمل ملفك الشخصي
         </h1>
         <p className="text-sm text-cb-text-muted" dir="rtl">
-          مرة واحدة فقط — بدون اختيار username (يُنشأ تلقائياً). الاسم بالعربي والإنجليزي،
-          الهاتف، والعنوان مع الموقع على الخريطة.
+          كل الحقول اختيارية — أضف ما تريد الآن أو تخطَّ وأكمل لاحقاً من حسابك. عند إدخال
+          رقم مصر استخدم 11 رقمًا يبدأ بـ 01.
         </p>
       </header>
 
@@ -205,7 +240,7 @@ export function CompleteProfileForm() {
         <h2 className="font-serif text-lg font-semibold text-cb-text-strong">البيانات الشخصية</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-1">
-            <span className="text-xs font-semibold text-cb-text-muted">Full name (EN) *</span>
+            <span className="text-xs font-semibold text-cb-text-muted">Full name (EN)</span>
             <input
               className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
               value={form.full_name_en}
@@ -213,7 +248,7 @@ export function CompleteProfileForm() {
             />
           </label>
           <label className="space-y-1">
-            <span className="text-xs font-semibold text-cb-text-muted">الاسم الكامل (عربي) *</span>
+            <span className="text-xs font-semibold text-cb-text-muted">الاسم الكامل (عربي)</span>
             <input
               className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
               dir="rtl"
@@ -222,7 +257,7 @@ export function CompleteProfileForm() {
             />
           </label>
           <label className="space-y-1">
-            <span className="text-xs font-semibold text-cb-text-muted">Mobile *</span>
+            <span className="text-xs font-semibold text-cb-text-muted">Mobile</span>
             <input
               className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
               placeholder="01xxxxxxxxx"
@@ -258,10 +293,12 @@ export function CompleteProfileForm() {
       </section>
 
       <section className="space-y-4 rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
-        <h2 className="font-serif text-lg font-semibold text-cb-text-strong">عنوان التوصيل</h2>
+        <h2 className="font-serif text-lg font-semibold text-cb-text-strong">
+          عنوان التوصيل <span className="text-sm font-normal text-cb-text-muted">(اختياري)</span>
+        </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-1 sm:col-span-2">
-            <span className="text-xs font-semibold text-cb-text-muted">اسم المستلم *</span>
+            <span className="text-xs font-semibold text-cb-text-muted">اسم المستلم</span>
             <input
               className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
               value={form.recipient}
@@ -269,7 +306,7 @@ export function CompleteProfileForm() {
             />
           </label>
           <label className="space-y-1">
-            <span className="text-xs font-semibold text-cb-text-muted">هاتف التوصيل *</span>
+            <span className="text-xs font-semibold text-cb-text-muted">هاتف التوصيل</span>
             <input
               className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
               value={form.address_phone}
@@ -287,7 +324,7 @@ export function CompleteProfileForm() {
             />
           </label>
           <label className="space-y-1 sm:col-span-2">
-            <span className="text-xs font-semibold text-cb-text-muted">الشارع / الحي *</span>
+            <span className="text-xs font-semibold text-cb-text-muted">الشارع / الحي</span>
             <input
               className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
               dir="rtl"
@@ -320,7 +357,7 @@ export function CompleteProfileForm() {
             />
           </label>
           <label className="space-y-1">
-            <span className="text-xs font-semibold text-cb-text-muted">المدينة *</span>
+            <span className="text-xs font-semibold text-cb-text-muted">المدينة</span>
             <input
               className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
               value={form.city}
@@ -328,7 +365,7 @@ export function CompleteProfileForm() {
             />
           </label>
           <label className="space-y-1">
-            <span className="text-xs font-semibold text-cb-text-muted">المحافظة *</span>
+            <span className="text-xs font-semibold text-cb-text-muted">المحافظة</span>
             <select
               className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
               value={form.governorate}
@@ -361,14 +398,27 @@ export function CompleteProfileForm() {
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-      <button
-        type="button"
-        disabled={saving}
-        className={cn(buttonClassName("primary"), "w-full px-8 py-3 text-base sm:w-auto")}
-        onClick={() => void submit()}
-      >
-        {saving ? "جاري الحفظ…" : "حفظ والمتابعة"}
-      </button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <button
+          type="button"
+          disabled={saving}
+          className={cn(buttonClassName("primary"), "w-full px-8 py-3 text-base sm:w-auto")}
+          onClick={() => void submit()}
+        >
+          {saving ? "جاري الحفظ…" : "حفظ والمتابعة"}
+        </button>
+        <button
+          type="button"
+          disabled={saving}
+          className={cn(
+            buttonClassName("outline"),
+            "w-full border-2 border-cb-border px-8 py-3 text-base sm:w-auto",
+          )}
+          onClick={() => void skip()}
+        >
+          تخطي الآن
+        </button>
+      </div>
     </div>
   );
 }
