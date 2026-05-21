@@ -33,6 +33,15 @@ npm run hostinger:export-gemini-env
 | `INTERNAL_API_SECRET` | APIs داخلية |
 | `REVALIDATE_SECRET` | `POST /api/revalidate` |
 
+## Google OAuth Branding (تحقق ملكية الموقع)
+
+| المتغير | الغرض |
+|---------|--------|
+| `GOOGLE_SITE_VERIFICATION` | وسم HTML من Search Console — **نفس حساب** Google Cloud |
+
+بعد الإضافة: **Redeploy** ثم Verify في Search Console، ثم أعد Branding verification في OAuth consent screen.  
+الدليل الكامل: `docs/google-oauth-branding-verification-ar.md`
+
 ## موصى به (AI + محتوى)
 
 | المتغير | الغرض |
