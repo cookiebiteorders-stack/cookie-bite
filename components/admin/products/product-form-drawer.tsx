@@ -29,7 +29,7 @@ import {
   productFormDraftHasContent,
   saveProductFormDraft,
 } from "@/lib/admin/product-form-draft";
-import { deriveProductSlug } from "@/lib/products/slug";
+import { generateProductFieldsFromName } from "@/lib/admin/product-auto-fill";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
 import { cn } from "@/lib/utils";
 
@@ -69,18 +69,21 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
   const editingId = editing?.id ?? null;
   const hasUnsavedDraft = !editingId && productFormDraftHasContent(form);
   const draftToastShown = useRef(false);
+  const lastAutoNameRef = useRef("");
 
   useEffect(() => {
     if (!open) return;
     if (editingId && editing) {
       setForm(rowToProductForm(editing));
       setFormStep(1);
+      lastAutoNameRef.current = editing.name.trim();
       return;
     }
     const draft = loadProductFormDraft();
     if (draft && productFormDraftHasContent(draft.form)) {
       setForm(draft.form);
       setFormStep(draft.formStep);
+      lastAutoNameRef.current = draft.form.name.trim();
       if (!draftToastShown.current) {
         draftToastShown.current = true;
         pushToast("تم استعادة مسودة المنتج من آخر جلسة.", "info");
@@ -88,6 +91,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
     } else {
       setForm(EMPTY_PRODUCT_FORM);
       setFormStep(1);
+      lastAutoNameRef.current = "";
     }
   }, [open, editingId, editing, pushToast]);
 
@@ -100,10 +104,49 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
   const discardDraft = useCallback(() => {
     clearProductFormDraft();
     draftToastShown.current = false;
+    lastAutoNameRef.current = "";
     setForm(EMPTY_PRODUCT_FORM);
     setFormStep(1);
     pushToast("تم مسح المسودة.", "success");
   }, [pushToast]);
+
+  const applyAutoFromName = useCallback(
+    (name: string, options?: { silent?: boolean; keepMedia?: boolean }) => {
+      const trimmed = name.trim();
+      if (trimmed.length < 2) return;
+      const generated = generateProductFieldsFromName(trimmed);
+      lastAutoNameRef.current = trimmed;
+      setForm((f) => ({
+        ...f,
+        ...generated,
+        name: trimmed,
+        ...(options?.keepMedia !== false
+          ? {
+              images: f.images,
+              video_url: f.video_url,
+              image_url: f.image_url,
+            }
+          : {}),
+      }));
+      if (!options?.silent) {
+        pushToast("تم توليد كل الحقول من اسم المنتج.", "success");
+      }
+    },
+    [pushToast],
+  );
+
+  useEffect(() => {
+    if (!open || editingId) return;
+    const trimmed = form.name.trim();
+    if (trimmed.length < 2) return;
+    if (trimmed === lastAutoNameRef.current) return;
+
+    const timer = window.setTimeout(() => {
+      applyAutoFromName(trimmed, { silent: true, keepMedia: true });
+    }, 550);
+
+    return () => window.clearTimeout(timer);
+  }, [form.name, open, editingId, applyAutoFromName]);
 
   const formErrors = useMemo<FormErrors>(() => {
     const errors: FormErrors = {};
@@ -185,22 +228,13 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
     [stepDone],
   );
 
-  const applyAiDescription = useCallback(() => {
-    const base = form.name.trim() || form.title_en.trim();
-    if (!base) {
-      pushToast("اكتب اسم المنتج أولاً لتوليد مسودة وصف.", "info");
+  const regenerateFromName = useCallback(() => {
+    if (form.name.trim().length < 2) {
+      pushToast("اكتب اسم المنتج أولاً (حرفان على الأقل).", "info");
       return;
     }
-    const draft = `${base} — كوكيز طازجة يدوية الصنع، توصيل سريع، مكونات مختارة بعناية.`;
-    setForm((f) => ({
-      ...f,
-      description_en: f.description_en.trim() ? f.description_en : draft,
-      description_ar: f.description_ar.trim()
-        ? f.description_ar
-        : `${base} — جودة عالية، طعم غني، مناسب للهدايا والمناسبات.`,
-    }));
-    pushToast("تم إدراج مسودة وصف (يمكن تعديلها قبل الحفظ).", "success");
-  }, [form.name, form.title_en, pushToast]);
+    applyAutoFromName(form.name, { silent: false, keepMedia: true });
+  }, [form.name, applyAutoFromName, pushToast]);
 
   const submitForm = useCallback(async () => {
     if (!canWrite || saving) return;
@@ -225,6 +259,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       pushToast(editing ? "تم تحديث المنتج — يمكنك تعديله مجدداً من الجدول." : "تم إنشاء المنتج.", "success");
       clearProductFormDraft();
       draftToastShown.current = false;
+      lastAutoNameRef.current = "";
       setForm(EMPTY_PRODUCT_FORM);
       setFormStep(1);
       onOpenChange(false);
@@ -363,17 +398,26 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   )}
                 >
                 <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
-                  <span className={labelClass}>اسم المنتج *</span>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className={labelClass}>اسم المنتج *</span>
+                    <button
+                      type="button"
+                      onClick={regenerateFromName}
+                      className="inline-flex items-center gap-1 rounded-full bg-cb-terracotta-dark/10 px-2.5 py-0.5 text-[10px] font-bold text-cb-terracotta-dark transition hover:bg-cb-terracotta-dark/15"
+                    >
+                      <Sparkles className="h-3 w-3" aria-hidden />
+                      توليد الكل من الاسم
+                    </button>
+                  </div>
                   <input
                     className={cn(inputClass, formErrors.name && inputErrorClass)}
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                    onBlur={() => {
-                      if (!form.slug.trim() && form.name.trim().length >= 2) {
-                        setForm((f) => ({ ...f, slug: deriveProductSlug(f.name) }));
-                      }
-                    }}
+                    placeholder="مثال: كوكيز الشوكولاتة الفاخرة"
                   />
+                  <p className="text-[10px] text-cb-text-muted">
+                    يُملأ تلقائياً: Slug، عناوين، وصف، تصنيف، سعر، SKU، شارات، مخزون…
+                  </p>
                   {formErrors.name ? (
                     <p className="flex items-center gap-1 text-xs font-medium text-red-600">
                       {formErrors.name}
@@ -394,11 +438,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     <p className="text-xs font-medium text-red-600">{formErrors.slug}</p>
                   ) : (
                     <p className="text-[11px] text-cb-text-muted">
-                      رابط المتجر: /shop/
-                      {form.slug.trim() || deriveProductSlug(form.name)}
-                      {!form.slug.trim() && form.name.trim().length >= 2
-                        ? " (يُولَّد تلقائياً للأسماء العربية)"
-                        : ""}
+                      رابط المتجر: /shop/{form.slug.trim() || "—"}
                     </p>
                   )}
                 </label>
@@ -479,22 +519,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   </datalist>
                 </div>
 
-                <div
-                  className={cn(
-                    "flex flex-wrap items-center justify-between gap-2",
-                    formStep !== 2 && "hidden",
-                  )}
-                >
-                  <span className={labelClass}>الوصف</span>
-                  <button
-                    type="button"
-                    onClick={applyAiDescription}
-                    className="inline-flex items-center gap-1 rounded-full bg-cb-terracotta-dark px-3 py-1 text-[10px] font-bold text-white transition hover:brightness-110"
-                  >
-                    <Sparkles className="h-3 w-3" aria-hidden />
-                    مسودة وصف
-                  </button>
-                </div>
+                <p className={cn(labelClass, formStep !== 2 && "hidden")}>الوصف (يُولَّد من الاسم)</p>
                 <label className={cn("space-y-2", formStep !== 2 && "hidden")}>
                   <span className={labelClass}>Description EN</span>
                   <textarea
