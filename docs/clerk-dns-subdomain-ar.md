@@ -1,81 +1,37 @@
-# خطأ `failed_to_load_clerk_js` — clerk.cookie-bite.com
+# سجلات DNS لـ Clerk على cookie-bite.com
 
-## الرسالة
+## التحقق العام (DNS عام عبر 1.1.1.1)
 
-```
-Failed to load Clerk JS, failed to load script:
-https://clerk.cookie-bite.com/npm/@clerk/clerk-js@6/dist/clerk.browser.js
-(code="failed_to_load_clerk_js")
-```
+Nameservers الحالية: `apollo.dns-parking.com`, `athena.dns-parking.com` (Hostinger).
 
-## السبب
+| Host (نسبي) | FQDN | النوع | الهدف (يجب أن يطابق حرفياً) |
+|-------------|------|--------|------------------------------|
+| `accounts` | accounts.cookie-bite.com | CNAME | `accounts.clerk.services` |
+| `clerk` | clerk.cookie-bite.com | CNAME | `frontend-api.clerk.services` |
+| `clk._domainkey` | clk._domainkey.cookie-bite.com | CNAME | `dkim1.oigyiaf8hxbe.clerk.services` |
+| `clk2._domainkey` | clk2._domainkey.cookie-bite.com | CNAME | `dkim2.oigyiaf8hxbe.clerk.services` |
+| `clkmail` | clkmail.cookie-bite.com | CNAME | `mail.oigyiaf8hxbe.clerk.services` |
 
-في **Clerk Dashboard** مُفعَّل **نطاق Frontend API** على `clerk.cookie-bite.com`، لكن **DNS لا يحتوي** سجلّاً لهذا الاسم (التحقق: `nslookup clerk.cookie-bite.com` → Non-existent domain).
+- **لا تستخدم Proxy** (في Cloudflare: DNS only / grey cloud).
+- لا تضف `https://` ولا شرطة مائلة في قيمة CNAME.
+- بعض الواجهات تطلب الهدف بشرطة نهائية `frontend-api.clerk.services.` — جرّب بدونها أولاً كما في Clerk.
 
-Clerk يحاول تحميل `clerk-js` من نطاقك أنت، وليس من `*.clerk.accounts.dev`.
+## Hostinger — يدوياً
 
----
+1. hPanel → **Domains** → `cookie-bite.com` → **DNS / DNS Zone**.
+2. أضف **5 سجلات CNAME** بالجدول أعلاه (العمود Host = Name).
+3. احفظ وانتظر 5–60 دقيقة (أحياناً حتى 24 ساعة).
+4. Clerk Dashboard → **Domains** → **Verify** لكل سجل.
 
-## الحل الكامل (إنتاج + محلي بمفاتيح live)
+## أتمتة (اختياري)
 
-### 1) Clerk Dashboard
+إن وُجد `HOSTINGER_API_TOKEN` في `.env` يمكن استخدام [Hostinger DNS API](https://developers.hostinger.com/docs/dns) — انتبه: بعض سكربتات المشروع تستخدم `overwrite: true` وقد تستبدل السجلات الأخرى؛ للـ Clerk يُفضّل الإضافة اليدوية أو سكربت مخصص يدمج السجلات فقط.
 
-1. [Clerk Dashboard](https://dashboard.clerk.com) → **Configure** → **Domains** (أو DNS / Frontend API).
-2. انسخ سجل **CNAME** المطلوب للنطاق الفرعي `clerk` (القيمة تظهر في اللوحة — غالباً نحو `frontend-api.clerk.services` أو ما يخص مثيلك).
+## بعد التحقق
 
-### 2) Hostinger DNS
+- Redeploy على Hostinger.
+- تأكد أن `failed_to_load_clerk_js` اختفى (`nslookup clerk.cookie-bite.com` يجب أن يحلّ الاسم).
 
-| النوع | الاسم (Host) | القيمة (Target) |
-|--------|----------------|------------------|
-| CNAME | `clerk` | القيمة من لوحة Clerk |
+## خطأ `failed_to_load_clerk_js`
 
-انتظر 5–60 دقيقة، ثم تحقق:
-
-```bash
-nslookup clerk.cookie-bite.com
-```
-
-يجب أن يحلّ الاسم بدون «Non-existent domain».
-
-### 3) CSP (الموقع)
-
-بعد تفعيل DNS، تأكد أن رؤوس الإنتاج تسمح بـ `https://clerk.cookie-bite.com` (مضافة في `next.config.ts`).
-
-### 4) Redeploy
-
-Hostinger → **Redeploy** بعد أي تغيير env.
-
----
-
-## التطوير المحلي (`npm run dev`) — الأسرع
-
-استخدم **مفاتيح Development** وليس Production:
-
-| المتغير | القيمة |
-|---------|--------|
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_...` |
-| `CLERK_SECRET_KEY` | `sk_test_...` |
-
-ضعها في `.env.local` ثم أعد تشغيل `npm run dev`.
-
-المشروع يضبط تلقائياً في التطوير:
-
-`NEXT_PUBLIC_CLERK_JS_URL` → CDN jsDelivr إن لم تُحدّد القيمة يدوياً.
-
----
-
-## بديل مؤقت (لا يغني عن DNS للإنتاج)
-
-في `.env` أو Hostinger:
-
-```env
-NEXT_PUBLIC_CLERK_JS_URL=https://cdn.jsdelivr.net/npm/@clerk/clerk-js@6/dist/clerk.browser.js
-```
-
-قد يحمّل السكربت فقط؛ طلبات **Frontend API** ما زالت تذهب إلى `clerk.cookie-bite.com` ما لم تُصلح DNS أو تستخدم `pk_test_` محلياً.
-
----
-
-## إن لم تكن جاهزاً لـ DNS بعد
-
-في Clerk → Domains: أزل/أجّل **Custom Frontend API** حتى يعود المثيل إلى `*.clerk.accounts.dev`، ثم أعد إضافة النطاق لاحقاً عند جاهزية DNS.
+يحدث عندما `clerk.cookie-bite.com` غير موجود في DNS — راجع السجل `clerk` → `frontend-api.clerk.services` أعلاه.
