@@ -329,15 +329,19 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
   };
 
   return (
-    <div className="bg-cb-cream pb-20 pt-10">
-      <div className="mx-auto max-w-7xl cb-gutter">
-        <SectionHeading
-          align="left"
-          className="mb-8 text-start"
-          eyebrow={t("pages.shop.eyebrow")}
-          title={t("pages.shop.title")}
-          subtitle={t("pages.shop.subtitle")}
-        />
+    <div className="bg-[var(--color-cream)] pb-20">
+      <header className="cb-pl-shop-header text-center">
+        <div className="mx-auto max-w-7xl cb-gutter">
+          <p className="cb-pl-eyebrow mb-2">{t("pages.shop.eyebrow")}</p>
+          <h1 className="font-serif text-[clamp(2rem,5vw,3rem)] font-bold text-[var(--color-text-primary)]">
+            {t("pages.shop.title")}
+          </h1>
+          <p className="mt-3 text-base text-[var(--color-text-secondary)]">
+            {t("pages.shop.subtitle")}
+          </p>
+        </div>
+      </header>
+      <div className="mx-auto max-w-7xl cb-gutter pt-10">
 
         {initialTrending.length > 0 ? (
           <section className="mb-12" aria-labelledby="shop-trending-heading">
@@ -368,19 +372,19 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
         <div
           ref={filterAnchorRef}
           id="shop-filters"
-          className="mb-5 grid gap-3 rounded-2xl bg-cb-surface-elevated p-4 ring-1 ring-cb-border shadow-sm dark:bg-cb-surface-2 dark:ring-cb-border/80 sm:grid-cols-2 lg:grid-cols-4"
+          className="cb-pl-filter-bar sticky top-16 z-20 mb-5 grid gap-3 rounded-2xl bg-white p-4 shadow-[var(--shadow-pl-nav)] sm:grid-cols-2 lg:grid-cols-4"
         >
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("pages.shop.searchPlaceholder")}
-            className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm text-cb-text-strong outline-none ring-cb-focus placeholder:text-cb-text-muted/90 focus:ring-2 dark:border-cb-border-strong dark:bg-cb-cream-2 dark:text-cb-text-strong dark:placeholder:text-cb-text-muted"
+            className="cb-pl-input rounded-xl px-3 py-2 text-sm"
           />
           <select
             value={sort}
             onChange={(e) => setSort((e.target.value as SortMode) || "newest")}
-            className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm text-cb-text-strong outline-none focus:ring-2 focus:ring-cb-focus dark:border-cb-border-strong dark:bg-cb-cream-2 dark:text-cb-text-strong"
+            className="cb-pl-input rounded-xl px-3 py-2 text-sm"
           >
             <option value="newest">{t("pages.shop.sortNewest")}</option>
             <option value="popular">{t("pages.shop.sortPopular")}</option>
@@ -395,7 +399,7 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
               value={minPrice ?? ""}
               onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : null)}
               placeholder={t("pages.shop.minEgp")}
-              className="w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm text-cb-text-strong outline-none focus:ring-2 focus:ring-cb-focus dark:border-cb-border-strong dark:bg-cb-cream-2 dark:text-cb-text-strong dark:placeholder:text-cb-text-muted"
+              className="cb-pl-input w-full rounded-xl px-3 py-2 text-sm"
             />
             <input
               type="number"
@@ -404,7 +408,7 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
               value={maxPrice ?? ""}
               onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : null)}
               placeholder={t("pages.shop.maxEgp")}
-              className="w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm text-cb-text-strong outline-none focus:ring-2 focus:ring-cb-focus dark:border-cb-border-strong dark:bg-cb-cream-2 dark:text-cb-text-strong dark:placeholder:text-cb-text-muted"
+              className="cb-pl-input w-full rounded-xl px-3 py-2 text-sm"
             />
           </div>
           <button type="button" onClick={clearAll} className={buttonClassName("outline", "w-full")}>
@@ -425,11 +429,10 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
               type="button"
               onClick={() => setCat(c)}
               className={cn(
-                "shrink-0 snap-start rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cb-focus focus-visible:ring-offset-2 focus-visible:ring-offset-cb-cream",
-                cat === c
-                  ? "bg-cb-terracotta-dark text-white shadow"
-                  : "bg-cb-surface text-cb-text-strong ring-1 ring-cb-border hover:bg-cb-peach hover:ring-cb-border-strong",
+                "cb-pl-pill shrink-0 snap-start font-bold uppercase tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-caramel)] focus-visible:ring-offset-2",
+                cat === c && "is-active",
               )}
+              data-active={cat === c ? "true" : undefined}
             >
               {c === "All" ? t("pages.shop.categoryAll") : c}
             </button>
@@ -508,7 +511,11 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
         </div>
 
         {loading ? (
-          <p className="py-12 text-center text-cb-text-muted">{t("pages.shop.loadingCookies")}</p>
+          <div className="grid gap-6 py-8 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="cb-pl-skeleton aspect-[3/4] w-full" />
+            ))}
+          </div>
         ) : null}
         {error ? <p className="py-4 text-center text-sm text-red-600">{error}</p> : null}
 
@@ -524,9 +531,13 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
         </div>
 
         {!loading && filtered.length === 0 ? (
-          <p className="py-16 text-center text-cb-text">
-            {t("pages.shop.noMatch")}
-          </p>
+          <div className="cb-pl-empty">
+            <h3>{t("pages.shop.noMatch")}</h3>
+            <p className="mt-2">{t("pages.shop.subtitle")}</p>
+            <button type="button" onClick={clearAll} className={buttonClassName("primary", "mt-6")}>
+              {t("pages.shop.resetFilters")}
+            </button>
+          </div>
         ) : null}
 
       </div>

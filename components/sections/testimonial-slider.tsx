@@ -27,7 +27,7 @@ export function TestimonialSlider() {
   const role = t(`testimonials.items.${idx}.role`);
 
   return (
-    <section className="relative bg-cb-peach/45 py-16 md:py-24 dark:bg-cb-peach/12">
+    <section className="cb-pl-testimonials relative py-16 md:py-24">
       <div className="cb-grain pointer-events-none absolute inset-0 opacity-80 dark:opacity-50" />
       <div className="relative mx-auto max-w-7xl cb-gutter">
         <div className="mb-10 flex flex-col items-center gap-3 md:mb-14">

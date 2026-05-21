@@ -94,7 +94,7 @@ export function SiteFooter() {
   ];
 
   return (
-    <footer className="mt-auto w-full border-t border-cb-peach-deep bg-cb-peach/50 dark:border-cb-border/50 dark:bg-cb-surface-2/80">
+    <footer className="cb-pl-footer mt-auto w-full">
       <div className="relative mx-auto grid max-w-7xl items-start justify-center gap-8 cb-gutter py-10 pb-0 md:flex md:gap-10 lg:gap-10 lg:py-12">
         <Link
           href="/"

@@ -15,7 +15,7 @@ export function HomeStorySnippet() {
   const { t } = useLanguage();
 
   return (
-    <section className="relative overflow-hidden bg-cb-surface py-16 md:py-20 lg:py-24 dark:bg-cb-surface-2">
+    <section className="cb-pl-kitchen relative overflow-hidden py-16 md:py-20 lg:py-24">
       <div
         className="pointer-events-none absolute -right-24 top-1/4 h-72 w-72 rounded-full bg-cb-pink/25 blur-3xl dark:bg-cb-pink/15"
         aria-hidden

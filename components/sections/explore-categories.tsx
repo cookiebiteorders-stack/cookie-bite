@@ -20,7 +20,7 @@ export function ExploreCategories() {
   const { t } = useLanguage();
 
   return (
-    <section className="cb-grain relative bg-cb-cream py-16 md:py-24 lg:py-28">
+    <section className="cb-pl-collections cb-grain relative py-16 md:py-24 lg:py-28">
       <div className="relative mx-auto max-w-7xl cb-gutter">
         <ViewReveal variant="fade" className="block">
           <SectionHeading
@@ -58,7 +58,7 @@ export function ExploreCategories() {
                   <Link
                     href={card.href}
                     className={cn(
-                      "group relative block h-full overflow-hidden rounded-2xl border border-cb-peach-deep/75 bg-cb-surface cb-shadow-editorial cb-shadow-editorial-hover dark:border-cb-border/60",
+                      "cb-pl-collection-card group relative block h-full overflow-hidden",
                     )}
                   >
                     <div
@@ -81,12 +81,12 @@ export function ExploreCategories() {
                         }
                       />
                       <div
-                        className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/35 to-black/10"
+                        className="absolute inset-0 bg-gradient-to-t from-[color:var(--color-cream)]/90 via-transparent to-transparent"
                         aria-hidden
                       />
-                      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 text-white sm:p-6">
+                      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 text-[var(--color-text-primary)] sm:p-6">
                         <div className="max-w-[min(100%,20rem)]">
-                          <p className="font-serif text-xl font-semibold leading-tight [text-shadow:0_2px_12px_rgba(0,0,0,0.45)] sm:text-2xl">
+                          <p className="font-serif text-xl font-semibold leading-tight sm:text-2xl">
                             {title}
                           </p>
                           <p className="mt-1.5 text-sm font-medium leading-snug text-white/95 [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]">

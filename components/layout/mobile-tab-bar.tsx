@@ -81,7 +81,7 @@ export function MobileTabBar() {
 
   return (
     <nav
-      className="mobile-tab-bar"
+      className="mobile-tab-bar cb-pl-mobile-nav"
       aria-label={t("tabs.mainNavigation")}
     >
       <div className="mobile-tab-bar__inner">
@@ -97,6 +97,7 @@ export function MobileTabBar() {
                 className="mobile-tab-bar__tab mobile-tab-bar__tab--center"
                 aria-label={tab.label}
                 aria-current={active ? "page" : undefined}
+                data-active={active ? "true" : undefined}
               >
                 <motion.span
                   className="mobile-tab-bar__fab"
@@ -124,6 +125,7 @@ export function MobileTabBar() {
               className="mobile-tab-bar__tab"
               aria-label={tab.label}
               aria-current={active ? "page" : undefined}
+              data-active={active ? "true" : undefined}
             >
               <motion.span
                 className="mobile-tab-bar__icon-wrap"

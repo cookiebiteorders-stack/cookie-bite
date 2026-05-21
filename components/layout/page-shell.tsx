@@ -32,7 +32,7 @@ export function PageShell({
     <CartProvider>
       <div
         className={cn(
-          "cb-ambient-shell cb-touch-manipulation relative z-[1] flex min-h-screen flex-col overflow-x-clip bg-background text-foreground",
+          "cb-storefront cb-ambient-shell cb-touch-manipulation relative z-[1] flex min-h-screen flex-col overflow-x-clip bg-background text-foreground",
           className,
         )}
       >

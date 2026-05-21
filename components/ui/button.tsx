@@ -5,9 +5,9 @@ export type ButtonVariant = "primary" | "outline" | "ghost" | "subtle" | "danger
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-[var(--cb-btn-primary-bg)] text-[var(--cb-btn-primary-text)] no-underline shadow-md shadow-black/10 hover:bg-[var(--cb-btn-primary-hover)] hover:text-white active:scale-[0.98]",
+    "bg-[var(--color-caramel,var(--cb-btn-primary-bg))] text-[var(--color-text-on-dark,var(--cb-btn-primary-text))] no-underline shadow-[var(--shadow-pl-card)] hover:bg-[var(--color-caramel-dark,var(--cb-btn-primary-hover))] hover:text-white active:scale-[0.98]",
   outline:
-    "border-2 border-[var(--cb-btn-secondary-border)] bg-transparent text-[var(--cb-btn-secondary-text)] hover:bg-[color-mix(in_oklab,var(--cb-luxury-gold)_12%,transparent)] hover:border-[var(--cb-luxury-gold-hover)]",
+    "border-[1.5px] border-[var(--color-caramel,var(--cb-btn-secondary-border))] bg-transparent text-[var(--color-caramel-dark,var(--cb-btn-secondary-text))] hover:bg-[var(--color-caramel)] hover:text-[var(--color-text-on-dark)]",
   ghost:
     "border border-transparent text-cb-text-strong hover:bg-cb-surface-2",
   subtle:

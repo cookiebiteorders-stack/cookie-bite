@@ -16,7 +16,7 @@ export function InstagramGrid() {
   const { t } = useLanguage();
 
   return (
-    <section className="relative bg-cb-cream py-16 md:py-24">
+    <section className="cb-pl-instagram relative py-16 md:py-24">
       <div className="relative mx-auto max-w-7xl cb-gutter">
         <ViewReveal variant="fade-up" className="block">
           <SectionHeading

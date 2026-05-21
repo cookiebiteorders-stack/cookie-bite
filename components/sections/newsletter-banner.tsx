@@ -52,7 +52,7 @@ export function NewsletterBanner() {
         whileInView={{ opacity: 1, y: 0, scale: 1 }}
         viewport={{ once: true, margin: "-60px" }}
         transition={spring.soft}
-        className="relative overflow-hidden rounded-2xl border border-cb-peach-deep bg-cb-terracotta-dark text-white shadow-[0_24px_60px_-20px_rgba(43,26,14,0.35)] dark:border-cb-border dark:bg-gradient-to-br dark:from-[#3d2a1f] dark:to-cb-terracotta-dark dark:shadow-[0_28px_80px_-24px_rgba(0,0,0,0.55)]"
+        className="cb-pl-newsletter relative overflow-hidden rounded-2xl shadow-[var(--shadow-pl-hover)]"
       >
         <div
           className="pointer-events-none absolute -left-20 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-cb-pink/25 blur-3xl"
@@ -94,7 +94,7 @@ export function NewsletterBanner() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t("newsletter.placeholder")}
-              className="cb-touch-manipulation min-h-[3rem] w-full flex-1 rounded-xl border border-white/35 bg-white/12 px-4 text-base text-white placeholder:text-white/70 outline-none transition duration-300 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-cb-terracotta-dark"
+              className="cb-pl-input cb-touch-manipulation min-h-[3rem] w-full flex-1 rounded-full border border-white/40 bg-white/15 px-4 text-base text-white placeholder:text-white/65 outline-none transition duration-300 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/50"
             />
             <input
               type="text"
@@ -109,7 +109,7 @@ export function NewsletterBanner() {
               disabled={status === "loading"}
               whileHover={{ y: -2, scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
-              className="cb-touch-manipulation min-h-[3rem] shrink-0 rounded-xl border border-cb-peach-deep/60 bg-white px-6 text-base font-bold text-cb-terracotta-dark transition-[box-shadow,background-color] duration-300 ease-[cubic-bezier(0.33,1,0.68,1)] hover:shadow-md disabled:opacity-70 dark:border-cb-border dark:bg-cb-cream-2 dark:text-cb-terracotta-dark"
+              className="cb-pl-btn-subscribe cb-touch-manipulation min-h-[3rem] shrink-0 rounded-full px-6 text-base font-bold transition-[box-shadow,background-color] duration-300 disabled:opacity-70"
             >
               {buttonLabel}
             </motion.button>

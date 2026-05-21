@@ -85,7 +85,7 @@ export function ProductCard({
     <article
       data-loki="hover"
       className={cn(
-        "group flex flex-col overflow-hidden rounded-2xl border border-cb-peach-deep/70 bg-cb-surface shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-cb-border-strong hover:shadow-md",
+        "cb-pl-product-card group flex flex-col overflow-hidden transition-all duration-200",
         className,
       )}
     >
@@ -119,7 +119,11 @@ export function ProductCard({
             {product.badges.map((b) => (
               <span
                 key={b}
-                className="rounded-full bg-cb-pink px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cb-text-strong shadow-sm"
+                className={cn(
+                  "cb-pl-product-badge rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide shadow-sm",
+                  b === "new" && "is-new",
+                  b === "trending" && "is-trending",
+                )}
               >
                 {t(badgeKey[b])}
               </span>

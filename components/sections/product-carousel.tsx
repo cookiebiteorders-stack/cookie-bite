@@ -38,7 +38,7 @@ export function ProductCarousel() {
   }, [hasFeatured]);
 
   return (
-    <section className="relative border-y border-cb-peach-deep bg-gradient-to-b from-cb-surface via-cb-cream-2 to-cb-surface py-16 md:py-24 dark:border-cb-border/50 dark:from-cb-surface dark:via-cb-surface-2 dark:to-cb-surface">
+    <section className="cb-pl-bestsellers relative border-y border-[var(--color-border-soft)] bg-white py-16 md:py-24">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cb-terracotta-soft/40 to-transparent dark:via-cb-terracotta/25" />
       <div className="relative mx-auto max-w-7xl cb-gutter">
         <div className="mb-12 flex flex-col items-center gap-8 lg:mb-14">

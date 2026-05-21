@@ -1,0 +1,633 @@
+/**
+ * Cookie Bite — Playful Luxury Design System
+ * Warm · Soft · Premium · WCAG AA
+ */
+
+/* ─── A. Design tokens (alias + map to existing cb-* utilities) ─── */
+:root {
+  --color-cream: #f8f5ee;
+  --color-white: #ffffff;
+  --color-cream-dark: #f0ebe1;
+  --color-caramel: #d2a47b;
+  --color-caramel-dark: #b8895f;
+  --color-soft-gold: #c8b59f;
+  --color-pastel-pink: #f5d9d9;
+  --color-pastel-peach: #f5e8d9;
+  --color-pastel-mint: #d9f5e8;
+  --color-text-primary: #2b2b2b;
+  --color-text-secondary: #6b6b6b;
+  --color-text-muted: #9ca3af;
+  --color-text-on-dark: #ffffff;
+  --color-border: rgba(210, 164, 123, 0.25);
+  --color-border-soft: rgba(43, 43, 43, 0.08);
+
+  --gradient-warm: linear-gradient(135deg, #f8f5ee 0%, #f5e8d9 100%);
+  --gradient-blush: linear-gradient(135deg, #f8f5ee 0%, #f5d9d9 100%);
+  --gradient-mint: linear-gradient(135deg, #f8f5ee 0%, #d9f5e8 100%);
+  --gradient-premium: linear-gradient(135deg, #d2a47b 0%, #c8b59f 100%);
+  --gradient-hero: linear-gradient(160deg, #f8f5ee 0%, #f5e8d9 50%, #f5d9d9 100%);
+
+  --shadow-pl-card: 0 2px 16px rgba(139, 90, 43, 0.08);
+  --shadow-pl-hover: 0 6px 32px rgba(139, 90, 43, 0.14);
+  --shadow-pl-nav: 0 1px 12px rgba(43, 43, 43, 0.06);
+
+  --radius-pl-sm: 8px;
+  --radius-pl-md: 14px;
+  --radius-pl-lg: 20px;
+  --radius-pl-xl: 32px;
+  --radius-pl-pill: 9999px;
+
+  --transition-pl-fast: 150ms ease;
+  --transition-pl-base: 250ms ease;
+  --transition-pl-smooth: 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  --text-pl-xs: 0.75rem;
+  --text-pl-sm: 0.875rem;
+  --text-pl-base: 1rem;
+  --text-pl-md: 1.125rem;
+  --text-pl-lg: 1.25rem;
+  --text-pl-xl: 1.5rem;
+  --text-pl-2xl: 2rem;
+  --text-pl-3xl: 2.75rem;
+  --text-pl-hero: clamp(2.5rem, 6vw, 4.5rem);
+
+  --space-pl-1: 4px;
+  --space-pl-2: 8px;
+  --space-pl-3: 12px;
+  --space-pl-4: 16px;
+  --space-pl-6: 24px;
+  --space-pl-8: 32px;
+  --space-pl-10: 40px;
+  --space-pl-12: 48px;
+  --space-pl-16: 64px;
+  --space-pl-20: 80px;
+  --space-pl-24: 96px;
+
+  --caramel: var(--color-caramel);
+
+  /* Sync legacy cb-* tokens (storefront) */
+  --cb-brand-50: #fdf3ea;
+  --cb-brand-100: #fae3cf;
+  --cb-brand-200: #f4c7a0;
+  --cb-brand-300: #eaa570;
+  --cb-brand-400: #dd8447;
+  --cb-brand-500: #d2a47b;
+  --cb-brand-600: #b8895f;
+  --cb-brand-700: #84441b;
+  --cb-brand-800: #663316;
+  --cb-brand-900: #4a2510;
+
+  --cb-cream: var(--color-cream);
+  --cb-cream-2: var(--color-cream-dark);
+  --cb-peach: #efe7df;
+  --cb-peach-deep: #e0d8cf;
+  --cb-surface: var(--color-white);
+  --cb-surface-2: #faf7f3;
+  --cb-surface-elevated: var(--color-white);
+  --cb-luxury-gold: var(--color-caramel);
+  --cb-luxury-gold-hover: var(--color-caramel-dark);
+  --cb-terracotta: var(--color-caramel);
+  --cb-terracotta-dark: var(--color-caramel-dark);
+  --cb-brand-logo: var(--color-caramel);
+  --cb-terracotta-soft: var(--color-pastel-peach);
+  --cb-text-strong: var(--color-text-primary);
+  --cb-text: var(--color-text-secondary);
+  --cb-text-muted: var(--color-text-secondary);
+  --cb-text-placeholder: var(--color-text-muted);
+  --cb-border: var(--color-border-soft);
+  --cb-border-strong: #e0d8cf;
+  --cb-btn-primary-bg: var(--color-caramel);
+  --cb-btn-primary-hover: var(--color-caramel-dark);
+  --cb-btn-primary-text: var(--color-text-on-dark);
+  --cb-btn-secondary-border: var(--color-caramel);
+  --cb-btn-secondary-text: var(--color-caramel-dark);
+  --background: var(--color-cream);
+  --foreground: var(--color-text-primary);
+  --shadow-card: var(--shadow-pl-card);
+  --shadow-hover: var(--shadow-pl-hover);
+  --ring: var(--color-caramel);
+  --focus-ring: var(--color-caramel);
+}
+
+/* Storefront: always playful light (no harsh dark canvas) */
+html.dark .cb-storefront,
+html.dark .cb-storefront.cb-storefront {
+  --background: var(--color-cream);
+  --foreground: var(--color-text-primary);
+  --cb-cream: var(--color-cream);
+  --cb-surface: var(--color-white);
+  --cb-surface-elevated: var(--color-white);
+  --cb-text-strong: var(--color-text-primary);
+  --cb-text: var(--color-text-secondary);
+  --cb-text-muted: var(--color-text-secondary);
+  --cb-terracotta: var(--color-caramel);
+  --cb-terracotta-dark: var(--color-caramel-dark);
+  --cb-brand-logo: var(--color-caramel);
+  --cb-btn-primary-bg: var(--color-caramel);
+  --cb-btn-primary-hover: var(--color-caramel-dark);
+  color-scheme: light;
+}
+
+/* ─── C. Utilities ─── */
+.cb-pl-display {
+  font-family: var(--font-playfair), ui-serif, Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--color-text-primary);
+}
+
+.cb-pl-body {
+  font-size: var(--text-pl-base);
+  line-height: 1.65;
+  color: var(--color-text-secondary);
+}
+
+html[dir="rtl"] .cb-pl-body {
+  line-height: 1.8;
+}
+
+.cb-pl-eyebrow {
+  font-size: var(--text-pl-xs);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-caramel);
+}
+
+.cb-pl-section {
+  margin-block: clamp(3rem, 6vw, 5rem);
+  padding-inline: max(var(--cb-section-x), 1rem);
+}
+
+.cb-pl-container {
+  margin-inline: auto;
+  max-width: 75rem;
+}
+
+.cb-pl-reveal {
+  animation: cb-pl-fade-up var(--transition-pl-smooth) both;
+}
+
+@keyframes cb-pl-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-pl-reveal,
+  [class*="cb-marquee"] {
+    animation: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Buttons ─── */
+.btn-primary,
+.cb-pl-btn-primary {
+  background: var(--color-caramel);
+  color: var(--color-text-on-dark);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  padding: 0.8125rem 1.75rem;
+  border-radius: var(--radius-pl-pill);
+  border: none;
+  transition:
+    background var(--transition-pl-fast),
+    transform var(--transition-pl-fast);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover,
+.cb-pl-btn-primary:hover {
+  background: var(--color-caramel-dark);
+}
+
+.btn-primary:active,
+.cb-pl-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-ghost,
+.cb-pl-btn-ghost {
+  background: transparent;
+  color: var(--color-caramel);
+  border: 1.5px solid var(--color-caramel);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  padding: 0.75rem 1.75rem;
+  border-radius: var(--radius-pl-pill);
+  transition: all var(--transition-pl-fast);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-ghost:hover,
+.cb-pl-btn-ghost:hover {
+  background: var(--color-caramel);
+  color: var(--color-text-on-dark);
+}
+
+.input-field,
+.cb-pl-input {
+  background: var(--color-white);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-pl-md);
+  padding: 0.8125rem 1.125rem;
+  font-size: 0.9375rem;
+  color: var(--color-text-primary);
+  width: 100%;
+  transition:
+    border-color var(--transition-pl-fast),
+    box-shadow var(--transition-pl-fast);
+}
+
+.input-field::placeholder,
+.cb-pl-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.input-field:focus,
+.cb-pl-input:focus {
+  outline: none;
+  border-color: var(--color-caramel);
+  box-shadow: 0 0 0 3px rgba(210, 164, 123, 0.18);
+}
+
+/* ─── 1. Announcement bar ─── */
+.cb-pl-announcement {
+  background: var(--gradient-premium);
+  color: var(--color-text-on-dark);
+  border-block-end: none;
+  min-height: 2.25rem;
+}
+
+.cb-pl-announcement [class*="marquee"],
+.cb-pl-announcement .inline-flex {
+  color: var(--color-text-on-dark);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.cb-pl-announcement svg {
+  color: var(--color-text-on-dark);
+}
+
+/* ─── 2. Navbar (applied via header classes) ─── */
+.cb-pl-navbar {
+  background: color-mix(in oklab, var(--color-white) 92%, transparent);
+  backdrop-filter: blur(12px);
+  border-block-end: 1px solid transparent;
+  transition:
+    background var(--transition-pl-base),
+    border-color var(--transition-pl-base),
+    box-shadow var(--transition-pl-base);
+}
+
+.cb-pl-navbar.is-scrolled {
+  background: var(--color-white);
+  border-block-end-color: var(--color-border-soft);
+  box-shadow: var(--shadow-pl-nav);
+}
+
+.cb-pl-nav-link {
+  color: var(--color-text-primary);
+  transition: color var(--transition-pl-fast);
+}
+
+.cb-pl-nav-link:hover,
+.cb-pl-nav-link[aria-current="page"] {
+  color: var(--color-caramel);
+}
+
+/* ─── 3. Hero ─── */
+.cb-pl-hero {
+  background: var(--gradient-hero);
+  min-height: min(100svh, 52rem);
+}
+
+.cb-pl-hero-overlay {
+  background: linear-gradient(
+    160deg,
+    rgba(248, 245, 238, 0.92) 0%,
+    rgba(245, 232, 217, 0.82) 45%,
+    rgba(245, 217, 217, 0.72) 100%
+  ) !important;
+}
+
+.cb-pl-hero .cb-pl-hero-title {
+  color: var(--color-text-primary) !important;
+  text-shadow: none !important;
+  font-family: var(--font-playfair), ui-serif, Georgia, serif;
+  font-size: var(--text-pl-hero);
+  line-height: 1.1;
+}
+
+.cb-pl-hero .cb-pl-hero-sub {
+  color: var(--color-text-secondary) !important;
+  text-shadow: none !important;
+}
+
+.cb-pl-hero .cb-pl-hero-kicker {
+  color: var(--color-caramel) !important;
+}
+
+/* ─── 4. Trust badges ─── */
+.cb-pl-trust {
+  background: var(--color-white);
+  border-block: 1px solid var(--color-border-soft);
+}
+
+.cb-pl-trust-icon {
+  color: var(--color-caramel);
+}
+
+/* ─── 5. Collections ─── */
+.cb-pl-collections {
+  background: var(--gradient-warm);
+}
+
+.cb-pl-collection-card {
+  background: var(--color-white);
+  border-radius: var(--radius-pl-lg);
+  box-shadow: var(--shadow-pl-card);
+  transition:
+    transform var(--transition-pl-base),
+    box-shadow var(--transition-pl-base);
+}
+
+.cb-pl-collection-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-pl-hover);
+}
+
+.cb-pl-badge-pill {
+  background: var(--color-pastel-peach);
+  color: var(--color-text-primary);
+  font-size: var(--text-pl-xs);
+  border-radius: var(--radius-pl-pill);
+  padding: 0.25rem 0.625rem;
+}
+
+/* ─── 6. Kitchen notes ─── */
+.cb-pl-kitchen {
+  background: var(--gradient-blush);
+}
+
+/* ─── 7. Product strip ─── */
+.cb-pl-bestsellers {
+  background: var(--color-white);
+}
+
+/* ─── 8. Testimonials ─── */
+.cb-pl-testimonials {
+  background: var(--gradient-mint);
+}
+
+.cb-pl-testimonials blockquote {
+  color: var(--color-text-primary);
+}
+
+/* ─── 9. Instagram ─── */
+.cb-pl-instagram {
+  background: var(--color-cream);
+}
+
+.cb-pl-instagram-cell {
+  border-radius: 12px;
+  transition: transform var(--transition-pl-base);
+}
+
+.cb-pl-instagram-cell:hover {
+  transform: scale(1.03);
+}
+
+/* ─── 10. Newsletter ─── */
+.cb-pl-newsletter {
+  background: var(--gradient-premium);
+  color: var(--color-text-on-dark);
+  border-radius: var(--radius-pl-lg);
+}
+
+.cb-pl-newsletter h2,
+.cb-pl-newsletter p {
+  color: var(--color-text-on-dark);
+}
+
+.cb-pl-newsletter .cb-pl-input {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text-on-dark);
+}
+
+.cb-pl-newsletter .cb-pl-input::placeholder {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.cb-pl-newsletter .cb-pl-btn-subscribe {
+  background: var(--color-white);
+  color: var(--color-caramel);
+  font-weight: 700;
+  border-radius: var(--radius-pl-pill);
+}
+
+/* ─── 11. Footer ─── */
+.cb-pl-footer {
+  background: var(--color-cream-dark);
+  border-block-start: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.cb-pl-footer h2,
+.cb-pl-footer .cb-pl-footer-heading {
+  font-size: var(--text-pl-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+}
+
+.cb-pl-footer a {
+  color: var(--color-text-secondary);
+  transition: color var(--transition-pl-fast);
+}
+
+.cb-pl-footer a:hover {
+  color: var(--color-text-primary);
+}
+
+/* ─── 12. Mobile tab bar ─── */
+.cb-pl-mobile-nav {
+  background: var(--color-white);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+  border-block-start: 1px solid var(--color-border-soft);
+}
+
+.cb-pl-mobile-nav [data-active="true"] {
+  color: var(--color-caramel);
+}
+
+/* ─── 13. WhatsApp FAB (green exception) ─── */
+.cb-pl-whatsapp {
+  background: #25d366;
+  box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4);
+  animation: cb-pl-whatsapp-pulse 2s ease-in-out infinite;
+}
+
+@keyframes cb-pl-whatsapp-pulse {
+  0% {
+    box-shadow:
+      0 4px 20px rgba(37, 211, 102, 0.4),
+      0 0 0 0 rgba(37, 211, 102, 0.35);
+  }
+  70% {
+    box-shadow:
+      0 4px 20px rgba(37, 211, 102, 0.4),
+      0 0 0 12px rgba(37, 211, 102, 0);
+  }
+  100% {
+    box-shadow:
+      0 4px 20px rgba(37, 211, 102, 0.4),
+      0 0 0 0 rgba(37, 211, 102, 0);
+  }
+}
+
+.cb-pl-mobile-nav .mobile-tab-bar__icon--active,
+.cb-pl-mobile-nav .mobile-tab-bar__label--active,
+.cb-pl-mobile-nav .mobile-tab-bar__label--fab.mobile-tab-bar__label--active {
+  color: var(--color-caramel);
+}
+
+.cb-pl-mobile-nav .mobile-tab-bar__icon {
+  color: var(--color-text-muted);
+}
+
+.cb-pl-mobile-nav .mobile-tab-bar__label {
+  color: var(--color-text-muted);
+}
+
+.cb-pl-mobile-nav .mobile-tab-bar__fab {
+  background: var(--gradient-premium);
+}
+
+/* ─── 14. Shop header ─── */
+.cb-pl-shop-header {
+  background: var(--gradient-warm);
+  padding-block: 4rem;
+}
+
+/* ─── 15. Filter bar ─── */
+.cb-pl-filter-bar {
+  background: var(--color-white);
+  border-block-end: 1px solid var(--color-border-soft);
+}
+
+.cb-pl-pill {
+  background: var(--color-cream-dark);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-pl-pill);
+  font-size: 0.8125rem;
+  padding: 0.5rem 1rem;
+  transition: all var(--transition-pl-fast);
+}
+
+.cb-pl-pill.is-active,
+.cb-pl-pill[data-active="true"] {
+  background: var(--color-caramel);
+  color: var(--color-text-on-dark);
+  font-weight: 600;
+}
+
+/* ─── 16. Product card ─── */
+.cb-pl-product-card {
+  background: var(--color-white);
+  border-radius: var(--radius-pl-md);
+  box-shadow: var(--shadow-pl-card);
+  overflow: hidden;
+  transition:
+    transform var(--transition-pl-base),
+    box-shadow var(--transition-pl-base);
+}
+
+.cb-pl-product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-pl-hover);
+}
+
+.cb-pl-product-badge {
+  background: var(--color-caramel);
+  color: var(--color-text-on-dark);
+  font-size: 0.6875rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-pl-pill);
+}
+
+.cb-pl-product-badge.is-new {
+  background: var(--color-pastel-pink);
+  color: var(--color-text-primary);
+}
+
+.cb-pl-product-badge.is-trending {
+  background: var(--color-pastel-peach);
+  color: var(--color-text-primary);
+}
+
+/* ─── 17. Empty / skeleton ─── */
+.cb-pl-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-cream-dark) 0%,
+    var(--color-cream) 50%,
+    var(--color-cream-dark) 100%
+  );
+  background-size: 200% 100%;
+  animation: cb-pl-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-pl-md);
+}
+
+@keyframes cb-pl-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.cb-pl-empty {
+  padding: 5rem 1.5rem;
+  text-align: center;
+}
+
+.cb-pl-empty h3 {
+  font-size: 1.5rem;
+  color: var(--color-text-primary);
+}
+
+.cb-pl-empty p {
+  color: var(--color-text-secondary);
+}
+
+/* RTL chevrons */
+[dir="rtl"] .cb-pl-chevron {
+  transform: scaleX(-1);
+}

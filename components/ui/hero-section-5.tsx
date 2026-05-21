@@ -26,10 +26,10 @@ export function HeroSection5() {
   const soft = [0.33, 1, 0.68, 1] as const;
 
   return (
-    <div className="cb-grain overflow-x-hidden">
+    <div className="cb-pl-hero cb-grain overflow-x-hidden">
       <section className="relative min-h-[100svh] w-full">
         <div
-          className="absolute inset-0 z-0 overflow-hidden bg-cb-cream dark:bg-cb-cream-2"
+          className="absolute inset-0 z-0 overflow-hidden bg-[var(--color-cream)]"
           aria-hidden
         >
           {HERO_VIDEO_SRC ? (
@@ -53,8 +53,8 @@ export function HeroSection5() {
               sizes="100vw"
             />
           )}
-          <div className="pointer-events-none absolute inset-0 cb-scrim lg:hidden" />
-          <div className="pointer-events-none absolute inset-0 hidden cb-scrim-left lg:block" />
+          <div className="pointer-events-none absolute inset-0 cb-pl-hero-overlay lg:hidden" />
+          <div className="pointer-events-none absolute inset-0 cb-pl-hero-overlay hidden lg:block" />
         </div>
 
         <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-7xl flex-col cb-gutter pb-[max(4rem,env(safe-area-inset-bottom))] pt-[max(4.5rem,env(safe-area-inset-top))] md:pb-28 md:pt-24 lg:block lg:pb-36 lg:pt-28">
@@ -65,10 +65,10 @@ export function HeroSection5() {
               transition={{ delay: 0.08, duration: 0.7, ease: soft }}
               className="inline-flex rotate-[-0.8deg] flex-col gap-1"
             >
-              <span className="text-[max(10px,0.65rem)] font-bold uppercase tracking-[0.22em] text-white! sm:tracking-[0.28em]">
+              <span className="cb-pl-hero-kicker text-[max(10px,0.65rem)] font-bold uppercase tracking-[0.22em] sm:tracking-[0.28em]">
                 {t("hero.kicker")}
               </span>
-              <span className="font-playful text-[clamp(1rem,3.5vw,1.35rem)] text-[var(--caramel)] md:text-xl">
+              <span className="cb-pl-hero-kicker font-playful text-[clamp(1rem,3.5vw,1.35rem)] md:text-xl">
                 {t("hero.brand")}
               </span>
             </motion.p>
@@ -77,10 +77,10 @@ export function HeroSection5() {
               initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.18, duration: 0.75, ease: soft }}
-              className="mt-6 max-w-[min(100%,22rem)] text-balance font-serif text-[length:var(--fluid-display)] font-semibold leading-[1.06] text-white! [text-shadow:0_1px_12px_rgba(0,0,0,0.24)] sm:mt-7 sm:max-w-3xl lg:mt-12"
+              className="cb-pl-hero-title mt-6 max-w-[min(100%,22rem)] text-balance font-serif text-[length:var(--fluid-display)] font-semibold leading-[1.06] sm:mt-7 sm:max-w-3xl lg:mt-12"
             >
               {t("hero.titleBefore")}
-              <span className="italic text-[var(--caramel)]!">
+              <span className="italic text-[var(--color-caramel)]">
                 {t("hero.titleAccent")}
               </span>
               {t("hero.titleComma")}
@@ -94,7 +94,7 @@ export function HeroSection5() {
               initial={{ opacity: 0, y: 22 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.32, duration: 0.72, ease: soft }}
-              className="mt-6 max-w-xl text-pretty text-[length:var(--fluid-body)] font-medium leading-relaxed text-white! sm:mt-7 sm:text-lg lg:max-w-lg"
+              className="cb-pl-hero-sub mt-6 max-w-xl text-pretty text-[length:var(--fluid-body)] font-medium leading-relaxed sm:mt-7 sm:text-lg lg:max-w-lg"
             >
               {t("hero.body")}
             </motion.p>
@@ -109,19 +109,16 @@ export function HeroSection5() {
                 href="/shop"
                 className={buttonClassName(
                   "primary",
-                  "cb-touch-manipulation min-h-[3rem] w-full justify-center rounded-full px-7 py-3 text-base text-white! visited:text-white! hover:text-white! active:text-white! sm:w-auto cb-shadow-editorial-hover",
+                  "cb-touch-manipulation min-h-[3rem] w-full justify-center rounded-full px-7 py-3 text-base sm:w-auto",
                 )}
               >
-                <span className="text-center text-white! visited:text-white! hover:text-white! sm:text-nowrap">
-                  {t("hero.ctaShop")}
-                </span>
-                <ChevronRight className="ms-0.5 h-5 w-5 shrink-0 text-white! rtl:rotate-180" aria-hidden />
+                <span className="text-center sm:text-nowrap">{t("hero.ctaShop")}</span>
+                <ChevronRight className="cb-pl-chevron ms-0.5 h-5 w-5 shrink-0 rtl:rotate-180" aria-hidden />
               </Link>
               <Link
                 href="/gift-box"
-                className={buttonClassName(
-                  "subtle",
-                  "cb-touch-manipulation min-h-[3rem] w-full justify-center rounded-full px-7 py-3 text-base transition-transform duration-300 ease-[cubic-bezier(0.33,1,0.68,1)] hover:-translate-y-0.5 sm:w-auto",
+                className={cn(
+                  "cb-pl-btn-ghost cb-touch-manipulation min-h-[3rem] w-full justify-center sm:w-auto",
                 )}
               >
                 <span className="text-center sm:text-nowrap">{t("hero.ctaGift")}</span>
@@ -139,7 +136,7 @@ export function HeroSection5() {
           </div>
         </div>
 
-        <section className="relative z-10 border-t border-cb-peach-deep bg-gradient-to-b from-cb-cream/98 to-cb-peach/25 py-5 backdrop-blur transition-colors duration-200 supports-[backdrop-filter]:bg-cb-cream/92 dark:border-cb-border/40 dark:from-cb-cream/95 dark:to-cb-peach/15">
+        <section className="cb-pl-trust relative z-10 border-t border-[var(--color-border-soft)] bg-white py-5">
           <div className="relative m-auto max-w-7xl cb-gutter">
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-10">
               <div className="shrink-0 md:max-w-[10.5rem] md:border-e md:border-cb-peach-deep md:pe-8">

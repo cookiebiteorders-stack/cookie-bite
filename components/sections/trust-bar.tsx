@@ -40,7 +40,7 @@ export function TrustBar() {
   const { t } = useLanguage();
 
   return (
-    <section className="relative border-y border-cb-peach-deep bg-cb-surface-2 py-12 md:py-16 dark:border-cb-border/50">
+    <section className="cb-pl-trust relative py-12 md:py-16">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.55] dark:opacity-[0.4]"
         aria-hidden
@@ -70,8 +70,8 @@ export function TrustBar() {
                 aria-hidden
               />
               <div className="relative flex flex-col items-center gap-4 text-center">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-cb-peach-deep/80 bg-cb-cream/90 text-cb-terracotta-dark cb-shadow-editorial transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 dark:border-cb-border dark:bg-cb-surface-elevated dark:text-cb-terracotta">
-                  <item.icon className="h-5 w-5" aria-hidden />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-caramel)] shadow-[var(--shadow-pl-card)] transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5">
+                  <item.icon className="cb-pl-trust-icon h-5 w-5" aria-hidden />
                 </div>
                 <div className="min-w-0 pt-0.5">
                   <p className="font-semibold leading-snug text-cb-text-strong">

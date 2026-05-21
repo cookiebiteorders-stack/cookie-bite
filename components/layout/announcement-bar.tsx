@@ -18,7 +18,7 @@ export function AnnouncementBar() {
   const tickerItems = ANNOUNCEMENT_ITEMS.filter((item) => item.icon !== "truck");
 
   return (
-    <div className="border-b border-cb-peach-deep bg-cb-peach/60 text-cb-text-strong dark:border-cb-border/40 dark:bg-cb-peach/15 dark:text-cb-text-strong">
+    <div className="cb-pl-announcement">
       <div className="mx-auto max-w-7xl cb-gutter py-1.5 text-[12px] font-medium">
         <div className="scrollbar-hide overflow-hidden whitespace-nowrap">
           <div className="inline-flex min-w-max items-center gap-8 pr-8 [animation:cb-marquee_26s_linear_infinite]">
