@@ -96,6 +96,17 @@ function extractActions(toolCalls: CopilotToolCall[]) {
     .filter(Boolean);
 }
 
+function toolWarnings(toolCalls: CopilotToolCall[]): string[] {
+  return toolCalls
+    .map((c) => {
+      const r = c.result;
+      if (typeof r !== "object" || r === null || Array.isArray(r)) return null;
+      const w = (r as { warning?: unknown }).warning;
+      return typeof w === "string" && w.trim() ? `${c.name}: ${w.trim()}` : null;
+    })
+    .filter((x): x is string => Boolean(x));
+}
+
 export async function POST(req: NextRequest) {
   // Any admin/owner/staff with at least dashboard access can use the copilot.
   let actor;
@@ -158,8 +169,14 @@ export async function POST(req: NextRequest) {
       attachments,
       actor: toolActor,
     });
+    const warnings = toolWarnings(result.toolCalls);
+    const reply =
+      warnings.length > 0
+        ? `${result.reply || ""}\n\n⚠️ ${warnings.join("\n")}`.trim()
+        : result.reply;
+
     return NextResponse.json({
-      reply: result.reply,
+      reply,
       actions: extractActions(result.toolCalls),
       toolCalls: result.toolCalls.map((c) => ({
         name: c.name,

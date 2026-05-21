@@ -579,7 +579,7 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
           <div className="rounded-2xl border border-dashed border-amber-300/80 bg-[rgb(51,0,0)] p-8 text-center dark:border-amber-800 dark:bg-[rgb(51,0,0)]">
             <Package className="mx-auto h-10 w-10 text-amber-600" aria-hidden />
             <h3 className="mt-3 font-serif text-lg font-bold text-stone-50 dark:text-stone-50">لا توجد طلبات</h3>
-            <p className="mt-2 text-sm text-[var(--bg-main)]">جرّب توسيع نطاق البحث أو إزالة الفلاتر.</p>
+            <p className="mt-2 text-sm text-cb-text-muted">جرّب توسيع نطاق البحث أو إزالة الفلاتر.</p>
             <button
               type="button"
               className="mt-4 rounded-xl border border-cb-border px-4 py-2 text-sm font-bold"

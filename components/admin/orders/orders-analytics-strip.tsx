@@ -60,7 +60,7 @@ export function OrdersAnalyticsStrip({ orders, stats }: Props) {
           معدل مرتجعات تقريبي
         </div>
         <p className="mt-3 font-serif text-3xl font-bold text-stone-900 dark:text-stone-50">{refundRate}%</p>
-        <p className="mt-1 text-xs text-[var(--bg-main)]">مبني على refunded ÷ (delivered + shipped + refunded) عالمياً.</p>
+        <p className="mt-1 text-xs text-cb-text-muted">مبني على refunded ÷ (delivered + shipped + refunded) عالمياً.</p>
       </div>
       <div className="rounded-xl border border-cb-border/80 bg-white/90 p-4 dark:bg-stone-900/40">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-cb-text-muted">
@@ -73,7 +73,7 @@ export function OrdersAnalyticsStrip({ orders, stats }: Props) {
         <p className="mt-1 text-sm text-stone-800 dark:text-stone-100">
           أمس: <strong>{stats.orders_yesterday}</strong>
         </p>
-        <p className="mt-2 text-[11px] text-[var(--bg-main)]">WebSockets غير مفعّل — استخدم «تحديث» أو التحديث التلقائي.</p>
+        <p className="mt-2 text-[11px] text-cb-text-muted">WebSockets غير مفعّل — استخدم «تحديث» أو التحديث التلقائي.</p>
       </div>
     </motion.div>
   );

@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { AddressMapPicker } from "@/components/account/address-map-picker";
 import { buttonClassName } from "@/components/ui/button";
 import { fetchJson } from "@/lib/http/fetch-json";
-import { normalizeEgyptPhone } from "@/lib/account/profile-schema";
+import { isValidEgyptPhone, normalizeEgyptPhone } from "@/lib/account/profile-schema";
+
+const profileInputClass =
+  "w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm text-cb-text-strong placeholder:text-cb-text-muted";
 import { cn } from "@/lib/utils";
 
 const EGYPT_GOVERNORATES = [
@@ -141,14 +144,17 @@ export function CompleteProfileForm() {
   }, []);
 
   const buildPayload = useCallback(() => {
-    const phone = normalizeEgyptPhone(form.phone);
-    const phoneSecondary = normalizeEgyptPhone(form.phone_secondary);
-    const addressPhone = normalizeEgyptPhone(
-      form.address_phone || form.phone,
-    );
-    const addressPhoneSecondary = normalizeEgyptPhone(
-      form.address_phone_secondary,
-    );
+    const phone = isValidEgyptPhone(form.phone) ? normalizeEgyptPhone(form.phone) : null;
+    const phoneSecondary = isValidEgyptPhone(form.phone_secondary)
+      ? normalizeEgyptPhone(form.phone_secondary)
+      : null;
+    const addressPhoneRaw = form.address_phone || form.phone;
+    const addressPhone = isValidEgyptPhone(addressPhoneRaw)
+      ? normalizeEgyptPhone(addressPhoneRaw)
+      : null;
+    const addressPhoneSecondary = isValidEgyptPhone(form.address_phone_secondary)
+      ? normalizeEgyptPhone(form.address_phone_secondary)
+      : null;
 
     const hasAddress =
       form.street.trim() &&
@@ -242,7 +248,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1">
             <span className="text-xs font-semibold text-cb-text-muted">Full name (EN)</span>
             <input
-              className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={profileInputClass}
               value={form.full_name_en}
               onChange={(e) => setForm((f) => ({ ...f, full_name_en: e.target.value }))}
             />
@@ -250,7 +256,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1">
             <span className="text-xs font-semibold text-cb-text-muted">الاسم الكامل (عربي)</span>
             <input
-              className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={profileInputClass}
               dir="rtl"
               value={form.full_name_ar}
               onChange={(e) => setForm((f) => ({ ...f, full_name_ar: e.target.value }))}
@@ -259,7 +265,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1">
             <span className="text-xs font-semibold text-cb-text-muted">Mobile</span>
             <input
-              className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={profileInputClass}
               placeholder="01xxxxxxxxx"
               value={form.phone}
               onChange={(e) =>
@@ -274,7 +280,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1">
             <span className="text-xs font-semibold text-cb-text-muted">رقم ثانوي (اختياري)</span>
             <input
-              className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={profileInputClass}
               placeholder="01xxxxxxxxx"
               value={form.phone_secondary}
               onChange={(e) => setForm((f) => ({ ...f, phone_secondary: e.target.value }))}
@@ -283,7 +289,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1 sm:col-span-2">
             <span className="text-xs font-semibold text-cb-text-muted">ملاحظات إضافية (اختياري)</span>
             <textarea
-              className="min-h-20 w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={cn(profileInputClass, "min-h-20")}
               dir="rtl"
               value={form.profile_notes}
               onChange={(e) => setForm((f) => ({ ...f, profile_notes: e.target.value }))}
@@ -300,7 +306,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1 sm:col-span-2">
             <span className="text-xs font-semibold text-cb-text-muted">اسم المستلم</span>
             <input
-              className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={profileInputClass}
               value={form.recipient}
               onChange={(e) => setForm((f) => ({ ...f, recipient: e.target.value }))}
             />
@@ -308,7 +314,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1">
             <span className="text-xs font-semibold text-cb-text-muted">هاتف التوصيل</span>
             <input
-              className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={profileInputClass}
               value={form.address_phone}
               onChange={(e) => setForm((f) => ({ ...f, address_phone: e.target.value }))}
             />
@@ -316,7 +322,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1">
             <span className="text-xs font-semibold text-cb-text-muted">هاتف ثانوي للعنوان</span>
             <input
-              className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={profileInputClass}
               value={form.address_phone_secondary}
               onChange={(e) =>
                 setForm((f) => ({ ...f, address_phone_secondary: e.target.value }))
@@ -326,7 +332,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1 sm:col-span-2">
             <span className="text-xs font-semibold text-cb-text-muted">الشارع / الحي</span>
             <input
-              className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={profileInputClass}
               dir="rtl"
               value={form.street}
               onChange={(e) => setForm((f) => ({ ...f, street: e.target.value }))}
@@ -335,7 +341,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1">
             <span className="text-xs font-semibold text-cb-text-muted">مبنى</span>
             <input
-              className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={profileInputClass}
               value={form.building}
               onChange={(e) => setForm((f) => ({ ...f, building: e.target.value }))}
             />
@@ -343,7 +349,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1">
             <span className="text-xs font-semibold text-cb-text-muted">دور</span>
             <input
-              className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={profileInputClass}
               value={form.floor}
               onChange={(e) => setForm((f) => ({ ...f, floor: e.target.value }))}
             />
@@ -351,7 +357,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1">
             <span className="text-xs font-semibold text-cb-text-muted">شقة</span>
             <input
-              className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={profileInputClass}
               value={form.apartment}
               onChange={(e) => setForm((f) => ({ ...f, apartment: e.target.value }))}
             />
@@ -359,7 +365,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1">
             <span className="text-xs font-semibold text-cb-text-muted">المدينة</span>
             <input
-              className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={profileInputClass}
               value={form.city}
               onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
             />
@@ -367,7 +373,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1">
             <span className="text-xs font-semibold text-cb-text-muted">المحافظة</span>
             <select
-              className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={profileInputClass}
               value={form.governorate}
               onChange={(e) => setForm((f) => ({ ...f, governorate: e.target.value }))}
             >
@@ -381,7 +387,7 @@ export function CompleteProfileForm() {
           <label className="space-y-1 sm:col-span-2">
             <span className="text-xs font-semibold text-cb-text-muted">تعليمات للسائق</span>
             <textarea
-              className="min-h-16 w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+              className={cn(profileInputClass, "min-h-16")}
               dir="rtl"
               value={form.delivery_notes}
               onChange={(e) => setForm((f) => ({ ...f, delivery_notes: e.target.value }))}

@@ -270,7 +270,7 @@ export function ProductManagementDashboard() {
           <button
             type="button"
             onClick={exportAllPage}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold text-[var(--bg-main)] shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900"
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold text-cb-text-strong shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900 dark:text-stone-100"
           >
             <Download className="h-4 w-4" aria-hidden />
             تصدير CSV
@@ -278,7 +278,7 @@ export function ProductManagementDashboard() {
           <button
             type="button"
             onClick={() => void onSync()}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold text-[var(--bg-main)] shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900"
+            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold text-cb-text-strong shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900 dark:text-stone-100"
           >
             <RefreshCw className="h-4 w-4" aria-hidden />
             مزامنة
@@ -287,7 +287,7 @@ export function ProductManagementDashboard() {
             <button
               type="button"
               onClick={() => setSettingsOpen((o) => !o)}
-              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold text-[var(--bg-main)] shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900"
+              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold text-cb-text-strong shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900 dark:text-stone-100"
               aria-expanded={settingsOpen}
               aria-haspopup="menu"
             >

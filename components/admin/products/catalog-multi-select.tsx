@@ -54,7 +54,7 @@ export function CatalogMultiSelect({
           disabled={disabled}
           onClick={() => setOpen((o) => !o)}
           className={cn(
-            "flex w-full items-center justify-between gap-2 rounded-xl border border-cb-border/70 bg-white px-3 py-2 text-sm font-medium text-cb-text-strong shadow-sm transition",
+            "flex w-full items-center justify-between gap-2 rounded-xl border border-cb-border/70 bg-white px-3 py-2 text-sm font-medium text-cb-text-strong shadow-sm transition dark:bg-cb-surface dark:text-cb-text-strong",
             "hover:border-cb-terracotta-dark/40 focus:outline-none focus:ring-2 focus:ring-cb-terracotta-dark/20",
             disabled && "cursor-not-allowed opacity-50",
           )}
@@ -83,7 +83,7 @@ export function CatalogMultiSelect({
             <ul
               role="listbox"
               aria-multiselectable="true"
-              className="absolute start-0 end-0 top-[calc(100%+4px)] z-[91] max-h-48 overflow-y-auto rounded-xl border border-cb-border bg-white py-1 shadow-lg"
+              className="absolute start-0 end-0 top-[calc(100%+4px)] z-[91] max-h-48 overflow-y-auto rounded-xl border border-cb-border bg-white py-1 shadow-lg dark:bg-cb-surface-elevated dark:text-cb-text-strong"
             >
               {options.map((opt) => {
                 const checked = selectedSet.has(opt.value);
@@ -91,8 +91,8 @@ export function CatalogMultiSelect({
                   <li key={opt.value} role="option" aria-selected={checked}>
                     <label
                       className={cn(
-                        "flex cursor-pointer items-center gap-2 px-3 py-2 text-sm transition hover:bg-amber-50/80",
-                        checked && "bg-amber-50/60 font-semibold text-cb-terracotta-dark",
+                        "flex cursor-pointer items-center gap-2 px-3 py-2 text-sm text-cb-text-strong transition hover:bg-amber-50/80 dark:hover:bg-cb-surface-2",
+                        checked && "bg-amber-50/60 font-semibold text-cb-terracotta-dark dark:bg-cb-surface-2",
                       )}
                     >
                       <input

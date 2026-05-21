@@ -92,6 +92,17 @@
 .dark .admin-console select,
 .dark .admin-console textarea {
   background-color: var(--cb-surface);
+  color: var(--cb-text-strong);
+}
+
+.dark .admin-console .bg-white,
+.dark .admin-console [class*="bg-white"] {
+  color: var(--cb-text-strong);
+}
+
+.dark .admin-console button.bg-white,
+.dark .admin-console a.bg-white {
+  color: var(--cb-text-strong);
 }
 
 #admin-main-content {

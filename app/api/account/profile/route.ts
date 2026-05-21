@@ -191,7 +191,16 @@ export async function POST(req: NextRequest) {
   }
 
   const completed = await markProfileCompleted(dbUser.id);
-  const profileUser = completed ?? dbUser;
+  if (!completed) {
+    return NextResponse.json(
+      bilingualError(
+        "Could not mark profile complete — database unavailable",
+        "تعذّر إكمال الملف — تحقق من اتصال قاعدة البيانات (SUPABASE_SERVICE_KEY)",
+      ),
+      { status: 503 },
+    );
+  }
+  const profileUser = completed;
 
   try {
     const staffResult = await tryNotifyStaffNewCustomer({

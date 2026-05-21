@@ -53,7 +53,7 @@ const FORM_STEPS = [
 ] as const;
 
 const inputClass =
-  "w-full rounded-xl border border-cb-border/70 bg-white px-3 py-2 text-sm font-medium text-cb-text-strong shadow-sm transition-all duration-200 placeholder:text-cb-text-muted/55 focus:border-cb-terracotta-dark focus:outline-none focus:ring-2 focus:ring-cb-terracotta-dark/20";
+  "w-full rounded-xl border border-cb-border/70 bg-white px-3 py-2 text-sm font-medium text-cb-text-strong shadow-sm transition-all duration-200 placeholder:text-cb-text-muted/55 focus:border-cb-terracotta-dark focus:outline-none focus:ring-2 focus:ring-cb-terracotta-dark/20 dark:bg-cb-surface dark:text-cb-text-strong";
 
 const inputErrorClass =
   "border-red-300/90 bg-red-50/50 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(239,68,68,0.15)]";
@@ -676,7 +676,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
               </div>
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-cb-border/70 bg-white/95 px-4 py-3 shadow-[0_-4px_16px_-8px_rgba(61,40,20,0.12)]">
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-cb-border/70 bg-white/95 px-4 py-3 shadow-[0_-4px_16px_-8px_rgba(61,40,20,0.12)] dark:bg-cb-surface-elevated">
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"

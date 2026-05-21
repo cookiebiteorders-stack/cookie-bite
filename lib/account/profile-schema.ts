@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-const EGYPT_PHONE_RE = /^01[0125][0-9]{8}$/;
+export const EGYPT_PHONE_RE = /^01[0125][0-9]{8}$/;
+
+export function isValidEgyptPhone(raw: string): boolean {
+  const n = normalizeEgyptPhone(raw);
+  return n.length > 0 && EGYPT_PHONE_RE.test(n);
+}
 
 /** يطبّع أرقام مصر: مسافات، +20، 10 أرقام بدون 0 */
 export function normalizeEgyptPhone(raw: string): string {
@@ -31,7 +36,11 @@ function optionalEgyptPhone() {
 function optionalName(max = 120) {
   return z
     .union([z.string(), z.null(), z.undefined()])
-    .transform(trimToNull)
+    .transform((v) => {
+      const t = trimToNull(v);
+      if (t && t.length === 1) return null;
+      return t;
+    })
     .refine((v) => v === null || (v.length >= 2 && v.length <= max), {
       message: "الاسم يجب أن يكون حرفين على الأقل إن أُدخل",
     });

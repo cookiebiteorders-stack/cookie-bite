@@ -21,7 +21,8 @@ import {
   productSeasonsSchema,
   productVideoUrlSchema,
 } from "@/lib/validations/product-media";
-import { deriveProductSlug, appendSlugSuffix } from "@/lib/products/slug";
+import { deriveProductSlug } from "@/lib/products/slug";
+import { insertProductWithSlugRetry } from "@/lib/products/insert-product";
 import { zodPayloadError } from "@/lib/validations/zod-errors";
 
 const querySchema = z.object({
@@ -249,7 +250,6 @@ export async function POST(req: NextRequest) {
   }
 
   const payload = parsed.data;
-  const baseSlug = deriveProductSlug(payload.name, payload.slug?.trim());
 
   const { images, image_url } = resolveProductMedia({
     images: payload.images,
@@ -281,37 +281,32 @@ export async function POST(req: NextRequest) {
   });
 
   const supabase = createSupabaseAdminClient();
-  let slug = baseSlug;
-  let data: Record<string, unknown> | null = null;
-  let lastError: { code?: string; message?: string } | null = null;
+  const inserted = await insertProductWithSlugRetry(
+    supabase,
+    payload.name.trim(),
+    payload.slug?.trim(),
+    buildRow,
+  );
 
-  for (let attempt = 1; attempt <= 8; attempt++) {
-    const row = buildRow(appendSlugSuffix(baseSlug, attempt));
-    slug = row.slug;
-    const result = await supabase.from("products").insert(row).select("*").single();
-    if (!result.error && result.data) {
-      data = result.data as Record<string, unknown>;
-      lastError = null;
-      break;
-    }
-    lastError = result.error;
-    const code = String(result.error?.code ?? "");
-    if (code !== "23505") break;
-  }
-
-  if (!data) {
-    const code = String(lastError?.code ?? "");
+  if ("error" in inserted) {
+    const code = String(inserted.error?.code ?? "");
     const status = code === "23505" ? 409 : 500;
+    const hint = inserted.error?.message ? ` (${inserted.error.message})` : "";
     return NextResponse.json(
-      bilingualError(
-        code === "23505" ? "Slug or SKU already exists" : "Failed to create product",
-        code === "23505"
-          ? "الرابط (Slug) أو SKU مستخدم بالفعل — غيّر الاسم أو الـ Slug"
-          : "فشل إضافة المنتج",
-      ),
+      {
+        ...bilingualError(
+          code === "23505" ? "Slug or SKU already exists" : `Failed to create product${hint}`,
+          code === "23505"
+            ? "الرابط (Slug) أو SKU مستخدم بالفعل — غيّر الاسم أو الـ Slug"
+            : `فشل إضافة المنتج${hint}`,
+        ),
+        debug: process.env.NODE_ENV !== "production" ? inserted.error : undefined,
+      },
       { status },
     );
   }
+
+  const data = inserted.data;
 
   await writeAuditLog({
     actor: { user_id: actor.user_id, email: actor.email, role: actor.role },

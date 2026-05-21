@@ -8,6 +8,9 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { normalizeProductImages, primaryImageFromProduct } from "@/lib/products/media";
 import { deriveProductSlug } from "@/lib/products/slug";
+import { insertProductWithSlugRetry } from "@/lib/products/insert-product";
+import { filterValidBadges, filterValidSeasons } from "@/lib/products/catalog-options";
+import { roleMatrix, type UserRole } from "@/lib/admin/rbac";
 import type { CopilotToolActor } from "@/lib/admin/copilot/tools";
 
 type Json = Record<string, unknown> | unknown[] | string | number | boolean | null;
@@ -29,7 +32,10 @@ function parseList(v: unknown): string[] {
 }
 
 function canWrite(actor: CopilotToolActor): boolean {
-  return actor.role === "owner" || actor.role === "admin";
+  const role = actor.role as UserRole;
+  if (role === "owner" || role === "admin") return true;
+  const perm = roleMatrix[role]?.products;
+  return perm === "full" || perm === "limited";
 }
 
 function defaultPrice(category?: string | null): number {
@@ -142,20 +148,15 @@ export async function create_product(args: Record<string, unknown>, actor: Copil
       (typeof args.description_ar === "string" ? args.description_ar.trim() : "") ||
       defaults.description_ar;
 
-    const slug = deriveProductSlug(
-      name,
-      typeof args.slug === "string" ? args.slug.trim() : undefined,
-    );
-
-    const badges = parseList(args.badges ?? args.tags);
-    const seasons = parseList(args.seasons);
+    const badges = filterValidBadges(parseList(args.badges ?? args.tags));
+    const seasons = filterValidSeasons(parseList(args.seasons));
     const stock = args.stock != null ? Math.max(0, Math.floor(num(args.stock))) : 24;
     const is_active = args.is_active !== false;
 
     const images = normalizeProductImages(undefined, null);
     const image_url = primaryImageFromProduct(images, null);
 
-    const row = {
+    const buildRow = (slug: string) => ({
       slug,
       name,
       title_en: (typeof args.title_en === "string" ? args.title_en.trim() : null) || name,
@@ -182,19 +183,25 @@ export async function create_product(args: Record<string, unknown>, actor: Copil
       pieces_count:
         args.pieces_count != null ? Math.max(1, Math.floor(num(args.pieces_count))) : null,
       dietary: parseList(args.dietary ?? args.ingredients),
-    };
+    });
 
     const sb = createSupabaseAdminClient();
-    const { data, error } = await sb.from("products").insert(row).select("*").single();
-    if (error || !data) {
-      const code = String((error as { code?: string } | null)?.code ?? "");
+    const inserted = await insertProductWithSlugRetry(
+      sb,
+      name,
+      typeof args.slug === "string" ? args.slug.trim() : undefined,
+      buildRow,
+    );
+    if ("error" in inserted) {
+      const code = String(inserted.error?.code ?? "");
       return {
         warning:
           code === "23505"
             ? "Slug or SKU already exists — try a different name or slug."
-            : error?.message ?? "Failed to create product.",
+            : inserted.error?.message ?? "Failed to create product.",
       };
     }
+    const data = inserted.data;
 
     await writeAuditLog({
       actor: { user_id: actor.user_id, email: actor.email, role: actor.role },

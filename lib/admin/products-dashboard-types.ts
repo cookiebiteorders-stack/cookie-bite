@@ -3,6 +3,7 @@ import { normalizeProductImages } from "@/lib/products/media";
 import type { ProductImage } from "@/lib/db/types";
 import { DEFAULT_PRODUCT_CATEGORY } from "@/lib/admin/product-categories";
 import { deriveProductSlug } from "@/lib/products/slug";
+import { filterValidBadges, filterValidSeasons } from "@/lib/products/catalog-options";
 
 export type AdminProductRow = {
   id: string;
@@ -170,23 +171,30 @@ export function formToApiPayload(form: ProductFormState) {
     .split(/[\n,]/g)
     .map((x) => x.trim())
     .filter(Boolean);
-  const badgesList = form.badges
-    .split(/[\n,،]/g)
-    .map((x) => x.trim().toLowerCase())
-    .filter(Boolean);
-  const seasonsList = form.seasons
-    .split(/[\n,،]/g)
-    .map((x) => x.trim().toLowerCase())
-    .filter(Boolean);
+  const badgesList = filterValidBadges(
+    form.badges
+      .split(/[\n,،]/g)
+      .map((x) => x.trim().toLowerCase())
+      .filter(Boolean),
+  );
+  const seasonsList = filterValidSeasons(
+    form.seasons
+      .split(/[\n,،]/g)
+      .map((x) => x.trim().toLowerCase())
+      .filter(Boolean),
+  );
   const compareRaw = form.compare_price_egp.trim();
+  const compareN = compareRaw ? Number(compareRaw) : NaN;
   const compare_price_egp =
-    compareRaw && Number.isFinite(Number(compareRaw)) ? Number(compareRaw) : null;
+    compareRaw && Number.isFinite(compareN) && compareN > 0 ? compareN : null;
   const weightRaw = form.weight_grams.trim();
+  const weightN = weightRaw ? Number(weightRaw) : NaN;
   const weight_grams =
-    weightRaw && Number.isFinite(Number(weightRaw)) ? Number(weightRaw) : null;
+    weightRaw && Number.isFinite(weightN) && weightN > 0 ? Math.floor(weightN) : null;
   const piecesRaw = form.pieces_count.trim();
+  const piecesN = piecesRaw ? Number(piecesRaw) : NaN;
   const pieces_count =
-    piecesRaw && Number.isFinite(Number(piecesRaw)) ? Number(piecesRaw) : null;
+    piecesRaw && Number.isFinite(piecesN) && piecesN > 0 ? Math.floor(piecesN) : null;
 
   const images = form.images
     .map((img, order) => ({

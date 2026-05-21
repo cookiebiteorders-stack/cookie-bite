@@ -57,7 +57,10 @@ export async function deleteUserByClerkId(clerkUserId: string) {
 
 export async function markProfileCompleted(userId: string): Promise<UserRow | null> {
   const supabase = tryCreateSupabaseAdminClient();
-  if (!supabase) return null;
+  if (!supabase) {
+    console.error("markProfileCompleted: Supabase admin client unavailable");
+    return null;
+  }
   const { data, error } = await supabase
     .from("users")
     .update({ profile_completed_at: new Date().toISOString() })
