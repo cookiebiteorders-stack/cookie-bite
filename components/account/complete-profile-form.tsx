@@ -135,6 +135,10 @@ export function CompleteProfileForm() {
     };
   }, [router]);
 
+  const onMapChange = useCallback((lat: number, lng: number) => {
+    setForm((f) => ({ ...f, latitude: lat, longitude: lng }));
+  }, []);
+
   const submit = useCallback(async () => {
     setError(null);
     if (form.latitude == null || form.longitude == null) {
@@ -351,7 +355,7 @@ export function CompleteProfileForm() {
         <AddressMapPicker
           latitude={form.latitude}
           longitude={form.longitude}
-          onChange={(lat, lng) => setForm((f) => ({ ...f, latitude: lat, longitude: lng }))}
+          onChange={onMapChange}
         />
       </section>
 
