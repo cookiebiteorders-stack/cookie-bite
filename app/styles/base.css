@@ -176,33 +176,41 @@ select:disabled,
   opacity: 0.65;
 }
 
-/* Admin readability baseline for forms/tables */
+/* Forms — white fields, gold focus (luxury contrast) */
 input,
 select,
 textarea {
   color: var(--cb-text-strong);
-  border-color: var(--cb-border);
-  background-color: var(--cb-surface);
+  border: 1px solid var(--cb-border);
+  background-color: #ffffff;
 }
 
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid var(--cb-focus);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--cb-luxury-gold);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--cb-luxury-gold) 28%, transparent);
 }
 
+/* Tables — readable headers + zebra rows */
 table thead th {
-  color: var(--cb-text-strong);
+  background: var(--cb-table-header-bg);
+  color: var(--cb-table-header-text);
+  font-weight: 700;
 }
 
 table tbody td {
-  color: var(--cb-text);
+  color: var(--cb-text-strong);
+}
+
+table tbody tr {
+  border-bottom: 1px solid var(--cb-table-border);
 }
 
 .admin-console table tbody tr:nth-child(even),
 table[data-cb-zebra="true"] tbody tr:nth-child(even) {
-  background: color-mix(in oklab, var(--cb-surface-2) 78%, transparent);
+  background: var(--cb-table-row-alt);
 }
 
 .admin-console table tbody tr:hover,
@@ -488,7 +496,7 @@ body.dark a, body.dark button, body.dark [role="button"], body.dark input[type="
 }
 
 ::selection {
-  background: var(--cb-terracotta-dark);
+  background: var(--cb-luxury-gold);
   color: #fff;
 }
 .dark ::selection,

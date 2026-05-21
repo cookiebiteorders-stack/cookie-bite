@@ -36,28 +36,14 @@
 /* ============================================================
    Admin contrast hardening (global fix for washed visuals)
    ============================================================ */
+/* Admin inherits global luxury tokens; page bg slightly warmer */
 .admin-console {
-  --cb-text-strong: #20130b;
-  --cb-text: #3f2a1d;
-  --cb-text-muted: #5a4334;
-  --cb-border: #dbcbbf;
-  --cb-border-strong: #c39a7f;
-  --cb-surface: #fffdfa;
-  --cb-surface-2: #f8efe7;
-  --cb-surface-elevated: #ffffff;
-  --bg-hover: #f7ece2;
+  background: var(--cb-cream);
+  color: var(--cb-text);
 }
 
 .dark .admin-console {
-  --cb-text-strong: #fff4e9;
-  --cb-text: #ecd7c2;
-  --cb-text-muted: #d7b493;
-  --cb-border: #6c4833;
-  --cb-border-strong: #8f5d42;
-  --cb-surface: #2f180d;
-  --cb-surface-2: #261207;
-  --cb-surface-elevated: #3a1e10;
-  --bg-hover: rgba(255, 148, 77, 0.2);
+  background: var(--cb-cream);
 }
 
 .admin-console .admin-panel-surface,
@@ -86,18 +72,19 @@
 .admin-console select,
 .admin-console textarea {
   color: var(--cb-text-strong);
-  background-color: var(--cb-surface);
+  background-color: #ffffff;
   border-color: var(--cb-border);
 }
 
-/* تركيز واضح للوحة الإدارة (WCAG) */
 .admin-console :where(a, button, input:not([type="hidden"]), select, textarea):focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--cb-terracotta-dark, #e86b1c) 92%, white);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--cb-luxury-gold) 32%, transparent);
 }
 
-.dark .admin-console :where(a, button, input:not([type="hidden"]), select, textarea):focus-visible {
-  outline-color: color-mix(in oklab, var(--cb-terracotta-soft, #ffc8a8) 75%, white);
+.dark .admin-console input,
+.dark .admin-console select,
+.dark .admin-console textarea {
+  background-color: var(--cb-surface);
 }
 
 #admin-main-content {

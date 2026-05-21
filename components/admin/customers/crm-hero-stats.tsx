@@ -46,14 +46,13 @@ function StatCard({ title, value, sub, trendPct, icon: Icon, seed, accent, wrap,
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, delay, ease: [0.22, 1, 0.36, 1] }}
       whileHover={reduceMotion ? undefined : { y: -2 }}
-      className={cn(
-        "relative overflow-hidden rounded-2xl border p-4 shadow-sm",
-        "bg-white dark:bg-cb-surface-elevated",
-        wrap,
-      )}
+      className={cn("cb-stat-tile relative overflow-hidden", wrap)}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-cb-border/80 bg-cb-surface/80 text-amber-800 dark:text-amber-200">
+        <div
+          data-stat-icon
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-cb-border bg-cb-cream-2 text-cb-luxury-gold"
+        >
           <Icon className="h-5 w-5" aria-hidden />
         </div>
         <span
@@ -65,9 +64,17 @@ function StatCard({ title, value, sub, trendPct, icon: Icon, seed, accent, wrap,
           {up ? "↑" : "↓"} {Math.abs(trendPct)}%
         </span>
       </div>
-      <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-stone-800 dark:text-stone-200">{title}</p>
-      <p className="mt-1 font-serif text-2xl font-bold tracking-tight text-stone-950 dark:text-white">{value}</p>
-      {sub ? <p className="mt-0.5 text-xs text-stone-700 dark:text-stone-300">{sub}</p> : null}
+      <p data-stat-label className="mt-3">
+        {title}
+      </p>
+      <p data-stat-value className="mt-1 font-serif tracking-tight">
+        {value}
+      </p>
+      {sub ? (
+        <p data-stat-sub className="mt-0.5">
+          {sub}
+        </p>
+      ) : null}
       <MiniSparkline seed={seed} color={accent} className="mt-2 h-9 w-full" />
     </motion.div>
   );

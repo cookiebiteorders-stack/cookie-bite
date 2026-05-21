@@ -28,6 +28,7 @@ import {
 import { useDebounce } from "@/src/hooks/useDebounce";
 import type { AdminProductRow } from "@/lib/admin/products-dashboard-types";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
+import { buttonClassName } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 function stockTone(stock: number, active: boolean) {
@@ -641,19 +642,22 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
             </div>
           ))
         ) : products.length === 0 ? (
-          <div className="rounded-2xl border-0 bg-[var(--brown)] p-8 text-center shadow-[0px_4px_12px_0px_rgba(0,0,0,0.15)]">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow dark:bg-stone-900">
-              <Filter className="h-8 w-8 text-amber-600" aria-hidden />
+          <div className="cb-empty-state">
+            <div data-empty-icon>
+              <Filter className="h-8 w-8" aria-hidden />
             </div>
-            <h3 className="font-serif text-lg font-bold text-stone-900 dark:text-stone-50">لا توجد منتجات</h3>
-            <p className="mt-2 text-sm text-[var(--bg-card)]">جرّب تغيير الفلاتر أو أضف منتجاً جديداً.</p>
+            <h3 data-empty-title>لا توجد منتجات</h3>
+            <p data-empty-body>جرّب تغيير الفلاتر أو أضف منتجاً جديداً إلى الكتالوج.</p>
             <button
               type="button"
               disabled={!canWrite}
               onClick={onAdd}
-              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+              className={cn(
+                buttonClassName("primary"),
+                "mt-5 inline-flex gap-2 px-5 py-2.5 text-sm disabled:opacity-50",
+              )}
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4" aria-hidden />
               إضافة منتج
             </button>
           </div>
@@ -721,10 +725,10 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
       </div>
 
       {/* Desktop table */}
-      <div className="hidden overflow-x-auto rounded-2xl border border-cb-border/90 bg-white/95 shadow-sm dark:bg-cb-surface-elevated/95 md:block">
-        <table className="w-full min-w-[1100px] border-collapse text-sm">
+      <div className="cb-table-wrap hidden md:block">
+        <table className="cb-table w-full min-w-[1100px] text-sm" data-cb-zebra="true">
           <caption className="sr-only">جدول المنتجات — التصفية والترقيم والإجراءات</caption>
-          <thead className="bg-cb-surface-2/95 text-start text-xs font-bold uppercase tracking-wide text-cb-text-muted dark:bg-cb-surface-2/80">
+          <thead>
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
                 {hg.headers.map((h) => (
@@ -751,7 +755,7 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
                 <motion.tr
                   key={row.id}
                   layout={!reduceMotion}
-                  className="group border-b border-cb-border/80 transition hover:bg-amber-50/40 dark:hover:bg-amber-950/10"
+                  className="group transition"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-3 py-2.5 align-middle">
@@ -764,18 +768,18 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
           </tbody>
         </table>
         {!loading && products.length === 0 ? (
-          <div className="border-t border-cb-border bg-amber-50/40 p-10 text-center dark:bg-amber-950/15">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow dark:bg-stone-900">
-              <Filter className="h-7 w-7 text-amber-600" aria-hidden />
+          <div className="cb-empty-state border-t border-cb-table-border rounded-none border-x-0 border-b-0">
+            <div data-empty-icon>
+              <Filter className="h-7 w-7" aria-hidden />
             </div>
-            <h3 className="font-serif text-lg font-bold text-stone-900 dark:text-stone-50">لا نتائج في الجدول</h3>
-            <p className="mt-2 max-w-md mx-auto text-sm text-cb-text-muted">
+            <h3 data-empty-title>لا نتائج في الجدول</h3>
+            <p data-empty-body>
               لا توجد منتجات تطابق البحث أو الفلاتر الحالية. غيّر معايير البحث أو أضف منتجاً جديداً.
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               <button
                 type="button"
-                className="rounded-xl border border-cb-border bg-white px-4 py-2 text-xs font-bold shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900"
+                className={buttonClassName("outline", "px-4 py-2 text-xs")}
                 onClick={() => resetFilters()}
               >
                 مسح الفلاتر
@@ -784,7 +788,7 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
                 type="button"
                 disabled={!canWrite}
                 onClick={onAdd}
-                className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+                className={cn(buttonClassName("primary"), "inline-flex gap-2 px-4 py-2 text-xs disabled:opacity-50")}
               >
                 <Plus className="h-4 w-4" aria-hidden />
                 إضافة منتج
