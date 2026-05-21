@@ -22,6 +22,13 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import type { UserRole } from "@/lib/admin/rbac";
 import { buildIlikeOrClause } from "@/lib/security/sanitize-filter";
+import {
+  create_discount,
+  create_product,
+  delete_product,
+  update_order_status,
+  update_product,
+} from "@/lib/admin/copilot/write-handlers";
 
 /* -------------------------------------------------------------------------- *
  * Helpers                                                                     *
@@ -717,6 +724,101 @@ export const TOOL_DECLARATIONS = [
       required: ["product_id", "stock"],
     },
   },
+  {
+    name: "create_product",
+    description:
+      "CREATE a new product in the catalogue. Execute directly when the admin asks to add a product. If name/price/description are missing, generate premium marketing copy (EN+AR), sensible EGP price by category, badges, and seasons. Owner/admin only.",
+    parameters: {
+      type: OBJ,
+      properties: {
+        name: { type: STR, description: "Product name (marketing-ready)." },
+        theme: { type: STR, description: "If name omitted, e.g. 'luxury chocolate' → auto name." },
+        price_egp: { type: NUM },
+        description_en: { type: STR },
+        description_ar: { type: STR },
+        category: { type: STR },
+        badges: { type: STR, description: "Comma-separated or array: featured, new, bestseller" },
+        seasons: { type: STR },
+        stock: { type: NUM },
+        sku: { type: STR },
+        slug: { type: STR },
+        is_active: { type: BOOL },
+        image_prompt: { type: STR, description: "Suggested AI image prompt if no image uploaded." },
+      },
+    },
+  },
+  {
+    name: "update_product",
+    description:
+      "UPDATE an existing product — change only the fields provided (price, name, descriptions, stock, category, badges). Identify by product_id or query (name search). Owner/admin only.",
+    parameters: {
+      type: OBJ,
+      properties: {
+        product_id: { type: STR },
+        query: { type: STR, description: "Name substring if id unknown." },
+        name: { type: STR },
+        price_egp: { type: NUM },
+        description_en: { type: STR },
+        description_ar: { type: STR },
+        stock: { type: NUM },
+        category: { type: STR },
+        badges: { type: STR },
+        seasons: { type: STR },
+        slug: { type: STR },
+        is_active: { type: BOOL },
+        compare_price_egp: { type: NUM },
+      },
+    },
+  },
+  {
+    name: "delete_product",
+    description:
+      "DANGEROUS: Permanently delete a product. First call returns dry_run; execute ONLY with confirm:true after explicit admin approval. Owner/admin only.",
+    parameters: {
+      type: OBJ,
+      properties: {
+        product_id: { type: STR },
+        query: { type: STR },
+        confirm: { type: BOOL },
+      },
+    },
+  },
+  {
+    name: "update_order_status",
+    description:
+      "Update order status: pending → processing → shipped → delivered (or cancelled/refunded). Use order_id or order_number. Cancellation requires confirm:true. Owner/admin only.",
+    parameters: {
+      type: OBJ,
+      properties: {
+        order_id: { type: STR },
+        order_number: { type: STR },
+        status: {
+          type: STR,
+          description: "pending|processing|shipped|delivered|cancelled|refunded",
+        },
+        confirm: { type: BOOL, description: "Required true for cancelled." },
+      },
+      required: ["status"],
+    },
+  },
+  {
+    name: "create_discount",
+    description:
+      "Create a promo code. Auto-generates code if omitted. type=percent|fixed, value, expires_in_days (default 7). Owner/admin only.",
+    parameters: {
+      type: OBJ,
+      properties: {
+        code: { type: STR },
+        type: { type: STR, description: "percent or fixed" },
+        value: { type: NUM },
+        expires_in_days: { type: NUM },
+        max_uses: { type: NUM },
+        min_order_amount_egp: { type: NUM },
+        active: { type: BOOL },
+      },
+      required: ["value"],
+    },
+  },
 ] as unknown as FunctionDeclaration[];
 
 export const TOOL_HANDLERS: Record<string, Handler> = {
@@ -731,6 +833,11 @@ export const TOOL_HANDLERS: Record<string, Handler> = {
   list_recent_audit_logs,
   cancel_order,
   update_product_stock,
+  create_product,
+  update_product,
+  delete_product,
+  update_order_status,
+  create_discount,
 };
 
 export type CopilotToolCall = {

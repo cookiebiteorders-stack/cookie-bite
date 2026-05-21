@@ -18,6 +18,7 @@ import { useTheme } from "@/components/providers/theme-provider";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { cn } from "@/lib/utils";
 import { parseCsv } from "@/lib/csv/parse-csv";
+import { COPILOT_REFRESH_EVENT } from "@/lib/admin/copilot/copilot-events";
 
 export function ProductManagementDashboard() {
   const reduceMotion = useReducedMotion();
@@ -69,6 +70,15 @@ export function ProductManagementDashboard() {
     discountedOnly,
     featuredOnly,
   ]);
+
+  useEffect(() => {
+    const onRefresh = (e: Event) => {
+      const mod = (e as CustomEvent<{ module?: string }>).detail?.module;
+      if (mod === "products") void loadProducts();
+    };
+    window.addEventListener(COPILOT_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(COPILOT_REFRESH_EVENT, onRefresh);
+  }, [loadProducts]);
 
   const openCreate = useCallback(() => {
     if (!canWrite) return;

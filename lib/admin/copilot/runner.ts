@@ -30,7 +30,7 @@ export type CopilotRunResult = {
   toolCalls: CopilotToolCall[];
 };
 
-const MAX_TOOL_ROUNDS = 4;
+const MAX_TOOL_ROUNDS = 8;
 
 export async function runCopilot(opts: {
   systemInstruction: string;

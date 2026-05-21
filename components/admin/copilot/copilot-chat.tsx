@@ -1,16 +1,19 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, type FormEvent } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, type FormEvent } from "react";
 import { usePathname } from "next/navigation";
-import { Send, Loader2, Wrench, AlertTriangle } from "lucide-react";
+import { Send, Loader2, Wrench, AlertTriangle, Zap, CheckCircle2 } from "lucide-react";
 import { useLanguage } from "@/components/providers/language-provider";
 import { MrsCookieAvatar } from "@/components/admin/copilot/mrs-cookie-avatar";
+import { copilotSuggestionsForPath } from "@/lib/admin/copilot/quick-suggestions";
+import { dispatchCopilotRefresh, moduleFromCopilotTool } from "@/lib/admin/copilot/copilot-events";
 import { cn } from "@/lib/utils";
 
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   toolCalls?: { name: string; ms: number }[];
+  actions?: Array<{ tool: string; action?: string; ok?: boolean }>;
   error?: boolean;
 };
 
@@ -28,21 +31,19 @@ type CopilotChatProps = {
 };
 
 const SUGGESTIONS_EN = [
+  "Add a luxury dark chocolate cookie product",
+  "Change a product price to 250 EGP",
+  "Show pending orders from the last 48 hours",
+  "Create 20% off for one week",
   "How is today going?",
-  "Show me pending orders from the last 48 hours.",
-  "Which products are below 5 in stock?",
-  "Top 5 bestsellers this month.",
-  "Sales report for the last 30 days.",
-  "Find the customer with email ahmed@example.com",
 ];
 
 const SUGGESTIONS_AR = [
+  "ضيف منتج كوكيز شوكولاتة فاخر",
+  "غيّر سعر منتج لـ 250 جنيه",
+  "اعرض الطلبات المعلّقة في آخر 48 ساعة",
+  "اعمل خصم 20% لمدة أسبوع",
   "كيف يسير يومنا حتى الآن؟",
-  "اعرض الطلبات المعلّقة في آخر 48 ساعة.",
-  "ما المنتجات التي مخزونها أقل من 5؟",
-  "أفضل 5 منتجات مبيعاً هذا الشهر.",
-  "تقرير المبيعات لآخر 30 يوماً.",
-  "ابحث عن العميل بالبريد ahmed@example.com",
 ];
 
 export function CopilotChat({
@@ -96,17 +97,26 @@ export function CopilotChat({
             { role: "assistant", content: msg, error: true },
           ]);
         } else {
+          const toolCalls = Array.isArray(data.toolCalls)
+            ? data.toolCalls.map((c: { name: string; ms: number }) => ({
+                name: c.name,
+                ms: c.ms,
+              }))
+            : undefined;
+          const actions = Array.isArray(data.actions) ? data.actions : undefined;
+
+          for (const tc of toolCalls ?? []) {
+            const mod = moduleFromCopilotTool(tc.name);
+            if (mod) dispatchCopilotRefresh({ module: mod, action: tc.name });
+          }
+
           setMessages((prev) => [
             ...prev,
             {
               role: "assistant",
               content: data.reply || "—",
-              toolCalls: Array.isArray(data.toolCalls)
-                ? data.toolCalls.map((c: { name: string; ms: number }) => ({
-                    name: c.name,
-                    ms: c.ms,
-                  }))
-                : undefined,
+              toolCalls,
+              actions,
             },
           ]);
         }
@@ -131,7 +141,13 @@ export function CopilotChat({
     void send(input);
   };
 
-  const suggestions = lang === "ar" ? SUGGESTIONS_AR : SUGGESTIONS_EN;
+  const suggestions = useMemo(
+    () => copilotSuggestionsForPath(pathname || "/admin", lang),
+    [pathname, lang],
+  );
+
+  const fallbackSuggestions = lang === "ar" ? SUGGESTIONS_AR : SUGGESTIONS_EN;
+  const quickPrompts = suggestions.length > 0 ? suggestions : fallbackSuggestions;
 
   return (
     <div
@@ -183,17 +199,18 @@ export function CopilotChat({
               </p>
             </div>
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-cb-text-soft">
+              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-cb-text-soft">
+                <Zap className="h-3 w-3 text-amber-600" aria-hidden />
                 {t("copilot.trySomething")}
               </p>
               <div className="grid grid-cols-1 gap-2">
-                {suggestions.map((s) => (
+                {quickPrompts.map((s) => (
                   <button
                     key={s}
                     type="button"
                     onClick={() => void send(s)}
                     disabled={busy}
-                    className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2.5 text-start text-xs leading-snug text-cb-text-strong transition hover:border-cb-brand-logo hover:bg-cb-peach/40 disabled:opacity-50"
+                    className="rounded-xl border border-cb-border bg-gradient-to-l from-white to-cb-peach/30 px-3 py-2.5 text-start text-xs leading-snug text-cb-text-strong transition hover:border-cb-brand-logo hover:from-amber-50 hover:to-cb-peach/50 hover:shadow-sm disabled:opacity-50"
                   >
                     {s}
                   </button>
@@ -228,6 +245,19 @@ export function CopilotChat({
                     </div>
                   ) : (
                     <div className="whitespace-pre-wrap">{m.content}</div>
+                  )}
+                  {m.actions && m.actions.length > 0 && (
+                    <div className="mt-2.5 flex flex-wrap gap-1.5 border-t border-emerald-200/60 pt-2.5">
+                      {m.actions.map((a, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-900"
+                        >
+                          <CheckCircle2 className="h-2.5 w-2.5" aria-hidden />
+                          {a.action ?? a.tool}
+                        </span>
+                      ))}
+                    </div>
                   )}
                   {m.toolCalls && m.toolCalls.length > 0 && (
                     <div className="mt-2.5 flex flex-wrap gap-1.5 border-t border-cb-border/60 pt-2.5">

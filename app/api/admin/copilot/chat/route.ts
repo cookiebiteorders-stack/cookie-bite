@@ -62,6 +62,24 @@ async function loadLiveSnapshot(): Promise<CopilotPromptContext["snapshot"]> {
   }
 }
 
+import type { CopilotToolCall } from "@/lib/admin/copilot/tools";
+
+function extractActions(toolCalls: CopilotToolCall[]) {
+  return toolCalls
+    .map((c) => {
+      const r = c.result;
+      if (typeof r !== "object" || r === null || Array.isArray(r)) return null;
+      const rec = r as Record<string, unknown>;
+      if (rec.ok !== true && !rec.dry_run) return null;
+      return {
+        tool: c.name,
+        action: typeof rec.action === "string" ? rec.action : c.name,
+        ...rec,
+      };
+    })
+    .filter(Boolean);
+}
+
 export async function POST(req: NextRequest) {
   // Any admin/owner/staff with at least dashboard access can use the copilot.
   let actor;
@@ -119,6 +137,7 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({
       reply: result.reply,
+      actions: extractActions(result.toolCalls),
       toolCalls: result.toolCalls.map((c) => ({
         name: c.name,
         args: c.args,
