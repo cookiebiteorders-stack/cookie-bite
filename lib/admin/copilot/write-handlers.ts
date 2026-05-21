@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { normalizeProductImages, primaryImageFromProduct } from "@/lib/products/media";
+import { deriveProductSlug } from "@/lib/products/slug";
 import type { CopilotToolActor } from "@/lib/admin/copilot/tools";
 
 type Json = Record<string, unknown> | unknown[] | string | number | boolean | null;
@@ -14,16 +15,6 @@ type Json = Record<string, unknown> | unknown[] | string | number | boolean | nu
 function num(v: unknown): number {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
-}
-
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
 }
 
 function parseList(v: unknown): string[] {
@@ -151,10 +142,10 @@ export async function create_product(args: Record<string, unknown>, actor: Copil
       (typeof args.description_ar === "string" ? args.description_ar.trim() : "") ||
       defaults.description_ar;
 
-    const slug = slugify(
-      (typeof args.slug === "string" ? args.slug.trim() : "") || name,
+    const slug = deriveProductSlug(
+      name,
+      typeof args.slug === "string" ? args.slug.trim() : undefined,
     );
-    if (!slug) return { warning: "Could not derive slug from name." };
 
     const badges = parseList(args.badges ?? args.tags);
     const seasons = parseList(args.seasons);
@@ -266,7 +257,9 @@ export async function update_product(args: Record<string, unknown>, actor: Copil
       const cp = num(args.compare_price_egp);
       patch.compare_price_egp = cp > 0 ? cp : null;
     }
-    if (typeof args.slug === "string" && args.slug.trim()) patch.slug = slugify(args.slug);
+    if (typeof args.slug === "string" && args.slug.trim()) {
+      patch.slug = deriveProductSlug("", args.slug.trim());
+    }
 
     if (Object.keys(patch).length === 0) {
       return { warning: "No fields to update — pass price_egp, name, description_en, etc." };

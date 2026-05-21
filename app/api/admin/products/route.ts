@@ -17,9 +17,12 @@ import {
 import {
   productBadgesSchema,
   productImagesSchema,
+  productMediaUrlSchema,
   productSeasonsSchema,
   productVideoUrlSchema,
 } from "@/lib/validations/product-media";
+import { deriveProductSlug, appendSlugSuffix } from "@/lib/products/slug";
+import { zodPayloadError } from "@/lib/validations/zod-errors";
 
 const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -51,7 +54,7 @@ const bulkPatchSchema = z.object({
       category: z.string().max(100).nullable().optional(),
       sku: z.string().max(80).nullable().optional(),
       slug: z.string().min(2).max(180).optional(),
-      image_url: z.string().url().nullable().optional(),
+      image_url: productMediaUrlSchema.nullable().optional(),
       images: productImagesSchema,
       video_url: productVideoUrlSchema,
       badges: productBadgesSchema,
@@ -78,7 +81,7 @@ const createProductSchema = z.object({
   price_egp: z.number().positive(),
   stock: z.number().int().min(0).default(0),
   is_active: z.boolean().default(true),
-  image_url: z.string().url().optional().nullable(),
+  image_url: productMediaUrlSchema.optional().nullable(),
   images: productImagesSchema,
   video_url: productVideoUrlSchema,
   badges: productBadgesSchema,
@@ -111,7 +114,7 @@ function applyPatchMedia(
     next.image_url = image_url;
   }
   if ("slug" in patch && patch.slug) {
-    next.slug = slugify(patch.slug);
+    next.slug = deriveProductSlug("", patch.slug);
   }
   return next;
 }
@@ -155,16 +158,6 @@ async function loadCatalogStats(supabase: ReturnType<typeof createSupabaseAdminC
     low_stock: low_stock ?? 0,
     revenue_estimate_egp,
   };
-}
-
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
 }
 
 export async function GET(req: NextRequest) {
@@ -252,27 +245,18 @@ export async function POST(req: NextRequest) {
 
   const parsed = createProductSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json(
-      bilingualError("Invalid payload", "بيانات غير صالحة"),
-      { status: 400 },
-    );
+    return NextResponse.json(zodPayloadError(parsed.error), { status: 400 });
   }
 
   const payload = parsed.data;
-  const slug = slugify(payload.slug?.trim() || payload.name);
-  if (!slug) {
-    return NextResponse.json(
-      bilingualError("Invalid slug", "Slug غير صالح"),
-      { status: 400 },
-    );
-  }
+  const baseSlug = deriveProductSlug(payload.name, payload.slug?.trim());
 
   const { images, image_url } = resolveProductMedia({
     images: payload.images,
     image_url: payload.image_url ?? null,
   });
 
-  const row = {
+  const buildRow = (slug: string) => ({
     slug,
     name: payload.name.trim(),
     title_en: payload.title_en ?? null,
@@ -294,17 +278,36 @@ export async function POST(req: NextRequest) {
     weight_grams: payload.weight_grams ?? null,
     pieces_count: payload.pieces_count ?? null,
     dietary: payload.dietary ?? [],
-  };
+  });
 
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase.from("products").insert(row).select("*").single();
-  if (error) {
-    const code = String(error.code ?? "");
+  let slug = baseSlug;
+  let data: Record<string, unknown> | null = null;
+  let lastError: { code?: string; message?: string } | null = null;
+
+  for (let attempt = 1; attempt <= 8; attempt++) {
+    const row = buildRow(appendSlugSuffix(baseSlug, attempt));
+    slug = row.slug;
+    const result = await supabase.from("products").insert(row).select("*").single();
+    if (!result.error && result.data) {
+      data = result.data as Record<string, unknown>;
+      lastError = null;
+      break;
+    }
+    lastError = result.error;
+    const code = String(result.error?.code ?? "");
+    if (code !== "23505") break;
+  }
+
+  if (!data) {
+    const code = String(lastError?.code ?? "");
     const status = code === "23505" ? 409 : 500;
     return NextResponse.json(
       bilingualError(
         code === "23505" ? "Slug or SKU already exists" : "Failed to create product",
-        code === "23505" ? "الـ Slug أو SKU مستخدم بالفعل" : "فشل إضافة المنتج",
+        code === "23505"
+          ? "الرابط (Slug) أو SKU مستخدم بالفعل — غيّر الاسم أو الـ Slug"
+          : "فشل إضافة المنتج",
       ),
       { status },
     );
@@ -336,10 +339,7 @@ export async function PATCH(req: NextRequest) {
 
   const parsed = bulkPatchSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json(
-      bilingualError("Invalid payload", "بيانات غير صالحة"),
-      { status: 400 },
-    );
+    return NextResponse.json(zodPayloadError(parsed.error), { status: 400 });
   }
 
   const { ids, patch } = parsed.data;

@@ -22,6 +22,7 @@ import {
   type ProductFormState,
 } from "@/lib/admin/products-dashboard-types";
 import { ProductMediaEditor } from "@/components/admin/products/product-media-editor";
+import { deriveProductSlug } from "@/lib/products/slug";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
 import { cn } from "@/lib/utils";
 
@@ -79,15 +80,26 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       const cpn = Number(cp);
       if (!Number.isFinite(cpn) || cpn <= 0) errors.compare_price_egp = "سعر مقارنة غير صالح.";
     }
+    const isValidMediaUrl = (u: string) => {
+      const t = u.trim();
+      if (!t) return true;
+      if (t.startsWith("/")) return true;
+      try {
+        const parsed = new URL(t);
+        return parsed.protocol === "http:" || parsed.protocol === "https:";
+      } catch {
+        return false;
+      }
+    };
     for (const img of form.images) {
       const u = img.url.trim();
-      if (u && !URL.canParse(u)) {
+      if (u && !isValidMediaUrl(u)) {
         errors.images = "أحد روابط الصور غير صالح.";
         break;
       }
     }
     const video = form.video_url.trim();
-    if (video && !URL.canParse(video)) errors.video_url = "رابط الفيديو غير صالح.";
+    if (video && !isValidMediaUrl(video)) errors.video_url = "رابط الفيديو غير صالح.";
     if (form.description_en.length > 3000) errors.description_en = "الحد الأقصى 3000 حرف.";
     if (form.description_ar.length > 3000) errors.description_ar = "الحد الأقصى 3000 حرف.";
     return errors;
@@ -111,10 +123,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
         !formErrors.name &&
         !formErrors.slug &&
         (!form.sku.trim() || form.sku.trim().length >= 2),
-      2:
-        !formErrors.description_en &&
-        !formErrors.description_ar &&
-        (form.description_en.trim().length > 0 || form.description_ar.trim().length > 0),
+      2: !formErrors.description_en && !formErrors.description_ar,
       3:
         !formErrors.price_egp &&
         !formErrors.stock &&
@@ -341,6 +350,11 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     className={cn(inputClass, formErrors.name && inputErrorClass)}
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    onBlur={() => {
+                      if (!form.slug.trim() && form.name.trim().length >= 2) {
+                        setForm((f) => ({ ...f, slug: deriveProductSlug(f.name) }));
+                      }
+                    }}
                   />
                   {formErrors.name ? (
                     <p className="flex items-center gap-1 text-xs font-medium text-red-600">
@@ -360,7 +374,15 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   />
                   {formErrors.slug ? (
                     <p className="text-xs font-medium text-red-600">{formErrors.slug}</p>
-                  ) : null}
+                  ) : (
+                    <p className="text-[11px] text-cb-text-muted">
+                      رابط المتجر: /shop/
+                      {form.slug.trim() || deriveProductSlug(form.name)}
+                      {!form.slug.trim() && form.name.trim().length >= 2
+                        ? " (يُولَّد تلقائياً للأسماء العربية)"
+                        : ""}
+                    </p>
+                  )}
                 </label>
                 <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
                   <span className={labelClass}>SKU</span>

@@ -1,6 +1,7 @@
 import { MAX_PRODUCT_IMAGES } from "@/lib/products/media";
 import { normalizeProductImages } from "@/lib/products/media";
 import type { ProductImage } from "@/lib/db/types";
+import { deriveProductSlug } from "@/lib/products/slug";
 
 export type AdminProductRow = {
   id: string;
@@ -199,7 +200,7 @@ export function formToApiPayload(form: ProductFormState) {
 
   return {
     name: form.name.trim(),
-    slug: form.slug.trim() || undefined,
+    slug: deriveProductSlug(form.name, form.slug.trim() || undefined),
     title_en: form.title_en.trim() || null,
     title_ar: form.title_ar.trim() || null,
     description_en: form.description_en.trim() || null,

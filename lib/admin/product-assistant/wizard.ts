@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { deriveProductSlug } from "@/lib/products/slug";
 
 export const WIZARD_STEPS = [
   "idle",
@@ -56,16 +57,6 @@ export type ProductMarketingPreviewJson = {
   };
 };
 
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
 function shortFromDescription(text: string, max = 220): string {
   const t = text.replace(/\s+/g, " ").trim();
   if (t.length <= max) return t;
@@ -117,7 +108,7 @@ export function buildMarketingPreview(params: {
   const category = params.draft.category?.trim() ?? "";
   const stock = params.draft.stock ?? 0;
   const desc = (params.draft.description_en ?? "").trim();
-  const slug = slugify(name) || "product";
+  const slug = deriveProductSlug(name);
   const img = params.draft.image_url;
   const images = typeof img === "string" && img.length > 0 ? [img] : [];
 
