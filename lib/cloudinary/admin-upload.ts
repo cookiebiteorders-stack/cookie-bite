@@ -37,6 +37,7 @@ function cloudinarySignature(params: Record<string, string>, apiSecret: string) 
 export async function uploadToCloudinary(
   file: File,
   kind: CloudinaryUploadKind,
+  opts?: { folder?: string },
 ): Promise<{ url: string; public_id: string | null; bytes: number | null }> {
   const cfg = cloudinaryConfig();
   if (!cfg) throw new Error("Cloudinary is not configured");
@@ -58,7 +59,8 @@ export async function uploadToCloudinary(
 
   const timestamp = String(Math.floor(Date.now() / 1000));
   const folder =
-    kind === "image" ? "cookie-bite/products" : "cookie-bite/products/videos";
+    opts?.folder ??
+    (kind === "image" ? "cookie-bite/products" : "cookie-bite/products/videos");
   const signedParams: Record<string, string> = { folder, timestamp };
   if (kind === "video") signedParams.resource_type = "video";
 

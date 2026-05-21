@@ -19,10 +19,15 @@ import {
   type FunctionCall,
 } from "@google/generative-ai";
 import { TOOL_DECLARATIONS, runTool, type CopilotToolActor, type CopilotToolCall } from "@/lib/admin/copilot/tools";
+import {
+  fetchImageInlineParts,
+  type ChatImageAttachment,
+} from "@/lib/chat/image-attachments";
 
 export type CopilotMessage = {
   role: "user" | "assistant";
   content: string;
+  attachments?: ChatImageAttachment[];
 };
 
 export type CopilotRunResult = {
@@ -32,10 +37,22 @@ export type CopilotRunResult = {
 
 const MAX_TOOL_ROUNDS = 8;
 
+async function userMessageParts(
+  text: string,
+  attachments?: ChatImageAttachment[],
+): Promise<Part[]> {
+  const parts: Part[] = [{ text }];
+  if (attachments?.length) {
+    parts.push(...(await fetchImageInlineParts(attachments)));
+  }
+  return parts;
+}
+
 export async function runCopilot(opts: {
   systemInstruction: string;
   history: CopilotMessage[];
   userMessage: string;
+  attachments?: ChatImageAttachment[];
   temperature?: number;
   actor: CopilotToolActor;
 }): Promise<CopilotRunResult> {
@@ -51,11 +68,22 @@ export async function runCopilot(opts: {
   });
 
   // Build initial conversation contents.
-  const contents: Content[] = opts.history.map((m) => ({
-    role: m.role === "user" ? "user" : "model",
-    parts: [{ text: m.content }],
-  }));
-  contents.push({ role: "user", parts: [{ text: opts.userMessage }] });
+  const contents: Content[] = [];
+  for (const m of opts.history) {
+    const role = m.role === "user" ? "user" : "model";
+    if (m.role === "user" && m.attachments?.length) {
+      contents.push({
+        role,
+        parts: await userMessageParts(m.content, m.attachments),
+      });
+    } else {
+      contents.push({ role, parts: [{ text: m.content }] });
+    }
+  }
+  contents.push({
+    role: "user",
+    parts: await userMessageParts(opts.userMessage, opts.attachments),
+  });
 
   const toolCalls: CopilotToolCall[] = [];
 

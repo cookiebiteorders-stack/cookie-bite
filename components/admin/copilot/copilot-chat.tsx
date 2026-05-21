@@ -1,8 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo, type FormEvent } from "react";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Send, Loader2, Wrench, AlertTriangle, Zap, CheckCircle2 } from "lucide-react";
+import {
+  ChatImageAttachButton,
+  ChatImagePreviewStrip,
+  clearPendingAttachments,
+  hasUploadingAttachments,
+  readyAttachments,
+  type PendingChatImage,
+} from "@/components/chat/chat-image-attachment-input";
 import { useLanguage } from "@/components/providers/language-provider";
 import { MrsCookieAvatar } from "@/components/admin/copilot/mrs-cookie-avatar";
 import { copilotSuggestionsForPath } from "@/lib/admin/copilot/quick-suggestions";
@@ -12,6 +21,7 @@ import { cn } from "@/lib/utils";
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
+  imageUrls?: string[];
   toolCalls?: { name: string; ms: number }[];
   actions?: Array<{ tool: string; action?: string; ok?: boolean }>;
   error?: boolean;
@@ -56,6 +66,7 @@ export function CopilotChat({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pendingImages, setPendingImages] = useState<PendingChatImage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,12 +78,25 @@ export function CopilotChat({
   const send = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
-      if (!trimmed || busy) return;
+      const attachments = readyAttachments(pendingImages);
+      if ((!trimmed && attachments.length === 0) || busy) return;
+      if (hasUploadingAttachments(pendingImages)) return;
 
-      const next: ChatMessage = { role: "user", content: trimmed };
-      const history = messages.map((m) => ({ role: m.role, content: m.content }));
+      const imageUrls = attachments.map((a) => a.url);
+      const next: ChatMessage = {
+        role: "user",
+        content: trimmed || (lang === "ar" ? "انظر الصورة المرفقة" : "See attached image"),
+        imageUrls: imageUrls.length ? imageUrls : undefined,
+      };
+      const history = messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        attachments: m.imageUrls?.map((url) => ({ url })),
+      }));
       setMessages((prev) => [...prev, next]);
       setInput("");
+      clearPendingAttachments(pendingImages);
+      setPendingImages([]);
       setBusy(true);
 
       try {
@@ -80,7 +104,8 @@ export function CopilotChat({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            message: trimmed,
+            message: next.content,
+            attachments: attachments.length ? attachments : undefined,
             history,
             currentPath: pathname || "/admin",
             language: lang,
@@ -133,7 +158,7 @@ export function CopilotChat({
         setBusy(false);
       }
     },
-    [busy, lang, messages, pathname, t],
+    [busy, lang, messages, pathname, pendingImages, t],
   );
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -244,7 +269,30 @@ export function CopilotChat({
                       <span className="whitespace-pre-wrap">{m.content}</span>
                     </div>
                   ) : (
-                    <div className="whitespace-pre-wrap">{m.content}</div>
+                    <>
+                      {m.imageUrls && m.imageUrls.length > 0 ? (
+                        <div className="mb-2 flex flex-wrap gap-1.5">
+                          {m.imageUrls.map((url) => (
+                            <a
+                              key={url}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="relative block h-20 w-20 overflow-hidden rounded-lg ring-1 ring-white/30"
+                            >
+                              <Image
+                                src={url}
+                                alt=""
+                                fill
+                                className="object-cover"
+                                unoptimized
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      ) : null}
+                      <div className="whitespace-pre-wrap">{m.content}</div>
+                    </>
                   )}
                   {m.actions && m.actions.length > 0 && (
                     <div className="mt-2.5 flex flex-wrap gap-1.5 border-t border-emerald-200/60 pt-2.5">
@@ -290,35 +338,48 @@ export function CopilotChat({
 
       <form
         onSubmit={onSubmit}
-        className="flex shrink-0 items-end gap-2 border-t border-cb-border bg-cb-surface-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        className="flex shrink-0 flex-col gap-2 border-t border-cb-border bg-cb-surface-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
       >
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              void send(input);
+        <ChatImagePreviewStrip pending={pendingImages} onChange={setPendingImages} />
+        <div className="flex items-end gap-2">
+          <ChatImageAttachButton
+            context="admin"
+            pending={pendingImages}
+            onChange={setPendingImages}
+            disabled={busy}
+          />
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                void send(input);
+              }
+            }}
+            rows={1}
+            placeholder={t("copilot.inputPlaceholder")}
+            disabled={busy}
+            className="max-h-32 min-h-[42px] flex-1 resize-none rounded-xl border border-cb-border bg-cb-surface px-3 py-2.5 text-sm text-cb-text-strong placeholder:text-cb-text-soft focus:border-cb-brand-logo focus:outline-none focus:ring-2 focus:ring-cb-brand-logo/20 disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={
+              busy ||
+              hasUploadingAttachments(pendingImages) ||
+              (!input.trim() && readyAttachments(pendingImages).length === 0)
             }
-          }}
-          rows={1}
-          placeholder={t("copilot.inputPlaceholder")}
-          disabled={busy}
-          className="max-h-32 min-h-[42px] flex-1 resize-none rounded-xl border border-cb-border bg-cb-surface px-3 py-2.5 text-sm text-cb-text-strong placeholder:text-cb-text-soft focus:border-cb-brand-logo focus:outline-none focus:ring-2 focus:ring-cb-brand-logo/20 disabled:opacity-50"
-        />
-        <button
-          type="submit"
-          disabled={busy || !input.trim()}
-          className="inline-flex h-[42px] shrink-0 items-center justify-center gap-1.5 rounded-xl bg-cb-brand-logo px-3 text-sm font-semibold text-white transition hover:bg-cb-brand-logo-dark disabled:opacity-40 sm:px-4"
-          aria-label={t("copilot.send")}
-        >
+            className="inline-flex h-[42px] shrink-0 items-center justify-center gap-1.5 rounded-xl bg-cb-brand-logo px-3 text-sm font-semibold text-white transition hover:bg-cb-brand-logo-dark disabled:opacity-40 sm:px-4"
+            aria-label={t("copilot.send")}
+          >
           {busy ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           ) : (
             <Send className="h-4 w-4" aria-hidden />
           )}
           <span className="hidden sm:inline">{t("copilot.send")}</span>
-        </button>
+          </button>
+        </div>
       </form>
     </div>
   );

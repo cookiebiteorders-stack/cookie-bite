@@ -8,6 +8,7 @@ export function mrBrownieChatLsKey(clerkUserId: string | null | undefined): stri
 export type ChatMessagePersisted = {
   role: "user" | "assistant";
   content: string;
+  imageUrls?: string[];
   /** وقت تقديري للدمج مع السيرفر */
   createdAt?: number;
 };

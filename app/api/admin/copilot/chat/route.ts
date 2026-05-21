@@ -6,14 +6,24 @@ import { buildCopilotSystemPrompt, type CopilotPromptContext } from "@/lib/admin
 import { runCopilot } from "@/lib/admin/copilot/runner";
 import type { CopilotToolActor } from "@/lib/admin/copilot/tools";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { CopilotToolCall } from "@/lib/admin/copilot/tools";
+import { CHAT_IMAGE_MAX_COUNT, isAllowedChatImageUrl } from "@/lib/chat/image-attachments";
+
+const attachmentSchema = z.object({
+  url: z.string().url().max(2000),
+  mimeType: z.string().max(80).optional(),
+  name: z.string().max(200).optional(),
+});
 
 const messageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string().max(8000),
+  attachments: z.array(attachmentSchema).max(CHAT_IMAGE_MAX_COUNT).optional(),
 });
 
 const bodySchema = z.object({
   message: z.string().min(1).max(8000),
+  attachments: z.array(attachmentSchema).max(CHAT_IMAGE_MAX_COUNT).optional(),
   history: z.array(messageSchema).max(20).default([]),
   currentPath: z.string().max(200).default("/admin"),
   language: z.enum(["en", "ar"]).default("en"),
@@ -62,7 +72,13 @@ async function loadLiveSnapshot(): Promise<CopilotPromptContext["snapshot"]> {
   }
 }
 
-import type { CopilotToolCall } from "@/lib/admin/copilot/tools";
+function sanitizeAttachments(
+  attachments: z.infer<typeof attachmentSchema>[] | undefined,
+) {
+  if (!attachments?.length) return undefined;
+  const ok = attachments.filter((a) => isAllowedChatImageUrl(a.url));
+  return ok.length ? ok : undefined;
+}
 
 function extractActions(toolCalls: CopilotToolCall[]) {
   return toolCalls
@@ -98,6 +114,12 @@ export async function POST(req: NextRequest) {
     });
   }
   const { message, history, currentPath, language } = parsed.data;
+  const attachments = sanitizeAttachments(parsed.data.attachments);
+  const safeHistory = history.map((m) => ({
+    role: m.role,
+    content: m.content,
+    attachments: sanitizeAttachments(m.attachments),
+  }));
 
   if (!process.env.GEMINI_API_KEY?.trim()) {
     return NextResponse.json(
@@ -131,8 +153,9 @@ export async function POST(req: NextRequest) {
     };
     const result = await runCopilot({
       systemInstruction,
-      history,
+      history: safeHistory,
       userMessage: message,
+      attachments,
       actor: toolActor,
     });
     return NextResponse.json({

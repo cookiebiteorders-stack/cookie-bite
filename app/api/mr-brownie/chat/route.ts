@@ -8,6 +8,13 @@ import { runMrBrownieGemini } from "@/lib/mr-brownie/gemini";
 import { getMrBrownieSystemInstruction } from "@/lib/mr-brownie/system-instruction";
 import type { CartLine } from "@/lib/cart/types";
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
+import { CHAT_IMAGE_MAX_COUNT, isAllowedChatImageUrl } from "@/lib/chat/image-attachments";
+
+const attachmentSchema = z.object({
+  url: z.string().url().max(2000),
+  mimeType: z.string().max(80).optional(),
+  name: z.string().max(200).optional(),
+});
 
 const cartLineSchema = z.object({
   productId: z.string().min(1),
@@ -22,6 +29,7 @@ const bodySchema = z.object({
       z.object({
         role: z.enum(["user", "assistant"]),
         content: z.string().min(1).max(12000),
+        attachments: z.array(attachmentSchema).max(CHAT_IMAGE_MAX_COUNT).optional(),
       }),
     )
     .min(1)
@@ -148,12 +156,18 @@ export async function POST(req: NextRequest) {
     const systemInstruction = getMrBrownieSystemInstruction(resolvedRole);
 
     const rawMessages = parsed.data.messages.map((m, i, arr) => {
+      const attachments = m.attachments?.filter((a) => isAllowedChatImageUrl(a.url));
       if (i !== arr.length - 1 || m.role !== "user") {
-        return m;
+        return {
+          role: m.role,
+          content: m.content,
+          attachments: attachments?.length ? attachments : undefined,
+        };
       }
       return {
         role: "user" as const,
         content: `CONTEXT (JSON — authoritative role & data):\n${contextJson}\n\nUSER MESSAGE:\n${m.content}`,
+        attachments: attachments?.length ? attachments : undefined,
       };
     });
 

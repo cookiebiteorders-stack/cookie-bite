@@ -39,12 +39,14 @@ export function CopilotLauncher() {
         aria-label={t("copilot.openLauncher")}
         className={
           lang === "ar"
-            ? "group fixed bottom-5 left-5 z-40 inline-flex items-center gap-2.5 rounded-full bg-cb-surface py-1.5 pr-1.5 pl-4 text-sm font-semibold text-cb-text-strong shadow-lg ring-1 ring-cb-border-strong transition hover:scale-105 active:scale-95"
-            : "group fixed bottom-5 right-5 z-40 inline-flex items-center gap-2.5 rounded-full bg-cb-surface py-1.5 pl-1.5 pr-4 text-sm font-semibold text-cb-text-strong shadow-lg ring-1 ring-cb-border-strong transition hover:scale-105 active:scale-95"
+            ? "group fixed bottom-5 left-5 z-[45] flex max-w-[min(calc(100vw-2rem),280px)] items-center gap-2 rounded-full border border-cb-border-strong bg-cb-surface py-1.5 ps-1.5 pe-4 text-sm font-semibold text-cb-text-strong shadow-lg transition hover:scale-[1.02] active:scale-[0.98]"
+            : "group fixed bottom-5 right-5 z-[45] flex max-w-[min(calc(100vw-2rem),280px)] items-center gap-2 rounded-full border border-cb-border-strong bg-cb-surface py-1.5 ps-1.5 pe-4 text-sm font-semibold text-cb-text-strong shadow-lg transition hover:scale-[1.02] active:scale-[0.98]"
         }
       >
-        <MrsCookieAvatar size={40} />
-        <span className="hidden sm:inline">{t("copilot.askCopilot")}</span>
+        <span className="shrink-0">
+          <MrsCookieAvatar size={40} />
+        </span>
+        <span className="hidden truncate sm:inline">{t("copilot.askCopilot")}</span>
       </button>
 
       {open ? (

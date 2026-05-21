@@ -377,7 +377,7 @@ export function ProductManagementDashboard() {
         disabled={!canWrite}
         onClick={openCreate}
         className={cn(
-          "fixed bottom-6 end-6 z-[60] flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-300/80",
+          "fixed bottom-[5.75rem] end-5 z-[44] flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-300/80 sm:bottom-24 sm:end-6 sm:h-14 sm:w-14",
           "bg-amber-600 text-white shadow-xl hover:bg-amber-700 focus-visible:outline focus-visible:ring-2 focus-visible:ring-amber-300 disabled:opacity-40",
         )}
         aria-label="إضافة منتج سريعة"

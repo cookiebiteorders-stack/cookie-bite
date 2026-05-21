@@ -34,7 +34,7 @@ const FORM_STEPS = [
 ] as const;
 
 const inputClass =
-  "cb-field w-full rounded-2xl border-2 border-cb-border/80 bg-white px-4 py-2.5 text-sm font-medium text-cb-text-strong shadow-[0_2px_12px_-4px_rgba(0,0,0,0.06)] transition-all duration-200 placeholder:text-cb-text-placeholder focus:outline-none";
+  "w-full rounded-2xl border-2 border-cb-border/70 bg-white px-4 py-2.5 text-sm font-medium text-cb-text-strong shadow-[0_2px_12px_-4px_rgba(61,40,20,0.12)] transition-all duration-200 placeholder:text-cb-text-muted/55 focus:border-cb-terracotta-dark focus:bg-white focus:shadow-[0_0_0_4px_rgba(193,105,44,0.18),0_8px_24px_-8px_rgba(178,83,54,0.25)] focus:outline-none";
 
 const inputErrorClass =
   "border-red-300/90 bg-red-50/50 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(239,68,68,0.15)]";

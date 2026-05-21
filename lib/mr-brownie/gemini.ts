@@ -1,9 +1,30 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, type Part } from "@google/generative-ai";
+import {
+  fetchImageInlineParts,
+  type ChatImageAttachment,
+} from "@/lib/chat/image-attachments";
+
+export type MrBrownieChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  attachments?: ChatImageAttachment[];
+};
+
+async function partsForUserMessage(
+  text: string,
+  attachments?: ChatImageAttachment[],
+): Promise<Part[]> {
+  const parts: Part[] = [{ text }];
+  if (attachments?.length) {
+    parts.push(...(await fetchImageInlineParts(attachments)));
+  }
+  return parts;
+}
 
 export async function runMrBrownieGemini(params: {
   systemInstruction: string;
   /** التاريخ يبدأ بـ user وتنتهي بـ user */
-  messages: { role: "user" | "assistant"; content: string }[];
+  messages: MrBrownieChatMessage[];
   temperature: number;
   maxOutputTokens: number;
 }): Promise<string> {
@@ -31,10 +52,18 @@ export async function runMrBrownieGemini(params: {
     throw new Error("Last message must be from user");
   }
 
-  const history = messages.slice(0, -1).map((m) => ({
-    role: m.role === "user" ? ("user" as const) : ("model" as const),
-    parts: [{ text: m.content }],
-  }));
+  const history: Array<{ role: "user" | "model"; parts: Part[] }> = [];
+  for (const m of messages.slice(0, -1)) {
+    const role = m.role === "user" ? ("user" as const) : ("model" as const);
+    if (m.role === "user" && m.attachments?.length) {
+      history.push({
+        role,
+        parts: await partsForUserMessage(m.content, m.attachments),
+      });
+    } else {
+      history.push({ role, parts: [{ text: m.content }] });
+    }
+  }
 
   const chat = model.startChat({
     history,
@@ -44,7 +73,8 @@ export async function runMrBrownieGemini(params: {
     },
   });
 
-  const result = await chat.sendMessage(last.content);
+  const lastParts = await partsForUserMessage(last.content, last.attachments);
+  const result = await chat.sendMessage(lastParts);
   const text = result.response.text();
   if (!text?.trim()) {
     throw new Error("Empty model response");

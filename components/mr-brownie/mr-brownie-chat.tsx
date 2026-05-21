@@ -1,8 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
 import { Send, X } from "lucide-react";
+import {
+  ChatImageAttachButton,
+  ChatImagePreviewStrip,
+  clearPendingAttachments,
+  hasUploadingAttachments,
+  readyAttachments,
+  type PendingChatImage,
+} from "@/components/chat/chat-image-attachment-input";
 import { useCart } from "@/components/providers/cart-provider";
 import { cn } from "@/lib/utils";
 import { buttonClassName } from "@/components/ui/button";
@@ -269,6 +278,7 @@ export function MrBrownieChat() {
   const clerkKey = isSignedIn && user?.id ? user.id : null;
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
+  const [pendingImages, setPendingImages] = useState<PendingChatImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -715,16 +725,27 @@ export function MrBrownieChat() {
   const submitMessage = useCallback(
     async (raw: string) => {
       const trimmed = raw.trim();
-      if (!trimmed || loading) return;
+      const attachments = readyAttachments(pendingImages);
+      if ((!trimmed && attachments.length === 0) || loading) return;
+      if (hasUploadingAttachments(pendingImages)) return;
 
+      const userContent = trimmed || "انظر الصورة المرفقة";
+      const imageUrls = attachments.map((a) => a.url);
       const userTs = Date.now();
       const nextMessages: ChatMessage[] = [
         ...messages,
-        { role: "user", content: trimmed, createdAt: userTs },
+        {
+          role: "user",
+          content: userContent,
+          imageUrls: imageUrls.length ? imageUrls : undefined,
+          createdAt: userTs,
+        },
       ];
       setMessages(nextMessages);
-      enqueueSaveMessage("user", trimmed);
+      enqueueSaveMessage("user", userContent);
       setInput("");
+      clearPendingAttachments(pendingImages);
+      setPendingImages([]);
       setLoading(true);
       setError(null);
 
@@ -733,7 +754,11 @@ export function MrBrownieChat() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            messages: nextMessages.map(({ role, content }) => ({ role, content })),
+            messages: nextMessages.map(({ role, content, imageUrls: imgs }) => ({
+              role,
+              content,
+              attachments: imgs?.map((url) => ({ url })),
+            })),
             cart: { lines },
           }),
         });
@@ -768,7 +793,7 @@ export function MrBrownieChat() {
         setLoading(false);
       }
     },
-    [loading, messages, lines, enqueueSaveMessage],
+    [loading, messages, lines, enqueueSaveMessage, pendingImages],
   );
 
   const send = useCallback(() => {
@@ -1124,6 +1149,27 @@ export function MrBrownieChat() {
                           : "me-auto bg-cb-cream/95 text-cb-text-strong ring-1 ring-cb-border/55 dark:bg-cb-surface-2",
                       )}
                     >
+                      {m.imageUrls && m.imageUrls.length > 0 ? (
+                        <div className="mb-2 flex flex-wrap gap-1.5">
+                          {m.imageUrls.map((url) => (
+                            <a
+                              key={url}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="relative block h-16 w-16 overflow-hidden rounded-lg ring-1 ring-cb-border/60"
+                            >
+                              <Image
+                                src={url}
+                                alt=""
+                                fill
+                                className="object-cover"
+                                unoptimized
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      ) : null}
                       {m.content}
                     </div>
                   ))}
@@ -1159,8 +1205,15 @@ export function MrBrownieChat() {
             </div>
 
             <div className="relative z-[2] shrink-0 border-t border-cb-border/70 bg-cb-surface/95 p-3 shadow-[0_-8px_24px_-8px_rgba(42,24,16,0.12)] backdrop-blur-sm sm:p-4 dark:bg-cb-surface-elevated/95">
-              {/* الإدخال أولاً حتى لا يُقصّ أسفل اللوحة عند ضيق الارتفاع */}
+              <ChatImagePreviewStrip pending={pendingImages} onChange={setPendingImages} />
               <div className="flex gap-2">
+                <ChatImageAttachButton
+                  context="store"
+                  pending={pendingImages}
+                  onChange={setPendingImages}
+                  disabled={loading || historyLoading}
+                  className="min-h-[48px] rounded-2xl"
+                />
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -1178,7 +1231,12 @@ export function MrBrownieChat() {
                 <button
                   type="button"
                   onClick={send}
-                  disabled={loading || historyLoading || !input.trim()}
+                  disabled={
+                    loading ||
+                    historyLoading ||
+                    hasUploadingAttachments(pendingImages) ||
+                    (!input.trim() && readyAttachments(pendingImages).length === 0)
+                  }
                   className={cn(
                     buttonClassName("primary", "shrink-0 self-end px-4 py-3"),
                     "min-h-[48px] rounded-2xl shadow-[var(--shadow-card)]",
