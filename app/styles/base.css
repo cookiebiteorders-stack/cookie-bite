@@ -43,6 +43,7 @@ html {
 .dark .admin-sidebar-scroll::-webkit-scrollbar-thumb {
   background: color-mix(in oklab, var(--cb-border-strong) 50%, transparent);
 }
+
 /* stylelint-enable */
 
 body {

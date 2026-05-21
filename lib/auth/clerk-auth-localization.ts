@@ -3,13 +3,21 @@ import { enUS } from "@clerk/localizations";
 /** يظهر في عناوين Clerk وصفحة تسجيل الدخول بدل اسم التطبيق من لوحة Clerk. */
 export const SITE_HOST = "cookie-bite.com";
 
-export const SIGN_IN_TITLE = `Sign in to ${SITE_HOST}`;
+export const SIGN_IN_TITLE = "Welcome back";
 export const SIGN_IN_SUBTITLE =
-  "Sign in with email or Google, Apple, or X — your connection is encrypted.";
+  "Sign in to track orders, save addresses, and checkout faster — email or social in one tap.";
+
+export const SIGN_UP_TITLE = "Create your account";
+export const SIGN_UP_SUBTITLE =
+  "Join Cookie Bite for order history, saved delivery spots, and treats made just for you.";
+
+export const AUTH_SWITCH_SIGN_IN_LABEL = "Already part of the bakery?";
+export const AUTH_SWITCH_SIGN_IN_CTA = "Sign in";
+export const AUTH_SWITCH_SIGN_UP_LABEL = "New here?";
+export const AUTH_SWITCH_SIGN_UP_CTA = "Create free account";
 
 /**
- * نسخة إنجليزية مخصصة لـ Cookie Bite — تستبدل اسم التطبيق الافتراضي من لوحة Clerk
- * وتقلل الالتباس بين العناوين داخل البطاقة.
+ * نسخة إنجليزية مخصصة لـ Cookie Bite — نبرة دافئة ومتسقة مع العلامة.
  */
 export const cookieBiteClerkLocalization = {
   ...enUS,
@@ -17,56 +25,81 @@ export const cookieBiteClerkLocalization = {
     ...enUS.signIn!,
     alternativePhoneCodeProvider: {
       ...enUS.signIn!.alternativePhoneCodeProvider,
-      subtitle: `to continue to ${SITE_HOST}`,
+      subtitle: `Continue to ${SITE_HOST}`,
     },
     emailCode: {
       ...enUS.signIn!.emailCode,
-      subtitle: `to continue to ${SITE_HOST}`,
+      subtitle: `We sent a code to your inbox for ${SITE_HOST}`,
     },
     emailCodeMfa: {
       ...enUS.signIn!.emailCodeMfa,
-      subtitle: `to continue to ${SITE_HOST}`,
+      subtitle: `Verify it’s you on ${SITE_HOST}`,
     },
     emailLink: {
       ...enUS.signIn!.emailLink,
-      subtitle: `to continue to ${SITE_HOST}`,
+      subtitle: `Open the link we emailed for ${SITE_HOST}`,
     },
     emailLinkMfa: {
       ...enUS.signIn!.emailLinkMfa,
-      subtitle: `to continue to ${SITE_HOST}`,
+      subtitle: `Confirm sign-in to ${SITE_HOST}`,
     },
     phoneCode: {
       ...enUS.signIn!.phoneCode,
-      subtitle: `to continue to ${SITE_HOST}`,
+      subtitle: `Enter the code for ${SITE_HOST}`,
     },
     start: {
       ...enUS.signIn!.start,
       title: SIGN_IN_TITLE,
       titleCombined: `Continue to ${SITE_HOST}`,
-      subtitle: SIGN_IN_SUBTITLE,
+      subtitle: "Use email, Google, Apple, or X — secured end-to-end.",
       alternativePhoneCodeProvider: {
         ...(enUS.signIn!.start?.alternativePhoneCodeProvider ?? {}),
-        title: `Sign in to ${SITE_HOST} with {{provider}}`,
+        title: `Sign in with {{provider}}`,
       },
+    },
+    password: {
+      ...enUS.signIn!.password,
+      title: "Enter your password",
+      subtitle: "For your Cookie Bite account",
+    },
+    forgotPassword: {
+      ...enUS.signIn!.forgotPassword,
+      title: "Reset your password",
+      subtitle: `We’ll help you back into ${SITE_HOST}`,
     },
   },
   signUp: {
     ...enUS.signUp!,
     emailLink: {
       ...enUS.signUp!.emailLink,
-      subtitle: `to continue to ${SITE_HOST}`,
+      subtitle: `Confirm your email for ${SITE_HOST}`,
     },
     start: {
       ...enUS.signUp!.start,
-      title: `Sign up to ${SITE_HOST}`,
-      subtitle:
-        "Save addresses and track orders — one account for gifts and treats.",
-      subtitleCombined:
-        "Save addresses and track orders — one account for gifts and treats.",
+      title: SIGN_UP_TITLE,
+      subtitle: "Pick email or a social account — takes under a minute.",
+      subtitleCombined: "Pick email or a social account — takes under a minute.",
       alternativePhoneCodeProvider: {
         ...(enUS.signUp!.start?.alternativePhoneCodeProvider ?? {}),
-        title: `Sign up to ${SITE_HOST} with {{provider}}`,
+        title: `Sign up with {{provider}}`,
       },
+    },
+    emailCode: {
+      ...enUS.signUp!.emailCode,
+      subtitle: "Enter the code we sent to verify your email",
+    },
+    continue: {
+      ...enUS.signUp!.continue,
+      title: "Almost there",
+      subtitle: "Add your details to finish your Cookie Bite account",
+    },
+  },
+  userProfile: {
+    ...enUS.userProfile,
+    navbar: {
+      ...enUS.userProfile?.navbar,
+      title: "Your account",
+      description: "Profile & security for Cookie Bite",
     },
   },
 };

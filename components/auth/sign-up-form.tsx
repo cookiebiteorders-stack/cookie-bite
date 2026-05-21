@@ -2,67 +2,39 @@
 
 import { useMemo } from "react";
 import { SignUp } from "@clerk/nextjs";
-import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
-import { useTheme } from "@/components/providers/theme-provider";
+import { ClerkAuthShell } from "@/components/auth/clerk-auth-shell";
+import { useClerkAuthAppearance } from "@/components/auth/use-clerk-auth-appearance";
 
 type SignUpFormProps = {
   afterAuth: string;
 };
 
 export function SignUpForm({ afterAuth }: SignUpFormProps) {
-  const { resolvedTheme } = useTheme();
-
-  const appearance = useMemo(() => {
-    const isDark = resolvedTheme === "dark";
-    return {
-      ...clerkAuthAppearance,
-      baseTheme: isDark ? ("dark" as const) : ("light" as const),
-      variables: {
-        ...clerkAuthAppearance.variables,
-        ...(isDark
-          ? {
-              colorPrimary: "#f97316",
-              colorDanger: "#fca5a5",
-              colorSuccess: "#86efac",
-              colorText: "#f5f5f4",
-              colorTextSecondary: "#a8a29e",
-              colorBackground: "#1c1917",
-              colorInputBackground: "#1c1917",
-              colorInputText: "#fafaf9",
-            }
-          : {
-              colorBackground: "#fdfbf7",
-              colorInputBackground: "#fdf9f3",
-            }),
-      },
-      elements: {
-        ...clerkAuthAppearance.elements,
-      },
-    };
-  }, [resolvedTheme]);
+  const appearance = useClerkAuthAppearance();
 
   const signInUrl = useMemo(() => {
-    if (afterAuth && afterAuth !== "/account") {
+    if (afterAuth && afterAuth !== "/account/complete-profile") {
       return `/sign-in?redirect_url=${encodeURIComponent(afterAuth)}`;
     }
     return "/sign-in";
   }, [afterAuth]);
 
   return (
-    <div className="auth-form-scroll w-full min-h-[min(18rem,42vh)]">
-    <SignUp
-      routing="path"
-      path="/sign-up"
-      signInUrl={signInUrl}
-      appearance={appearance}
-      oauthFlow="redirect"
-      oidcPrompt="select_account"
-      fallbackRedirectUrl={afterAuth}
-      forceRedirectUrl={afterAuth}
-      signInFallbackRedirectUrl={afterAuth}
-      signInForceRedirectUrl={afterAuth}
-    />
-    </div>
+    <ClerkAuthShell>
+      <div className="auth-form-scroll w-full min-h-[min(22rem,48vh)]">
+        <SignUp
+          routing="path"
+          path="/sign-up"
+          signInUrl={signInUrl}
+          appearance={appearance}
+          oauthFlow="redirect"
+          oidcPrompt="select_account"
+          fallbackRedirectUrl={afterAuth}
+          forceRedirectUrl={afterAuth}
+          signInFallbackRedirectUrl={afterAuth}
+          signInForceRedirectUrl={afterAuth}
+        />
+      </div>
+    </ClerkAuthShell>
   );
 }
-

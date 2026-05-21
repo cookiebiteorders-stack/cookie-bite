@@ -4,7 +4,8 @@ import { buildPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildPageMetadata({
   title: SIGN_IN_TITLE,
-  description: "Sign in to cookie-bite.com to track orders and manage your account.",
+  description:
+    "Sign in to Cookie Bite to track orders, save addresses, and checkout faster.",
   path: "/sign-in",
   keywords: ["cookie bite login", "customer sign in"],
   noIndex: true,
