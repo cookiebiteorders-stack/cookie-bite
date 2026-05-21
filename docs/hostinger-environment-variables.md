@@ -33,6 +33,15 @@ npm run hostinger:export-gemini-env
 | `INTERNAL_API_SECRET` | APIs داخلية |
 | `REVALIDATE_SECRET` | `POST /api/revalidate` |
 
+## Clerk — نطاق `clerk.cookie-bite.com`
+
+إن ظهر `failed_to_load_clerk_js`: أضف **CNAME** لـ `clerk` في DNS (قيمة Clerk Dashboard) ثم Redeploy.  
+الدليل: `docs/clerk-dns-subdomain-ar.md`
+
+| المتغير | ملاحظات |
+|---------|---------|
+| `NEXT_PUBLIC_CLERK_JS_URL` | اختياري — CDN احتياطي؛ التطوير يضبطه تلقائياً إن لم يُعرَّف |
+
 ## Google OAuth Branding (تحقق ملكية الموقع)
 
 | المتغير | الغرض |
