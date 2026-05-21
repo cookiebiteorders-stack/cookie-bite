@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
-@import "./styles/luxury-contrast.css";
 @import "./styles/base.css";
 @import "./styles/motion.css";
 @import "./styles/admin.css";
