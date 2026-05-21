@@ -605,6 +605,11 @@ html[dir="rtl"] .cb-pl-body {
   color: var(--color-text-primary);
 }
 
+.cb-pl-product-badge.is-featured {
+  background: var(--color-soft-gold);
+  color: var(--color-text-primary);
+}
+
 /* ─── 17. Empty / skeleton ─── */
 .cb-pl-skeleton {
   background: linear-gradient(

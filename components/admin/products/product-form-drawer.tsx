@@ -30,6 +30,17 @@ import {
   saveProductFormDraft,
 } from "@/lib/admin/product-form-draft";
 import { generateProductFieldsFromName } from "@/lib/admin/product-auto-fill";
+import { CatalogMultiSelect } from "@/components/admin/products/catalog-multi-select";
+import {
+  PRODUCT_BADGE_OPTIONS,
+  PRODUCT_SEASON_OPTIONS,
+  filterValidBadges,
+  filterValidSeasons,
+  joinCatalogCsv,
+  labelForBadge,
+  labelForSeason,
+  parseCatalogCsv,
+} from "@/lib/products/catalog-options";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
 import { cn } from "@/lib/utils";
 
@@ -467,24 +478,32 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     onChange={(e) => setForm((f) => ({ ...f, title_ar: e.target.value }))}
                   />
                 </label>
-                <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
-                  <span className={labelClass}>شارات (featured, bestseller)</span>
-                  <input
-                    className={inputClass}
-                    placeholder="featured, new"
-                    value={form.badges}
-                    onChange={(e) => setForm((f) => ({ ...f, badges: e.target.value }))}
+                <div className={cn(formStep !== 1 && "hidden")}>
+                  <CatalogMultiSelect
+                    label="الشارات"
+                    hint="كما في المتجر: الأكثر مبيعًا، جديد، رائج، مميز"
+                    options={PRODUCT_BADGE_OPTIONS}
+                    valueCsv={form.badges}
+                    onChangeCsv={(badges) => setForm((f) => ({ ...f, badges }))}
+                    parse={(csv) => filterValidBadges(parseCatalogCsv(csv))}
+                    join={joinCatalogCsv}
+                    labelFor={labelForBadge}
+                    disabled={!canWrite}
                   />
-                </label>
-                <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
-                  <span className={labelClass}>مواسم</span>
-                  <input
-                    className={inputClass}
-                    placeholder="ramadan, summer"
-                    value={form.seasons}
-                    onChange={(e) => setForm((f) => ({ ...f, seasons: e.target.value }))}
+                </div>
+                <div className={cn(formStep !== 1 && "hidden")}>
+                  <CatalogMultiSelect
+                    label="المواسم"
+                    hint="مناسبات وتصفية موسمية في الموقع"
+                    options={PRODUCT_SEASON_OPTIONS}
+                    valueCsv={form.seasons}
+                    onChangeCsv={(seasons) => setForm((f) => ({ ...f, seasons }))}
+                    parse={(csv) => filterValidSeasons(parseCatalogCsv(csv))}
+                    join={joinCatalogCsv}
+                    labelFor={labelForSeason}
+                    disabled={!canWrite}
                   />
-                </label>
+                </div>
 
                 <div className={cn("space-y-3", formStep !== 1 && "hidden")}>
                   <span className={labelClass}>التصنيف</span>

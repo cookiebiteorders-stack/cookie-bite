@@ -6,7 +6,7 @@ import {
   primaryImageFromProduct,
 } from "@/lib/products/media";
 
-const BADGE_SET = new Set(["bestseller", "new", "trending"]);
+const BADGE_SET = new Set(["bestseller", "new", "trending", "featured"]);
 
 /**
  * يحوّل صف منتج من Supabase إلى شكل `Product` للمتجر.

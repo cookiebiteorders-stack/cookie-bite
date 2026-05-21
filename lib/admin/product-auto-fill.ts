@@ -3,6 +3,11 @@
  */
 
 import { DEFAULT_PRODUCT_CATEGORY } from "@/lib/admin/product-categories";
+import {
+  PRODUCT_BADGE_OPTIONS,
+  PRODUCT_SEASON_OPTIONS,
+  joinCatalogCsv,
+} from "@/lib/products/catalog-options";
 import type { ProductFormState } from "@/lib/admin/products-dashboard-types";
 import { deriveProductSlug } from "@/lib/products/slug";
 
@@ -98,8 +103,9 @@ function inferBadges(name: string): string {
   if (/best|أكثر\s*مبيع|bestseller/i.test(n)) badges.push("bestseller");
   if (/new|جديد|جديدة/i.test(n)) badges.push("new");
   if (/trend|رائج|viral/i.test(n)) badges.push("trending");
+  if (/featured|مميز/i.test(n)) badges.push("featured");
   if (badges.length === 0) badges.push("new");
-  return badges.join(", ");
+  return joinCatalogCsv(badges.filter((b) => PRODUCT_BADGE_OPTIONS.some((o) => o.value === b)));
 }
 
 function inferSeasons(name: string): string {
@@ -109,7 +115,10 @@ function inferSeasons(name: string): string {
   if (/eid|عيد/i.test(n)) seasons.push("eid");
   if (/summer|صيف/i.test(n)) seasons.push("summer");
   if (/winter|شتاء/i.test(n)) seasons.push("winter");
-  return seasons.join(", ");
+  if (/spring|ربيع/i.test(n)) seasons.push("spring");
+  if (/valentine|حب/i.test(n)) seasons.push("valentine");
+  if (/christmas|كريسماس/i.test(n)) seasons.push("christmas");
+  return joinCatalogCsv(seasons.filter((s) => PRODUCT_SEASON_OPTIONS.some((o) => o.value === s)));
 }
 
 function inferDietary(category: string): string {

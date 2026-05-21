@@ -64,7 +64,7 @@ export type Product = {
   /** فيديو اختياري في المعرض */
   videoUrl?: string | null;
   category: string;
-  badges?: ("bestseller" | "new" | "trending")[];
+  badges?: ("bestseller" | "new" | "trending" | "featured")[];
   /** مخزون تقريبي لعرض حالة التوفر في الواجهة */
   stock?: number;
 };

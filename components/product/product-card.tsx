@@ -20,10 +20,11 @@ type Props = {
   onWishlistToggled?: (productUuid: string, nowSaved: boolean) => void;
 };
 
-const badgeKey: Record<NonNullable<Product["badges"]>[number], string> = {
+const badgeKey: Record<string, string> = {
   bestseller: "product.badgeBestseller",
   new: "product.badgeNew",
   trending: "product.badgeTrending",
+  featured: "product.badgeFeatured",
 };
 
 export function ProductCard({
@@ -123,9 +124,10 @@ export function ProductCard({
                   "cb-pl-product-badge rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide shadow-sm",
                   b === "new" && "is-new",
                   b === "trending" && "is-trending",
+                  b === "featured" && "is-featured",
                 )}
               >
-                {t(badgeKey[b])}
+                {t(badgeKey[b] ?? b)}
               </span>
             ))}
           </div>

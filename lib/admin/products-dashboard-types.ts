@@ -171,12 +171,12 @@ export function formToApiPayload(form: ProductFormState) {
     .map((x) => x.trim())
     .filter(Boolean);
   const badgesList = form.badges
-    .split(/[\n,]/g)
-    .map((x) => x.trim())
+    .split(/[\n,،]/g)
+    .map((x) => x.trim().toLowerCase())
     .filter(Boolean);
   const seasonsList = form.seasons
-    .split(/[\n,]/g)
-    .map((x) => x.trim())
+    .split(/[\n,،]/g)
+    .map((x) => x.trim().toLowerCase())
     .filter(Boolean);
   const compareRaw = form.compare_price_egp.trim();
   const compare_price_egp =
