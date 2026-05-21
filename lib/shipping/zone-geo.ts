@@ -15,15 +15,16 @@ export type ZoneGeo = {
 
 const STORAGE_KEY = "cb.shipping.zone-geo.v1";
 
+/** ألوان المناطق — تبدأ من ألوان العلامة ثم درجات متنوعة بصرياً */
 const DEFAULT_PALETTE = [
-  "#FF6B00",
+  "#c1692c",
+  "#84441b",
+  "#3d9a72",
   "#3B82F6",
-  "#10B981",
   "#8B5CF6",
-  "#EF4444",
-  "#F59E0B",
   "#EC4899",
   "#14B8A6",
+  "#dd8447",
 ];
 
 export const ZONE_GEO_PALETTE = DEFAULT_PALETTE;

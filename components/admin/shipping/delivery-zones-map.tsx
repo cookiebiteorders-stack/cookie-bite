@@ -654,7 +654,7 @@ export function DeliveryZonesMap() {
               type="button"
               onClick={openCreateForm}
               disabled={!LRef || mutating}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#FF6B00] px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e05e00] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cb-brand-500 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cb-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus className="h-4 w-4" />
               Add delivery zone
@@ -691,7 +691,7 @@ export function DeliveryZonesMap() {
                     if (nameError) setNameError(false);
                   }}
                   placeholder="e.g. Downtown Cairo"
-                  className={`mt-1 w-full rounded-lg border bg-cb-surface px-2.5 py-1.5 text-sm outline-none transition focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20 ${
+                  className={`mt-1 w-full rounded-lg border bg-cb-surface px-2.5 py-1.5 text-sm outline-none transition focus:border-cb-brand-500 focus:ring-2 focus:ring-cb-brand-500/25 ${
                     nameError ? "border-red-400" : "border-cb-border"
                   }`}
                 />
@@ -709,7 +709,7 @@ export function DeliveryZonesMap() {
                       setDraft((d) => ({ ...d, feeEgp: e.target.value }))
                     }
                     placeholder="30"
-                    className="mt-1 w-full rounded-lg border border-cb-border bg-cb-surface px-2.5 py-1.5 text-sm outline-none focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
+                    className="mt-1 w-full rounded-lg border border-cb-border bg-cb-surface px-2.5 py-1.5 text-sm outline-none focus:border-cb-brand-500 focus:ring-2 focus:ring-cb-brand-500/25"
                   />
                 </label>
                 <label className="block">
@@ -725,7 +725,7 @@ export function DeliveryZonesMap() {
                       setDraft((d) => ({ ...d, etaDays: e.target.value }))
                     }
                     placeholder="1"
-                    className="mt-1 w-full rounded-lg border border-cb-border bg-cb-surface px-2.5 py-1.5 text-sm outline-none focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
+                    className="mt-1 w-full rounded-lg border border-cb-border bg-cb-surface px-2.5 py-1.5 text-sm outline-none focus:border-cb-brand-500 focus:ring-2 focus:ring-cb-brand-500/25"
                   />
                 </label>
               </div>
@@ -742,7 +742,7 @@ export function DeliveryZonesMap() {
                   onChange={(e) =>
                     setDraft((d) => ({ ...d, radiusKm: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-lg border border-cb-border bg-cb-surface px-2.5 py-1.5 text-sm outline-none focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20"
+                  className="mt-1 w-full rounded-lg border border-cb-border bg-cb-surface px-2.5 py-1.5 text-sm outline-none focus:border-cb-brand-500 focus:ring-2 focus:ring-cb-brand-500/25"
                 />
               </label>
               <div className="block">
@@ -808,7 +808,7 @@ export function DeliveryZonesMap() {
                 {placedZones.map(({ zone, geo }) => (
                   <li
                     key={zone.id}
-                    className="group flex items-center gap-2 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 transition hover:border-[#FF6B00]"
+                    className="group flex items-center gap-2 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 transition hover:border-cb-brand-500"
                   >
                     <button
                       type="button"
@@ -887,7 +887,7 @@ export function DeliveryZonesMap() {
           <div
             ref={containerRef}
             className={`h-[460px] w-full overflow-hidden rounded-2xl border ${
-              picking ? "border-[#FF6B00]" : "border-cb-border"
+              picking ? "border-cb-brand-500" : "border-cb-border"
             } ${loadError || !LRef ? "hidden" : ""}`}
             style={{ cursor: picking ? "crosshair" : undefined }}
           />

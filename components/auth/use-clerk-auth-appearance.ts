@@ -24,7 +24,7 @@ export function useClerkAuthAppearance(options: Options = {}) {
         ...clerkAuthAppearance.variables,
         ...(isDark
           ? {
-              colorPrimary: "#fb923c",
+              colorPrimary: "#e88a4e",
               colorDanger: "#fca5a5",
               colorSuccess: "#86efac",
               colorText: "#fafaf9",

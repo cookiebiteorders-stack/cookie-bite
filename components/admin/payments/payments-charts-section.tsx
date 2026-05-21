@@ -23,7 +23,7 @@ type Props = {
   summary: PaymentSummaryResponse;
 };
 
-const PIE_COLORS = ["#22c55e", "#ef4444", "#eab308", "#6366f1", "#94a3b8", "#f97316"];
+const PIE_COLORS = ["#22c55e", "#ef4444", "#eab308", "#6366f1", "#94a3b8", "#c1692c"];
 
 export function PaymentsChartsSection({ summary }: Props) {
   const [rangeDays, setRangeDays] = useState<7 | 14>(14);

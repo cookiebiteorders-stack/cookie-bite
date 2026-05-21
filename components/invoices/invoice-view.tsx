@@ -174,8 +174,8 @@ export function InvoiceView({
     <div className={cn("inv-root cb-print-document", className)} dir="ltr" lang="en">
       <style jsx>{`
         .inv-root {
-          --inv-orange: #ff6b00;
-          --inv-orange-dark: #e05e00;
+          --inv-orange: #c1692c;
+          --inv-orange-dark: #a55623;
           --inv-dark-bg: #1a1a0e;
           --inv-white: #ffffff;
           --inv-text-primary: #1a1a1a;
