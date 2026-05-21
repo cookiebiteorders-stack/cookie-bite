@@ -42,7 +42,7 @@ const FORM_STEPS = [
 ] as const;
 
 const inputClass =
-  "w-full rounded-2xl border-2 border-cb-border/70 bg-white px-4 py-2.5 text-sm font-medium text-cb-text-strong shadow-[0_2px_12px_-4px_rgba(61,40,20,0.12)] transition-all duration-200 placeholder:text-cb-text-muted/55 focus:border-cb-terracotta-dark focus:bg-white focus:shadow-[0_0_0_4px_rgba(193,105,44,0.18),0_8px_24px_-8px_rgba(178,83,54,0.25)] focus:outline-none";
+  "w-full rounded-xl border border-cb-border/70 bg-white px-3 py-2 text-sm font-medium text-cb-text-strong shadow-sm transition-all duration-200 placeholder:text-cb-text-muted/55 focus:border-cb-terracotta-dark focus:outline-none focus:ring-2 focus:ring-cb-terracotta-dark/20";
 
 const inputErrorClass =
   "border-red-300/90 bg-red-50/50 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(239,68,68,0.15)]";
@@ -260,130 +260,96 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
             className="flex h-full w-full max-w-2xl flex-col overflow-hidden border-s border-cb-border/80 bg-gradient-to-b from-[#FFFBF5] via-cb-surface-elevated to-[#F8EDE0] shadow-[-16px_0_40px_-10px_rgba(61,40,20,0.35)]"
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <div className="relative overflow-hidden border-b border-white/20 px-5 pb-5 pt-5">
-              <div
-                className="pointer-events-none absolute -end-8 -top-10 h-36 w-36 rounded-full bg-amber-300/40 blur-3xl"
-                aria-hidden
-              />
-              <div
-                className="pointer-events-none absolute -bottom-6 start-8 h-28 w-28 rounded-full bg-cb-terracotta-dark/25 blur-2xl"
-                aria-hidden
-              />
-              <div className="relative flex items-start justify-between gap-3">
-                <div className="flex gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cb-terracotta-dark to-amber-600 text-white shadow-lg shadow-cb-terracotta-dark/30">
-                    {editing ? (
-                      <Tag className="h-5 w-5" aria-hidden />
-                    ) : (
-                      <Cookie className="h-5 w-5" aria-hidden />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cb-terracotta-dark/80">
-                      {editing ? "تحديث الكتالوج" : "منتج جديد"}
-                    </p>
-                    <h2
-                      id="product-form-title"
-                      className="font-serif text-2xl font-bold leading-tight text-cb-text-strong"
-                    >
-                      {editing ? "تعديل منتج" : "إضافة منتج"}
-                    </h2>
-                    <p className="mt-1 max-w-[18rem] text-xs leading-relaxed text-cb-text-muted">
-                      ٣ خطوات — تُحفظ المسودة تلقائياً عند الإغلاق.
-                    </p>
+            {/* منطقة تمرير واحدة: رأس مضغوط + خطوات + نموذج */}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              <header className="flex items-center gap-2.5 border-b border-cb-border/40 px-4 py-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cb-terracotta-dark to-amber-600 text-white shadow-sm">
+                  {editing ? (
+                    <Tag className="h-4 w-4" aria-hidden />
+                  ) : (
+                    <Cookie className="h-4 w-4" aria-hidden />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2
+                    id="product-form-title"
+                    className="truncate font-serif text-lg font-bold leading-tight text-cb-text-strong"
+                  >
+                    {editing ? "تعديل منتج" : "إضافة منتج"}
+                  </h2>
+                  <p className="truncate text-[10px] text-cb-text-muted">
+                    الخطوة {formStep} من ٣
+                    {!editingId ? " · مسودة تلقائية" : ""}
                     {hasUnsavedDraft ? (
-                      <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-900 ring-1 ring-amber-200">
-                        مسودة محفوظة
-                      </span>
+                      <span className="ms-1 font-bold text-amber-800">· محفوظة</span>
                     ) : null}
-                  </div>
+                  </p>
                 </div>
                 <button
                   type="button"
-                  className="rounded-2xl border border-white/60 bg-white/70 p-2.5 text-cb-text-muted shadow-sm backdrop-blur transition hover:scale-105 hover:bg-white hover:text-cb-text-strong focus-visible:outline focus-visible:ring-2 focus-visible:ring-amber-400"
+                  className="shrink-0 rounded-xl border border-cb-border/70 bg-white/80 p-2 text-cb-text-muted transition hover:bg-white hover:text-cb-text-strong"
                   onClick={() => onOpenChange(false)}
                   aria-label="إغلاق"
                 >
                   <X className="h-4 w-4" />
                 </button>
-              </div>
-            </div>
+              </header>
 
-            <div className="border-b border-cb-border/60 bg-white/50 px-4 py-4 backdrop-blur-sm">
-              <div className="mb-3 flex items-center justify-between gap-2 text-[11px] font-semibold text-cb-text-muted">
-                <span>
-                  الخطوة {formStep} من ٣
-                </span>
-                <span className="tabular-nums text-cb-terracotta-dark">
-                  {Math.round((formStep / 3) * 100)}%
-                </span>
-              </div>
-              <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-cb-border/50">
-                <motion.div
-                  className="h-full rounded-full bg-gradient-to-l from-amber-500 via-cb-terracotta-dark to-[#8B3A2A]"
-                  initial={false}
-                  animate={{ width: `${(formStep / 3) * 100}%` }}
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {FORM_STEPS.map((s) => {
-                  const Icon = s.icon;
-                  const active = formStep === s.id;
-                  const done = stepDone[s.id];
-                  const enabled = canEnterStep[s.id];
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      disabled={!enabled}
-                      onClick={() => {
-                        if (!enabled) return;
-                        setFormStep(s.id);
-                      }}
-                      className={cn(
-                        "group relative flex flex-col items-center gap-1 rounded-2xl border-2 px-2 py-2.5 text-center transition-all duration-200",
-                        active
-                          ? "border-cb-terracotta-dark bg-gradient-to-b from-cb-terracotta-dark to-[#9E4528] text-white shadow-md shadow-cb-terracotta-dark/25"
-                          : done
-                            ? "border-emerald-200/80 bg-emerald-50/90 text-emerald-900"
-                            : enabled
-                              ? "border-cb-border/70 bg-white/80 text-cb-text-strong hover:border-amber-300 hover:bg-amber-50/80 hover:shadow-sm"
-                              : "cursor-not-allowed border-transparent bg-cb-surface/40 text-cb-text-muted/45",
-                      )}
-                    >
-                      <span
+              <div className="border-b border-cb-border/40 px-4 py-2.5">
+                <div className="mb-1.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-cb-text-muted">
+                  <span>الخطوة {formStep} من ٣</span>
+                  <span className="tabular-nums text-cb-terracotta-dark">
+                    {Math.round((formStep / 3) * 100)}%
+                  </span>
+                </div>
+                <div className="mb-2 h-1 overflow-hidden rounded-full bg-cb-border/40">
+                  <motion.div
+                    className="h-full rounded-full bg-cb-terracotta-dark"
+                    initial={false}
+                    animate={{ width: `${(formStep / 3) * 100}%` }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                </div>
+                <div className="flex gap-1" role="tablist" aria-label="خطوات النموذج">
+                  {FORM_STEPS.map((s) => {
+                    const active = formStep === s.id;
+                    const done = stepDone[s.id];
+                    const enabled = canEnterStep[s.id];
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        disabled={!enabled}
+                        onClick={() => {
+                          if (!enabled) return;
+                          setFormStep(s.id);
+                        }}
                         className={cn(
-                          "flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold transition",
+                          "flex min-h-8 flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold transition",
                           active
-                            ? "bg-white/20 text-white"
+                            ? "bg-cb-terracotta-dark text-white shadow-sm"
                             : done
-                              ? "bg-emerald-500 text-white"
-                              : "bg-cb-peach/80 text-cb-terracotta-dark group-hover:bg-amber-200",
+                              ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/80"
+                              : enabled
+                                ? "bg-white text-cb-text-strong ring-1 ring-cb-border/60 hover:bg-amber-50"
+                                : "cursor-not-allowed bg-cb-surface/30 text-cb-text-muted/50",
                         )}
                       >
                         {done && !active ? (
-                          <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+                          <Check className="h-3 w-3 shrink-0" strokeWidth={3} aria-hidden />
                         ) : (
-                          <Icon className="h-3.5 w-3.5" aria-hidden />
+                          <span className="tabular-nums text-[10px] opacity-80">{s.id}</span>
                         )}
-                      </span>
-                      <span className="text-[11px] font-bold leading-tight">{s.label}</span>
-                      <span
-                        className={cn(
-                          "text-[9px] font-medium leading-tight opacity-80",
-                          active ? "text-white/85" : "",
-                        )}
-                      >
-                        {s.hint}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <span className="truncate">{s.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-transparent via-white/30 to-transparent px-5 py-5">
+              <div className="px-4 py-4">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={formStep}
@@ -513,18 +479,21 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   </datalist>
                 </div>
 
-                <div className={cn("space-y-2", formStep !== 2 && "hidden")}>
-                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-200/80 bg-gradient-to-l from-amber-50 to-orange-50/80 px-4 py-3">
-                    <span className={labelClass}>الوصف</span>
-                    <button
-                      type="button"
-                      onClick={applyAiDescription}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-l from-amber-500 to-cb-terracotta-dark px-4 py-1.5 text-[11px] font-bold text-white shadow-md shadow-amber-500/30 transition hover:scale-[1.02] hover:brightness-110"
-                    >
-                      <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                      مساعد وصف (مسودة)
-                    </button>
-                  </div>
+                <div
+                  className={cn(
+                    "flex flex-wrap items-center justify-between gap-2",
+                    formStep !== 2 && "hidden",
+                  )}
+                >
+                  <span className={labelClass}>الوصف</span>
+                  <button
+                    type="button"
+                    onClick={applyAiDescription}
+                    className="inline-flex items-center gap-1 rounded-full bg-cb-terracotta-dark px-3 py-1 text-[10px] font-bold text-white transition hover:brightness-110"
+                  >
+                    <Sparkles className="h-3 w-3" aria-hidden />
+                    مسودة وصف
+                  </button>
                 </div>
                 <label className={cn("space-y-2", formStep !== 2 && "hidden")}>
                   <span className={labelClass}>Description EN</span>
@@ -660,9 +629,10 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                 </div>
                 </motion.div>
               </AnimatePresence>
+              </div>
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-cb-border/70 bg-white/90 px-5 py-4 shadow-[0_-8px_24px_-12px_rgba(61,40,20,0.15)] backdrop-blur-md">
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-cb-border/70 bg-white/95 px-4 py-3 shadow-[0_-4px_16px_-8px_rgba(61,40,20,0.12)]">
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
@@ -684,7 +654,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1 rounded-full border-2 border-cb-border/80 bg-white px-4 py-2.5 text-sm font-bold text-cb-text-strong shadow-sm transition hover:border-amber-300 hover:bg-amber-50 disabled:opacity-40"
+                  className="inline-flex items-center gap-1 rounded-full border border-cb-border/80 bg-white px-3 py-2 text-sm font-bold text-cb-text-strong shadow-sm transition hover:border-amber-300 hover:bg-amber-50 disabled:opacity-40"
                   disabled={formStep === 1}
                   onClick={() => setFormStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s))}
                 >
@@ -694,7 +664,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                 {formStep < 3 ? (
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1 rounded-full bg-gradient-to-l from-amber-500 to-cb-terracotta-dark px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-cb-terracotta-dark/25 transition hover:scale-[1.02] hover:brightness-110 disabled:opacity-40"
+                    className="inline-flex items-center gap-1 rounded-full bg-gradient-to-l from-amber-500 to-cb-terracotta-dark px-4 py-2 text-sm font-bold text-white shadow-md transition hover:brightness-110 disabled:opacity-40"
                     disabled={!stepDone[formStep]}
                     onClick={() => setFormStep((s) => (s < 3 ? ((s + 1) as 1 | 2 | 3) : s))}
                   >
@@ -705,7 +675,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   <button
                     type="button"
                     disabled={saving || !canWrite || hasBlockingErrors}
-                    className="inline-flex min-w-[7.5rem] items-center justify-center gap-2 rounded-full bg-gradient-to-l from-cb-terracotta-dark via-[#B45309] to-amber-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-cb-terracotta-dark/35 transition hover:scale-[1.02] hover:brightness-110 disabled:scale-100 disabled:opacity-50"
+                    className="inline-flex min-w-[7rem] items-center justify-center gap-2 rounded-full bg-gradient-to-l from-cb-terracotta-dark to-amber-600 px-5 py-2 text-sm font-bold text-white shadow-md transition hover:brightness-110 disabled:opacity-50"
                     onClick={() => void submitForm()}
                   >
                     {saving ? (
