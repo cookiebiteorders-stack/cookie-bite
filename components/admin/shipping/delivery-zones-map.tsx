@@ -21,6 +21,11 @@ import {
 import type { ShippingZoneRow } from "@/lib/shipping/types";
 import { useShippingOrchestrationStore } from "@/stores/shipping-orchestration-store";
 import {
+  placeLabelToZoneName,
+  searchPlacesNominatim,
+  type MapSearchResult,
+} from "@/lib/map/geocode-search";
+import {
   ZONE_GEO_PALETTE,
   deleteZoneGeo,
   getZoneGeo,
@@ -29,6 +34,7 @@ import {
   saveZoneGeo,
   type ZoneGeo,
 } from "@/lib/shipping/zone-geo";
+import { MapPlaceSearch } from "@/components/admin/shipping/map-place-search";
 
 const LEAFLET_CSS = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
 const LEAFLET_JS = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
@@ -139,6 +145,7 @@ export function DeliveryZonesMap() {
     circle: LeafletCircle | null;
     marker: LeafletCircleMarker | null;
   }>({ circle: null, marker: null });
+  const searchPinRef = useRef<LeafletCircleMarker | null>(null);
   const clickHandlerRef = useRef<((e: LeafletMouseEvent) => void) | null>(null);
 
   const [LRef, setLRef] = useState<LeafletStatic | null>(null);
@@ -206,6 +213,68 @@ export function DeliveryZonesMap() {
     }
     tempLayersRef.current = { circle: null, marker: null };
   }, []);
+
+  const clearSearchPin = useCallback(() => {
+    if (!mapRef.current || !searchPinRef.current) return;
+    mapRef.current.removeLayer(searchPinRef.current);
+    searchPinRef.current = null;
+  }, []);
+
+  const placeDraftAt = useCallback(
+    (lat: number, lng: number, label?: string) => {
+      if (!mapRef.current || !LRef) return;
+      clearTempLayers();
+      clearSearchPin();
+      const latlng = LRef.latLng(lat, lng);
+      const radiusMeters = Math.max(1, Number(draft.radiusKm) || 5) * 1000;
+      const circle = LRef.circle(latlng, {
+        radius: radiusMeters,
+        color: draft.color,
+        fillColor: draft.color,
+        fillOpacity: 0.15,
+        weight: 2,
+        dashArray: "6,4",
+      }).addTo(mapRef.current);
+      const marker = LRef.circleMarker(latlng, {
+        radius: 7,
+        color: "#ffffff",
+        fillColor: draft.color,
+        fillOpacity: 1,
+        weight: 2,
+      }).addTo(mapRef.current);
+      tempLayersRef.current = { circle, marker };
+      setDraft((d) => ({
+        ...d,
+        latlng,
+        name:
+          d.name.trim().length >= 2
+            ? d.name
+            : label
+              ? placeLabelToZoneName(label)
+              : d.name,
+      }));
+      setHint({
+        kind: "ok",
+        text: "تم تحديد الموقع من البحث — أكمل التفاصيل واحفظ",
+      });
+    },
+    [LRef, draft.radiusKm, draft.color, clearTempLayers, clearSearchPin],
+  );
+
+  const showSearchPin = useCallback(
+    (lat: number, lng: number) => {
+      if (!mapRef.current || !LRef) return;
+      clearSearchPin();
+      searchPinRef.current = LRef.circleMarker([lat, lng], {
+        radius: 9,
+        color: "#ffffff",
+        fillColor: "#2563eb",
+        fillOpacity: 1,
+        weight: 3,
+      }).addTo(mapRef.current);
+    },
+    [LRef, clearSearchPin],
+  );
 
   useEffect(() => {
     if (!LRef || !mapRef.current) return;
@@ -406,6 +475,66 @@ export function DeliveryZonesMap() {
     layer?.marker.openPopup();
   };
 
+  const handleSearchPlace = useCallback(
+    async (result: MapSearchResult) => {
+      let lat = result.lat;
+      let lng = result.lng;
+      if (result.kind === "city") {
+        const places = await searchPlacesNominatim(result.label, 1);
+        if (!places[0]) {
+          pushToast(`لم يُعثر على إحداثيات لـ «${result.label}»`, "error");
+          return;
+        }
+        lat = places[0].lat;
+        lng = places[0].lng;
+      }
+      if (!mapRef.current) return;
+      mapRef.current.flyTo([lat, lng], 14, { duration: 0.65 });
+      showSearchPin(lat, lng);
+
+      if (formOpen && picking) {
+        placeDraftAt(lat, lng, result.label);
+        return;
+      }
+
+      if (!formOpen) {
+        const color = pickNextColor(usedColors);
+        setDraft({ ...EMPTY_DRAFT, color });
+        setFormOpen(true);
+        setPicking(true);
+        setNameError(false);
+        setHint({
+          kind: "info",
+          text: "تم تحديد الموقع — أدخل اسم المنطقة والسعر ثم احفظ",
+        });
+        placeDraftAt(lat, lng, result.label);
+      }
+    },
+    [
+      formOpen,
+      picking,
+      placeDraftAt,
+      showSearchPin,
+      pushToast,
+      usedColors,
+    ],
+  );
+
+  const handleSearchZone = useCallback(
+    (zone: ShippingZoneRow) => {
+      const geo = geoStore[zone.id];
+      if (geo) {
+        focusZone(zone);
+        return;
+      }
+      openEditForm(zone);
+      pushToast(
+        `«${zone.name}» غير موضوعة على الخريطة — ابحث عن المكان ثم انقر للحفظ`,
+      );
+    },
+    [geoStore, pushToast],
+  );
+
   const handleSave = async (event: FormEvent) => {
     event.preventDefault();
     const name = draft.name.trim();
@@ -503,8 +632,9 @@ export function DeliveryZonesMap() {
             Map-based zone placement
           </h2>
           <p className="mt-1 max-w-2xl text-sm text-cb-text">
-            ارسم مناطق التوصيل بصرياً على الخريطة. اضغط لإضافة منطقة، حدّد
-            النصف-قطر، السعر، وعدد أيام التوصيل. الموقع الجغرافي يُحفظ محلياً
+            ارسم مناطق التوصيل بصرياً على الخريطة. استخدم البحث أعلى الخريطة
+            للعثور على حي أو مدينة أو منطقة توصيل، ثم اضغط لإضافة منطقة وحدّد
+            النصف-قطر والسعر. الموقع الجغرافي يُحفظ محلياً
             في المتصفح بينما الاسم والسعر والـETA يُزامَنون مع قاعدة البيانات
             تلقائياً.
           </p>
@@ -733,7 +863,13 @@ export function DeliveryZonesMap() {
           </div>
         </aside>
 
-        <div className="relative">
+        <div className="relative flex flex-col gap-2">
+          <MapPlaceSearch
+            zones={zones}
+            geoStore={geoStore}
+            onSelectPlace={(r) => void handleSearchPlace(r)}
+            onSelectZone={handleSearchZone}
+          />
           {loadError ? (
             <div className="flex h-[460px] items-center justify-center rounded-2xl border border-dashed border-red-300 bg-red-50/60 px-6 text-center text-sm text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-100">
               <div>
