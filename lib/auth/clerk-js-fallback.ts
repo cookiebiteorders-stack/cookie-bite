@@ -7,9 +7,15 @@
 export const CLERK_JS_CDN_FALLBACK =
   "https://cdn.jsdelivr.net/npm/@clerk/clerk-js@6/dist/clerk.browser.js";
 
-export function resolveClerkJsUrlForNextEnv(): string {
+/** يُمرَّر إلى ClerkProvider — يجب أن يكون معرّفاً صراحةً لأن المفتاح live قد يتجاهل env */
+export function resolveClerkJsScriptUrl(): string | undefined {
   const custom = process.env.NEXT_PUBLIC_CLERK_JS_URL?.trim();
   if (custom) return custom;
   if (process.env.NODE_ENV === "development") return CLERK_JS_CDN_FALLBACK;
-  return "";
+  return undefined;
+}
+
+/** لـ next.config `env` — نفس المنطق كسلسلة فارغة عند عدم الحاجة */
+export function resolveClerkJsUrlForNextEnv(): string {
+  return resolveClerkJsScriptUrl() ?? "";
 }

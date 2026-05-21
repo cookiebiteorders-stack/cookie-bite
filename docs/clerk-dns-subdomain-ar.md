@@ -30,7 +30,33 @@ Nameservers الحالية: `apollo.dns-parking.com`, `athena.dns-parking.com` (
 ## بعد التحقق
 
 - Redeploy على Hostinger.
-- تأكد أن `failed_to_load_clerk_js` اختفى (`nslookup clerk.cookie-bite.com` يجب أن يحلّ الاسم).
+- في Clerk Dashboard اضغط **Verify** حتى تصبح السجلات خضراء — عندها يُصدر Clerk شهادة TLS لـ `clerk.*` و`accounts.*`.
+- إن كان DNS صحيحاً لكن المتصفح ما زال يفشل: غالباً **SSL لم يُفعَّل بعد** (انتظر أو أعد Verify في Clerk).
+
+### تحقق سريع
+
+```powershell
+Resolve-DnsName clerk.cookie-bite.com -Type CNAME -Server 1.1.1.1
+```
+
+يجب: `frontend-api.clerk.services`
+
+## التطوير المحلي (`npm run dev`)
+
+إن استمر الخطأ مع `pk_live_`:
+
+1. أعد تشغيل `npm run dev` بعد `git pull`.
+2. أو فعّل مفاتيح التطوير في `.env.local`:
+   ```env
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+   CLERK_SECRET_KEY=sk_test_...
+   ```
+3. أو أضف صراحةً:
+   ```env
+   NEXT_PUBLIC_CLERK_JS_URL=https://cdn.jsdelivr.net/npm/@clerk/clerk-js@6/dist/clerk.browser.js
+   ```
+
+الكود يمرّر `__internal_clerkJSUrl` من CDN تلقائياً في `NODE_ENV=development`.
 
 ## خطأ `failed_to_load_clerk_js`
 

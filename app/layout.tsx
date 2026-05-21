@@ -25,7 +25,10 @@ import { LokiSvgFilters } from "@/components/effects/loki-svg-filters";
 import { LANG_COOKIE, THEME_COOKIE } from "@/lib/preferences/client-cookies";
 import { cn } from "@/lib/utils";
 import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
+import { resolveClerkJsScriptUrl } from "@/lib/auth/clerk-js-fallback";
 import "./globals.css";
+
+const clerkJsScriptUrl = resolveClerkJsScriptUrl();
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -235,6 +238,9 @@ export default async function RootLayout({
       <body className="min-h-full bg-background font-sans text-foreground">
         <LokiSvgFilters />
         <ClerkProvider
+          {...(clerkJsScriptUrl
+            ? { __internal_clerkJSUrl: clerkJsScriptUrl }
+            : {})}
           localization={cookieBiteClerkLocalization}
           appearance={{
             ...clerkAuthAppearance,
