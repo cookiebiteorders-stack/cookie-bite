@@ -2,7 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Sparkles, X } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Cookie,
+  FileText,
+  Images,
+  Sparkles,
+  Tag,
+  X,
+} from "lucide-react";
 import { fetchJson } from "@/lib/http/fetch-json";
 import type { AdminProductRow } from "@/lib/admin/products-dashboard-types";
 import {
@@ -16,6 +26,21 @@ import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
 import { cn } from "@/lib/utils";
 
 type FormErrors = Partial<Record<keyof ProductFormState, string>>;
+
+const FORM_STEPS = [
+  { id: 1 as const, label: "أساسي", hint: "الاسم والهوية", icon: Tag },
+  { id: 2 as const, label: "محتوى", hint: "الوصف والمكونات", icon: FileText },
+  { id: 3 as const, label: "وسائط وسعر", hint: "صور، سعر، مخزون", icon: Images },
+] as const;
+
+const inputClass =
+  "w-full rounded-2xl border-2 border-cb-border/70 bg-white px-4 py-2.5 text-sm font-medium text-cb-text-strong shadow-[0_2px_12px_-4px_rgba(61,40,20,0.12)] transition-all duration-200 placeholder:text-cb-text-muted/55 focus:border-cb-terracotta-dark focus:bg-white focus:shadow-[0_0_0_4px_rgba(193,105,44,0.18),0_8px_24px_-8px_rgba(178,83,54,0.25)] focus:outline-none";
+
+const inputErrorClass =
+  "border-red-300/90 bg-red-50/50 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(239,68,68,0.15)]";
+
+const labelClass =
+  "flex items-center gap-1.5 text-xs font-bold tracking-wide text-cb-text-strong";
 
 type Props = {
   open: boolean;
@@ -162,7 +187,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
     <AnimatePresence>
       {open ? (
         <motion.div
-          className="fixed inset-0 z-[85] flex justify-end bg-black/40 backdrop-blur-[2px]"
+          className="fixed inset-0 z-[85] flex justify-end bg-[#3D2814]/45 backdrop-blur-md"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -175,122 +200,206 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-form-title"
-            initial={reduceMotion ? false : { x: 40, opacity: 0 }}
+            initial={reduceMotion ? false : { x: 48, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={reduceMotion ? undefined : { x: 28, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 320, damping: 32 }}
-            className={cn(
-              "flex h-full w-full max-w-xl flex-col border-s border-cb-border bg-cb-surface-elevated shadow-2xl",
-            )}
+            exit={reduceMotion ? undefined : { x: 32, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 380, damping: 34 }}
+            className="flex h-full w-full max-w-xl flex-col overflow-hidden border-s border-cb-border/80 bg-gradient-to-b from-[#FFFBF5] via-cb-surface-elevated to-[#F8EDE0] shadow-[-16px_0_40px_-10px_rgba(61,40,20,0.35)]"
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-3 border-b border-cb-border px-5 py-4">
-              <div>
-                <h2 id="product-form-title" className="font-serif text-xl font-bold text-cb-text-strong">
-                  {editing ? "تعديل منتج" : "إضافة منتج"}
-                </h2>
-                <p className="mt-1 text-xs text-cb-text-muted">
-                  تحكم كامل — صور (5)، فيديو، slug، شارات، مواسم، وزن، قطع. احفظ ثم عدّل من «تعديل».
-                </p>
-              </div>
-              <button
-                type="button"
-                className="rounded-xl border border-cb-border p-2 text-cb-text-muted transition hover:bg-cb-surface-2 focus-visible:outline focus-visible:ring-2 focus-visible:ring-amber-400"
-                onClick={() => onOpenChange(false)}
-                aria-label="إغلاق"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-1 border-b border-cb-border bg-cb-surface/60 px-3 py-2 text-[11px] font-bold">
-              {[
-                { id: 1 as const, label: "أساسي" },
-                { id: 2 as const, label: "محتوى" },
-                { id: 3 as const, label: "وسائط وسعر" },
-              ].map((s) => (
+            <div className="relative overflow-hidden border-b border-white/20 px-5 pb-5 pt-5">
+              <div
+                className="pointer-events-none absolute -end-8 -top-10 h-36 w-36 rounded-full bg-amber-300/40 blur-3xl"
+                aria-hidden
+              />
+              <div
+                className="pointer-events-none absolute -bottom-6 start-8 h-28 w-28 rounded-full bg-cb-terracotta-dark/25 blur-2xl"
+                aria-hidden
+              />
+              <div className="relative flex items-start justify-between gap-3">
+                <div className="flex gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cb-terracotta-dark to-amber-600 text-white shadow-lg shadow-cb-terracotta-dark/30">
+                    {editing ? (
+                      <Tag className="h-5 w-5" aria-hidden />
+                    ) : (
+                      <Cookie className="h-5 w-5" aria-hidden />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cb-terracotta-dark/80">
+                      {editing ? "تحديث الكتالوج" : "منتج جديد"}
+                    </p>
+                    <h2
+                      id="product-form-title"
+                      className="font-serif text-2xl font-bold leading-tight text-cb-text-strong"
+                    >
+                      {editing ? "تعديل منتج" : "إضافة منتج"}
+                    </h2>
+                    <p className="mt-1 max-w-[16rem] text-xs leading-relaxed text-cb-text-muted">
+                      ٣ خطوات سريعة — صور، فيديو، شارات، ومواسم. كل شيء جاهز للمتجر.
+                    </p>
+                  </div>
+                </div>
                 <button
-                  key={s.id}
                   type="button"
-                  disabled={!canEnterStep[s.id]}
-                  onClick={() => {
-                    if (!canEnterStep[s.id]) return;
-                    setFormStep(s.id);
-                  }}
-                  className={cn(
-                    "rounded-lg px-2 py-2 transition",
-                    formStep === s.id
-                      ? "bg-cb-terracotta-dark text-white shadow-sm"
-                      : canEnterStep[s.id]
-                        ? "text-cb-text-strong hover:bg-cb-surface-elevated"
-                        : "cursor-not-allowed text-cb-text-muted/50",
-                  )}
+                  className="rounded-2xl border border-white/60 bg-white/70 p-2.5 text-cb-text-muted shadow-sm backdrop-blur transition hover:scale-105 hover:bg-white hover:text-cb-text-strong focus-visible:outline focus-visible:ring-2 focus-visible:ring-amber-400"
+                  onClick={() => onOpenChange(false)}
+                  aria-label="إغلاق"
                 >
-                  {s.label}
+                  <X className="h-4 w-4" />
                 </button>
-              ))}
+              </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className={cn("space-y-1", formStep !== 1 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">اسم المنتج *</span>
+            <div className="border-b border-cb-border/60 bg-white/50 px-4 py-4 backdrop-blur-sm">
+              <div className="mb-3 flex items-center justify-between gap-2 text-[11px] font-semibold text-cb-text-muted">
+                <span>
+                  الخطوة {formStep} من ٣
+                </span>
+                <span className="tabular-nums text-cb-terracotta-dark">
+                  {Math.round((formStep / 3) * 100)}%
+                </span>
+              </div>
+              <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-cb-border/50">
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-l from-amber-500 via-cb-terracotta-dark to-[#8B3A2A]"
+                  initial={false}
+                  animate={{ width: `${(formStep / 3) * 100}%` }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {FORM_STEPS.map((s) => {
+                  const Icon = s.icon;
+                  const active = formStep === s.id;
+                  const done = stepDone[s.id];
+                  const enabled = canEnterStep[s.id];
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      disabled={!enabled}
+                      onClick={() => {
+                        if (!enabled) return;
+                        setFormStep(s.id);
+                      }}
+                      className={cn(
+                        "group relative flex flex-col items-center gap-1 rounded-2xl border-2 px-2 py-2.5 text-center transition-all duration-200",
+                        active
+                          ? "border-cb-terracotta-dark bg-gradient-to-b from-cb-terracotta-dark to-[#9E4528] text-white shadow-md shadow-cb-terracotta-dark/25"
+                          : done
+                            ? "border-emerald-200/80 bg-emerald-50/90 text-emerald-900"
+                            : enabled
+                              ? "border-cb-border/70 bg-white/80 text-cb-text-strong hover:border-amber-300 hover:bg-amber-50/80 hover:shadow-sm"
+                              : "cursor-not-allowed border-transparent bg-cb-surface/40 text-cb-text-muted/45",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold transition",
+                          active
+                            ? "bg-white/20 text-white"
+                            : done
+                              ? "bg-emerald-500 text-white"
+                              : "bg-cb-peach/80 text-cb-terracotta-dark group-hover:bg-amber-200",
+                        )}
+                      >
+                        {done && !active ? (
+                          <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+                        ) : (
+                          <Icon className="h-3.5 w-3.5" aria-hidden />
+                        )}
+                      </span>
+                      <span className="text-[11px] font-bold leading-tight">{s.label}</span>
+                      <span
+                        className={cn(
+                          "text-[9px] font-medium leading-tight opacity-80",
+                          active ? "text-white/85" : "",
+                        )}
+                      >
+                        {s.hint}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-transparent via-white/30 to-transparent px-5 py-5">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={formStep}
+                  initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+                  transition={{ duration: 0.22 }}
+                  className="grid gap-4 sm:grid-cols-2"
+                >
+                <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
+                  <span className={labelClass}>اسم المنتج *</span>
                   <input
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
+                    className={cn(inputClass, formErrors.name && inputErrorClass)}
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   />
-                  {formErrors.name ? <p className="text-xs text-red-600">{formErrors.name}</p> : null}
+                  {formErrors.name ? (
+                    <p className="flex items-center gap-1 text-xs font-medium text-red-600">
+                      {formErrors.name}
+                    </p>
+                  ) : null}
                 </label>
-                <label className={cn("space-y-1", formStep !== 1 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">
+                <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
+                  <span className={labelClass}>
                     Slug (رابط المتجر){editing ? " — قابل للتعديل" : ""}
                   </span>
                   <input
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
+                    className={cn(inputClass, formErrors.slug && inputErrorClass)}
                     placeholder="chocolate-chip-cookie"
                     value={form.slug}
                     onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
                   />
-                  {formErrors.slug ? <p className="text-xs text-red-600">{formErrors.slug}</p> : null}
+                  {formErrors.slug ? (
+                    <p className="text-xs font-medium text-red-600">{formErrors.slug}</p>
+                  ) : null}
                 </label>
-                <label className={cn("space-y-1", formStep !== 1 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">SKU</span>
+                <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
+                  <span className={labelClass}>SKU</span>
                   <input
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
+                    className={inputClass}
                     value={form.sku}
                     onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
                   />
                 </label>
-                <label className={cn("space-y-1", formStep !== 1 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">Title EN</span>
+                <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
+                  <span className={labelClass}>Title EN</span>
                   <input
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
+                    className={inputClass}
                     value={form.title_en}
                     onChange={(e) => setForm((f) => ({ ...f, title_en: e.target.value }))}
                   />
                 </label>
-                <label className={cn("space-y-1", formStep !== 1 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">Title AR</span>
+                <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
+                  <span className={labelClass}>Title AR</span>
                   <input
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
+                    className={inputClass}
+                    dir="rtl"
                     value={form.title_ar}
                     onChange={(e) => setForm((f) => ({ ...f, title_ar: e.target.value }))}
                   />
                 </label>
-                <label className={cn("space-y-1", formStep !== 1 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">شارات (مثل: featured, bestseller)</span>
+                <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
+                  <span className={labelClass}>شارات (featured, bestseller)</span>
                   <input
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm"
+                    className={inputClass}
                     placeholder="featured, new"
                     value={form.badges}
                     onChange={(e) => setForm((f) => ({ ...f, badges: e.target.value }))}
                   />
                 </label>
-                <label className={cn("space-y-1", formStep !== 1 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">مواسم</span>
+                <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
+                  <span className={labelClass}>مواسم</span>
                   <input
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm"
+                    className={inputClass}
                     placeholder="ramadan, summer"
                     value={form.seasons}
                     onChange={(e) => setForm((f) => ({ ...f, seasons: e.target.value }))}
@@ -298,73 +407,76 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                 </label>
 
                 <div className={cn("sm:col-span-2 space-y-2", formStep !== 2 && "hidden")}>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-cb-text-muted">الوصف</span>
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-200/80 bg-gradient-to-l from-amber-50 to-orange-50/80 px-4 py-3">
+                    <span className={labelClass}>الوصف</span>
                     <button
                       type="button"
                       onClick={applyAiDescription}
-                      className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-100"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-l from-amber-500 to-cb-terracotta-dark px-4 py-1.5 text-[11px] font-bold text-white shadow-md shadow-amber-500/30 transition hover:scale-[1.02] hover:brightness-110"
                     >
                       <Sparkles className="h-3.5 w-3.5" aria-hidden />
                       مساعد وصف (مسودة)
                     </button>
                   </div>
                 </div>
-                <label className={cn("space-y-1 sm:col-span-2", formStep !== 2 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">Description EN</span>
+                <label className={cn("space-y-2 sm:col-span-2", formStep !== 2 && "hidden")}>
+                  <span className={labelClass}>Description EN</span>
                   <textarea
-                    className="min-h-24 w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
+                    className={cn(inputClass, "min-h-28 resize-y")}
                     value={form.description_en}
                     onChange={(e) => setForm((f) => ({ ...f, description_en: e.target.value }))}
                   />
                   {formErrors.description_en ? (
-                    <p className="text-xs text-red-600">{formErrors.description_en}</p>
+                    <p className="text-xs font-medium text-red-600">{formErrors.description_en}</p>
                   ) : null}
                 </label>
-                <label className={cn("space-y-1 sm:col-span-2", formStep !== 2 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">Description AR</span>
+                <label className={cn("space-y-2 sm:col-span-2", formStep !== 2 && "hidden")}>
+                  <span className={labelClass}>Description AR</span>
                   <textarea
-                    className="min-h-24 w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
+                    className={cn(inputClass, "min-h-28 resize-y")}
+                    dir="rtl"
                     value={form.description_ar}
                     onChange={(e) => setForm((f) => ({ ...f, description_ar: e.target.value }))}
                   />
                   {formErrors.description_ar ? (
-                    <p className="text-xs text-red-600">{formErrors.description_ar}</p>
+                    <p className="text-xs font-medium text-red-600">{formErrors.description_ar}</p>
                   ) : null}
                 </label>
-                <label className={cn("space-y-1 sm:col-span-2", formStep !== 2 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">المكونات / dietary (مفصولة بفاصلة)</span>
+                <label className={cn("space-y-2 sm:col-span-2", formStep !== 2 && "hidden")}>
+                  <span className={labelClass}>المكونات / dietary (مفصولة بفاصلة)</span>
                   <textarea
-                    className="min-h-20 w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
+                    className={cn(inputClass, "min-h-20 resize-y")}
                     value={form.ingredients}
                     onChange={(e) => setForm((f) => ({ ...f, ingredients: e.target.value }))}
                   />
                 </label>
 
-                <label className={cn("space-y-1", formStep !== 3 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">التصنيف</span>
+                <label className={cn("space-y-2", formStep !== 3 && "hidden")}>
+                  <span className={labelClass}>التصنيف</span>
                   <input
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
+                    className={inputClass}
                     value={form.category}
                     onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                   />
                 </label>
-                <label className={cn("space-y-1", formStep !== 3 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">السعر (ج.م) *</span>
+                <label className={cn("space-y-2", formStep !== 3 && "hidden")}>
+                  <span className={labelClass}>السعر (ج.م) *</span>
                   <input
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
+                    className={cn(inputClass, formErrors.price_egp && inputErrorClass)}
                     type="number"
                     min="0.01"
                     step="0.01"
                     value={form.price_egp}
                     onChange={(e) => setForm((f) => ({ ...f, price_egp: e.target.value }))}
                   />
-                  {formErrors.price_egp ? <p className="text-xs text-red-600">{formErrors.price_egp}</p> : null}
+                  {formErrors.price_egp ? (
+                    <p className="text-xs font-medium text-red-600">{formErrors.price_egp}</p>
+                  ) : null}
                 </label>
-                <label className={cn("space-y-1", formStep !== 3 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">سعر مقارنة / خصم</span>
+                <label className={cn("space-y-2", formStep !== 3 && "hidden")}>
+                  <span className={labelClass}>سعر مقارنة / خصم</span>
                   <input
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
+                    className={cn(inputClass, formErrors.compare_price_egp && inputErrorClass)}
                     type="number"
                     min="0"
                     step="0.01"
@@ -372,35 +484,37 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     onChange={(e) => setForm((f) => ({ ...f, compare_price_egp: e.target.value }))}
                   />
                   {formErrors.compare_price_egp ? (
-                    <p className="text-xs text-red-600">{formErrors.compare_price_egp}</p>
+                    <p className="text-xs font-medium text-red-600">{formErrors.compare_price_egp}</p>
                   ) : null}
                 </label>
-                <label className={cn("space-y-1", formStep !== 3 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">المخزون</span>
+                <label className={cn("space-y-2", formStep !== 3 && "hidden")}>
+                  <span className={labelClass}>المخزون</span>
                   <input
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm text-cb-text-strong"
+                    className={cn(inputClass, formErrors.stock && inputErrorClass)}
                     type="number"
                     min="0"
                     step="1"
                     value={form.stock}
                     onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
                   />
-                  {formErrors.stock ? <p className="text-xs text-red-600">{formErrors.stock}</p> : null}
+                  {formErrors.stock ? (
+                    <p className="text-xs font-medium text-red-600">{formErrors.stock}</p>
+                  ) : null}
                 </label>
-                <label className={cn("space-y-1", formStep !== 3 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">الوزن (جرام)</span>
+                <label className={cn("space-y-2", formStep !== 3 && "hidden")}>
+                  <span className={labelClass}>الوزن (جرام)</span>
                   <input
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm"
+                    className={inputClass}
                     type="number"
                     min="1"
                     value={form.weight_grams}
                     onChange={(e) => setForm((f) => ({ ...f, weight_grams: e.target.value }))}
                   />
                 </label>
-                <label className={cn("space-y-1", formStep !== 3 && "hidden")}>
-                  <span className="text-xs font-semibold text-cb-text-muted">عدد القطع</span>
+                <label className={cn("space-y-2", formStep !== 3 && "hidden")}>
+                  <span className={labelClass}>عدد القطع</span>
                   <input
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-elevated px-3 py-2 text-sm"
+                    className={inputClass}
                     type="number"
                     min="1"
                     value={form.pieces_count}
@@ -409,19 +523,29 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                 </label>
                 <label
                   className={cn(
-                    "inline-flex items-center gap-2 rounded-xl border border-cb-border px-3 py-2 text-sm sm:col-span-2",
+                    "inline-flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-emerald-200/90 bg-emerald-50/80 px-4 py-3 text-sm font-semibold text-emerald-900 shadow-sm transition hover:border-emerald-300 sm:col-span-2",
                     formStep !== 3 && "hidden",
                   )}
                 >
                   <input
                     type="checkbox"
+                    className="h-4 w-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500"
                     checked={form.is_active}
                     onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
                   />
-                  نشط (ظاهر للعملاء)
+                  نشط — يظهر في المتجر للعملاء
                 </label>
 
-                <div className={cn("sm:col-span-2", formStep !== 3 && "hidden")}>
+                <div
+                  className={cn(
+                    "sm:col-span-2 rounded-2xl border-2 border-dashed border-amber-200/90 bg-gradient-to-br from-white to-amber-50/50 p-4",
+                    formStep !== 3 && "hidden",
+                  )}
+                >
+                  <p className="mb-3 flex items-center gap-2 text-xs font-bold text-cb-terracotta-dark">
+                    <Images className="h-4 w-4" aria-hidden />
+                    الصور والفيديو (حتى ٥ صور)
+                  </p>
                   <ProductMediaEditor
                     images={form.images}
                     videoUrl={form.video_url}
@@ -435,41 +559,54 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     <p className="mt-1 text-xs text-red-600">{formErrors.video_url}</p>
                   ) : null}
                 </div>
-              </div>
+                </motion.div>
+              </AnimatePresence>
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-cb-border bg-cb-surface-elevated px-5 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-cb-border/70 bg-white/80 px-5 py-4 shadow-[0_-8px_24px_-12px_rgba(61,40,20,0.15)] backdrop-blur-md">
               <button
                 type="button"
-                className="rounded-xl border border-cb-border px-4 py-2 text-sm font-semibold disabled:opacity-50"
-                disabled={formStep === 1}
-                onClick={() => setFormStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s))}
-              >
-                رجوع
-              </button>
-              <button
-                type="button"
-                className="rounded-xl border border-cb-border px-4 py-2 text-sm font-semibold disabled:opacity-50"
-                disabled={formStep === 3 || !stepDone[formStep]}
-                onClick={() => setFormStep((s) => (s < 3 ? ((s + 1) as 1 | 2 | 3) : s))}
-              >
-                التالي
-              </button>
-              <button
-                type="button"
-                className="rounded-xl border border-cb-border px-4 py-2 text-sm font-semibold"
+                className="text-sm font-semibold text-cb-text-muted transition hover:text-cb-text-strong"
                 onClick={() => onOpenChange(false)}
               >
                 إلغاء
               </button>
-              <button
-                type="button"
-                disabled={saving || !canWrite || hasBlockingErrors}
-                className="rounded-xl bg-cb-terracotta-dark px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50"
-                onClick={() => void submitForm()}
-              >
-                {saving ? "جاري الحفظ…" : editing ? "حفظ التعديلات" : "إنشاء"}
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-full border-2 border-cb-border/80 bg-white px-4 py-2.5 text-sm font-bold text-cb-text-strong shadow-sm transition hover:border-amber-300 hover:bg-amber-50 disabled:opacity-40"
+                  disabled={formStep === 1}
+                  onClick={() => setFormStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s))}
+                >
+                  <ChevronRight className="h-4 w-4" aria-hidden />
+                  رجوع
+                </button>
+                {formStep < 3 ? (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-full bg-gradient-to-l from-amber-500 to-cb-terracotta-dark px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-cb-terracotta-dark/25 transition hover:scale-[1.02] hover:brightness-110 disabled:opacity-40"
+                    disabled={!stepDone[formStep]}
+                    onClick={() => setFormStep((s) => (s < 3 ? ((s + 1) as 1 | 2 | 3) : s))}
+                  >
+                    التالي
+                    <ChevronLeft className="h-4 w-4" aria-hidden />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={saving || !canWrite || hasBlockingErrors}
+                    className="inline-flex min-w-[7.5rem] items-center justify-center gap-2 rounded-full bg-gradient-to-l from-cb-terracotta-dark via-[#B45309] to-amber-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-cb-terracotta-dark/35 transition hover:scale-[1.02] hover:brightness-110 disabled:scale-100 disabled:opacity-50"
+                    onClick={() => void submitForm()}
+                  >
+                    {saving ? (
+                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    ) : (
+                      <Check className="h-4 w-4" strokeWidth={3} aria-hidden />
+                    )}
+                    {saving ? "جاري الحفظ…" : editing ? "حفظ التعديلات" : "إنشاء المنتج"}
+                  </button>
+                )}
+              </div>
             </div>
           </motion.aside>
         </motion.div>
