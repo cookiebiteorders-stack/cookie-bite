@@ -1,8 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { BarChart3, Moon, RefreshCw, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { BarChart3, RefreshCw } from "lucide-react";
 import type { FinancialPreset } from "@/lib/financial/types";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +36,6 @@ export function FinancialHero({
   onCompare,
 }: Props) {
   const reduceMotion = useReducedMotion();
-  const { theme, setTheme } = useTheme();
 
   return (
     <motion.header
@@ -71,15 +69,6 @@ export function FinancialHero({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="inline-flex items-center gap-2 rounded-full border border-cb-border bg-cb-surface px-3 py-2 text-xs font-bold"
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            Theme
-          </button>
           <button
             type="button"
             onClick={() => onRefresh()}

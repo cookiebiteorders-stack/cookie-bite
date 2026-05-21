@@ -1,21 +1,9 @@
 (function () {
   try {
     var r = document.documentElement;
-    var key = "cookie-bite-theme";
-    var s = localStorage.getItem(key);
-    var t =
-      s === "dark" || s === "light"
-        ? s
-        : window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
-    r.setAttribute("data-theme", t);
-    r.style.colorScheme = t;
-    if (t === "dark") {
-      r.classList.add("dark");
-    } else {
-      r.classList.remove("dark");
-    }
+    r.setAttribute("data-theme", "light");
+    r.style.colorScheme = "light";
+    r.classList.remove("dark");
     var l = localStorage.getItem("lang");
     var lang = l === "en" || l === "ar" ? l : "ar";
     r.setAttribute("lang", lang);

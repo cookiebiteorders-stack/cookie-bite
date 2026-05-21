@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { buttonClassName } from "@/components/ui/button";
 import { BurgerButton } from "@/components/layout/responsive/burger-button";
 import { useLayout } from "@/context/layout-context";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { CartBadge } from "@/src/components/cart/CartBadge";
 import { cn } from "@/lib/utils";
 
@@ -78,7 +77,6 @@ export function Navbar() {
           <Command className="h-4 w-4" />
           <span>Cmd/Ctrl + K</span>
         </button>
-        <ThemeToggle className="hidden md:inline-flex" />
         <CartBadge />
         <Link href="/shop" className={buttonClassName("primary", "hidden rounded-md px-4 lg:inline-flex")}>
           Get Started

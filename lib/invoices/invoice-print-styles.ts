@@ -1,7 +1,7 @@
 /** Shared invoice document CSS — used by React view, static HTML, and server PDF. */
 export const INVOICE_PRINT_STYLES = `
 .inv-root {
-  --inv-orange: #c1692c;
+  --inv-orange: #e8782a;
   --inv-orange-dark: #a55623;
   --inv-dark-bg: #1a1a0e;
   --inv-white: #ffffff;

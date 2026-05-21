@@ -22,7 +22,7 @@ import { StaffAdminNavProvider } from "@/components/providers/staff-admin-nav-pr
 import { ErrorBoundary } from "@/components/error-boundary";
 import { LokiBootstrap } from "@/components/effects/loki-bootstrap";
 import { LokiSvgFilters } from "@/components/effects/loki-svg-filters";
-import { LANG_COOKIE, THEME_COOKIE } from "@/lib/preferences/client-cookies";
+import { LANG_COOKIE } from "@/lib/preferences/client-cookies";
 import { cn } from "@/lib/utils";
 import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
 import { resolveClerkJsScriptUrl } from "@/lib/auth/clerk-js-fallback";
@@ -197,18 +197,12 @@ export default async function RootLayout({
   const store = await cookies();
   const lang = store.get(LANG_COOKIE)?.value === "en" ? "en" : "ar";
   const dir = lang === "ar" ? "rtl" : "ltr";
-  const themeRaw = store.get(THEME_COOKIE)?.value;
-  const serverResolvedLightDark: "light" | "dark" =
-    themeRaw === "dark" ? "dark" : themeRaw === "light" ? "light" : "light";
-  const themePreference: "light" | "dark" | "system" =
-    themeRaw === "light" || themeRaw === "dark" || themeRaw === "system" ? themeRaw : "system";
-
   return (
     <html
       lang={lang}
       dir={dir}
       data-lang={lang}
-      data-theme={serverResolvedLightDark}
+      data-theme="light"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
       className={cn(
@@ -222,9 +216,8 @@ export default async function RootLayout({
         outfit.variable,
         dmSans.variable,
         "h-full antialiased",
-        serverResolvedLightDark === "dark" && "dark",
       )}
-      style={{ colorScheme: serverResolvedLightDark }}
+      style={{ colorScheme: "light" }}
     >
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
@@ -256,7 +249,7 @@ export default async function RootLayout({
           signUpFallbackRedirectUrl="/account"
         >
           <StaffAdminNavProvider>
-            <ThemeProvider initialPreference={themePreference} initialResolved={serverResolvedLightDark}>
+            <ThemeProvider>
               <LanguageProvider initialLang={lang}>
                 <MorphTransitionProvider>
                   <LokiBootstrap />

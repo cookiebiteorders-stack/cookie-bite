@@ -20,7 +20,7 @@ import {
 } from "recharts";
 import type { FinancialSummaryResponse } from "@/lib/financial/types";
 
-const PIE_COLORS = ["#c1692c", "#84441b", "#dd8447", "#3d9a72", "#6366f1", "#a855f7", "#64748b"];
+const PIE_COLORS = ["#e8782a", "#ff9433", "#ffc83d", "#2ec48a", "#ff6b9d", "#38bdf8", "#8b6b5a"];
 
 type Props = { summary: FinancialSummaryResponse };
 

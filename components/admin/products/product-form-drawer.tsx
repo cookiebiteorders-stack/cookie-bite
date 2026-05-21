@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   Check,
@@ -22,6 +22,13 @@ import {
   type ProductFormState,
 } from "@/lib/admin/products-dashboard-types";
 import { ProductMediaEditor } from "@/components/admin/products/product-media-editor";
+import { DEFAULT_PRODUCT_CATEGORIES } from "@/lib/admin/product-categories";
+import {
+  clearProductFormDraft,
+  loadProductFormDraft,
+  productFormDraftHasContent,
+  saveProductFormDraft,
+} from "@/lib/admin/product-form-draft";
 import { deriveProductSlug } from "@/lib/products/slug";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
 import { cn } from "@/lib/utils";
@@ -59,11 +66,44 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
   const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
   const [saving, setSaving] = useState(false);
 
+  const editingId = editing?.id ?? null;
+  const hasUnsavedDraft = !editingId && productFormDraftHasContent(form);
+  const draftToastShown = useRef(false);
+
   useEffect(() => {
     if (!open) return;
-    setForm(editing ? rowToProductForm(editing) : EMPTY_PRODUCT_FORM);
+    if (editingId && editing) {
+      setForm(rowToProductForm(editing));
+      setFormStep(1);
+      return;
+    }
+    const draft = loadProductFormDraft();
+    if (draft && productFormDraftHasContent(draft.form)) {
+      setForm(draft.form);
+      setFormStep(draft.formStep);
+      if (!draftToastShown.current) {
+        draftToastShown.current = true;
+        pushToast("تم استعادة مسودة المنتج من آخر جلسة.", "info");
+      }
+    } else {
+      setForm(EMPTY_PRODUCT_FORM);
+      setFormStep(1);
+    }
+  }, [open, editingId, editing, pushToast]);
+
+  useEffect(() => {
+    if (!open || editingId) return;
+    const timer = window.setTimeout(() => saveProductFormDraft(form, formStep), 400);
+    return () => window.clearTimeout(timer);
+  }, [form, formStep, open, editingId]);
+
+  const discardDraft = useCallback(() => {
+    clearProductFormDraft();
+    draftToastShown.current = false;
+    setForm(EMPTY_PRODUCT_FORM);
     setFormStep(1);
-  }, [open, editing]);
+    pushToast("تم مسح المسودة.", "success");
+  }, [pushToast]);
 
   const formErrors = useMemo<FormErrors>(() => {
     const errors: FormErrors = {};
@@ -183,6 +223,10 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
         await fetchJson("/api/admin/products", { method: "POST", jsonBody: payload });
       }
       pushToast(editing ? "تم تحديث المنتج — يمكنك تعديله مجدداً من الجدول." : "تم إنشاء المنتج.", "success");
+      clearProductFormDraft();
+      draftToastShown.current = false;
+      setForm(EMPTY_PRODUCT_FORM);
+      setFormStep(1);
       onOpenChange(false);
       await loadProducts();
     } catch (e) {
@@ -213,7 +257,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
             animate={{ x: 0, opacity: 1 }}
             exit={reduceMotion ? undefined : { x: 32, opacity: 0 }}
             transition={{ type: "spring", stiffness: 380, damping: 34 }}
-            className="flex h-full w-full max-w-xl flex-col overflow-hidden border-s border-cb-border/80 bg-gradient-to-b from-[#FFFBF5] via-cb-surface-elevated to-[#F8EDE0] shadow-[-16px_0_40px_-10px_rgba(61,40,20,0.35)]"
+            className="flex h-full w-full max-w-2xl flex-col overflow-hidden border-s border-cb-border/80 bg-gradient-to-b from-[#FFFBF5] via-cb-surface-elevated to-[#F8EDE0] shadow-[-16px_0_40px_-10px_rgba(61,40,20,0.35)]"
             onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="relative overflow-hidden border-b border-white/20 px-5 pb-5 pt-5">
@@ -244,9 +288,14 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     >
                       {editing ? "تعديل منتج" : "إضافة منتج"}
                     </h2>
-                    <p className="mt-1 max-w-[16rem] text-xs leading-relaxed text-cb-text-muted">
-                      ٣ خطوات سريعة — صور، فيديو، شارات، ومواسم. كل شيء جاهز للمتجر.
+                    <p className="mt-1 max-w-[18rem] text-xs leading-relaxed text-cb-text-muted">
+                      ٣ خطوات — تُحفظ المسودة تلقائياً عند الإغلاق.
                     </p>
+                    {hasUnsavedDraft ? (
+                      <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-900 ring-1 ring-amber-200">
+                        مسودة محفوظة
+                      </span>
+                    ) : null}
                   </div>
                 </div>
                 <button
@@ -342,7 +391,10 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   animate={{ opacity: 1, y: 0 }}
                   exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
                   transition={{ duration: 0.22 }}
-                  className="grid gap-4 sm:grid-cols-2"
+                  className={cn(
+                    "gap-4",
+                    formStep === 3 ? "grid sm:grid-cols-2" : "flex flex-col",
+                  )}
                 >
                 <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
                   <span className={labelClass}>اسم المنتج *</span>
@@ -428,7 +480,40 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   />
                 </label>
 
-                <div className={cn("sm:col-span-2 space-y-2", formStep !== 2 && "hidden")}>
+                <div className={cn("space-y-3", formStep !== 1 && "hidden")}>
+                  <span className={labelClass}>التصنيف</span>
+                  <div className="flex flex-wrap gap-2">
+                    {DEFAULT_PRODUCT_CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.value}
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, category: cat.value }))}
+                        className={cn(
+                          "rounded-full border-2 px-3 py-1.5 text-xs font-bold transition",
+                          form.category === cat.value
+                            ? "border-cb-terracotta-dark bg-cb-terracotta-dark text-white shadow-sm"
+                            : "border-cb-border/80 bg-white text-cb-text-strong hover:border-amber-300 hover:bg-amber-50",
+                        )}
+                      >
+                        {cat.labelAr}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    className={inputClass}
+                    list="product-category-custom"
+                    placeholder="أو اكتب تصنيفاً مخصصاً"
+                    value={form.category}
+                    onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                  />
+                  <datalist id="product-category-custom">
+                    {DEFAULT_PRODUCT_CATEGORIES.map((c) => (
+                      <option key={c.value} value={c.value} />
+                    ))}
+                  </datalist>
+                </div>
+
+                <div className={cn("space-y-2", formStep !== 2 && "hidden")}>
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-200/80 bg-gradient-to-l from-amber-50 to-orange-50/80 px-4 py-3">
                     <span className={labelClass}>الوصف</span>
                     <button
@@ -441,7 +526,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     </button>
                   </div>
                 </div>
-                <label className={cn("space-y-2 sm:col-span-2", formStep !== 2 && "hidden")}>
+                <label className={cn("space-y-2", formStep !== 2 && "hidden")}>
                   <span className={labelClass}>Description EN</span>
                   <textarea
                     className={cn(inputClass, "min-h-28 resize-y")}
@@ -452,7 +537,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     <p className="text-xs font-medium text-red-600">{formErrors.description_en}</p>
                   ) : null}
                 </label>
-                <label className={cn("space-y-2 sm:col-span-2", formStep !== 2 && "hidden")}>
+                <label className={cn("space-y-2", formStep !== 2 && "hidden")}>
                   <span className={labelClass}>Description AR</span>
                   <textarea
                     className={cn(inputClass, "min-h-28 resize-y")}
@@ -464,7 +549,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     <p className="text-xs font-medium text-red-600">{formErrors.description_ar}</p>
                   ) : null}
                 </label>
-                <label className={cn("space-y-2 sm:col-span-2", formStep !== 2 && "hidden")}>
+                <label className={cn("space-y-2", formStep !== 2 && "hidden")}>
                   <span className={labelClass}>المكونات / dietary (مفصولة بفاصلة)</span>
                   <textarea
                     className={cn(inputClass, "min-h-20 resize-y")}
@@ -473,14 +558,6 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   />
                 </label>
 
-                <label className={cn("space-y-2", formStep !== 3 && "hidden")}>
-                  <span className={labelClass}>التصنيف</span>
-                  <input
-                    className={inputClass}
-                    value={form.category}
-                    onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                  />
-                </label>
                 <label className={cn("space-y-2", formStep !== 3 && "hidden")}>
                   <span className={labelClass}>السعر (ج.م) *</span>
                   <input
@@ -560,7 +637,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
 
                 <div
                   className={cn(
-                    "sm:col-span-2 rounded-2xl border-2 border-dashed border-amber-200/90 bg-gradient-to-br from-white to-amber-50/50 p-4",
+                    "col-span-full rounded-2xl border border-amber-200/70 bg-gradient-to-br from-white to-amber-50/40 p-4 sm:col-span-2",
                     formStep !== 3 && "hidden",
                   )}
                 >
@@ -585,14 +662,25 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
               </AnimatePresence>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-cb-border/70 bg-white/80 px-5 py-4 shadow-[0_-8px_24px_-12px_rgba(61,40,20,0.15)] backdrop-blur-md">
-              <button
-                type="button"
-                className="text-sm font-semibold text-cb-text-muted transition hover:text-cb-text-strong"
-                onClick={() => onOpenChange(false)}
-              >
-                إلغاء
-              </button>
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-cb-border/70 bg-white/90 px-5 py-4 shadow-[0_-8px_24px_-12px_rgba(61,40,20,0.15)] backdrop-blur-md">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className="text-sm font-semibold text-cb-text-muted transition hover:text-cb-text-strong"
+                  onClick={() => onOpenChange(false)}
+                >
+                  {editingId ? "إلغاء" : "إغلاق"}
+                </button>
+                {!editingId && hasUnsavedDraft ? (
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-red-600 hover:underline"
+                    onClick={discardDraft}
+                  >
+                    مسح المسودة
+                  </button>
+                ) : null}
+              </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"

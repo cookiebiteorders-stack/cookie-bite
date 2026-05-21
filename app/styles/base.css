@@ -47,7 +47,10 @@ html {
 /* stylelint-enable */
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(ellipse 120% 80% at 100% 0%, color-mix(in oklab, var(--cb-pink) 18%, transparent), transparent 55%),
+    radial-gradient(ellipse 90% 60% at 0% 100%, color-mix(in oklab, var(--cb-mint) 14%, transparent), transparent 50%),
+    var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
   text-rendering: optimizeLegibility;
@@ -258,25 +261,25 @@ table[data-cb-zebra="true"] tbody tr:hover {
   position: fixed;
   inset: 0;
   z-index: 0;
-  opacity: 0.62;
+  opacity: 0.78;
   background: radial-gradient(
       ellipse 85% 55% at 12% -10%,
-      color-mix(in oklab, var(--cb-mint) 48%, transparent),
+      color-mix(in oklab, var(--cb-mint) 58%, transparent),
       transparent 52%
     ),
     radial-gradient(
       ellipse 70% 50% at 92% 18%,
-      color-mix(in oklab, var(--cb-pink) 42%, transparent),
+      color-mix(in oklab, var(--cb-pink) 52%, transparent),
       transparent 48%
     ),
     radial-gradient(
       ellipse 58% 42% at 55% 102%,
-      color-mix(in oklab, var(--cb-gold) 22%, transparent),
+      color-mix(in oklab, var(--cb-brand-400) 32%, transparent),
       transparent 52%
     ),
     radial-gradient(
       ellipse 55% 38% at 40% 108%,
-      color-mix(in oklab, var(--cb-peach-deep) 30%, transparent),
+      color-mix(in oklab, var(--cb-peach-deep) 42%, transparent),
       transparent 55%
     );
 }

@@ -57,7 +57,7 @@ export function AnalyticsCharts({ charts }: Props) {
                 <XAxis dataKey="date" tickFormatter={shortDateLabel} tick={{ fontSize: 10 }} stroke="var(--cb-text)" />
                 <YAxis tick={{ fontSize: 10 }} stroke="var(--cb-text)" />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="orders" fill="#c1692c" radius={[7, 7, 0, 0]} isAnimationActive />
+                <Bar dataKey="orders" fill="#e8782a" radius={[7, 7, 0, 0]} isAnimationActive />
               </BarChart>
             </ResponsiveContainer>
           </div>

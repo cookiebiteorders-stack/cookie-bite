@@ -17,8 +17,6 @@ import {
 } from "lucide-react";
 import type { AdminCustomerRow } from "@/lib/admin/crm-types";
 import { useCustomersCrmStore } from "@/stores/customers-crm-store";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { useTheme } from "@/components/providers/theme-provider";
 import { cn } from "@/lib/utils";
 import { parseCsv } from "@/lib/csv/parse-csv";
 import { fetchJson } from "@/lib/http/fetch-json";
@@ -60,8 +58,6 @@ export function CustomersCrmDashboard() {
   const reduceMotion = useReducedMotion();
   const searchRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
-  const { resolvedTheme, setTheme } = useTheme();
-
   const loadCustomers = useCustomersCrmStore((s) => s.loadCustomers);
   const customers = useCustomersCrmStore((s) => s.customers);
   const stats = useCustomersCrmStore((s) => s.stats);
@@ -173,10 +169,6 @@ export function CustomersCrmDashboard() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [profileOpen, cmdkOpen, pushToast]);
-
-  const cycleTheme = useCallback(() => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark");
-  }, [resolvedTheme, setTheme]);
 
   return (
     <section className="relative space-y-6 pb-20" aria-labelledby="crm-dashboard-title">
@@ -327,19 +319,6 @@ export function CustomersCrmDashboard() {
                       </button>
                     </li>
                   ))}
-                  <li>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="flex w-full px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                      onClick={() => {
-                        setQuickOpen(false);
-                        cycleTheme();
-                      }}
-                    >
-                      تبديل المظهر
-                    </button>
-                  </li>
                 </ul>
               ) : null}
             </div>
@@ -351,7 +330,6 @@ export function CustomersCrmDashboard() {
               <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
               رؤى AI
             </button>
-            <ThemeToggle className="shrink-0" />
           </div>
         </div>
       </motion.div>

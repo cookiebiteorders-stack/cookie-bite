@@ -3,7 +3,7 @@
   position: relative;
   overflow: hidden;
   border: 1px solid color-mix(in oklab, var(--cb-border) 92%, transparent);
-  background: color-mix(in oklab, var(--cb-surface) 88%, var(--cb-cream-2));
+  background: color-mix(in oklab, var(--cb-surface) 82%, var(--cb-brand-50));
 }
 
 .dark .admin-panel-surface {
@@ -26,7 +26,11 @@
   position: relative;
   overflow: hidden;
   border: 1px solid color-mix(in oklab, var(--cb-border) 90%, transparent);
-  background: color-mix(in oklab, var(--cb-surface) 90%, var(--cb-cream-2));
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--cb-surface) 88%, var(--cb-brand-50)) 0%,
+    color-mix(in oklab, var(--cb-surface) 75%, var(--color-pastel-peach, var(--cb-peach))) 100%
+  );
 }
 
 .dark .admin-hero-surface {
@@ -38,7 +42,10 @@
    ============================================================ */
 /* Admin inherits global luxury tokens; page bg slightly warmer */
 .admin-console {
-  background: var(--cb-cream);
+  background:
+    radial-gradient(ellipse 80% 50% at 100% 0%, color-mix(in oklab, var(--cb-brand-100) 55%, transparent), transparent 50%),
+    radial-gradient(ellipse 70% 45% at 0% 100%, color-mix(in oklab, var(--cb-mint) 12%, transparent), transparent 45%),
+    var(--cb-cream);
   color: var(--cb-text);
 }
 

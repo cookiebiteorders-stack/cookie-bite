@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { AccountSidebar } from "@/components/account/account-sidebar";
 import { LanguageToggle } from "@/components/layout/language-toggle";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
@@ -186,16 +185,7 @@ export function AccountSettingsClient({
             description={t("accountSettings.preferencesDesc")}
             icon={Globe}
           >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-cb-border bg-cb-cream/50 p-4 dark:bg-cb-surface-2/50">
-                <p className="text-sm font-semibold text-cb-text-strong">
-                  {t("accountSettings.themeLabel")}
-                </p>
-                <p className="mt-1 text-xs text-cb-text-muted">{t("accountSettings.themeHint")}</p>
-                <div className="mt-3">
-                  <ThemeToggle />
-                </div>
-              </div>
+            <div className="max-w-md">
               <div className="rounded-2xl border border-cb-border bg-cb-cream/50 p-4 dark:bg-cb-surface-2/50">
                 <p className="text-sm font-semibold text-cb-text-strong">
                   {t("accountSettings.languageLabel")}

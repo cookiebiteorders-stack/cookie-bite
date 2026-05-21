@@ -6,7 +6,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { useLayout } from "@/context/layout-context";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
 import { buttonClassName } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 const NAV_LINKS = [
   { label: "Dashboard", href: "/" },
@@ -86,7 +85,6 @@ export function MobileDrawer() {
           >
             <div className="flex items-center justify-between">
               <p className="font-serif text-lg font-semibold text-cb-text-strong">Cookie Bite</p>
-              <ThemeToggle />
             </div>
             <nav className="mt-6 flex flex-col gap-2" aria-label="Mobile navigation">
               {NAV_LINKS.map((item) => (

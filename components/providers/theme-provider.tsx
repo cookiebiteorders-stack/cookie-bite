@@ -3,96 +3,46 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useLayoutEffect,
   useMemo,
-  useState,
   type ReactNode,
 } from "react";
 import { THEME_COOKIE, writeClientPrefCookie } from "@/lib/preferences/client-cookies";
 
-type Theme = "light" | "dark" | "system";
-
 type ThemeProviderProps = {
   children: ReactNode;
-  /** من كوكي `cookie-bite-theme` — يطابق ما رسمه الخادم على `<html>` */
-  initialPreference: Theme;
-  /** الحلّ الفعلي فاتح/داكن كما في الخادم (مهم عندما initialPreference === "system") */
-  initialResolved: "light" | "dark";
 };
 
 type ThemeContextValue = {
-  theme: Theme;
-  resolvedTheme: "light" | "dark";
-  setTheme: (theme: Theme) => void;
+  theme: "light";
+  resolvedTheme: "light";
+  setTheme: (theme: "light" | "dark" | "system") => void;
 };
 
 const STORAGE_KEY = "cookie-bite-theme";
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function getSystemTheme(): "light" | "dark" {
-  if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
-function applyThemeClass(theme: "light" | "dark") {
+function applyLightTheme() {
   const root = document.documentElement;
-  root.classList.toggle("dark", theme === "dark");
-  root.setAttribute("data-theme", theme);
-  root.style.colorScheme = theme;
+  root.classList.remove("dark");
+  root.setAttribute("data-theme", "light");
+  root.style.colorScheme = "light";
 }
 
-export function ThemeProvider({
-  children,
-  initialPreference,
-  initialResolved,
-}: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return initialPreference;
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    return saved === "light" || saved === "dark" || saved === "system"
-      ? saved
-      : initialPreference;
-  });
-  const [systemTheme, setSystemTheme] = useState<"light" | "dark">(() => {
-    if (typeof window === "undefined") {
-      return initialPreference === "system"
-        ? initialResolved
-        : initialPreference === "dark"
-          ? "dark"
-          : "light";
-    }
-    return getSystemTheme();
-  });
-  const resolvedTheme: "light" | "dark" =
-    theme === "system" ? systemTheme : theme;
-
+export function ThemeProvider({ children }: ThemeProviderProps) {
   useLayoutEffect(() => {
-    applyThemeClass(resolvedTheme);
-    writeClientPrefCookie(THEME_COOKIE, theme);
-  }, [resolvedTheme, theme]);
-
-  useEffect(() => {
-    if (theme !== "system") return;
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-
-    const onChange = () => {
-      setSystemTheme(media.matches ? "dark" : "light");
-    };
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
-  }, [theme]);
-
-  const setTheme = (nextTheme: Theme) => {
-    setThemeState(nextTheme);
-    window.localStorage.setItem(STORAGE_KEY, nextTheme);
-  };
+    applyLightTheme();
+    window.localStorage.setItem(STORAGE_KEY, "light");
+    writeClientPrefCookie(THEME_COOKIE, "light");
+  }, []);
 
   const value = useMemo<ThemeContextValue>(
-    () => ({ theme, resolvedTheme, setTheme }),
-    [theme, resolvedTheme],
+    () => ({
+      theme: "light",
+      resolvedTheme: "light",
+      setTheme: () => {},
+    }),
+    [],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

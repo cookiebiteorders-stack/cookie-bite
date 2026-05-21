@@ -15,7 +15,7 @@ export function generateInvoicePdfBufferPdfkit(vm: InvoiceViewModel): Promise<Bu
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    const terracotta = "#c1692c";
+    const terracotta = "#e8782a";
     doc.fillColor(terracotta).fontSize(22).text("Cookie Bite", { continued: false });
     doc.fillColor("#333").fontSize(10).text(BRAND.location);
     doc.moveDown(0.5);

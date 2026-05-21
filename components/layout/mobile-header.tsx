@@ -8,7 +8,6 @@ import { useState } from "react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { useCart } from "@/components/providers/cart-provider";
 import { cn } from "@/lib/utils";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { useLanguage } from "@/components/providers/language-provider";
 import { useOptionalAdminConsole } from "@/components/admin/admin-console-context";
@@ -181,7 +180,6 @@ export function MobileHeader() {
                 <SlidersHorizontal className="h-5 w-5" aria-hidden />
               </button>
             )}
-            <ThemeToggle className="mobile-header__icon-btn !p-0 !border-0 !bg-transparent !shadow-none" />
             <LanguageToggle mobile className="mobile-header__icon-btn !p-0" />
             <Link
               href="/search"

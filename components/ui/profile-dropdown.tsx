@@ -7,15 +7,12 @@ import {
   Gift,
   LayoutDashboard,
   LogOut,
-  Moon,
   Settings,
   Shield,
-  Sun,
   UserRound,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { useTheme } from "@/components/providers/theme-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { useStaffAdminNav } from "@/components/providers/staff-admin-nav-provider";
 import { usePathname } from "next/navigation";
@@ -35,7 +32,6 @@ const menuSurface =
 export function UserAccountDropdown() {
   const { user, isLoaded } = useUser();
   const { signOut } = useClerk();
-  const { resolvedTheme, setTheme } = useTheme();
   const { t } = useLanguage();
   const { items: staffAdminNavItems } = useStaffAdminNav();
   const pathname = usePathname();
@@ -85,7 +81,6 @@ export function UserAccountDropdown() {
     user.fullName || [user.firstName, user.lastName].filter(Boolean).join(" ") || t("nav.account");
   const initials = (user.firstName?.[0] ?? "") + (user.lastName?.[0] ?? "") || displayName.slice(0, 2).toUpperCase();
 
-  const isDark = resolvedTheme === "dark";
 
   return (
     <div ref={rootRef} className="relative z-[51] flex items-center">
@@ -167,42 +162,6 @@ export function UserAccountDropdown() {
                   {SITE.name}
                 </p>
                 <p className="mt-1 text-xs leading-relaxed text-cb-text">{t("userMenu.rewardsBlurb")}</p>
-              </div>
-            </div>
-
-            <div className="border-b border-cb-border px-3 py-3 dark:border-cb-border">
-              <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-wider text-cb-text-muted">
-                {t("userMenu.appearance")}
-              </p>
-              <div className="flex rounded-xl border border-cb-border bg-cb-surface-2/60 p-1 dark:border-cb-border dark:bg-cb-surface/80">
-                <button
-                  type="button"
-                  role="menuitem"
-                  className={cn(
-                    "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-colors",
-                    !isDark
-                      ? "bg-cb-surface text-cb-text-strong shadow-sm dark:bg-cb-surface-2"
-                      : "text-cb-text-muted hover:text-cb-text-strong",
-                  )}
-                  onClick={() => setTheme("light")}
-                >
-                  <Sun className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden />
-                  {t("userMenu.light")}
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className={cn(
-                    "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-colors",
-                    isDark
-                      ? "bg-cb-surface-elevated text-cb-cream-2 shadow-sm"
-                      : "text-cb-text-muted hover:text-cb-text-strong",
-                  )}
-                  onClick={() => setTheme("dark")}
-                >
-                  <Moon className="h-3.5 w-3.5 text-indigo-400" aria-hidden />
-                  {t("userMenu.dark")}
-                </button>
               </div>
             </div>
 

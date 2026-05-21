@@ -17,7 +17,7 @@ const STORAGE_KEY = "cb.shipping.zone-geo.v1";
 
 /** ألوان المناطق — تبدأ من ألوان العلامة ثم درجات متنوعة بصرياً */
 const DEFAULT_PALETTE = [
-  "#c1692c",
+  "#e8782a",
   "#84441b",
   "#3d9a72",
   "#3B82F6",

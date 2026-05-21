@@ -1,6 +1,7 @@
 import { MAX_PRODUCT_IMAGES } from "@/lib/products/media";
 import { normalizeProductImages } from "@/lib/products/media";
 import type { ProductImage } from "@/lib/db/types";
+import { DEFAULT_PRODUCT_CATEGORY } from "@/lib/admin/product-categories";
 import { deriveProductSlug } from "@/lib/products/slug";
 
 export type AdminProductRow = {
@@ -100,7 +101,7 @@ export const EMPTY_PRODUCT_FORM: ProductFormState = {
   description_en: "",
   description_ar: "",
   ingredients: "",
-  category: "",
+  category: DEFAULT_PRODUCT_CATEGORY,
   sku: "",
   price_egp: "",
   compare_price_egp: "",

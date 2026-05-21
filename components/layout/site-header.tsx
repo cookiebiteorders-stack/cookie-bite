@@ -20,7 +20,6 @@ import {
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { SiteLogoLink } from "@/components/brand/site-logo";
 import { NavDropdown } from "@/components/layout/nav-dropdown";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
@@ -215,7 +214,6 @@ export function SiteHeader() {
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               <div className={utilityGroupClass}>
-                <ThemeToggle className="inline-flex" />
                 <LanguageToggle className="hidden md:inline-flex" />
               </div>
               {admin ? (
@@ -311,7 +309,6 @@ export function SiteHeader() {
                   {t("nav.menu")}
                 </span>
                 <div className="flex items-center gap-2">
-                  <ThemeToggle />
                   <LanguageToggle mobile />
                 </div>
               </div>

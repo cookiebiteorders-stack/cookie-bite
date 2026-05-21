@@ -20,8 +20,6 @@ import { OrdersMainWorkspace } from "@/components/admin/orders/orders-main-works
 import { OrderDetailsDrawer } from "@/components/admin/orders/order-details-drawer";
 import { OrdersToasts } from "@/components/admin/orders/orders-toasts";
 import { OrdersCommandPalette } from "@/components/admin/orders/orders-command-palette";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { useTheme } from "@/components/providers/theme-provider";
 import { cn } from "@/lib/utils";
 import { parseCsv } from "@/lib/csv/parse-csv";
 import { fetchJson } from "@/lib/http/fetch-json";
@@ -29,8 +27,6 @@ import { fetchJson } from "@/lib/http/fetch-json";
 export function OrdersOperationsDashboard() {
   const reduceMotion = useReducedMotion();
   const searchRef = useRef<HTMLInputElement>(null);
-  const { resolvedTheme, setTheme } = useTheme();
-
   const stats = useOrdersOperationsStore((s) => s.stats);
   const online = useOrdersOperationsStore((s) => s.online);
   const loadOrders = useOrdersOperationsStore((s) => s.loadOrders);
@@ -113,10 +109,6 @@ export function OrdersOperationsDashboard() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [detailOpen, cmdkOpen]);
-
-  const cycleTheme = useCallback(() => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark");
-  }, [resolvedTheme, setTheme]);
 
   const printPage = useCallback(() => {
     window.print();
@@ -279,23 +271,9 @@ export function OrdersOperationsDashboard() {
                       توليد ملصقات
                     </button>
                   </li>
-                  <li>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="flex w-full px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                      onClick={() => {
-                        setSettingsOpen(false);
-                        cycleTheme();
-                      }}
-                    >
-                      تبديل المظهر
-                    </button>
-                  </li>
                 </ul>
               ) : null}
             </div>
-            <ThemeToggle className="shrink-0" />
           </div>
         </div>
       </motion.div>

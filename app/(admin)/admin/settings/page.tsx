@@ -98,7 +98,7 @@ export default function AdminSettingsPage() {
   const [tplSaveStatus, setTplSaveStatus] = useState<string | null>(null);
   const [tplBusy, setTplBusy] = useState(false);
   const [waPresetKey, setWaPresetKey] = useState("order_confirm");
-  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "dark" | "rtl">("desktop");
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "rtl">("desktop");
   const [activeLocale, setActiveLocale] = useState<"en" | "ar">("en");
   const [activeFlags, setActiveFlags] = useState<string[]>(["smart_retries", "high_contrast_mode"]);
 
@@ -755,7 +755,7 @@ export default function AdminSettingsPage() {
                   Live Preview
                 </h3>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {(["desktop", "mobile", "dark", "rtl"] as const).map((mode) => (
+                  {(["desktop", "mobile", "rtl"] as const).map((mode) => (
                     <button
                       key={mode}
                       type="button"
@@ -772,12 +772,7 @@ export default function AdminSettingsPage() {
                   ))}
                 </div>
                 <div
-                  className={cn(
-                    "mt-3 rounded-2xl border border-cb-border p-3 text-sm",
-                    previewMode === "dark"
-                      ? "bg-stone-950 text-stone-100"
-                      : "bg-white text-stone-900",
-                  )}
+                  className="mt-3 rounded-2xl border border-cb-border bg-white p-3 text-sm text-stone-900"
                   dir={previewMode === "rtl" ? "rtl" : "ltr"}
                 >
                   {tplChannel !== "whatsapp" && tplSubject ? (

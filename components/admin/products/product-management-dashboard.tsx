@@ -13,8 +13,6 @@ import { ProductFormDrawer } from "@/components/admin/products/product-form-draw
 import { ProductAssistantPanel } from "@/components/admin/products/product-assistant-panel";
 import { ProductsToasts } from "@/components/admin/products/products-toasts";
 import { ProductsCommandPalette } from "@/components/admin/products/products-command-palette";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { useTheme } from "@/components/providers/theme-provider";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { cn } from "@/lib/utils";
 import { parseCsv } from "@/lib/csv/parse-csv";
@@ -24,8 +22,6 @@ export function ProductManagementDashboard() {
   const reduceMotion = useReducedMotion();
   const searchRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
-  const { resolvedTheme, setTheme } = useTheme();
-
   const stats = useProductsDashboardStore((s) => s.stats);
   const online = useProductsDashboardStore((s) => s.online);
   const loadProducts = useProductsDashboardStore((s) => s.loadProducts);
@@ -215,10 +211,6 @@ export function ProductManagementDashboard() {
     }
   }, [pushToast]);
 
-  const cycleTheme = useCallback(() => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark");
-  }, [resolvedTheme, setTheme]);
-
   return (
     <section className="relative space-y-6 pb-24">
       <motion.div
@@ -315,19 +307,6 @@ export function ProductManagementDashboard() {
                     className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
                     onClick={() => {
                       setSettingsOpen(false);
-                      cycleTheme();
-                    }}
-                  >
-                    تبديل المظهر (فاتح / داكن)
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                    onClick={() => {
-                      setSettingsOpen(false);
                       pushToast("سجلات التدقيق متاحة من وحدة الإدارة الأمنية عند تفعيلها.", "info");
                     }}
                   >
@@ -337,7 +316,6 @@ export function ProductManagementDashboard() {
               </ul>
             ) : null}
           </div>
-          <ThemeToggle className="shrink-0" />
         </div>
       </motion.div>
 
@@ -346,15 +324,12 @@ export function ProductManagementDashboard() {
       <ProductsAnalyticsStrip products={products} />
       <ProductsMainWorkspace searchInputRef={searchRef} onEdit={openEdit} onAdd={openCreate} />
 
-      {formOpen ? (
-        <ProductFormDrawer
-          key={editing?.id ?? "new-product"}
-          open={formOpen}
-          onOpenChange={setFormOpen}
-          editing={editing}
-          canWrite={canWrite}
-        />
-      ) : null}
+      <ProductFormDrawer
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        editing={editing}
+        canWrite={canWrite}
+      />
 
       <ProductsCommandPalette
         open={cmdkOpen}

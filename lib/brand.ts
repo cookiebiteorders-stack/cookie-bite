@@ -1,8 +1,8 @@
 /** بيانات العلامة الرسمية — Master Documentation §1.1 */
 
 export const BRAND = {
-  /** لون الشعار والأيقونة (Playful Luxury caramel) */
-  logoHex: "#d2a47b",
+  /** لون الشعار والأيقونة (Playful cookie-orange) */
+  logoHex: "#e8782a",
   phoneDisplay: "01140165995",
   whatsappE164: "201140165995",
   location: "Fifth Settlement, New Cairo, Egypt",

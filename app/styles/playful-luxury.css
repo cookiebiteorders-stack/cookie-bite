@@ -5,31 +5,37 @@
 
 /* ─── A. Design tokens (alias + map to existing cb-* utilities) ─── */
 :root {
-  --color-cream: #f8f5ee;
+  --color-cream: #fffaf4;
   --color-white: #ffffff;
-  --color-cream-dark: #f0ebe1;
-  --color-caramel: #d2a47b;
-  --color-caramel-dark: #b8895f;
-  --color-soft-gold: #c8b59f;
-  --color-pastel-pink: #f5d9d9;
-  --color-pastel-peach: #f5e8d9;
-  --color-pastel-mint: #d9f5e8;
-  --color-text-primary: #2b2b2b;
-  --color-text-secondary: #6b6b6b;
-  --color-text-muted: #9ca3af;
+  --color-cream-dark: #fff3e8;
+  --color-caramel: #e8782a;
+  --color-caramel-dark: #d4621f;
+  --color-soft-gold: #ffc83d;
+  --color-pastel-pink: #ffd6e8;
+  --color-pastel-peach: #ffe4cc;
+  --color-pastel-mint: #c8f7e4;
+  --color-text-primary: #2d1810;
+  --color-text-secondary: #5c3d2e;
+  --color-text-muted: #8b6b5a;
   --color-text-on-dark: #ffffff;
-  --color-border: rgba(210, 164, 123, 0.25);
-  --color-border-soft: rgba(43, 43, 43, 0.08);
+  --color-border: rgba(232, 120, 42, 0.28);
+  --color-border-soft: rgba(255, 180, 130, 0.45);
 
-  --gradient-warm: linear-gradient(135deg, #f8f5ee 0%, #f5e8d9 100%);
-  --gradient-blush: linear-gradient(135deg, #f8f5ee 0%, #f5d9d9 100%);
-  --gradient-mint: linear-gradient(135deg, #f8f5ee 0%, #d9f5e8 100%);
-  --gradient-premium: linear-gradient(135deg, #d2a47b 0%, #c8b59f 100%);
-  --gradient-hero: linear-gradient(160deg, #f8f5ee 0%, #f5e8d9 50%, #f5d9d9 100%);
+  --gradient-warm: linear-gradient(135deg, #fffaf4 0%, #ffe4cc 55%, #ffd6e8 100%);
+  --gradient-blush: linear-gradient(135deg, #fffaf4 0%, #ffd6e8 50%, #ffe4cc 100%);
+  --gradient-mint: linear-gradient(135deg, #fffaf4 0%, #c8f7e4 60%, #ffe4cc 100%);
+  --gradient-premium: linear-gradient(135deg, #ff9433 0%, #e8782a 45%, #ffc83d 100%);
+  --gradient-hero: linear-gradient(
+    160deg,
+    #fffaf4 0%,
+    #ffe4cc 38%,
+    #ffd6e8 72%,
+    #c8f7e4 100%
+  );
 
-  --shadow-pl-card: 0 2px 16px rgba(139, 90, 43, 0.08);
-  --shadow-pl-hover: 0 6px 32px rgba(139, 90, 43, 0.14);
-  --shadow-pl-nav: 0 1px 12px rgba(43, 43, 43, 0.06);
+  --shadow-pl-card: 0 4px 20px rgba(232, 120, 42, 0.12);
+  --shadow-pl-hover: 0 10px 36px rgba(232, 120, 42, 0.2);
+  --shadow-pl-nav: 0 2px 16px rgba(232, 120, 42, 0.1);
 
   --radius-pl-sm: 8px;
   --radius-pl-md: 14px;
@@ -66,23 +72,25 @@
   --caramel: var(--color-caramel);
 
   /* Sync legacy cb-* tokens (storefront) */
-  --cb-brand-50: #fdf3ea;
-  --cb-brand-100: #fae3cf;
-  --cb-brand-200: #f4c7a0;
-  --cb-brand-300: #eaa570;
-  --cb-brand-400: #dd8447;
-  --cb-brand-500: #d2a47b;
-  --cb-brand-600: #b8895f;
-  --cb-brand-700: #84441b;
-  --cb-brand-800: #663316;
-  --cb-brand-900: #4a2510;
+  --cb-brand-50: #fff5eb;
+  --cb-brand-100: #ffe8d0;
+  --cb-brand-200: #ffd0a3;
+  --cb-brand-300: #ffb366;
+  --cb-brand-400: #ff9433;
+  --cb-brand-500: #e8782a;
+  --cb-brand-600: #d4621f;
+  --cb-brand-700: #b04e18;
+  --cb-brand-800: #8a3d14;
+  --cb-brand-900: #6b2f10;
 
   --cb-cream: var(--color-cream);
   --cb-cream-2: var(--color-cream-dark);
-  --cb-peach: #efe7df;
-  --cb-peach-deep: #e0d8cf;
+  --cb-peach: #ffe8d5;
+  --cb-peach-deep: #ffceb0;
+  --cb-pink: #ff6b9d;
+  --cb-mint: #2ec48a;
   --cb-surface: var(--color-white);
-  --cb-surface-2: #faf7f3;
+  --cb-surface-2: #fff8f0;
   --cb-surface-elevated: var(--color-white);
   --cb-luxury-gold: var(--color-caramel);
   --cb-luxury-gold-hover: var(--color-caramel-dark);
@@ -92,10 +100,15 @@
   --cb-terracotta-soft: var(--color-pastel-peach);
   --cb-text-strong: var(--color-text-primary);
   --cb-text: var(--color-text-secondary);
-  --cb-text-muted: var(--color-text-secondary);
-  --cb-text-placeholder: var(--color-text-muted);
+  --cb-text-muted: var(--color-text-muted);
+  --cb-text-placeholder: #b8957f;
   --cb-border: var(--color-border-soft);
-  --cb-border-strong: #e0d8cf;
+  --cb-border-strong: #ffc9a8;
+  --cb-footer-bg: #ffe8d0;
+  --cb-social-bg: #ffd0a3;
+  --cb-star: #ffc83d;
+  --cb-rose: #ff5c8a;
+  --cb-heart: #ff7a9a;
   --cb-btn-primary-bg: var(--color-caramel);
   --cb-btn-primary-hover: var(--color-caramel-dark);
   --cb-btn-primary-text: var(--color-text-on-dark);
@@ -270,7 +283,7 @@ html[dir="rtl"] .cb-pl-body {
 .cb-pl-input:focus {
   outline: none;
   border-color: var(--color-caramel);
-  box-shadow: 0 0 0 3px rgba(210, 164, 123, 0.18);
+  box-shadow: 0 0 0 3px rgba(232, 120, 42, 0.22);
 }
 
 /* ─── 1. Announcement bar ─── */
@@ -329,9 +342,10 @@ html[dir="rtl"] .cb-pl-body {
 .cb-pl-hero-overlay {
   background: linear-gradient(
     160deg,
-    rgba(248, 245, 238, 0.92) 0%,
-    rgba(245, 232, 217, 0.82) 45%,
-    rgba(245, 217, 217, 0.72) 100%
+    rgba(255, 250, 244, 0.9) 0%,
+    rgba(255, 228, 204, 0.78) 40%,
+    rgba(255, 214, 232, 0.7) 72%,
+    rgba(200, 247, 228, 0.55) 100%
   ) !important;
 }
 
