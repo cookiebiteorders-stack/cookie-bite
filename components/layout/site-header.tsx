@@ -168,7 +168,7 @@ export function SiteHeader() {
                 )}
               </button>
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                <SiteLogoLink showTagline={!admin} className={admin ? "max-w-[min(180px,38vw)]" : undefined} />
+                <SiteLogoLink className={admin ? "max-w-[min(180px,38vw)]" : undefined} />
                 {admin ? (
                   <Link
                     href={currentAdminPage?.href ?? "/admin"}
@@ -178,7 +178,7 @@ export function SiteHeader() {
                     <p className="truncate text-xs font-bold leading-tight text-cb-text-strong">
                       {currentAdminPage?.label ?? "Dashboard"}
                     </p>
-                    <p className="truncate text-[9px] font-semibold uppercase leading-tight tracking-[0.14em] text-cb-terracotta-dark dark:text-cb-terracotta">
+                    <p className="truncate text-[9px] font-semibold uppercase leading-tight tracking-[0.14em] text-cb-terracotta-dark">
                       {getRoleLabel(admin.role)}
                     </p>
                   </Link>

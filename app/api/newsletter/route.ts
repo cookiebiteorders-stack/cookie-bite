@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { syncContactToResend } from "@/lib/email/resend-contacts";
 
 const Schema = z.object({
   email: z.string().email().max(120),
@@ -43,6 +44,12 @@ export async function POST(req: Request) {
     console.error("newsletter upsert error", error);
     return Response.json({ ok: false, error: "Could not subscribe" }, { status: 500 });
   }
+
+  void syncContactToResend({
+    email: parsed.data.email.toLowerCase(),
+    unsubscribed: false,
+    source: parsed.data.source ?? "site",
+  });
 
   return Response.json({ ok: true });
 }

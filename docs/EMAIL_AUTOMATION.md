@@ -104,6 +104,21 @@ curl -X POST "https://YOUR_DOMAIN/api/cron/email-health" \
 
 OTP / حرج: مرّر `immediate: true` في `dispatch` لاحقاً عند الحاجة.
 
+## Resend Contacts API
+
+Service: `lib/email/resend-contacts.ts` — mirrors [Resend Contacts](https://resend.com/docs/api-reference/contacts/create-contact).
+
+| Admin API | Resend |
+|-----------|--------|
+| `GET/POST /api/admin/email/contacts` | list / create |
+| `GET/PATCH/DELETE /api/admin/email/contacts/[id or email]` | get / update / remove |
+
+**Auto-sync:** `POST /api/newsletter`, unsubscribe, and CRM newsletter import push to Resend when `RESEND_API_KEY` is set.
+
+```ts
+import { createResendContact, getResendContact, updateResendContact, removeResendContact, listResendContacts } from "@/lib/email/resend-contacts";
+```
+
 ## Python
 
 ```bash

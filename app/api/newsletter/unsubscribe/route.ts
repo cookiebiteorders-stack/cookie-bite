@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { syncContactToResend } from "@/lib/email/resend-contacts";
 
 const Schema = z.object({
   email: z.string().email().max(120),
@@ -33,6 +34,12 @@ export async function POST(req: Request) {
     console.error("newsletter unsubscribe error", error);
     return Response.json({ ok: false, error: "Could not unsubscribe" }, { status: 500 });
   }
+
+  void syncContactToResend({
+    email: parsed.data.email.toLowerCase(),
+    unsubscribed: true,
+    source: "unsubscribe",
+  });
 
   return Response.json({ ok: true });
 }

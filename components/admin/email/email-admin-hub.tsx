@@ -17,13 +17,23 @@ import {
 import { fetchJson } from "@/lib/http/fetch-json";
 import { cn } from "@/lib/utils";
 
-type Tab = "dashboard" | "logs" | "failed" | "queue" | "settings" | "templates";
+type Tab = "dashboard" | "logs" | "failed" | "queue" | "contacts" | "settings" | "templates";
+
+type ResendContactRow = {
+  id: string;
+  email: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  unsubscribed: boolean;
+  created_at?: string;
+};
 
 const TABS: { id: Tab; href: string; label: string }[] = [
   { id: "dashboard", href: "/admin/email", label: "لوحة التحكم" },
   { id: "logs", href: "/admin/email/logs", label: "السجلات" },
   { id: "failed", href: "/admin/email/failed", label: "فاشلة" },
   { id: "queue", href: "/admin/email/queue", label: "الطابور" },
+  { id: "contacts", href: "/admin/email/contacts", label: "جهات Resend" },
   { id: "settings", href: "/admin/email/settings", label: "SMTP / المزودون" },
   { id: "templates", href: "/admin/template-library", label: "القوالب" },
 ];
@@ -53,6 +63,13 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
   const [failed, setFailed] = useState<Record<string, unknown>[]>([]);
   const [queue, setQueue] = useState<Record<string, unknown>[]>([]);
   const [settings, setSettings] = useState<Record<string, unknown> | null>(null);
+  const [contacts, setContacts] = useState<ResendContactRow[]>([]);
+  const [newContact, setNewContact] = useState({
+    email: "",
+    firstName: "",
+    lastName: "",
+    unsubscribed: false,
+  });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [testEmail, setTestEmail] = useState("");
@@ -76,6 +93,9 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
       } else if (activeTab === "settings") {
         const r = await fetchJson<{ settings: Record<string, unknown> }>("/api/admin/email/settings");
         setSettings(r.settings);
+      } else if (activeTab === "contacts") {
+        const r = await fetchJson<{ contacts: ResendContactRow[] }>("/api/admin/email/contacts?limit=50");
+        setContacts(r.contacts ?? []);
       }
     } catch (e) {
       setToast(e instanceof Error ? e.message : "فشل التحميل");
@@ -100,6 +120,60 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
       void load();
     } catch (e) {
       setToast(e instanceof Error ? e.message : "فشل");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const createContact = async () => {
+    if (!newContact.email.trim()) return;
+    setBusy(true);
+    try {
+      await fetchJson("/api/admin/email/contacts", {
+        method: "POST",
+        jsonBody: {
+          email: newContact.email.trim(),
+          firstName: newContact.firstName || undefined,
+          lastName: newContact.lastName || undefined,
+          unsubscribed: newContact.unsubscribed,
+        },
+      });
+      setNewContact({ email: "", firstName: "", lastName: "", unsubscribed: false });
+      setToast("تم إنشاء جهة الاتصال في Resend");
+      void load();
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : "فشل الإنشاء");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleUnsubscribed = async (c: ResendContactRow) => {
+    setBusy(true);
+    try {
+      await fetchJson(`/api/admin/email/contacts/${encodeURIComponent(c.id)}`, {
+        method: "PATCH",
+        jsonBody: { unsubscribed: !c.unsubscribed },
+      });
+      void load();
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : "فشل التحديث");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const deleteContact = async (c: ResendContactRow) => {
+    if (!confirm(`حذف ${c.email} من Resend؟`)) return;
+    setBusy(true);
+    try {
+      await fetchJson(`/api/admin/email/contacts/${encodeURIComponent(c.id)}`, {
+        method: "DELETE",
+      });
+      setToast("تم الحذف");
+      void load();
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : "فشل الحذف");
     } finally {
       setBusy(false);
     }
@@ -317,6 +391,108 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
           rows={queue}
           columns={["recipient", "subject", "status", "provider", "attempts", "created_at"]}
         />
+      ) : null}
+
+      {!loading && activeTab === "contacts" ? (
+        <div className="space-y-4">
+          <div className="admin-panel-surface rounded-2xl p-4">
+            <h2 className="text-sm font-bold text-cb-text-strong">إضافة جهة اتصال (Resend API)</h2>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <input
+                type="email"
+                placeholder="email@example.com"
+                value={newContact.email}
+                onChange={(e) => setNewContact((s) => ({ ...s, email: e.target.value }))}
+                className="rounded-xl border border-cb-border px-3 py-2 text-sm"
+              />
+              <input
+                placeholder="الاسم الأول"
+                value={newContact.firstName}
+                onChange={(e) => setNewContact((s) => ({ ...s, firstName: e.target.value }))}
+                className="rounded-xl border border-cb-border px-3 py-2 text-sm"
+              />
+              <input
+                placeholder="اسم العائلة"
+                value={newContact.lastName}
+                onChange={(e) => setNewContact((s) => ({ ...s, lastName: e.target.value }))}
+                className="rounded-xl border border-cb-border px-3 py-2 text-sm"
+              />
+              <label className="flex items-center gap-2 text-xs font-semibold">
+                <input
+                  type="checkbox"
+                  checked={newContact.unsubscribed}
+                  onChange={(e) =>
+                    setNewContact((s) => ({ ...s, unsubscribed: e.target.checked }))
+                  }
+                />
+                unsubscribed
+              </label>
+            </div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void createContact()}
+              className="admin-btn-primary mt-3 rounded-xl px-4 py-2 text-xs font-bold disabled:opacity-50"
+            >
+              Create Contact
+            </button>
+            <p className="mt-2 text-[10px] text-cb-text-muted">
+              الاشتراك في النشرة من الموقع يُزامَن تلقائياً مع Resend عند تفعيل RESEND_API_KEY.
+            </p>
+          </div>
+          <div className="overflow-auto rounded-2xl border border-cb-border">
+            <table className="min-w-full text-start text-xs">
+              <thead className="bg-cb-surface-elevated">
+                <tr>
+                  <th className="px-3 py-2 font-bold">Email</th>
+                  <th className="px-3 py-2 font-bold">Name</th>
+                  <th className="px-3 py-2 font-bold">Status</th>
+                  <th className="px-3 py-2 font-bold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contacts.map((c) => (
+                  <tr key={c.id} className="border-t border-cb-border/60">
+                    <td className="px-3 py-2 font-mono">{c.email}</td>
+                    <td className="px-3 py-2">
+                      {[c.first_name, c.last_name].filter(Boolean).join(" ") || "—"}
+                    </td>
+                    <td className="px-3 py-2">
+                      {c.unsubscribed ? (
+                        <span className="text-amber-800">unsubscribed</span>
+                      ) : (
+                        <span className="text-emerald-700">active</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          className="rounded-lg border border-cb-border px-2 py-1 font-bold hover:bg-cb-surface"
+                          onClick={() => void toggleUnsubscribed(c)}
+                        >
+                          {c.unsubscribed ? "Subscribe" : "Unsubscribe"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          className="rounded-lg border border-red-200 px-2 py-1 font-bold text-red-800 hover:bg-red-50"
+                          onClick={() => void deleteContact(c)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {contacts.length === 0 ? (
+              <p className="py-8 text-center text-sm text-cb-text-muted">لا جهات أو Resend غير مضبوط</p>
+            ) : null}
+          </div>
+        </div>
       ) : null}
 
       {!loading && activeTab === "settings" && settings ? (
