@@ -26,7 +26,7 @@ export function cloudinaryConfig() {
   return { cloudName, apiKey, apiSecret };
 }
 
-function cloudinarySignature(params: Record<string, string>, apiSecret: string) {
+export function cloudinarySignature(params: Record<string, string>, apiSecret: string) {
   const base = Object.keys(params)
     .sort()
     .map((k) => `${k}=${params[k]}`)
@@ -37,7 +37,7 @@ function cloudinarySignature(params: Record<string, string>, apiSecret: string) 
 export async function uploadToCloudinary(
   file: File,
   kind: CloudinaryUploadKind,
-  opts?: { folder?: string },
+  opts?: { folder?: string; publicId?: string; overwrite?: boolean },
 ): Promise<{ url: string; public_id: string | null; bytes: number | null }> {
   const cfg = cloudinaryConfig();
   if (!cfg) throw new Error("Cloudinary is not configured");
@@ -61,16 +61,27 @@ export async function uploadToCloudinary(
   const folder =
     opts?.folder ??
     (kind === "image" ? "cookie-bite/products" : "cookie-bite/products/videos");
-  const signedParams: Record<string, string> = { folder, timestamp };
+  const signedParams: Record<string, string> = { timestamp };
+  if (opts?.publicId) {
+    signedParams.public_id = opts.publicId;
+    if (opts.overwrite) signedParams.overwrite = "true";
+  } else {
+    signedParams.folder = folder;
+  }
   if (kind === "video") signedParams.resource_type = "video";
 
   const signature = cloudinarySignature(signedParams, cfg.apiSecret);
   const uploadBody = new FormData();
   uploadBody.append("file", file);
-  uploadBody.append("folder", folder);
   uploadBody.append("timestamp", timestamp);
   uploadBody.append("api_key", cfg.apiKey);
   uploadBody.append("signature", signature);
+  if (opts?.publicId) {
+    uploadBody.append("public_id", opts.publicId);
+    if (opts.overwrite) uploadBody.append("overwrite", "true");
+  } else {
+    uploadBody.append("folder", folder);
+  }
   if (kind === "video") uploadBody.append("resource_type", "video");
 
   const endpoint =
