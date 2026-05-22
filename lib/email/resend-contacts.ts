@@ -1,3 +1,4 @@
+import type { ListContactsOptions } from "resend";
 import { getResend, isEmailConfigured } from "@/lib/email/resend";
 
 export type ResendContactRecord = {
@@ -139,19 +140,15 @@ export async function listResendContacts(options?: {
   const segmentId = process.env.RESEND_SEGMENT_ID?.trim();
   const audienceId = audienceIdFromEnv();
 
-  const listOpts: {
-    limit?: number;
-    after?: string;
-    before?: string;
-    segmentId?: string;
-    audienceId?: string;
-  } = {
+  const listOpts = {
     limit: options?.limit ?? 50,
-    after: options?.after,
-    before: options?.before,
-  };
-  if (segmentId) listOpts.segmentId = segmentId;
-  else if (audienceId) listOpts.audienceId = audienceId;
+    ...(segmentId ? { segmentId } : audienceId ? { audienceId } : {}),
+    ...(options?.after
+      ? { after: options.after }
+      : options?.before
+        ? { before: options.before }
+        : {}),
+  } as ListContactsOptions;
 
   const result = await resend.contacts.list(listOpts);
   const data = unwrap(result, "Failed to list contacts");
