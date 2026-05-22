@@ -249,12 +249,12 @@ export default function AdminAuditLogsPage() {
             { label: "System Integrity", value: criticalEvents > 2 ? "At Risk" : "Stable", icon: Fingerprint },
             { label: "Critical Events", value: String(criticalEvents), icon: XCircle },
           ].map((m) => (
-            <article key={m.label} className="rounded-2xl border border-cb-border/70 bg-white/90 p-4 shadow-sm dark:bg-stone-900/70">
+            <article key={m.label} className="rounded-2xl border border-cb-border/70 bg-white/90 p-4 shadow-sm">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">{m.label}</p>
-                <m.icon className="h-4 w-4 text-amber-700 dark:text-amber-300" />
+                <p className="text-[11px] font-bold uppercase tracking-wide text-stone-700">{m.label}</p>
+                <m.icon className="h-4 w-4 text-amber-700" />
               </div>
-              <p className="mt-2 font-serif text-xl font-bold text-stone-950 dark:text-white">{m.value}</p>
+              <p className="mt-2 font-serif text-xl font-bold text-stone-950">{m.value}</p>
             </article>
           ))}
         </div>
@@ -262,22 +262,22 @@ export default function AdminAuditLogsPage() {
 
       <div className="grid gap-6 xl:grid-cols-[1fr_.9fr]">
         <section className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
-          <h2 className="inline-flex items-center gap-2 font-serif text-2xl font-bold text-stone-900 dark:text-stone-100">
-            <Radar className="h-5 w-5 text-amber-700 dark:text-amber-300" />
+          <h2 className="inline-flex items-center gap-2 font-serif text-2xl font-bold text-stone-900">
+            <Radar className="h-5 w-5 text-amber-700" />
             Real-Time Threat Overview
           </h2>
           <div className="mt-4 space-y-2">
             {streamItems.map((item) => {
               const Icon = moduleIcon(item.module);
               return (
-                <div key={item.id} className="flex items-start justify-between gap-3 rounded-2xl border border-cb-border bg-white/90 p-3 dark:bg-stone-900/70">
+                <div key={item.id} className="flex items-start justify-between gap-3 rounded-2xl border border-cb-border bg-white/90 p-3">
                   <div className="flex items-start gap-2">
-                    <Icon className="mt-0.5 h-4 w-4 text-amber-700 dark:text-amber-300" />
+                    <Icon className="mt-0.5 h-4 w-4 text-amber-700" />
                     <div>
-                      <p className="text-sm font-bold text-stone-900 dark:text-stone-100">
+                      <p className="text-sm font-bold text-stone-900">
                         {item.action}
                       </p>
-                      <p className="text-xs text-stone-700 dark:text-stone-300">
+                      <p className="text-xs text-stone-700">
                         {item.actor_email ?? "System"} · {new Date(item.created_at).toLocaleString()}
                       </p>
                     </div>
@@ -292,13 +292,13 @@ export default function AdminAuditLogsPage() {
         </section>
 
         <section className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
-          <h2 className="inline-flex items-center gap-2 font-serif text-2xl font-bold text-stone-900 dark:text-stone-100">
-            <Bot className="h-5 w-5 text-amber-700 dark:text-amber-300" />
+          <h2 className="inline-flex items-center gap-2 font-serif text-2xl font-bold text-stone-900">
+            <Bot className="h-5 w-5 text-amber-700" />
             AI Activity Insights
           </h2>
           <div className="mt-4 space-y-2">
             {aiInsights.map((msg) => (
-              <p key={msg} className="rounded-2xl border border-cb-border bg-white/90 px-3 py-2 text-xs text-stone-800 dark:bg-stone-900/70 dark:text-stone-200">
+              <p key={msg} className="rounded-2xl border border-cb-border bg-white/90 px-3 py-2 text-xs text-stone-800">
                 {msg}
               </p>
             ))}
@@ -309,11 +309,11 @@ export default function AdminAuditLogsPage() {
       <section className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-serif text-2xl font-bold text-stone-900 dark:text-stone-100">Advanced Log Explorer</h2>
-            <p className="text-sm text-stone-700 dark:text-stone-300">Explore audit events with smart filters, severity scoring, and AI summaries.</p>
+            <h2 className="font-serif text-2xl font-bold text-stone-900">Advanced Log Explorer</h2>
+            <p className="text-sm text-stone-700">Explore audit events with smart filters, severity scoring, and AI summaries.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex items-center gap-2 rounded-2xl border border-cb-border bg-white px-3 py-2 dark:bg-stone-900">
+            <label className="inline-flex items-center gap-2 rounded-2xl border border-cb-border bg-white px-3 py-2">
               <Search className="h-4 w-4 text-stone-500" />
               <input
                 value={query}
@@ -325,7 +325,7 @@ export default function AdminAuditLogsPage() {
             <select
               value={severityFilter}
               onChange={(e) => setSeverityFilter(e.target.value as typeof severityFilter)}
-              className="rounded-xl border border-cb-border bg-white px-3 py-2 text-sm dark:bg-stone-900"
+              className="rounded-xl border border-cb-border bg-white px-3 py-2 text-sm"
             >
               <option value="all">All severity</option>
               <option value="info">Info</option>
@@ -337,7 +337,7 @@ export default function AdminAuditLogsPage() {
             <select
               value={savedPreset}
               onChange={(e) => setSavedPreset(e.target.value)}
-              className="rounded-xl border border-cb-border bg-white px-3 py-2 text-sm dark:bg-stone-900"
+              className="rounded-xl border border-cb-border bg-white px-3 py-2 text-sm"
             >
               <option>All Events</option>
               <option>Failed Admin Logins</option>
@@ -347,7 +347,7 @@ export default function AdminAuditLogsPage() {
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-cb-border bg-white/90 p-4 dark:bg-stone-900/70">
+        <div className="mt-4 rounded-2xl border border-cb-border bg-white/90 p-4">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <input
               value={moduleFilter}
@@ -377,11 +377,11 @@ export default function AdminAuditLogsPage() {
           </div>
         </div>
 
-        <div className="mt-4 overflow-hidden rounded-2xl border border-cb-border bg-white/90 dark:bg-stone-900/70">
+        <div className="mt-4 overflow-hidden rounded-2xl border border-cb-border bg-white/90">
           <div className="overflow-x-auto">
             <table className="min-w-[1450px] w-full divide-y divide-cb-border text-sm">
               <thead className="sticky top-0 bg-cb-surface-2/95">
-                <tr className="text-left text-xs font-semibold uppercase tracking-wide text-stone-700 dark:text-stone-300">
+                <tr className="text-left text-xs font-semibold uppercase tracking-wide text-stone-700">
                   <th className="px-4 py-3">Timestamp</th>
                   <th className="px-4 py-3">User</th>
                   <th className="px-4 py-3">Role</th>
@@ -400,7 +400,7 @@ export default function AdminAuditLogsPage() {
               <tbody className="divide-y divide-cb-border">
                 {loading ? (
                   <tr>
-                    <td className="px-4 py-6 text-stone-700 dark:text-stone-300" colSpan={13}>
+                    <td className="px-4 py-6 text-stone-700" colSpan={13}>
                       Loading live intelligence stream...
                     </td>
                   </tr>
@@ -412,7 +412,7 @@ export default function AdminAuditLogsPage() {
                   </tr>
                 ) : filteredLogs.length === 0 ? (
                   <tr>
-                    <td className="px-4 py-6 text-stone-700 dark:text-stone-300" colSpan={13}>
+                    <td className="px-4 py-6 text-stone-700" colSpan={13}>
                       No logs found for the selected filters.
                     </td>
                   </tr>
@@ -429,7 +429,7 @@ export default function AdminAuditLogsPage() {
                       <td className="whitespace-nowrap px-4 py-3">{new Date(log.created_at).toLocaleString()}</td>
                       <td className="px-4 py-3">{log.actor_email ?? "System"}</td>
                       <td className="px-4 py-3">{log.actor_role ?? "-"}</td>
-                      <td className="px-4 py-3 font-semibold text-stone-900 dark:text-stone-100">{log.action}</td>
+                      <td className="px-4 py-3 font-semibold text-stone-900">{log.action}</td>
                       <td className="px-4 py-3">{log.module}</td>
                       <td className="px-4 py-3">
                         <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", severityClass(log.severity))}>{log.severity}</span>
@@ -440,7 +440,7 @@ export default function AdminAuditLogsPage() {
                       <td className="px-4 py-3">{log.location}</td>
                       <td className="px-4 py-3">{log.sessionId}</td>
                       <td className="px-4 py-3">{log.risk}</td>
-                      <td className="px-4 py-3 text-xs text-stone-700 dark:text-stone-300">{log.aiSummary}</td>
+                      <td className="px-4 py-3 text-xs text-stone-700">{log.aiSummary}</td>
                     </tr>
                   ))
                 )}
@@ -449,8 +449,8 @@ export default function AdminAuditLogsPage() {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between rounded-2xl border border-cb-border bg-white/90 px-4 py-3 text-sm dark:bg-stone-900/70">
-          <p className="text-stone-700 dark:text-stone-300">
+        <div className="mt-4 flex items-center justify-between rounded-2xl border border-cb-border bg-white/90 px-4 py-3 text-sm">
+          <p className="text-stone-700">
             Page {page} / {totalPages} - Total logs: {total}
           </p>
           <div className="flex items-center gap-2">
@@ -477,14 +477,14 @@ export default function AdminAuditLogsPage() {
       <div className="grid gap-6 xl:grid-cols-[1fr_.95fr]">
         <section className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
-              <Clock3 className="h-5 w-5 text-amber-700 dark:text-amber-300" />
+            <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900">
+              <Clock3 className="h-5 w-5 text-amber-700" />
               User Activity Timeline
             </h3>
             <select
               value={timelineFocus}
               onChange={(e) => setTimelineFocus(e.target.value)}
-              className="rounded-xl border border-cb-border bg-white px-3 py-1.5 text-xs dark:bg-stone-900"
+              className="rounded-xl border border-cb-border bg-white px-3 py-1.5 text-xs"
             >
               <option value="last24h">Last 24h</option>
               <option value="last7d">Last 7d</option>
@@ -495,9 +495,9 @@ export default function AdminAuditLogsPage() {
             {timelineItems.map((item) => (
               <div key={item.id} className="flex gap-3">
                 <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
-                <div className="flex-1 rounded-2xl border border-cb-border bg-white/90 p-3 dark:bg-stone-900/70">
-                  <p className="text-sm font-bold text-stone-900 dark:text-stone-100">{item.action}</p>
-                  <p className="text-xs text-stone-700 dark:text-stone-300">{item.module} · {item.actor_email ?? "System"} · {new Date(item.created_at).toLocaleString()}</p>
+                <div className="flex-1 rounded-2xl border border-cb-border bg-white/90 p-3">
+                  <p className="text-sm font-bold text-stone-900">{item.action}</p>
+                  <p className="text-xs text-stone-700">{item.module} · {item.actor_email ?? "System"} · {new Date(item.created_at).toLocaleString()}</p>
                 </div>
               </div>
             ))}
@@ -506,8 +506,8 @@ export default function AdminAuditLogsPage() {
 
         <section className="space-y-4">
           <article className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
-            <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
-              <CalendarClock className="h-5 w-5 text-amber-700 dark:text-amber-300" />
+            <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900">
+              <CalendarClock className="h-5 w-5 text-amber-700" />
               Session Monitoring
             </h3>
             <div className="mt-3 space-y-2 text-xs">
@@ -524,8 +524,8 @@ export default function AdminAuditLogsPage() {
           </article>
 
           <article className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
-            <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
-              <CheckCircle2 className="h-5 w-5 text-amber-700 dark:text-amber-300" />
+            <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900">
+              <CheckCircle2 className="h-5 w-5 text-amber-700" />
               Compliance & Export Center
             </h3>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -533,7 +533,7 @@ export default function AdminAuditLogsPage() {
                 <button
                   key={item}
                   type="button"
-                  className="rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold text-stone-800 transition hover:-translate-y-0.5 dark:bg-stone-900 dark:text-stone-200"
+                  className="rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold text-stone-800 transition hover:-translate-y-0.5"
                 >
                   {item}
                 </button>
@@ -546,29 +546,29 @@ export default function AdminAuditLogsPage() {
       {selectedLog ? (
         <section className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="font-serif text-xl font-bold text-stone-900 dark:text-stone-100">Event Detail Drawer</h3>
+            <h3 className="font-serif text-xl font-bold text-stone-900">Event Detail Drawer</h3>
             <button
               type="button"
               onClick={() => setSelectedLog(null)}
-              className="rounded-xl border border-cb-border bg-white px-3 py-1.5 text-xs font-bold text-stone-700 dark:bg-stone-900 dark:text-stone-300"
+              className="rounded-xl border border-cb-border bg-white px-3 py-1.5 text-xs font-bold text-stone-700"
             >
               Close
             </button>
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl border border-cb-border bg-white/90 p-3 text-xs dark:bg-stone-900/70">
+            <div className="rounded-2xl border border-cb-border bg-white/90 p-3 text-xs">
               <p className="font-bold">Action</p>
               <p className="mt-1">{selectedLog.action}</p>
             </div>
-            <div className="rounded-2xl border border-cb-border bg-white/90 p-3 text-xs dark:bg-stone-900/70">
+            <div className="rounded-2xl border border-cb-border bg-white/90 p-3 text-xs">
               <p className="font-bold">Actor</p>
               <p className="mt-1">{selectedLog.actor_email ?? "System"}</p>
             </div>
-            <div className="rounded-2xl border border-cb-border bg-white/90 p-3 text-xs dark:bg-stone-900/70">
+            <div className="rounded-2xl border border-cb-border bg-white/90 p-3 text-xs">
               <p className="font-bold">Entity</p>
               <p className="mt-1">{selectedLog.entity_id ?? "-"}</p>
             </div>
-            <div className="rounded-2xl border border-cb-border bg-white/90 p-3 text-xs dark:bg-stone-900/70">
+            <div className="rounded-2xl border border-cb-border bg-white/90 p-3 text-xs">
               <p className="font-bold">IP</p>
               <p className="mt-1">{selectedLog.ip ?? "-"}</p>
             </div>

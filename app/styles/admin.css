@@ -50,7 +50,19 @@
 }
 
 .dark .admin-console {
+  --text-primary: #1c1917;
+  --text-secondary: #44403c;
+  --text-muted: #57534e;
+  --cb-text-strong: #1c1917;
+  --cb-text: #44403c;
+  --cb-text-muted: #57534e;
+  --cb-surface: #ffffff;
+  --cb-surface-elevated: #ffffff;
+  --cb-surface-2: #fff8f0;
+  --foreground: #1c1917;
   background: var(--cb-cream);
+  color-scheme: light;
+  color: var(--cb-text);
 }
 
 .admin-console .admin-panel-surface,
@@ -76,6 +88,114 @@
 .admin-console .admin-panel-surface > .relative.flex > div:first-child > p.max-w-2xl,
 .admin-console .admin-hero-surface > .relative.flex > div:first-child > p.max-w-2xl {
   color: #44403c !important;
+}
+
+/* Lock admin to light surfaces + dark type when OS prefers dark (Tailwind dark: uses media query) */
+@media (prefers-color-scheme: dark) {
+  .admin-console {
+    --text-primary: #1c1917;
+    --text-secondary: #44403c;
+    --text-muted: #57534e;
+    --cb-text-strong: #1c1917;
+    --cb-text: #44403c;
+    --cb-text-muted: #57534e;
+    --cb-surface: #ffffff;
+    --cb-surface-elevated: #ffffff;
+    --cb-surface-2: #fff8f0;
+    --foreground: #1c1917;
+    color-scheme: light;
+    color: var(--cb-text);
+  }
+
+  .admin-console :where(h1, h2, h3, h4, h5, h6) {
+    color: #1c1917 !important;
+  }
+
+  .admin-console .admin-panel-surface article.rounded-2xl {
+    background-color: rgb(255 255 255 / 0.92) !important;
+  }
+
+  .admin-console .admin-panel-surface article.rounded-2xl p.font-serif {
+    color: #1c1917 !important;
+  }
+
+  .admin-console .admin-panel-surface article.rounded-2xl p.text-\[11px\] {
+    color: #57534e !important;
+  }
+
+  .admin-console :is(.bg-white, .bg-white\/90, .bg-white\/85) {
+    background-color: rgb(255 255 255 / 0.92) !important;
+  }
+
+  .admin-console .text-stone-900,
+  .admin-console .font-bold.text-stone-900,
+  .admin-console .font-semibold.text-stone-900 {
+    color: #1c1917 !important;
+  }
+
+  .admin-console .text-stone-800,
+  .admin-console .text-stone-700,
+  .admin-console table thead th,
+  .admin-console table tbody td {
+    color: #44403c !important;
+  }
+
+  .admin-console input,
+  .admin-console select,
+  .admin-console textarea {
+    color: #1c1917 !important;
+    background-color: #ffffff !important;
+  }
+
+  .admin-console button.rounded-xl.border.border-cb-border.bg-white {
+    color: #292524 !important;
+    background-color: #ffffff !important;
+  }
+}
+
+.dark .admin-console :where(h1, h2, h3, h4, h5, h6) {
+  color: #1c1917 !important;
+}
+
+.dark .admin-console .admin-panel-surface article.rounded-2xl {
+  background-color: rgb(255 255 255 / 0.92) !important;
+}
+
+.dark .admin-console .admin-panel-surface article.rounded-2xl p.font-serif {
+  color: #1c1917 !important;
+}
+
+.dark .admin-console .admin-panel-surface article.rounded-2xl p.text-\[11px\] {
+  color: #57534e !important;
+}
+
+.dark .admin-console :is(.bg-white, .bg-white\/90, .bg-white\/85) {
+  background-color: rgb(255 255 255 / 0.92) !important;
+}
+
+.dark .admin-console .text-stone-900,
+.dark .admin-console .font-bold.text-stone-900,
+.dark .admin-console .font-semibold.text-stone-900 {
+  color: #1c1917 !important;
+}
+
+.dark .admin-console .text-stone-800,
+.dark .admin-console .text-stone-700,
+.dark .admin-console table thead th,
+.dark .admin-console table tbody td {
+  color: #44403c !important;
+}
+
+.dark .admin-console input,
+.dark .admin-console select,
+.dark .admin-console textarea {
+  color: #1c1917 !important;
+  background-color: #ffffff !important;
+}
+
+.dark .admin-console button.rounded-xl.border.border-cb-border.bg-white {
+  color: #292524 !important;
+  background-color: #ffffff !important;
 }
 
 .admin-console table thead th {
