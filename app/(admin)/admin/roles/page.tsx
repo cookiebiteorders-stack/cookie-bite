@@ -77,7 +77,7 @@ function roleBadgeClass(role: UserRole) {
   if (role === "owner") return "bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200";
   if (role === "admin") return "bg-blue-100 text-blue-900 dark:bg-blue-950/60 dark:text-blue-200";
   if (role === "staff") return "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200";
-  return "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200";
+  return "bg-stone-200 text-stone-800";
 }
 
 function permissionBits(level: PermissionLevel) {
@@ -318,21 +318,21 @@ export default function AdminRolesPage() {
         animate={{ opacity: 1, y: 0 }}
         className="admin-panel-surface rounded-2xl p-5"
       >
-        <h1 className="font-serif text-3xl font-bold text-cb-text-strong">
+        <h1 className="font-serif text-3xl font-bold text-stone-950">
           Role Management
         </h1>
-        <p className="mt-2 text-sm text-stone-700 dark:text-stone-300">
+        <p className="mt-2 text-sm text-stone-700">
           Enterprise RBAC control center with assign, preview, and governed updates.
         </p>
       </motion.header>
 
       <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
         <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
-          <h2 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-cb-text-strong">
-            <UserPlus className="h-5 w-5 text-amber-700 dark:text-amber-300" />
+          <h2 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-950">
+            <UserPlus className="h-5 w-5 text-amber-700" />
             Assign Role
           </h2>
-          <p className="mt-1 text-sm text-stone-700 dark:text-stone-300">
+          <p className="mt-1 text-sm text-stone-700">
             Search users by email/name, preview profile, then assign with validation against Clerk linkage.
           </p>
 
@@ -353,9 +353,9 @@ export default function AdminRolesPage() {
               />
             </div>
             {dropdownOpen ? (
-              <div className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-xl border border-cb-border bg-white shadow-sm dark:bg-stone-900">
+              <div className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-xl border border-cb-border bg-white shadow-sm">
                 {filteredUsers.length === 0 ? (
-                  <p className="px-3 py-2 text-sm text-stone-600 dark:text-stone-300">No users found.</p>
+                  <p className="px-3 py-2 text-sm text-stone-600">No users found.</p>
                 ) : (
                   filteredUsers.map((u) => (
                     <button
@@ -371,13 +371,13 @@ export default function AdminRolesPage() {
                       {u.avatar_url ? (
                         <img src={u.avatar_url} alt={userDisplayName(u)} className="h-9 w-9 rounded-full object-cover" />
                       ) : (
-                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-cb-surface-2 text-xs font-bold text-stone-700 dark:text-stone-200">
+                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-cb-surface-2 text-xs font-bold text-stone-700">
                           {initials(userDisplayName(u))}
                         </span>
                       )}
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-stone-900 dark:text-stone-100">{userDisplayName(u)}</span>
-                        <span className="block truncate text-xs text-stone-600 dark:text-stone-300">{u.email}</span>
+                        <span className="block truncate text-sm font-semibold text-stone-900">{userDisplayName(u)}</span>
+                        <span className="block truncate text-xs text-stone-600">{u.email}</span>
                       </span>
                     </button>
                   ))
@@ -386,7 +386,7 @@ export default function AdminRolesPage() {
             ) : null}
           </div>
 
-          <label className="mt-3 block text-sm font-semibold text-cb-text-strong">
+          <label className="mt-3 block text-sm font-semibold text-stone-950">
             Or assign by exact email
             <input
               type="email"
@@ -437,18 +437,18 @@ export default function AdminRolesPage() {
               animate={{ opacity: 1, y: 0 }}
               className="mt-4 rounded-xl border border-cb-border bg-cb-surface-2/70 p-4"
             >
-              <p className="text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">Selected user</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-stone-700">Selected user</p>
               <div className="mt-2 flex items-center gap-3">
                 {selectedResolved.avatar_url ? (
                   <img src={selectedResolved.avatar_url} alt={userDisplayName(selectedResolved)} className="h-10 w-10 rounded-full object-cover" />
                 ) : (
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-cb-surface text-sm font-bold text-stone-700 dark:text-stone-200">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-cb-surface text-sm font-bold text-stone-700">
                     {initials(userDisplayName(selectedResolved))}
                   </span>
                 )}
                 <div>
-                  <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{userDisplayName(selectedResolved)}</p>
-                  <p className="text-xs text-stone-600 dark:text-stone-300">{selectedResolved.email}</p>
+                  <p className="text-sm font-semibold text-stone-900">{userDisplayName(selectedResolved)}</p>
+                  <p className="text-xs text-stone-600">{selectedResolved.email}</p>
                 </div>
                 {selectedResolved.role ? (
                   <span className={cn("ms-auto rounded-full px-2 py-1 text-[11px] font-bold", roleBadgeClass(selectedResolved.role))}>
@@ -457,7 +457,7 @@ export default function AdminRolesPage() {
                 ) : null}
               </div>
               {!selectedResolved.clerk_user_id ? (
-                <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-amber-700">
                   <AlertTriangle className="h-3.5 w-3.5" />
                   This user is not linked to Clerk yet.
                 </p>
@@ -466,16 +466,16 @@ export default function AdminRolesPage() {
           ) : null}
 
           {error ? (
-            <p className="mt-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>
+            <p className="mt-3 text-sm text-rose-700">{error}</p>
           ) : null}
         </section>
 
         <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
-          <h2 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-cb-text-strong">
-            <Shield className="h-5 w-5 text-amber-700 dark:text-amber-300" />
+          <h2 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-950">
+            <Shield className="h-5 w-5 text-amber-700" />
             Permissions Preview
           </h2>
-          <p className="mt-1 text-sm text-stone-700 dark:text-stone-300">
+          <p className="mt-1 text-sm text-stone-700">
             Granular module capabilities for selected role.
           </p>
           <select
@@ -491,7 +491,7 @@ export default function AdminRolesPage() {
           </select>
           <div className="mt-3 overflow-hidden rounded-xl border border-cb-border">
             <table className="w-full text-xs">
-              <thead className="bg-cb-surface-2/80 text-stone-700 dark:text-stone-300">
+              <thead className="bg-cb-surface-2/80 text-stone-700">
                 <tr>
                   <th className="px-2 py-2 text-left">Module</th>
                   <th className="px-2 py-2">View</th>
@@ -508,7 +508,7 @@ export default function AdminRolesPage() {
                     v ? <Check className="mx-auto h-3.5 w-3.5 text-emerald-600" /> : <X className="mx-auto h-3.5 w-3.5 text-stone-400" />;
                   return (
                     <tr key={m} className="border-t border-cb-border">
-                      <td className="px-2 py-2 font-semibold text-stone-800 dark:text-stone-200">{m}</td>
+                      <td className="px-2 py-2 font-semibold text-stone-800">{m}</td>
                       <td className="px-2 py-2 text-center">{icon(bits.view)}</td>
                       <td className="px-2 py-2 text-center">{icon(bits.create)}</td>
                       <td className="px-2 py-2 text-center">{icon(bits.update)}</td>
@@ -524,13 +524,13 @@ export default function AdminRolesPage() {
 
       <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated">
         <div className="flex items-center justify-between border-b border-cb-border bg-cb-surface-2 px-4 py-3">
-          <h2 className="font-semibold text-cb-text-strong">Current Assignments</h2>
-          <span className="text-xs text-stone-600 dark:text-stone-300">{assignments.length} active admin assignments</span>
+          <h2 className="font-semibold text-stone-950">Current Assignments</h2>
+          <span className="text-xs text-stone-600">{assignments.length} active admin assignments</span>
         </div>
         {assignments.length === 0 ? (
           <div className="px-4 py-10 text-center">
-            <p className="text-sm font-semibold text-stone-800 dark:text-stone-200">No roles assigned yet</p>
-            <p className="mt-1 text-xs text-stone-600 dark:text-stone-300">
+            <p className="text-sm font-semibold text-stone-800">No roles assigned yet</p>
+            <p className="mt-1 text-xs text-stone-600">
               Start by selecting a user and assigning an owner/admin/staff role.
             </p>
             <button
@@ -539,7 +539,7 @@ export default function AdminRolesPage() {
                 setDropdownOpen(true);
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
-              className="mt-3 rounded-xl border border-cb-border bg-white px-4 py-2 text-xs font-bold text-stone-800 dark:bg-stone-900 dark:text-stone-200"
+              className="mt-3 rounded-xl border border-cb-border bg-white px-4 py-2 text-xs font-bold text-stone-800"
             >
               Assign first role
             </button>
@@ -548,7 +548,7 @@ export default function AdminRolesPage() {
           <>
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[980px] text-sm">
-                <thead className="bg-cb-surface-2 text-left text-stone-700 dark:text-stone-300">
+                <thead className="bg-cb-surface-2 text-left text-stone-700">
                   <tr>
                     <th className="px-4 py-3">User</th>
                     <th className="px-4 py-3">Email</th>
@@ -564,14 +564,14 @@ export default function AdminRolesPage() {
                           {a.avatar_url ? (
                             <img src={a.avatar_url} alt={a.full_name ?? a.email} className="h-8 w-8 rounded-full object-cover" />
                           ) : (
-                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-cb-surface-2 text-xs font-bold text-stone-700 dark:text-stone-200">
+                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-cb-surface-2 text-xs font-bold text-stone-700">
                               {initials(a.full_name?.trim() || a.email)}
                             </span>
                           )}
-                          <span className="font-semibold text-stone-900 dark:text-stone-100">{a.full_name ?? a.email.split("@")[0]}</span>
+                          <span className="font-semibold text-stone-900">{a.full_name ?? a.email.split("@")[0]}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3">{a.email}</td>
+                      <td className="px-4 py-3 text-stone-800">{a.email}</td>
                       <td className="px-4 py-3">
                         <span className={cn("rounded-full px-2 py-1 text-[11px] font-bold uppercase", roleBadgeClass(a.role))}>
                           {a.role}
@@ -594,7 +594,7 @@ export default function AdminRolesPage() {
                           <button
                             type="button"
                             onClick={() => setPermissionsTargetRole(a.role)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-cb-border bg-white px-2 py-1 text-xs font-semibold dark:bg-stone-900"
+                            className="inline-flex items-center gap-1 rounded-lg border border-cb-border bg-white px-2 py-1 text-xs font-semibold text-stone-800"
                           >
                             <Eye className="h-3.5 w-3.5" />
                             View permissions
@@ -627,8 +627,8 @@ export default function AdminRolesPage() {
                       </span>
                     )}
                     <div>
-                      <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{a.full_name ?? a.email.split("@")[0]}</p>
-                      <p className="text-xs text-stone-600 dark:text-stone-300">{a.email}</p>
+                      <p className="text-sm font-semibold text-stone-900">{a.full_name ?? a.email.split("@")[0]}</p>
+                      <p className="text-xs text-stone-600">{a.email}</p>
                     </div>
                     <span className={cn("ms-auto rounded-full px-2 py-1 text-[11px] font-bold uppercase", roleBadgeClass(a.role))}>{a.role}</span>
                   </div>
@@ -661,7 +661,7 @@ export default function AdminRolesPage() {
 
       <div className="overflow-hidden rounded-2xl border border-cb-border bg-cb-surface-elevated">
         <div className="border-b border-cb-border bg-cb-surface-2 px-4 py-3">
-          <h2 className="font-semibold text-cb-text-strong">Role Matrix</h2>
+          <h2 className="font-semibold text-stone-950">Role Matrix</h2>
         </div>
         <table className="w-full min-w-[900px] text-sm">
           <thead className="bg-cb-surface-2 text-left text-cb-text-muted">

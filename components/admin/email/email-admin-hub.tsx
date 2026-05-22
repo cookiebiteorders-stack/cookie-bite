@@ -62,7 +62,7 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
     setLoading(true);
     try {
       if (activeTab === "dashboard") {
-        const d = await fetchJson<DashboardData>("/api/admin/email/dashboard");
+        const d = await fetchJson<DashboardData & { ok?: boolean }>("/api/admin/email/dashboard");
         setDash(d);
       } else if (activeTab === "logs") {
         const r = await fetchJson<{ rows: Record<string, unknown>[] }>("/api/admin/email/logs");

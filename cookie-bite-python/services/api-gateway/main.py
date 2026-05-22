@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 
 from core.config import get_settings
 from core.logger import get_logger
-from routers import events, health, import_parser, parse_pdf_alias, recommendations
+from routers import email_validation, events, health, import_parser, parse_pdf_alias, recommendations
 
 logger = get_logger("api-gateway")
 settings = get_settings()
@@ -34,6 +34,7 @@ app.include_router(events.router)
 app.include_router(recommendations.router)
 app.include_router(import_parser.router)
 app.include_router(parse_pdf_alias.router)
+app.include_router(email_validation.router)
 
 
 @app.on_event("startup")
