@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AddressMapPicker } from "@/components/account/address-map-picker";
+import {
+  AddressMapPicker,
+  type AddressMapHint,
+} from "@/components/account/address-map-picker";
 import { buttonClassName } from "@/components/ui/button";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { isValidEgyptPhone, normalizeEgyptPhone } from "@/lib/account/profile-schema";
@@ -141,6 +144,20 @@ export function CompleteProfileForm() {
 
   const onMapChange = useCallback((lat: number, lng: number) => {
     setForm((f) => ({ ...f, latitude: lat, longitude: lng }));
+  }, []);
+
+  const onAddressHint = useCallback((hint: AddressMapHint) => {
+    setForm((f) => ({
+      ...f,
+      street: f.street.trim() ? f.street : (hint.street?.trim() ?? f.street),
+      city:
+        f.city.trim() && f.city !== "New Cairo"
+          ? f.city
+          : (hint.city?.trim() ?? f.city),
+      governorate: f.governorate.trim() && f.governorate !== "Cairo"
+        ? f.governorate
+        : (hint.governorate?.trim() ?? f.governorate),
+    }));
   }, []);
 
   const buildPayload = useCallback(() => {
@@ -399,6 +416,7 @@ export function CompleteProfileForm() {
           latitude={form.latitude}
           longitude={form.longitude}
           onChange={onMapChange}
+          onAddressHint={onAddressHint}
         />
       </section>
 
