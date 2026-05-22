@@ -109,6 +109,18 @@
   color: #44403c !important;
 }
 
+.admin-console .cb-stat-tile [data-stat-label] {
+  color: #57534e !important;
+}
+
+.admin-console .cb-stat-tile [data-stat-value] {
+  color: #1c1917 !important;
+}
+
+.admin-console .cb-stat-tile [data-stat-sub] {
+  color: #44403c !important;
+}
+
 /* Lock admin to light surfaces + dark type when OS prefers dark (Tailwind dark: uses media query) */
 @media (prefers-color-scheme: dark) {
   .admin-console {

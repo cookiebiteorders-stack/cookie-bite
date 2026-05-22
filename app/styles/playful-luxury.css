@@ -622,14 +622,18 @@ html[dir="rtl"] .cb-pl-body {
   border-radius: var(--radius-pl-md);
   box-shadow: var(--shadow-pl-card);
   overflow: hidden;
-  transition:
-    transform var(--transition-pl-base),
-    box-shadow var(--transition-pl-base);
+  transition: box-shadow var(--transition-pl-fast);
 }
 
 .cb-pl-product-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-pl-hover);
+  box-shadow: 0 4px 16px rgba(28, 14, 6, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-pl-product-card,
+  .cb-pl-product-card:hover {
+    transition: none;
+  }
 }
 
 .cb-pl-product-badge {

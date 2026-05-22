@@ -40,7 +40,7 @@ export function SearchProductCard({ product }: { product: Product }) {
           src={product.images[0]}
           alt={product.name}
           fill
-          className="object-cover transition duration-300 group-hover:scale-105"
+          className="object-cover transition duration-200 group-hover:scale-[1.01]"
           sizes="(max-width:768px) 100vw, (max-width:1280px) 50vw, 33vw"
         />
         <button

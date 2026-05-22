@@ -58,7 +58,7 @@ function StatCard({ title, value, sub, trendPct, icon: Icon, seed, accent, wrap,
         <span
           className={cn(
             "rounded-full px-2 py-0.5 text-[10px] font-bold",
-            up ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200" : "bg-rose-50 text-rose-800 dark:bg-transparent dark:text-rose-200",
+            up ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-800",
           )}
         >
           {up ? "↑" : "↓"} {Math.abs(trendPct)}%
@@ -97,7 +97,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: Sparkles,
       seed: stats.new_signups_30d + 1,
       accent: "#ca8a04",
-      wrap: "border-amber-200/80 bg-amber-50/90 dark:border-amber-900/40 dark:bg-amber-950/35",
+      wrap: "border-amber-200/80 bg-amber-50/90",
       delay: 0,
     },
     {
@@ -108,7 +108,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: RefreshCw,
       seed: stats.returning_with_orders + 3,
       accent: "#2563eb",
-      wrap: "border-sky-200/80 bg-sky-50/90 dark:border-sky-900/40 dark:bg-sky-950/35",
+      wrap: "border-sky-200/80 bg-sky-50/90",
       delay: 0.04,
     },
     {
@@ -119,7 +119,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: Crown,
       seed: stats.vip_gold_plus + 7,
       accent: "#a855f7",
-      wrap: "border-violet-200/80 bg-violet-50/90 dark:border-violet-900/40 dark:bg-violet-950/35",
+      wrap: "border-violet-200/80 bg-violet-50/90",
       delay: 0.08,
     },
     {
@@ -130,7 +130,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: AlertTriangle,
       seed: stats.at_risk_proxy + 11,
       accent: "#dc2626",
-      wrap: "border-red-200/80 bg-red-50/90 dark:border-red-900/40 dark:bg-red-950/35",
+      wrap: "border-red-200/80 bg-red-50/90",
       delay: 0.12,
     },
     {
@@ -141,7 +141,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: AlertTriangle,
       seed: churnShare + 20,
       accent: "#ea580c",
-      wrap: "border-orange-200/80 bg-orange-50/90 dark:border-orange-900/40 dark:bg-orange-950/35",
+      wrap: "border-orange-200/80 bg-orange-50/90",
       delay: 0.16,
     },
     {
@@ -152,7 +152,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: Gem,
       seed: Math.floor(stats.avg_ltv_sample_egp) + 2,
       accent: "#b45309",
-      wrap: "border-amber-200/80 bg-amber-50/95 dark:border-amber-900/40 dark:bg-amber-950/38",
+      wrap: "border-amber-200/80 bg-amber-50/95",
       delay: 0.2,
     },
     {
@@ -163,7 +163,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: TrendingUp,
       seed: stats.active_last_90d + 5,
       accent: "#059669",
-      wrap: "border-emerald-200/80 bg-emerald-50/90 dark:border-emerald-900/40 dark:bg-emerald-950/35",
+      wrap: "border-emerald-200/80 bg-emerald-50/90",
       delay: 0.24,
     },
     {
@@ -174,7 +174,7 @@ export function CrmHeroStats({ stats, online }: Props) {
       icon: Award,
       seed: stats.loyalty_members + 9,
       accent: "#d97706",
-      wrap: "border-amber-200/80 bg-amber-50/90 dark:border-amber-900/40 dark:bg-amber-950/35",
+      wrap: "border-amber-200/80 bg-amber-50/90",
       delay: 0.28,
     },
   ];
@@ -184,26 +184,23 @@ export function CrmHeroStats({ stats, online }: Props) {
       <motion.header
         initial={reduceMotion ? false : { opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        className={cn(
-          "admin-hero-surface rounded-2xl p-6 shadow-[var(--shadow-editorial)] sm:p-8",
-          "dark:to-violet-950/20",
-        )}
+        className="admin-hero-surface rounded-2xl p-6 shadow-[var(--shadow-editorial)] sm:p-8"
       >
-        <div className="pointer-events-none absolute -right-20 -top-16 h-52 w-52 rounded-full bg-violet-200/18 blur-3xl dark:bg-violet-900/15" aria-hidden />
+        <div className="pointer-events-none absolute -right-20 -top-16 h-52 w-52 rounded-full bg-violet-200/18 blur-3xl" aria-hidden />
         <div className="admin-panel-scrim" aria-hidden />
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex gap-4">
             <motion.div
               whileHover={reduceMotion ? undefined : { scale: 1.04 }}
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-cb-border bg-white/90 text-amber-700 shadow-sm dark:bg-stone-900/80 dark:text-amber-300"
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-cb-border bg-white/90 text-amber-700 shadow-sm"
             >
               <Users className="h-7 w-7" aria-hidden />
             </motion.div>
             <div>
-              <h1 className="font-serif text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-50 sm:text-3xl">
+              <h1 className="font-serif text-2xl font-bold tracking-tight text-stone-950 sm:text-3xl">
                 Customer Management &amp; CRM
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-800 dark:text-stone-300 sm:text-[15px]">
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-700 sm:text-[15px]">
                 إدارة ملفات العملاء، الولاء، التجزئة، الاحتفاظ، التفاعل، وأتمتة دورة الحياة — لوحة CRM بمستوى SaaS مميز.
               </p>
             </div>
@@ -212,8 +209,8 @@ export function CrmHeroStats({ stats, online }: Props) {
             className={cn(
               "inline-flex items-center gap-2 self-start rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-wide",
               online
-                ? "border-emerald-300/80 bg-emerald-50/90 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200"
-                : "border-amber-300/80 bg-amber-50/90 text-amber-950 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-100",
+                ? "border-emerald-300/80 bg-emerald-50/90 text-emerald-900"
+                : "border-amber-300/80 bg-amber-50/90 text-amber-950",
             )}
           >
             <span className={cn("h-2 w-2 rounded-full", online ? "animate-pulse bg-emerald-500" : "bg-amber-500")} />

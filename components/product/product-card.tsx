@@ -84,9 +84,8 @@ export function ProductCard({
 
   return (
     <article
-      data-loki="hover"
       className={cn(
-        "cb-pl-product-card group flex flex-col overflow-hidden transition-all duration-200",
+        "cb-pl-product-card group flex flex-col overflow-hidden",
         className,
       )}
     >
@@ -97,7 +96,7 @@ export function ProductCard({
             src={product.image}
             alt={product.name}
             sizes="(max-width:768px) 100vw, 25vw"
-            imgClassName="transition-transform duration-300 group-hover:scale-[1.03]"
+            imgClassName="transition-transform duration-200 group-hover:scale-[1.01]"
           />
         </Link>
         <button
@@ -105,7 +104,7 @@ export function ProductCard({
           disabled={busy || !uuid}
           onClick={toggleWishlist}
           className={cn(
-            "absolute end-3 top-3 z-10 rounded-full border border-cb-peach-deep/60 p-2 shadow-sm transition-all duration-200 hover:-translate-y-px hover:shadow-md disabled:opacity-40",
+            "absolute end-3 top-3 z-10 rounded-full border border-cb-peach-deep/60 p-2 shadow-sm transition-colors duration-150 disabled:opacity-40",
             wishlisted
               ? "bg-cb-terracotta-dark text-white"
               : "bg-cb-cream/95 text-cb-terracotta-dark",

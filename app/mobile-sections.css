@@ -96,7 +96,7 @@
     box-shadow: 0 2px 8px rgba(200,90,30,0.06);
     transition: transform 0.15s ease;
   }
-  .mobile-product-card:active { transform: scale(0.98); }
+  .mobile-product-card:active { transform: scale(0.995); }
   .mobile-product-card__img-wrap { position: relative; aspect-ratio: 1/1; }
   .mobile-product-card__img { width: 100%; height: 100%; object-fit: cover; }
   .mobile-product-card__badge {
@@ -134,7 +134,7 @@
     display: flex; align-items: center; justify-content: center;
     border: none; cursor: pointer;
   }
-  .mobile-product-card__add-btn:active { transform: scale(0.9); }
+  .mobile-product-card__add-btn:active { transform: scale(0.96); }
   .mobile-product-card__add-btn svg { width: 16px; height: 16px; }
 
   /* --- Review Card Carousel --- */

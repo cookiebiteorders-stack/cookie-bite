@@ -181,16 +181,16 @@ export function CustomersCrmDashboard() {
       >
         <div className="admin-panel-scrim" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-900 dark:text-amber-200/95">CRM</p>
-          <h1 id="crm-dashboard-title" className="mt-1 font-serif text-xl font-bold text-cb-text-strong sm:text-2xl">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-800">CRM</p>
+          <h1 id="crm-dashboard-title" className="mt-1 font-serif text-xl font-bold text-stone-950 sm:text-2xl">
             Customer Management &amp; CRM
           </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-cb-text-muted">
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-stone-700">
             إدارة ملفات العملاء، الولاء، التجزئة، تحليلات الاحتفاظ، التفاعل، وأتمتة دورة حياة العميل —{" "}
-            <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] dark:bg-stone-900">⌘K</kbd> أو{" "}
-            <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] dark:bg-stone-900">Ctrl+K</kbd> للأوامر،{" "}
-            <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] dark:bg-stone-900">/</kbd> للبحث،{" "}
-            <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] dark:bg-stone-900">N</kbd> لإضافة عميل. تحديث
+            <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] text-stone-800">⌘K</kbd> أو{" "}
+            <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] text-stone-800">Ctrl+K</kbd> للأوامر،{" "}
+            <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] text-stone-800">/</kbd> للبحث،{" "}
+            <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] text-stone-800">N</kbd> لإضافة عميل. تحديث
             تلقائي كل 90 ثانية.
           </p>
         </div>
@@ -300,7 +300,7 @@ export function CustomersCrmDashboard() {
                       <button
                         type="button"
                         role="menuitem"
-                        className="flex w-full px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                        className="flex w-full px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-amber-50"
                         onClick={() => {
                           setQuickOpen(false);
                           if (label === "تصدير تقارير") exportPage();
@@ -325,7 +325,7 @@ export function CustomersCrmDashboard() {
             <button
               type="button"
               onClick={() => aiBatchInsight()}
-              className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-950 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-100"
+              className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-950"
             >
               <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
               رؤى AI
