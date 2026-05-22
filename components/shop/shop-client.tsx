@@ -344,7 +344,7 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
       <div className="mx-auto max-w-7xl cb-gutter pt-10">
 
         {initialTrending.length > 0 ? (
-          <section className="mb-12" aria-labelledby="shop-trending-heading">
+          <section className="mb-10 border-b border-cb-border/60 pb-10" aria-labelledby="shop-trending-heading">
             <SectionHeading
               align="left"
               className="mb-6 text-start"
@@ -369,146 +369,167 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
           </section>
         ) : null}
 
-        <div
-          ref={filterAnchorRef}
-          id="shop-filters"
-          className="cb-pl-filter-bar sticky top-16 z-20 mb-5 grid gap-3 rounded-2xl bg-white p-4 shadow-[var(--shadow-pl-nav)] sm:grid-cols-2 lg:grid-cols-4"
+        <section
+          id="shop-catalog"
+          className="scroll-mt-24"
+          aria-labelledby="shop-catalog-heading"
         >
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t("pages.shop.searchPlaceholder")}
-            className="cb-pl-input rounded-xl px-3 py-2 text-sm"
+          <SectionHeading
+            align="left"
+            className="mb-5 text-start"
+            eyebrow={t("pages.shop.catalogEyebrow")}
+            title={<span id="shop-catalog-heading">{t("pages.shop.catalogTitle")}</span>}
+            subtitle={t("pages.shop.catalogSubtitle")}
+            variant="editorial"
           />
-          <select
-            value={sort}
-            onChange={(e) => setSort((e.target.value as SortMode) || "newest")}
-            className="cb-pl-input rounded-xl px-3 py-2 text-sm"
+
+          <div
+            ref={filterAnchorRef}
+            id="shop-filters"
+            className="cb-pl-shop-filters sticky top-16 z-20 mb-6"
           >
-            <option value="newest">{t("pages.shop.sortNewest")}</option>
-            <option value="popular">{t("pages.shop.sortPopular")}</option>
-            <option value="price_asc">{t("pages.shop.sortPriceAsc")}</option>
-            <option value="price_desc">{t("pages.shop.sortPriceDesc")}</option>
-          </select>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={priceBounds.min}
-              max={priceBounds.max}
-              value={minPrice ?? ""}
-              onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : null)}
-              placeholder={t("pages.shop.minEgp")}
-              className="cb-pl-input w-full rounded-xl px-3 py-2 text-sm"
-            />
-            <input
-              type="number"
-              min={priceBounds.min}
-              max={priceBounds.max}
-              value={maxPrice ?? ""}
-              onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : null)}
-              placeholder={t("pages.shop.maxEgp")}
-              className="cb-pl-input w-full rounded-xl px-3 py-2 text-sm"
-            />
-          </div>
-          <button type="button" onClick={clearAll} className={buttonClassName("outline", "w-full")}>
-            {t("pages.shop.resetFilters")}
-          </button>
-        </div>
+            <div className="cb-pl-shop-filters__row--primary">
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("pages.shop.searchPlaceholder")}
+                className="cb-pl-input min-h-10 rounded-xl px-3 py-2 text-sm"
+              />
+              <select
+                value={sort}
+                onChange={(e) => setSort((e.target.value as SortMode) || "newest")}
+                className="cb-pl-input min-h-10 rounded-xl px-3 py-2 text-sm"
+                aria-label={t("pages.shop.sortPopular")}
+              >
+                <option value="newest">{t("pages.shop.sortNewest")}</option>
+                <option value="popular">{t("pages.shop.sortPopular")}</option>
+                <option value="price_asc">{t("pages.shop.sortPriceAsc")}</option>
+                <option value="price_desc">{t("pages.shop.sortPriceDesc")}</option>
+              </select>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={priceBounds.min}
+                  max={priceBounds.max}
+                  value={minPrice ?? ""}
+                  onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : null)}
+                  placeholder={t("pages.shop.minEgp")}
+                  className="cb-pl-input min-h-10 w-full rounded-xl px-3 py-2 text-sm"
+                />
+                <input
+                  type="number"
+                  min={priceBounds.min}
+                  max={priceBounds.max}
+                  value={maxPrice ?? ""}
+                  onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : null)}
+                  placeholder={t("pages.shop.maxEgp")}
+                  className="cb-pl-input min-h-10 w-full rounded-xl px-3 py-2 text-sm"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={clearAll}
+                className={buttonClassName("outline", "min-h-10 w-full shrink-0 whitespace-nowrap lg:w-auto lg:px-5")}
+              >
+                {t("pages.shop.resetFilters")}
+              </button>
+            </div>
 
-        <div
-          className={cn(
-            "mb-6 flex gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:thin]",
-            "sm:flex-wrap sm:overflow-visible",
-            "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cb-peach-deep/45",
-          )}
-        >
-          {availableCategories.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setCat(c)}
+            <div
               className={cn(
-                "cb-pl-pill shrink-0 snap-start font-bold uppercase tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-caramel)] focus-visible:ring-offset-2",
-                cat === c && "is-active",
+                "cb-pl-shop-filters__row gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:thin]",
+                "sm:flex-wrap sm:overflow-visible",
+                "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cb-peach-deep/45",
               )}
-              data-active={cat === c ? "true" : undefined}
             >
-              {c === "All" ? t("pages.shop.categoryAll") : c}
-            </button>
-          ))}
-        </div>
+              {availableCategories.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCat(c)}
+                  className={cn(
+                    "cb-pl-pill shrink-0 snap-start font-bold uppercase tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-caramel)] focus-visible:ring-offset-2",
+                    cat === c && "is-active",
+                  )}
+                  data-active={cat === c ? "true" : undefined}
+                >
+                  {c === "All" ? t("pages.shop.categoryAll") : c}
+                </button>
+              ))}
+            </div>
 
-        <div className="mb-10 rounded-2xl bg-cb-surface p-4 ring-1 ring-cb-border/80">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-cb-text-strong">
-              {t("pages.shop.showing", { filtered: filtered.length, total: catalog.length })}
-            </p>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-cb-peach px-2.5 py-1 text-xs font-bold text-cb-text-strong ring-1 ring-cb-border">
-                {t("pages.shop.activeCount", { count: activeFilterCount })}
-              </span>
-              {activeFilterCount > 0 ? (
+            <div className="cb-pl-shop-filters__divider space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-cb-text-strong">
+                  {t("pages.shop.showing", { filtered: filtered.length, total: catalog.length })}
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-cb-peach px-2.5 py-1 text-xs font-bold text-cb-text-strong ring-1 ring-cb-border">
+                    {t("pages.shop.activeCount", { count: activeFilterCount })}
+                  </span>
+                  {activeFilterCount > 0 ? (
+                    <button
+                      type="button"
+                      onClick={clearAll}
+                      className="rounded-full px-2.5 py-1 text-xs font-bold text-cb-brand-600 ring-1 ring-cb-border transition hover:bg-cb-peach"
+                    >
+                      {t("pages.shop.clearAll")}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-cb-text">
                 <button
                   type="button"
-                  onClick={clearAll}
-                  className="rounded-full px-2.5 py-1 text-xs font-bold text-cb-terracotta-dark ring-1 ring-cb-border transition hover:bg-cb-peach"
+                  onClick={() => setOnlyBest((v) => !v)}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide ring-1 transition",
+                    onlyBest
+                      ? "bg-cb-brand-600 text-white ring-cb-brand-600"
+                      : "bg-cb-surface text-cb-text-strong ring-cb-border hover:bg-cb-peach",
+                  )}
                 >
-                  {t("pages.shop.clearAll")}
+                  {t("pages.shop.bestSellersOnly")}
                 </button>
-              ) : null}
+                <button
+                  type="button"
+                  onClick={() => setInStockOnly((v) => !v)}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide ring-1 transition",
+                    inStockOnly
+                      ? "bg-cb-brand-600 text-white ring-cb-brand-600"
+                      : "bg-cb-surface text-cb-text-strong ring-cb-border hover:bg-cb-peach",
+                  )}
+                >
+                  {t("pages.shop.inStockOnly")}
+                </button>
+                <div className="hidden h-5 w-px bg-cb-border/70 sm:block" aria-hidden />
+                {(["all", "bestseller", "new", "trending"] as const).map((b) => (
+                  <button
+                    key={b}
+                    type="button"
+                    onClick={() => setBadgeFilter(b)}
+                    className={cn(
+                      "rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide ring-1 transition",
+                      badgeFilter === b
+                        ? "bg-cb-brand-600 text-white ring-cb-brand-600"
+                        : "bg-cb-surface text-cb-text-strong ring-cb-border hover:bg-cb-peach",
+                    )}
+                  >
+                    {b === "all"
+                      ? t("pages.shop.allBadges")
+                      : b === "bestseller"
+                        ? t("product.badgeBestseller")
+                        : b === "new"
+                          ? t("product.badgeNew")
+                          : t("product.badgeTrending")}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-cb-text">
-            <button
-              type="button"
-              onClick={() => setOnlyBest((v) => !v)}
-              className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide ring-1 transition",
-                onlyBest
-                  ? "bg-cb-terracotta-dark text-white ring-cb-terracotta-dark"
-                  : "bg-cb-surface text-cb-text-strong ring-cb-border hover:bg-cb-peach",
-              )}
-            >
-              {t("pages.shop.bestSellersOnly")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setInStockOnly((v) => !v)}
-              className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide ring-1 transition",
-                inStockOnly
-                  ? "bg-cb-terracotta-dark text-white ring-cb-terracotta-dark"
-                  : "bg-cb-surface text-cb-text-strong ring-cb-border hover:bg-cb-peach",
-              )}
-            >
-              {t("pages.shop.inStockOnly")}
-            </button>
-            <div className="h-5 w-px bg-cb-border/70" aria-hidden />
-            {(["all", "bestseller", "new", "trending"] as const).map((b) => (
-              <button
-                key={b}
-                type="button"
-                onClick={() => setBadgeFilter(b)}
-                className={cn(
-                  "rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide ring-1 transition",
-                  badgeFilter === b
-                    ? "bg-cb-terracotta-dark text-white ring-cb-terracotta-dark"
-                    : "bg-cb-surface text-cb-text-strong ring-cb-border hover:bg-cb-peach",
-                )}
-              >
-                {b === "all"
-                  ? t("pages.shop.allBadges")
-                  : b === "bestseller"
-                    ? t("product.badgeBestseller")
-                    : b === "new"
-                      ? t("product.badgeNew")
-                      : t("product.badgeTrending")}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {loading ? (
           <div className="grid gap-6 py-8 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
@@ -539,6 +560,7 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
             </button>
           </div>
         ) : null}
+        </section>
 
       </div>
     </div>

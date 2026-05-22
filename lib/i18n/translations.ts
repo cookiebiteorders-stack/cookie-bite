@@ -390,6 +390,9 @@ export const translations: Record<Lang, Dictionary> = {
         trendingTitle: "What everyone’s biting",
         trendingSubtitle:
           "Picked from real orders and browsing — updated as Cookie Bite bakes.",
+        catalogEyebrow: "Full catalog",
+        catalogTitle: "All cookies",
+        catalogSubtitle: "Filter, sort, and shop every flavor in stock.",
       },
       contact: {
         eyebrow: "Contact",
@@ -1148,6 +1151,9 @@ export const translations: Record<Lang, Dictionary> = {
         trendingTitle: "ما يطلبه الجميع",
         trendingSubtitle:
           "مختار من الطلبات والتصفّح الحقيقي — يتحدّث مع كل دفعة نخبزها.",
+        catalogEyebrow: "الكتالوج الكامل",
+        catalogTitle: "كل الكوكيز",
+        catalogSubtitle: "صفِّ، رتّب، واشتري كل النكهات المتوفرة.",
       },
       contact: {
         eyebrow: "تواصل",

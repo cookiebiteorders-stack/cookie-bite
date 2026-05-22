@@ -552,7 +552,49 @@ html[dir="rtl"] .cb-pl-body {
   padding-block: 4rem;
 }
 
-/* ─── 15. Filter bar ─── */
+/* ─── 15. Shop filters (unified panel above product grid) ─── */
+.cb-pl-shop-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-radius: var(--radius-pl-lg);
+  border: 1px solid var(--color-border-soft);
+  background: var(--color-white);
+  padding: 1rem;
+  box-shadow: var(--shadow-pl-nav);
+}
+
+.cb-pl-shop-filters__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cb-pl-shop-filters__row--primary {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .cb-pl-shop-filters__row--primary {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cb-pl-shop-filters__row--primary {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.9fr) minmax(0, 0.9fr) auto;
+    align-items: center;
+  }
+}
+
+.cb-pl-shop-filters__divider {
+  border-block-start: 1px solid var(--color-border-soft);
+  padding-block-start: 0.75rem;
+}
+
+/* legacy alias */
 .cb-pl-filter-bar {
   background: var(--color-white);
   border-block-end: 1px solid var(--color-border-soft);
