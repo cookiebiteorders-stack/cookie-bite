@@ -97,7 +97,7 @@ export type ParsedAddress = NonNullable<z.infer<typeof profileFieldsSchema>["add
 
 /** عنوان كامل بما يكفي للحفظ في قاعدة البيانات (حقول not null) */
 export function hasMeaningfulAddress(
-  addr: CompleteProfileInput["address"],
+  addr: ParsedAddress | null | undefined,
 ): addr is ParsedAddress {
   if (!addr) return false;
   return Boolean(

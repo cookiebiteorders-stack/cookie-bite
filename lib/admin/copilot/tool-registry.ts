@@ -89,7 +89,7 @@ function toGeminiProperties(
   return out;
 }
 
-const MASTER_LIST = (masterTools as { tools: MasterToolDef[] }).tools;
+const MASTER_LIST = (masterTools as unknown as { tools: MasterToolDef[] }).tools;
 
 export const MASTER_TOOL_META: Record<string, MasterToolMeta> = Object.fromEntries(
   MASTER_LIST.map((t) => [
