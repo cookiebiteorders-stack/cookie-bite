@@ -83,6 +83,120 @@
   border-color: var(--cb-border);
 }
 
+/* أزرار لوحة الإدارة — زاهية وواضحة */
+.admin-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #ffab40 0%, #ff8c1a 35%, #ff6d00 100%) !important;
+  box-shadow:
+    0 4px 18px rgba(255, 109, 0, 0.48),
+    0 1px 0 rgba(255, 255, 255, 0.35) inset;
+  transition:
+    filter 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.admin-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.05) saturate(1.08);
+  box-shadow: 0 6px 22px rgba(249, 115, 22, 0.5);
+}
+
+.admin-btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.admin-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.admin-btn-outline,
+.admin-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+  border: 2px solid var(--cb-brand-300) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #ffedd5 100%) !important;
+  color: #9a3412 !important;
+  box-shadow: 0 2px 10px rgba(249, 115, 22, 0.16);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.admin-btn-outline:hover:not(:disabled),
+.admin-btn-secondary:hover:not(:disabled) {
+  background: var(--cb-brand-50) !important;
+  border-color: var(--cb-brand-500) !important;
+  color: var(--cb-brand-700) !important;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.18);
+}
+
+.admin-btn-outline:disabled,
+.admin-btn-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* منع أي override (مثل dark:bg-stone-900) يحوّل الأزرار إلى بني داكن */
+.admin-console button.admin-btn-outline,
+.admin-console button.admin-btn-secondary {
+  background: linear-gradient(180deg, #ffffff 0%, #ffedd5 100%) !important;
+  color: #9a3412 !important;
+  border-color: var(--cb-brand-300) !important;
+}
+
+html.dark .admin-console button.admin-btn-outline,
+html.dark .admin-console button.admin-btn-secondary,
+.dark .admin-console button.admin-btn-outline,
+.dark .admin-console button.admin-btn-secondary {
+  background: linear-gradient(180deg, #ffffff 0%, #ffedd5 100%) !important;
+  color: #9a3412 !important;
+}
+
+.admin-console button.admin-btn-primary {
+  color: #ffffff !important;
+}
+
+.admin-surface-accent {
+  background: linear-gradient(135deg, var(--cb-brand-500) 0%, var(--cb-brand-600) 100%);
+  color: var(--cb-on-brand);
+}
+
+.admin-surface-accent .text-stone-50,
+.admin-surface-accent .text-stone-100,
+.admin-surface-accent .text-stone-200 {
+  color: var(--cb-on-brand);
+}
+
+.admin-panel-tint {
+  background: color-mix(in oklab, var(--cb-brand-50) 88%, var(--cb-surface));
+  color: var(--cb-text-strong);
+}
+
+.admin-panel-tint .text-stone-100,
+.admin-panel-tint .text-stone-300 {
+  color: var(--cb-text);
+}
+
 .admin-console :where(a, button, input:not([type="hidden"]), select, textarea):focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--cb-luxury-gold) 32%, transparent);

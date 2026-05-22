@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
+import { APP_URL } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -8,11 +7,28 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin/", "/dashboard/", "/login/", "/api/", "/*.json$"],
+        disallow: [
+          "/admin/",
+          "/dashboard/",
+          "/login/",
+          "/api/",
+          "/*.json$",
+          "/checkout/",
+          "/cart",
+          "/account/",
+          "/order-confirmation",
+          "/p/",
+          "/sign-in",
+          "/sign-up",
+          "/sso-callback",
+          "/verify",
+          "/reset",
+          "/unsubscribe",
+          "/invoices/",
+        ],
       },
     ],
     sitemap: `${APP_URL}/sitemap.xml`,
     host: APP_URL,
   };
 }
-

@@ -218,7 +218,7 @@ export function ProductAssistantPanel({ canWrite }: { canWrite: boolean }) {
                 type="button"
                 disabled={!canWrite || creating}
                 onClick={() => void onCreateInCatalog()}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-amber-600 px-3 py-2 text-xs font-bold text-white shadow hover:bg-amber-700 disabled:opacity-50 min-[420px]:flex-none"
+                className="admin-btn-primary inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-50 min-[420px]:flex-none"
               >
                 <Sparkles className="h-3.5 w-3.5" aria-hidden />
                 {creating ? "جاري الإنشاء…" : "إنشاء في الكتالوج"}
@@ -245,7 +245,7 @@ export function ProductAssistantPanel({ canWrite }: { canWrite: boolean }) {
               type="button"
               disabled={!canWrite || sending || !input.trim()}
               onClick={() => void send()}
-              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-stone-900 px-3 py-2 text-white dark:bg-amber-600 disabled:opacity-40"
+              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-cb-brand-600 px-3 py-2 text-white hover:bg-cb-brand-700 disabled:opacity-40"
               aria-label="إرسال"
             >
               <Send className="h-4 w-4" aria-hidden />

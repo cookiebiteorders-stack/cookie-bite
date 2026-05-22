@@ -218,12 +218,18 @@ export default async function AccountPage() {
         : supabase
           .from("addresses")
           .select(
-            "id, label, recipient, phone, city, governorate, street, is_default",
+            "id, label, recipient, full_name, phone, city, area, governorate, street, is_default",
           )
           .eq("user_id", dbUser!.id)
           .order("created_at", { ascending: false })
           .limit(3)
-          .then((r) => r.data ?? []),
+          .then((r) =>
+            (r.data ?? []).map((row) => ({
+              ...row,
+              recipient: row.recipient ?? row.full_name ?? null,
+              city: row.city ?? row.area ?? null,
+            })),
+          ),
       !supabase
         ? Promise.resolve([])
         : supabase

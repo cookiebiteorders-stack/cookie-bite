@@ -7,8 +7,11 @@ import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { getSanityClient } from "@/lib/sanity/client";
 import { BLOG_POST_BY_SLUG_QUERY } from "@/lib/sanity/queries";
 import { portableBlocksToPlain } from "@/lib/sanity/block-to-plain";
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
+import {
+  buildArticleMetadata,
+  buildBreadcrumbJsonLd,
+  buildBlogPostingJsonLd,
+} from "@/lib/seo";
 
 type BlogDoc = {
   title_en: string;
@@ -19,6 +22,11 @@ type BlogDoc = {
   body_ar?: unknown;
   coverUrl?: string | null;
   _updatedAt?: string;
+  date_published?: string;
+  author_name?: string;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  focus_keyword?: string | null;
 };
 
 export async function generateMetadata({
@@ -33,20 +41,19 @@ export async function generateMetadata({
   }
   const doc = await client.fetch<BlogDoc | null>(BLOG_POST_BY_SLUG_QUERY, { slug });
   if (!doc) return { title: "Post not found | Cookie Bite" };
-  const title = `${doc.title_en} | Cookie Bite`;
-  const description = doc.excerpt_en ?? portableBlocksToPlain(doc.body_en).slice(0, 160);
-  return {
-    title,
+  const description =
+    doc.seo_description ??
+    doc.excerpt_en ??
+    portableBlocksToPlain(doc.body_en).slice(0, 160);
+  return buildArticleMetadata({
+    slug,
+    title: doc.seo_title ?? doc.title_en,
     description,
-    alternates: { canonical: `/blog/${slug}` },
-    openGraph: {
-      type: "article",
-      url: `${APP_URL}/blog/${slug}`,
-      title,
-      description,
-      images: doc.coverUrl ? [{ url: doc.coverUrl, width: 1200, height: 630 }] : undefined,
-    },
-  };
+    coverUrl: doc.coverUrl,
+    publishedAt: doc.date_published ?? doc._updatedAt,
+    authorName: doc.author_name,
+    focusKeyword: doc.focus_keyword ?? undefined,
+  });
 }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -59,21 +66,30 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   const bodyEn = portableBlocksToPlain(doc.body_en);
   const bodyAr = portableBlocksToPlain(doc.body_ar);
+  const wordCount = bodyEn.split(/\s+/).filter(Boolean).length;
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
+  const jsonLd = buildBlogPostingJsonLd({
     headline: doc.title_en,
-    inLanguage: ["en", "ar"],
+    slug,
+    description: doc.excerpt_en ?? bodyEn.slice(0, 200),
+    coverUrl: doc.coverUrl,
+    datePublished: doc.date_published ?? doc._updatedAt,
     dateModified: doc._updatedAt,
-    image: doc.coverUrl ?? `${APP_URL}/images/web-logo.png`,
-    publisher: { "@type": "Organization", name: "Cookie Bite", url: APP_URL },
-  };
+    authorName: doc.author_name,
+    wordCount,
+  });
+
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Blog", path: "/blog" },
+    { name: doc.title_en, path: `/blog/${slug}` },
+  ]);
 
   return (
     <article className="bg-cb-cream pb-24 pt-12">
       <div className="mx-auto max-w-3xl px-4 lg:px-6">
-        <JsonLdScript id={`blog-post-${slug}-jsonld`} json={JSON.stringify(jsonLd)} />
+        <JsonLdScript id={`blog-post-${slug}-jsonld`} json={jsonLd} />
+        <JsonLdScript id={`blog-post-${slug}-breadcrumb`} json={breadcrumbJsonLd} />
         <nav className="mb-6 text-sm text-cb-text-muted">
           <Link href="/blog" className="hover:text-cb-terracotta-dark">
             Blog
@@ -84,7 +100,11 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         <SectionHeading title={doc.title_en} subtitle={doc.title_ar} />
         {doc.coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- Sanity CDN URL dynamic
-          <img src={doc.coverUrl} alt="" className="mt-8 w-full rounded-2xl object-cover shadow-lg" />
+          <img
+            src={doc.coverUrl}
+            alt={doc.title_en}
+            className="mt-8 w-full rounded-2xl object-cover shadow-lg"
+          />
         ) : null}
         {doc.excerpt_en ? <p className="mt-8 text-lg text-cb-text">{doc.excerpt_en}</p> : null}
         {doc.excerpt_ar ? <p className="mt-4 text-lg text-cb-text-muted">{doc.excerpt_ar}</p> : null}

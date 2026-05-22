@@ -84,12 +84,12 @@ export function ExploreCategories() {
                         className="absolute inset-0 bg-gradient-to-t from-[color:var(--color-cream)]/90 via-transparent to-transparent"
                         aria-hidden
                       />
-                      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 text-[var(--color-text-primary)] sm:p-6">
+                      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 bg-gradient-to-t from-[color:var(--color-cream)]/95 via-[color:var(--color-cream)]/75 to-transparent p-5 sm:p-6">
                         <div className="max-w-[min(100%,20rem)]">
-                          <p className="font-serif text-xl font-semibold leading-tight sm:text-2xl">
+                          <p className="font-serif text-xl font-semibold leading-tight text-[var(--color-text-primary)] sm:text-2xl">
                             {title}
                           </p>
-                          <p className="mt-1.5 text-sm font-medium leading-snug text-white/95 [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]">
+                          <p className="mt-1.5 text-sm font-medium leading-snug text-[var(--color-text-secondary)]">
                             {subtitle}
                           </p>
                         </div>

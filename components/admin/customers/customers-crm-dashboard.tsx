@@ -199,7 +199,7 @@ export function CustomersCrmDashboard() {
             <button
               type="button"
               onClick={() => pushToast("إضافة عميل — استخدم لوحة المستخدمين أو الاستيراد.", "info")}
-              className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-amber-700"
+              className="admin-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
             >
               <UserPlus className="h-4 w-4 shrink-0" aria-hidden />
               إضافة عميل
@@ -209,7 +209,7 @@ export function CustomersCrmDashboard() {
               disabled={!canWrite}
               title={canWrite ? "استيراد عمود email إلى قائمة النشرة للحملات" : "صلاحية الكتابة مطلوبة"}
               onClick={() => importRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm disabled:opacity-50 dark:bg-stone-900"
+              className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-50"
             >
               <Upload className="h-4 w-4 shrink-0" aria-hidden />
               استيراد
@@ -228,7 +228,7 @@ export function CustomersCrmDashboard() {
             <button
               type="button"
               onClick={exportPage}
-              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+              className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
             >
               <Download className="h-4 w-4 shrink-0" aria-hidden />
               تصدير CSV
@@ -236,7 +236,7 @@ export function CustomersCrmDashboard() {
             <button
               type="button"
               onClick={() => pushToast("إرسال حملة — اربط بـ Resend/Sinch لاحقاً.", "info")}
-              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+              className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
             >
               <Mail className="h-4 w-4 shrink-0" aria-hidden />
               حملة
@@ -247,7 +247,7 @@ export function CustomersCrmDashboard() {
                 setAdvancedFiltersOpen(true);
                 pushToast("أنشئ شريحة من الفلاتر المتقدمة ثم احفظ القاعدة في الـ backend.", "info");
               }}
-              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+              className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
             >
               <Users className="h-4 w-4 shrink-0" aria-hidden />
               شريحة
@@ -255,7 +255,7 @@ export function CustomersCrmDashboard() {
             <button
               type="button"
               onClick={() => void loadCustomers()}
-              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+              className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
             >
               <Zap className="h-4 w-4 shrink-0" aria-hidden />
               مزامنة
@@ -263,7 +263,7 @@ export function CustomersCrmDashboard() {
             <button
               type="button"
               onClick={() => void loadCustomers()}
-              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+              className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
             >
               <RefreshCw className="h-4 w-4 shrink-0" aria-hidden />
               تحديث
@@ -272,7 +272,7 @@ export function CustomersCrmDashboard() {
               <button
                 type="button"
                 onClick={() => setQuickOpen((o) => !o)}
-                className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm dark:bg-stone-900"
+                className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
                 aria-expanded={quickOpen}
                 aria-haspopup="true"
               >

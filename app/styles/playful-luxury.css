@@ -8,9 +8,9 @@
   --color-cream: #fffaf4;
   --color-white: #ffffff;
   --color-cream-dark: #fff3e8;
-  --color-caramel: #e8782a;
-  --color-caramel-dark: #d4621f;
-  --color-soft-gold: #ffc83d;
+  --color-caramel: #f97316;
+  --color-caramel-dark: #ea580c;
+  --color-soft-gold: #fbbf24;
   --color-pastel-pink: #ffd6e8;
   --color-pastel-peach: #ffe4cc;
   --color-pastel-mint: #c8f7e4;
@@ -24,7 +24,7 @@
   --gradient-warm: linear-gradient(135deg, #fffaf4 0%, #ffe4cc 55%, #ffd6e8 100%);
   --gradient-blush: linear-gradient(135deg, #fffaf4 0%, #ffd6e8 50%, #ffe4cc 100%);
   --gradient-mint: linear-gradient(135deg, #fffaf4 0%, #c8f7e4 60%, #ffe4cc 100%);
-  --gradient-premium: linear-gradient(135deg, #ff9433 0%, #e8782a 45%, #ffc83d 100%);
+  --gradient-premium: linear-gradient(135deg, #fb923c 0%, #f97316 42%, #fbbf24 100%);
   --gradient-hero: linear-gradient(
     160deg,
     #fffaf4 0%,
@@ -72,16 +72,16 @@
   --caramel: var(--color-caramel);
 
   /* Sync legacy cb-* tokens (storefront) */
-  --cb-brand-50: #fff5eb;
-  --cb-brand-100: #ffe8d0;
-  --cb-brand-200: #ffd0a3;
-  --cb-brand-300: #ffb366;
-  --cb-brand-400: #ff9433;
-  --cb-brand-500: #e8782a;
-  --cb-brand-600: #d4621f;
-  --cb-brand-700: #b04e18;
-  --cb-brand-800: #8a3d14;
-  --cb-brand-900: #6b2f10;
+  --cb-brand-50: #fff7ed;
+  --cb-brand-100: #ffedd5;
+  --cb-brand-200: #fed7aa;
+  --cb-brand-300: #fdba74;
+  --cb-brand-400: #fb923c;
+  --cb-brand-500: #f97316;
+  --cb-brand-600: #ea580c;
+  --cb-brand-700: #c2410c;
+  --cb-brand-800: #9a3412;
+  --cb-brand-900: #7c2d12;
 
   --cb-cream: var(--color-cream);
   --cb-cream-2: var(--color-cream-dark);
@@ -109,6 +109,8 @@
   --cb-star: #ffc83d;
   --cb-rose: #ff5c8a;
   --cb-heart: #ff7a9a;
+  --primary: var(--color-caramel);
+  --primary-foreground: var(--color-text-on-dark);
   --cb-btn-primary-bg: var(--color-caramel);
   --cb-btn-primary-hover: var(--color-caramel-dark);
   --cb-btn-primary-text: var(--color-text-on-dark);
@@ -295,15 +297,16 @@ html[dir="rtl"] .cb-pl-body {
 }
 
 .cb-pl-announcement [class*="marquee"],
-.cb-pl-announcement .inline-flex {
-  color: var(--color-text-on-dark);
+.cb-pl-announcement .inline-flex,
+.cb-pl-announcement span {
+  color: var(--color-text-on-dark) !important;
   font-size: 0.8125rem;
   font-weight: 500;
   letter-spacing: 0.04em;
 }
 
 .cb-pl-announcement svg {
-  color: var(--color-text-on-dark);
+  color: var(--color-text-on-dark) !important;
 }
 
 /* ─── 2. Navbar (applied via header classes) ─── */

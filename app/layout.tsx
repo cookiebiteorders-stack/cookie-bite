@@ -144,6 +144,7 @@ export const metadata: Metadata = {
     url: "/",
     siteName: "Cookie Bite",
     locale: "en_US",
+    alternateLocale: ["ar_EG"],
     title: "Cookie Bite | Fresh Cookies & Gift Boxes in New Cairo",
     description:
       "Shop premium handcrafted cookies and gift boxes in New Cairo. Discover bestsellers, seasonal flavors, and same-day support.",
@@ -167,11 +168,6 @@ export const metadata: Metadata = {
   },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION,
-  },
-  other: {
-    language: "English",
-    "revisit-after": "7 days",
-    author: "Cookie Bite",
   },
   manifest: "/manifest.webmanifest",
   icons: {

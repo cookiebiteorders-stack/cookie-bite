@@ -11,9 +11,9 @@ import { ShareButtons } from "@/components/seo/share-buttons";
 import { PdpViewTracker } from "@/components/shop/pdp-view-tracker";
 import { getCartBasedRecommendations } from "@/lib/recommendations/fetch-recommendations";
 import { getActivePdpProduct, listAllActiveSlugs } from "@/lib/storefront/pdp-data";
+import { buildBreadcrumbJsonLd, buildProductJsonLd, buildProductMetadata } from "@/lib/seo";
 
 type Props = { params: Promise<{ slug: string }> };
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
 
 export const dynamic = "force-dynamic";
 
@@ -26,29 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const product = await getActivePdpProduct(slug);
   if (!product) return { title: "Product | Cookie Bite" };
-  return {
-    title: `${product.name} Cookies in New Cairo`,
-    description: `${product.description} Order ${product.name} online from Cookie Bite with premium ingredients and fast support in New Cairo.`,
-    keywords: [
-      `${product.name.toLowerCase()} cookie`,
-      "new cairo cookies",
-      "cookie delivery egypt",
-      "cookie bite product",
-    ],
-    alternates: { canonical: `/shop/${slug}` },
-    openGraph: {
-      url: `${APP_URL}/shop/${slug}`,
-      title: `${product.name} | Cookie Bite`,
-      description: `${product.description} Shop this Cookie Bite favorite in New Cairo.`,
-      images: [{ url: product.image, width: 1200, height: 630 }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${product.name} | Cookie Bite`,
-      description: `${product.description} Order now from Cookie Bite.`,
-      images: [product.image],
-    },
-  };
+  return buildProductMetadata(product, slug);
 }
 
 export default async function ProductPage({ params }: Props) {
@@ -62,26 +40,12 @@ export default async function ProductPage({ params }: Props) {
     3,
   );
 
-  const productJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    image: product.images?.length ? product.images : [product.image],
-    description: product.description,
-    sku: product.productUuid ?? product.id,
-    brand: { "@type": "Brand", name: "Cookie Bite" },
-    offers: {
-      "@type": "Offer",
-      url: `${APP_URL}/shop/${product.id}`,
-      priceCurrency: "EGP",
-      price: String(product.price),
-      itemCondition: "https://schema.org/NewCondition",
-      availability:
-        product.stock != null && product.stock <= 0
-          ? "https://schema.org/OutOfStock"
-          : "https://schema.org/InStock",
-    },
-  };
+  const productJsonLd = buildProductJsonLd(product, slug);
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: "Shop", path: "/shop" },
+    { name: product.name, path: `/shop/${slug}` },
+  ]);
 
   return (
     <div className="bg-cb-cream pb-20 pt-8">
@@ -89,7 +53,8 @@ export default async function ProductPage({ params }: Props) {
         <PdpViewTracker productUuid={product.productUuid} />
       ) : null}
       <div className="mx-auto max-w-7xl cb-gutter">
-        <JsonLdScript id={`pdp-product-jsonld-${product.id}`} json={JSON.stringify(productJsonLd)} />
+        <JsonLdScript id={`pdp-product-jsonld-${product.id}`} json={productJsonLd} />
+        <JsonLdScript id={`pdp-breadcrumb-jsonld-${product.id}`} json={breadcrumbJsonLd} />
         <Link
           href="/shop"
           className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-cb-terracotta-dark hover:underline"
@@ -149,8 +114,8 @@ export default async function ProductPage({ params }: Props) {
                 <li>
                   <strong className="text-cb-text-strong">Delivery:</strong> New Cairo &
                   surrounding areas — see{" "}
-                  <Link href="/help/faq" className="font-bold text-cb-terracotta-dark underline">
-                    FAQ
+                  <Link href="/delivery/new-cairo" className="font-bold text-cb-terracotta-dark underline">
+                    delivery guide
                   </Link>
                   .
                 </li>

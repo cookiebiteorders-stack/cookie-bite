@@ -1,30 +1,33 @@
 import Script from "next/script";
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
+import {
+  APP_URL,
+  BRAND_NAME,
+  brandSameAsLinks,
+  buildLocalBusinessJsonLd,
+} from "@/lib/seo";
+import { BRAND } from "@/lib/brand";
 
 export function SiteJsonLd() {
   const organization = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Cookie Bite",
+    name: BRAND_NAME,
     url: APP_URL,
     logo: `${APP_URL}/images/web-logo.png`,
-    sameAs: [
-      "https://www.instagram.com/cookiebite8/",
-      "https://x.com/cookiebite8",
-      "https://www.facebook.com/cookiebite8",
-    ],
+    sameAs: brandSameAsLinks(),
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer support",
-      email: "cookie.bite.orders@gmail.com",
+      telephone: `+${BRAND.whatsappE164}`,
+      email: BRAND.ordersEmail,
+      availableLanguage: ["English", "Arabic"],
     },
   };
 
   const website = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Cookie Bite",
+    name: BRAND_NAME,
     url: APP_URL,
     potentialAction: {
       "@type": "SearchAction",
@@ -35,6 +38,8 @@ export function SiteJsonLd() {
       "query-input": "required name=search_term_string",
     },
   };
+
+  const localBusiness = buildLocalBusinessJsonLd();
 
   return (
     <>
@@ -52,7 +57,13 @@ export function SiteJsonLd() {
       >
         {JSON.stringify(website)}
       </Script>
+      <Script
+        id="cookie-bite-localbusiness-jsonld"
+        type="application/ld+json"
+        strategy="afterInteractive"
+      >
+        {localBusiness}
+      </Script>
     </>
   );
 }
-

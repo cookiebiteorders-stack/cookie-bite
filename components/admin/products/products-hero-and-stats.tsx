@@ -65,11 +65,11 @@ function StatCard({ title, value, sub, trendPct, icon: Icon, seed, accent, delay
           {up ? "↑" : "↓"} {Math.abs(trendPct)}%
         </span>
       </div>
-      <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-[var(--caramel)]">{title}</p>
-      <p className="mt-1 font-serif text-2xl font-bold tracking-tight text-[var(--caramel)]">
+      <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-cb-brand-700">{title}</p>
+      <p className="mt-1 font-serif text-2xl font-bold tracking-tight text-cb-text-strong">
         {value}
       </p>
-      {sub ? <p className="mt-0.5 text-xs text-[var(--brown)]">{sub}</p> : null}
+      {sub ? <p className="mt-0.5 text-xs text-cb-text-muted">{sub}</p> : null}
       <MiniSparkline seed={seed} color={accent} className="mt-2 h-9 w-full" />
     </motion.div>
   );
@@ -170,10 +170,10 @@ export function ProductsHeroAndStats({ stats, online }: Props) {
               <TrendingUp className="h-7 w-7" aria-hidden />
             </motion.div>
             <div>
-              <h1 className="font-serif text-2xl font-bold tracking-tight text-[var(--caramel)] sm:text-3xl">
+              <h1 className="font-serif text-2xl font-bold tracking-tight text-cb-text-strong sm:text-3xl">
                 Product Management
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--brown)] sm:text-[15px]">
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cb-text sm:text-[15px]">
                 إدارة الكتالوج، المتغيرات، التسعير، عتبات المخزون، حالة النشر، SEO، والتحليلات — لوحة
                 تحكم على مستوى المؤسسات بتجربة مستخدم سلسة.
               </p>

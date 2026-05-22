@@ -13,9 +13,18 @@ import {
   updateUserProfile,
   upsertUserFromClerk,
 } from "@/lib/db/users";
+import {
+  buildAddressInsertRow,
+  normalizeAddressRow,
+} from "@/lib/db/addresses";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { tryNotifyStaffNewCustomer } from "@/lib/notifications/new-customer-staff-alert";
 import { bilingualError } from "@/lib/validations";
+
+function devDbDebug(message: string, hint?: string) {
+  if (process.env.NODE_ENV === "production") return undefined;
+  return { message, hint };
+}
 
 export async function GET() {
   const { userId } = await auth();
@@ -57,7 +66,7 @@ export async function GET() {
   return NextResponse.json({
     profile: dbUser,
     complete: isProfileComplete(dbUser),
-    default_address: defaultAddress ?? null,
+    default_address: normalizeAddressRow(defaultAddress ?? undefined),
   });
 }
 
@@ -116,7 +125,13 @@ export async function POST(req: NextRequest) {
     });
     if (!updated && hasAnyProfileFields(body)) {
       return NextResponse.json(
-        bilingualError("Could not save profile", "تعذّر حفظ الملف"),
+        {
+          ...bilingualError("Could not save profile", "تعذّر حفظ الملف"),
+          debug: devDbDebug(
+            "updateUserProfile returned no row",
+            "تحقق من SUPABASE_SERVICE_KEY وأعمدة users (full_name_en, phone, …)",
+          ),
+        },
         { status: 500 },
       );
     }
@@ -143,32 +158,31 @@ export async function POST(req: NextRequest) {
     const addr = body.address!;
     const lat = addr.latitude ?? 30.0444;
     const lng = addr.longitude ?? 31.2357;
+    const fallbackRecipient =
+      addr.recipient ?? dbUser.full_name_en ?? dbUser.full_name ?? "Customer";
+    const fallbackPhone = addr.phone ?? body.phone ?? "";
 
     const supabase = createSupabaseAdminClient();
     await supabase.from("addresses").update({ is_default: false }).eq("user_id", dbUser.id);
 
-    const { error: addrError } = await supabase.from("addresses").insert({
-      user_id: dbUser.id,
-      label: addr.label ?? "Home",
-      recipient: addr.recipient ?? dbUser.full_name_en ?? dbUser.full_name ?? "Customer",
-      phone: addr.phone ?? body.phone ?? "",
-      phone_secondary: addr.phone_secondary,
-      street: addr.street ?? "",
-      building: addr.building,
-      floor: addr.floor,
-      apartment: addr.apartment,
-      city: addr.city ?? "New Cairo",
-      governorate: addr.governorate ?? "Cairo",
-      delivery_notes: addr.delivery_notes,
-      latitude: lat,
-      longitude: lng,
-      is_default: true,
-    });
+    const { error: addrError } = await supabase
+      .from("addresses")
+      .insert(
+        buildAddressInsertRow(
+          dbUser.id,
+          addr,
+          { recipient: fallbackRecipient, phone: fallbackPhone },
+          { latitude: lat, longitude: lng },
+        ),
+      );
 
     if (addrError) {
       console.error("complete profile address insert", addrError);
       return NextResponse.json(
-        bilingualError("Could not save address", "تعذّر حفظ العنوان"),
+        {
+          ...bilingualError("Could not save address", "تعذّر حفظ العنوان"),
+          debug: devDbDebug(addrError.message, addrError.code ?? addrError.hint ?? undefined),
+        },
         { status: 500 },
       );
     }

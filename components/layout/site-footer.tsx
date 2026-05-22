@@ -52,6 +52,8 @@ export function SiteFooter() {
       items: [
         { href: "/help", label: t("nav.helpCenter") },
         { href: "/help/faq", label: t("nav.faq") },
+        { href: "/delivery/new-cairo", label: t("footer.deliveryNewCairo") },
+        { href: "/corporate-gifting", label: t("footer.corporateGifting") },
         { href: "/contact", label: t("footer.contactShipping") },
         { href: "/help/returns", label: t("footer.returnsRefunds") },
         { href: "/privacy", label: t("footer.privacyPolicy") },

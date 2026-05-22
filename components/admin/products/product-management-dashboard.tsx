@@ -230,10 +230,10 @@ export function ProductManagementDashboard() {
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-relaxed text-cb-text-muted">
             Manage catalog, variants, pricing, stock thresholds, publishing state, SEO, analytics, and inventory
-            operations — اختصارات: <kbd className="rounded border px-1 font-mono text-[10px] text-white">⌘K</kbd> أو{" "}
-            <kbd className="rounded border px-1 font-mono text-[10px] text-white">Ctrl+K</kbd> للأوامر،{" "}
-            <kbd className="rounded border px-1 font-mono text-[10px] text-white">/</kbd> للبحث،{" "}
-            <kbd className="rounded border px-1 font-mono text-[10px] text-white">N</kbd> لإضافة منتج.
+            operations — اختصارات:             <kbd className="rounded border border-cb-brand-200 bg-cb-brand-50 px-1 font-mono text-[10px] text-cb-brand-800">⌘K</kbd> أو{" "}
+            <kbd className="rounded border border-cb-brand-200 bg-cb-brand-50 px-1 font-mono text-[10px] text-cb-brand-800">Ctrl+K</kbd> للأوامر،{" "}
+            <kbd className="rounded border border-cb-brand-200 bg-cb-brand-50 px-1 font-mono text-[10px] text-cb-brand-800">/</kbd> للبحث،{" "}
+            <kbd className="rounded border border-cb-brand-200 bg-cb-brand-50 px-1 font-mono text-[10px] text-cb-brand-800">N</kbd> لإضافة منتج.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -241,7 +241,7 @@ export function ProductManagementDashboard() {
             type="button"
             disabled={!canWrite}
             onClick={openCreate}
-            className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-amber-700 focus-visible:outline focus-visible:ring-2 focus-visible:ring-amber-400 disabled:opacity-50"
+            className="admin-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold focus-visible:outline focus-visible:ring-2 focus-visible:ring-cb-brand-400 disabled:opacity-50"
           >
             <Plus className="h-4 w-4" aria-hidden />
             إضافة منتج
@@ -251,7 +251,7 @@ export function ProductManagementDashboard() {
             disabled={!canWrite}
             title={canWrite ? "استيراد CSV لتحديث المنتجات الموجودة (عمود id إلزامي)" : "صلاحية الكتابة مطلوبة"}
             onClick={() => importRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold shadow-sm disabled:opacity-50 dark:bg-stone-900"
+            className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-50"
           >
             <Upload className="h-4 w-4" aria-hidden />
             استيراد
@@ -270,7 +270,7 @@ export function ProductManagementDashboard() {
           <button
             type="button"
             onClick={exportAllPage}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold text-cb-text-strong shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900 dark:text-stone-100"
+            className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
           >
             <Download className="h-4 w-4" aria-hidden />
             تصدير CSV
@@ -278,7 +278,7 @@ export function ProductManagementDashboard() {
           <button
             type="button"
             onClick={() => void onSync()}
-            className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold text-cb-text-strong shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900 dark:text-stone-100"
+            className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
           >
             <RefreshCw className="h-4 w-4" aria-hidden />
             مزامنة
@@ -287,7 +287,7 @@ export function ProductManagementDashboard() {
             <button
               type="button"
               onClick={() => setSettingsOpen((o) => !o)}
-              className="inline-flex items-center gap-2 rounded-xl border border-cb-border bg-white px-3 py-2 text-xs font-bold text-cb-text-strong shadow-sm hover:bg-cb-surface-2 dark:bg-stone-900 dark:text-stone-100"
+              className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
               aria-expanded={settingsOpen}
               aria-haspopup="menu"
             >
@@ -353,7 +353,7 @@ export function ProductManagementDashboard() {
         onClick={openCreate}
         className={cn(
           "fixed bottom-[5.75rem] end-5 z-[44] flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-300/80 sm:bottom-24 sm:end-6 sm:h-14 sm:w-14",
-          "bg-amber-600 text-white shadow-xl hover:bg-amber-700 focus-visible:outline focus-visible:ring-2 focus-visible:ring-amber-300 disabled:opacity-40",
+          "admin-btn-primary shadow-xl focus-visible:outline focus-visible:ring-2 focus-visible:ring-cb-brand-300 disabled:opacity-40",
         )}
         aria-label="إضافة منتج سريعة"
       >

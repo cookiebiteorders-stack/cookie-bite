@@ -495,7 +495,7 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
               <select
                 disabled={!canWrite}
                 defaultValue=""
-                className="rounded-lg border border-cb-border bg-white px-2 py-1.5 text-xs font-bold dark:bg-stone-900"
+                className="rounded-lg border border-cb-border bg-white px-2 py-1.5 text-xs font-bold text-cb-text-strong dark:bg-stone-900"
                 onChange={(e) => {
                   const v = e.target.value;
                   if (!v) return;
@@ -512,7 +512,7 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
               <button
                 type="button"
                 disabled={!canWrite}
-                className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold shadow-sm dark:bg-stone-900"
+                className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-cb-text-strong shadow-sm dark:bg-stone-900"
                 onClick={() => void bulkPatchOrders(Array.from(selectedIds), { payment_status: "paid" })}
               >
                 تعيين مدفوع
@@ -520,14 +520,14 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
               <button
                 type="button"
                 disabled={!canWrite}
-                className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold shadow-sm dark:bg-stone-900"
+                className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-cb-text-strong shadow-sm dark:bg-stone-900"
                 onClick={() => void bulkPatchOrders(Array.from(selectedIds), { status: "shipped" })}
               >
                 تعيين شُحن
               </button>
               <button
                 type="button"
-                className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold shadow-sm dark:bg-stone-900"
+                className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-cb-text-strong shadow-sm dark:bg-stone-900"
                 onClick={() => exportCsv(orders.filter((o) => selectedIds.has(o.id)))}
               >
                 <Download className="me-1 inline h-3.5 w-3.5" />
@@ -536,7 +536,7 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
               <button
                 type="button"
                 disabled={!canWrite}
-                className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold shadow-sm dark:bg-stone-900"
+                className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-cb-text-strong shadow-sm dark:bg-stone-900"
                 onClick={() => {
                   pushToast("إشعار للعميل — اربط بقناة SMS/بريد لاحقاً", "info");
                 }}
@@ -576,13 +576,13 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
             </div>
           ))
         ) : orders.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-amber-300/80 bg-[rgb(51,0,0)] p-8 text-center dark:border-amber-800 dark:bg-[rgb(51,0,0)]">
+          <div className="rounded-2xl border border-dashed border-amber-300/80 bg-amber-50/90 p-8 text-center">
             <Package className="mx-auto h-10 w-10 text-amber-600" aria-hidden />
-            <h3 className="mt-3 font-serif text-lg font-bold text-stone-50 dark:text-stone-50">لا توجد طلبات</h3>
+            <h3 className="mt-3 font-serif text-lg font-bold text-cb-text-strong">لا توجد طلبات</h3>
             <p className="mt-2 text-sm text-cb-text-muted">جرّب توسيع نطاق البحث أو إزالة الفلاتر.</p>
             <button
               type="button"
-              className="mt-4 rounded-xl border border-cb-border px-4 py-2 text-sm font-bold"
+              className="admin-btn-outline mt-4 rounded-xl px-4 py-2 text-sm font-bold"
               onClick={() => resetFilters()}
             >
               مسح الفلاتر

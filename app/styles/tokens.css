@@ -16,16 +16,16 @@
      Cookie Bite — Unified Brand Palette (single source of truth)
      Vibrant cookie-orange from official logo family
      ───────────────────────────────────────────────────────── */
-  --cb-brand-50: #fff5eb;
-  --cb-brand-100: #ffe8d0;
-  --cb-brand-200: #ffd0a3;
-  --cb-brand-300: #ffb366;
-  --cb-brand-400: #ff9433;
-  --cb-brand-500: #e8782a; /* primary */
-  --cb-brand-600: #d4621f;
-  --cb-brand-700: #b04e18;
-  --cb-brand-800: #8a3d14;
-  --cb-brand-900: #6b2f10;
+  --cb-brand-50: #fff7ed;
+  --cb-brand-100: #ffedd5;
+  --cb-brand-200: #fed7aa;
+  --cb-brand-300: #fdba74;
+  --cb-brand-400: #fb923c;
+  --cb-brand-500: #f97316; /* primary — زاهي */
+  --cb-brand-600: #ea580c;
+  --cb-brand-700: #c2410c;
+  --cb-brand-800: #9a3412;
+  --cb-brand-900: #7c2d12;
 
   /* Master palette */
   --cream: #fffaf4;
@@ -105,8 +105,10 @@
 
   /* أسماء دلالية موحّدة (متجر + لوحة الإدارة) */
   --card: var(--cb-surface-elevated);
-  --primary: var(--cb-dark-accent);
+  --primary: var(--cb-brand-500);
   --secondary: var(--cb-cream-2);
+  --cb-on-dark: #fffaf4;
+  --cb-on-brand: #ffffff;
   --muted: var(--cb-cream-2);
   --border: var(--cb-border);
   --shadow: var(--shadow-card);

@@ -36,19 +36,19 @@ export function OrdersAnalyticsStrip({ orders, stats }: Props) {
         "grid gap-3 rounded-2xl border border-cb-border/80 bg-cb-surface-elevated/90 p-4 shadow-sm backdrop-blur-md lg:grid-cols-3",
       )}
     >
-      <div className="rounded-xl border border-cb-border/80 bg-[rgb(51,0,0)] p-4 dark:bg-[rgb(51,0,0)]">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-[var(--caramel)]">
-          <Clock className="h-4 w-4 text-amber-600" aria-hidden />
+      <div className="admin-panel-tint rounded-xl border border-cb-brand-200/60 p-4">
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-cb-brand-700">
+          <Clock className="h-4 w-4 text-cb-brand-600" aria-hidden />
           طلبات الصفحة (قيمة)
         </div>
         <ul className="mt-3 space-y-2 text-sm">
           {topSkus.length === 0 ? (
-            <li className="text-stone-300">لا بيانات في الصفحة الحالية.</li>
+            <li className="text-cb-text-muted">لا بيانات في الصفحة الحالية.</li>
           ) : (
             topSkus.map(([code, v]) => (
-              <li key={code} className="flex justify-between gap-2 text-sm text-stone-100">
+              <li key={code} className="flex justify-between gap-2 text-sm text-cb-text-strong">
                 <span className="truncate font-mono text-xs">{code}</span>
-                <span className="shrink-0 text-xs text-stone-300">{v.toLocaleString("ar-EG")} ج.م</span>
+                <span className="shrink-0 text-xs text-cb-text-muted">{v.toLocaleString("ar-EG")} ج.م</span>
               </li>
             ))
           )}

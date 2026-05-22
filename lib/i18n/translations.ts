@@ -650,6 +650,46 @@ export const translations: Record<Lang, Dictionary> = {
             q: "How do I track my order?",
             a: "After checkout you’ll receive confirmation by email. For quick help, message us on WhatsApp at {phone}.",
           },
+          "5": {
+            q: "How long does delivery take in New Cairo?",
+            a: "Most New Cairo orders are scheduled within 1–2 days depending on zone and batch capacity. Contact us on WhatsApp at {phone} for same-day availability.",
+          },
+          "6": {
+            q: "What payment methods do you accept?",
+            a: "We accept card payments online and cash on delivery where available. See our payments help page for the latest options in your zone.",
+          },
+          "7": {
+            q: "Do you offer cash on delivery (COD)?",
+            a: "COD may be available for select New Cairo zones. The checkout page will show eligible methods for your address.",
+          },
+          "8": {
+            q: "What allergens are in your cookies?",
+            a: "Our cookies typically contain gluten, dairy, and eggs. Some flavors include nuts or chocolate. Full ingredient lists are on packaging — see our allergens guide for details.",
+          },
+          "9": {
+            q: "How should I store fresh cookies?",
+            a: "Keep cookies in an airtight container at room temperature. Enjoy within a few days for the best texture. Refrigeration can dry some flavors.",
+          },
+          "10": {
+            q: "What is the shelf life of Cookie Bite cookies?",
+            a: "Best enjoyed within 3–5 days of delivery when stored properly. Gift boxes are packed as close to dispatch as possible.",
+          },
+          "11": {
+            q: "Can I place corporate or bulk gift orders?",
+            a: "Yes — we support corporate gifting, events, and bulk orders with branded packaging options. Visit our corporate gifting page or contact us for a quote.",
+          },
+          "12": {
+            q: "Can I request custom cookie flavors or branding?",
+            a: "Custom batches and branded sleeves are available for larger orders. Share your date, quantity, and branding needs via our contact form.",
+          },
+          "13": {
+            q: "What is your returns policy?",
+            a: "Cookies are perishable. If your order arrives damaged or incorrect, contact us within 24 hours with photos. See our returns page for full details.",
+          },
+          "14": {
+            q: "Which compounds and areas do you deliver to?",
+            a: "We deliver across New Cairo and nearby zones from {location}. See our delivery areas page for popular compounds, or message us on WhatsApp at {phone} to confirm your address.",
+          },
         },
       },
       returns: {
@@ -687,6 +727,8 @@ export const translations: Record<Lang, Dictionary> = {
       visit: "Visit",
       hours: "Hours",
       contactShipping: "Contact & shipping",
+      deliveryNewCairo: "Delivery in New Cairo",
+      corporateGifting: "Corporate gifting",
       returnsRefunds: "Returns & refunds",
       privacyPolicy: "Privacy policy",
       termsConditions: "Terms & conditions",
@@ -1364,6 +1406,46 @@ export const translations: Record<Lang, Dictionary> = {
             q: "كيف أتتبع طلبي؟",
             a: "بعد الدفع ستصلك رسالة تأكيد بالبريد. للمساعدة السريعة راسلنا على واتساب {phone}.",
           },
+          "5": {
+            q: "كم يستغرق التوصيل في القاهرة الجديدة؟",
+            a: "أغلب طلبات القاهرة الجديدة تُجدول خلال 1–2 يومًا حسب المنطقة والسعة. راسلنا على واتساب {phone} لمعرفة توفر نفس اليوم.",
+          },
+          "6": {
+            q: "ما طرق الدفع المتاحة؟",
+            a: "نقبل الدفع بالبطاقة أونلاين والدفع عند الاستلام في مناطق محددة. راجع صفحة المدفوعات لأحدث الخيارات في منطقتك.",
+          },
+          "7": {
+            q: "هل يتوفر الدفع عند الاستلام؟",
+            a: "قد يتوفر الدفع عند الاستلام في مناطق مختارة بالقاهرة الجديدة. ستظهر الطرق المتاحة عند إدخال عنوانك في الدفع.",
+          },
+          "8": {
+            q: "ما مسببات الحساسية في الكوكيز؟",
+            a: "تحتوي كوكيزنا عادةً على غلوتين وألبان وبيض. بعض النكهات تتضمن مكسرات أو شوكولاتة. القائمة الكاملة على التغليف — راجع دليل مسببات الحساسية.",
+          },
+          "9": {
+            q: "كيف أحفظ الكوكيز الطازجة؟",
+            a: "احفظها في حاوية محكمة في درجة حرارة الغرفة. استمتع خلال أيام قليلة لأفضل قوام. التبريد قد يجفف بعض النكهات.",
+          },
+          "10": {
+            q: "ما مدة صلاحية الكوكيز؟",
+            a: "الأفضل خلال 3–5 أيام من التوصيل عند التخزين الصحيح. صناديق الهدايا تُعبأ قرب موعد الإرسال.",
+          },
+          "11": {
+            q: "هل تقدمون طلبات شركات أو هدايا بالجملة؟",
+            a: "نعم — ندعم هدايا الشركات والفعاليات والطلبات الكبيرة مع تغليف بعلامتكم. زر صفحة هدايا الشركات أو تواصل معنا للعرض.",
+          },
+          "12": {
+            q: "هل يمكن طلب نكهات أو علامة تجارية مخصصة؟",
+            a: "دفعات مخصصة وأغلفة بعلامتكم متاحة للطلبات الأكبر. أرسل التاريخ والكمية ومتطلبات العلامة عبر نموذج التواصل.",
+          },
+          "13": {
+            q: "ما سياسة الاسترجاع؟",
+            a: "الكوكيز قابلة للتلف. إن وصل طلب تالف أو خاطئ، تواصل خلال 24 ساعة مع صور. راجع صفحة الاسترجاع للتفاصيل.",
+          },
+          "14": {
+            q: "ما المناطق والكمبوندات التي توصّلون إليها؟",
+            a: "نوصّل في القاهرة الجديدة والمناطق القريبة من {location}. راجع صفحة مناطق التوصيل أو راسلنا على واتساب {phone} لتأكيد عنوانك.",
+          },
         },
       },
       returns: {
@@ -1401,6 +1483,8 @@ export const translations: Record<Lang, Dictionary> = {
       visit: "زورنا",
       hours: "المواعيد",
       contactShipping: "التواصل والشحن",
+      deliveryNewCairo: "التوصيل في القاهرة الجديدة",
+      corporateGifting: "هدايا الشركات",
       returnsRefunds: "الاسترجاع والاسترداد",
       privacyPolicy: "سياسة الخصوصية",
       termsConditions: "الشروط والأحكام",

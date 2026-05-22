@@ -22,13 +22,9 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import type { UserRole } from "@/lib/admin/rbac";
 import { buildIlikeOrClause } from "@/lib/security/sanitize-filter";
-import {
-  create_discount,
-  create_product,
-  delete_product,
-  update_order_status,
-  update_product,
-} from "@/lib/admin/copilot/write-handlers";
+import { create_discount, update_order_status } from "@/lib/admin/copilot/write-handlers";
+import { masterToolsAsGemini, resolveToolName } from "@/lib/admin/copilot/tool-registry";
+import { OPERATOR_TOOL_HANDLERS, list_products } from "@/lib/admin/copilot/operator-handlers";
 
 /* -------------------------------------------------------------------------- *
  * Helpers                                                                     *
@@ -587,6 +583,7 @@ const BOOL = "BOOLEAN";
 const OBJ = "OBJECT";
 
 export const TOOL_DECLARATIONS = [
+  ...masterToolsAsGemini(),
   {
     name: "get_dashboard_summary",
     description:
@@ -616,20 +613,6 @@ export const TOOL_DECLARATIONS = [
       properties: {
         id: { type: STR },
         order_number: { type: STR },
-      },
-    },
-  },
-  {
-    name: "search_products",
-    description:
-      "Search the product catalogue. Use 'low_stock_threshold' to surface products at or below a stock level (e.g. 5).",
-    parameters: {
-      type: OBJ,
-      properties: {
-        query: { type: STR, description: "Name substring." },
-        low_stock_threshold: { type: NUM, description: "Show only products with stock <= this number." },
-        only_active: { type: BOOL, description: "Default true. Set false to include archived products." },
-        limit: { type: NUM },
       },
     },
   },
@@ -725,65 +708,6 @@ export const TOOL_DECLARATIONS = [
     },
   },
   {
-    name: "create_product",
-    description:
-      "CREATE a new product in the catalogue. Execute directly when the admin asks to add a product. If name/price/description are missing, generate premium marketing copy (EN+AR), sensible EGP price by category, badges, and seasons. Owner/admin only.",
-    parameters: {
-      type: OBJ,
-      properties: {
-        name: { type: STR, description: "Product name (marketing-ready)." },
-        theme: { type: STR, description: "If name omitted, e.g. 'luxury chocolate' → auto name." },
-        price_egp: { type: NUM },
-        description_en: { type: STR },
-        description_ar: { type: STR },
-        category: { type: STR },
-        badges: { type: STR, description: "Comma-separated or array: featured, new, bestseller" },
-        seasons: { type: STR },
-        stock: { type: NUM },
-        sku: { type: STR },
-        slug: { type: STR },
-        is_active: { type: BOOL },
-        image_prompt: { type: STR, description: "Suggested AI image prompt if no image uploaded." },
-      },
-    },
-  },
-  {
-    name: "update_product",
-    description:
-      "UPDATE an existing product — change only the fields provided (price, name, descriptions, stock, category, badges). Identify by product_id or query (name search). Owner/admin only.",
-    parameters: {
-      type: OBJ,
-      properties: {
-        product_id: { type: STR },
-        query: { type: STR, description: "Name substring if id unknown." },
-        name: { type: STR },
-        price_egp: { type: NUM },
-        description_en: { type: STR },
-        description_ar: { type: STR },
-        stock: { type: NUM },
-        category: { type: STR },
-        badges: { type: STR },
-        seasons: { type: STR },
-        slug: { type: STR },
-        is_active: { type: BOOL },
-        compare_price_egp: { type: NUM },
-      },
-    },
-  },
-  {
-    name: "delete_product",
-    description:
-      "DANGEROUS: Permanently delete a product. First call returns dry_run; execute ONLY with confirm:true after explicit admin approval. Owner/admin only.",
-    parameters: {
-      type: OBJ,
-      properties: {
-        product_id: { type: STR },
-        query: { type: STR },
-        confirm: { type: BOOL },
-      },
-    },
-  },
-  {
     name: "update_order_status",
     description:
       "Update order status: pending → processing → shipped → delivered (or cancelled/refunded). Use order_id or order_number. Cancellation requires confirm:true. Owner/admin only.",
@@ -825,7 +749,7 @@ export const TOOL_HANDLERS: Record<string, Handler> = {
   get_dashboard_summary,
   search_orders,
   get_order_details,
-  search_products,
+  search_products: list_products,
   search_customers,
   get_top_products,
   get_sales_report,
@@ -833,11 +757,9 @@ export const TOOL_HANDLERS: Record<string, Handler> = {
   list_recent_audit_logs,
   cancel_order,
   update_product_stock,
-  create_product,
-  update_product,
-  delete_product,
   update_order_status,
   create_discount,
+  ...OPERATOR_TOOL_HANDLERS,
 };
 
 export type CopilotToolCall = {
@@ -852,7 +774,8 @@ export async function runTool(
   args: Record<string, unknown>,
   actor: CopilotToolActor,
 ): Promise<CopilotToolCall> {
-  const handler = TOOL_HANDLERS[name];
+  const resolved = resolveToolName(name);
+  const handler = TOOL_HANDLERS[resolved] ?? TOOL_HANDLERS[name];
   const start = Date.now();
   if (!handler) {
     return {
@@ -868,5 +791,5 @@ export async function runTool(
   } catch (e) {
     result = { warning: e instanceof Error ? e.message : "tool failed" };
   }
-  return { name, args: safe(args, {}), result, ms: Date.now() - start };
+  return { name: resolved, args: safe(args, {}), result, ms: Date.now() - start };
 }

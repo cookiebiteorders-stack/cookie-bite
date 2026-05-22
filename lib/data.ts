@@ -86,14 +86,14 @@ export const CATEGORY_CARDS = [
     subtitle: "Timeless flavors",
     image:
       "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=800&q=80",
-    href: "/our-cookies#classic",
+    href: "/collections/classic",
   },
   {
     title: "Seasonal Specials",
     subtitle: "Limited batches",
     image:
       "https://images.unsplash.com/photo-1602351447937-745cb720612f?auto=format&fit=crop&w=800&q=80",
-    href: "/shop?cat=Seasonal",
+    href: "/collections/seasonal",
   },
   {
     title: "Gifts & Occasions",

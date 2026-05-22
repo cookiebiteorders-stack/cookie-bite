@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { bilingualError } from "@/lib/validations";
+import { loadOperatorMemory } from "@/lib/admin/copilot/memory";
 import { buildCopilotSystemPrompt, type CopilotPromptContext } from "@/lib/admin/copilot/system-prompt";
 import { runCopilot } from "@/lib/admin/copilot/runner";
 import type { CopilotToolActor } from "@/lib/admin/copilot/tools";
@@ -145,6 +146,8 @@ export async function POST(req: NextRequest) {
   const snapshot = await loadLiveSnapshot();
   const adminFirstName = (actor.email?.split("@")[0] ?? actor.role).split(/[._-]/)[0];
 
+  const operatorMemory = await loadOperatorMemory(actor.clerk_user_id);
+
   const systemInstruction = buildCopilotSystemPrompt({
     today: new Date().toISOString().slice(0, 10),
     adminFirstName,
@@ -153,6 +156,7 @@ export async function POST(req: NextRequest) {
     currentPath,
     snapshot,
     preferredLanguage: language,
+    operatorMemory,
   });
 
   try {

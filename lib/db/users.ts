@@ -105,12 +105,12 @@ export async function updateUserProfile(
     .update(patch)
     .eq("id", userId)
     .select("*")
-    .single();
+    .maybeSingle();
   if (error) {
-    console.error("updateUserProfile error", error);
+    console.error("updateUserProfile error", error.message, error.code, error.details);
     return null;
   }
-  return data as UserRow;
+  return (data as UserRow) ?? null;
 }
 
 export async function getUserByClerkId(clerkUserId: string): Promise<UserRow | null> {

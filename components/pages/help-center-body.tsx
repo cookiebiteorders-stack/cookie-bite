@@ -72,9 +72,9 @@ type Article = {
 const ARTICLES: Article[] = [
   // Orders & delivery
   { key: "trackOrder", category: "orders", href: "/account", keywords: "track order shipment تتبع شحنة طلب" },
-  { key: "deliveryZones", category: "orders", href: "/help/faq", keywords: "delivery zone area cairo توصيل منطقة قاهرة" },
-  { key: "freeShipping", category: "orders", href: "/help/faq", keywords: "free delivery threshold مجاني شحن حد" },
-  { key: "deliveryTime", category: "orders", href: "/help/faq", keywords: "delivery time how long توصيل وقت مدة" },
+  { key: "deliveryZones", category: "orders", href: "/delivery/areas", keywords: "delivery zone area cairo توصيل منطقة قاهرة" },
+  { key: "freeShipping", category: "orders", href: "/help/delivery", keywords: "free delivery threshold مجاني شحن حد" },
+  { key: "deliveryTime", category: "orders", href: "/help/delivery", keywords: "delivery time how long توصيل وقت مدة" },
   { key: "changeAddress", category: "orders", href: "/contact", keywords: "change address edit عنوان تعديل" },
   { key: "cancelOrder", category: "orders", href: "/contact", keywords: "cancel order إلغاء طلب" },
   // Returns
@@ -88,19 +88,19 @@ const ARTICLES: Article[] = [
   { key: "socialLogin", category: "account", href: "/sign-in", keywords: "google apple social oauth جوجل آبل" },
   { key: "updateProfile", category: "account", href: "/account/settings", keywords: "profile update edit ملف تحديث" },
   // Payment
-  { key: "paymentMethods", category: "payment", href: "/help/faq", keywords: "payment cards visa mastercard دفع بطاقة فيزا" },
-  { key: "codAvailable", category: "payment", href: "/help/faq", keywords: "cash delivery cod نقدي عند استلام" },
+  { key: "paymentMethods", category: "payment", href: "/help/payments", keywords: "payment cards visa mastercard دفع بطاقة فيزا" },
+  { key: "codAvailable", category: "payment", href: "/help/payments", keywords: "cash delivery cod نقدي عند استلام" },
   { key: "cardDeclined", category: "payment", href: "/contact", keywords: "card declined failed بطاقة رفض فشل" },
   { key: "downloadInvoice", category: "payment", href: "/account", keywords: "invoice receipt download فاتورة إيصال تنزيل" },
   // Products
   { key: "ingredients", category: "products", href: "/our-cookies", keywords: "ingredients butter chocolate مكونات زبدة شوكولاتة" },
-  { key: "allergens", category: "products", href: "/our-cookies", keywords: "allergen nut gluten حساسية مكسرات جلوتين" },
+  { key: "allergens", category: "products", href: "/help/allergens", keywords: "allergen nut gluten حساسية مكسرات جلوتين" },
   { key: "storage", category: "products", href: "/help/faq", keywords: "storage store keep تخزين حفظ" },
   { key: "shelfLife", category: "products", href: "/help/faq", keywords: "fresh shelf life طزاج صلاحية" },
   // Gifting
-  { key: "giftNotes", category: "gifting", href: "/help/faq", keywords: "gift note handwritten ملاحظة هدية خط يد" },
-  { key: "giftBoxes", category: "gifting", href: "/gift-box", keywords: "gift box set صندوق هدية" },
-  { key: "corporate", category: "gifting", href: "/contact", keywords: "corporate bulk شركات كميات" },
+  { key: "giftNotes", category: "gifting", href: "/help/gifting", keywords: "gift note handwritten ملاحظة هدية خط يد" },
+  { key: "giftBoxes", category: "gifting", href: "/help/gifting", keywords: "gift box set صندوق هدية" },
+  { key: "corporate", category: "gifting", href: "/corporate-gifting", keywords: "corporate bulk شركات كميات" },
   { key: "customCookies", category: "gifting", href: "/contact", keywords: "custom design تصميم مخصص" },
 ];
 

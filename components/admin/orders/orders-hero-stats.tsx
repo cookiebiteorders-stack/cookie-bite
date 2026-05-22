@@ -60,7 +60,7 @@ function StatCard({ title, value, sub, trend, icon: Icon, seed, accent, wrap, de
         <div
           className={cn(
             "flex h-10 w-10 items-center justify-center rounded-xl border border-cb-border/80 bg-cb-surface/80 text-amber-800 dark:text-amber-200",
-            invertBodyText && !iconBoxClass && "border-white/25 bg-white/15 text-amber-200",
+            invertBodyText && !iconBoxClass && "border-white/25 bg-white/15 text-white",
             iconBoxClass,
           )}
           aria-hidden
@@ -85,7 +85,7 @@ function StatCard({ title, value, sub, trend, icon: Icon, seed, accent, wrap, de
       <p
         className={cn(
           "mt-3 text-[11px] font-bold uppercase tracking-wide",
-          invertBodyText ? "text-[var(--caramel)]" : "text-stone-800 dark:text-stone-200",
+          invertBodyText ? "text-white/90" : "text-stone-800 dark:text-stone-200",
         )}
       >
         {title}
@@ -93,13 +93,13 @@ function StatCard({ title, value, sub, trend, icon: Icon, seed, accent, wrap, de
       <p
         className={cn(
           "mt-1 font-serif text-2xl font-bold tracking-tight",
-          invertBodyText ? "text-[var(--caramel)]" : "text-stone-950 dark:text-white",
+          invertBodyText ? "text-white" : "text-stone-950 dark:text-white",
         )}
       >
         {value}
       </p>
       {sub ? (
-        <p className={cn("mt-0.5 text-xs", invertBodyText ? "text-[var(--brown)]" : "text-stone-700 dark:text-stone-300")}>{sub}</p>
+        <p className={cn("mt-0.5 text-xs", invertBodyText ? "text-white/80" : "text-stone-700 dark:text-stone-300")}>{sub}</p>
       ) : null}
       <MiniSparkline seed={seed} color={accent} className="mt-2 h-9 w-full" />
     </motion.div>
@@ -124,7 +124,7 @@ export function OrdersHeroStats({ stats, online }: Props) {
       icon: Package,
       seed: stats.pending + 2,
       accent: "#ca8a04",
-      wrap: "border-amber-200/80 bg-[rgb(51,0,0)] dark:border-amber-900/40",
+      wrap: "border-amber-300/80 bg-gradient-to-br from-cb-brand-500 to-cb-brand-600 dark:border-amber-900/40",
       delay: 0,
       invertBodyText: true,
     },
@@ -205,7 +205,7 @@ export function OrdersHeroStats({ stats, online }: Props) {
       accent: "#b45309",
       wrap: "border-amber-200/80 bg-amber-50/95 dark:border-amber-900/40 dark:bg-amber-950/35",
       delay: 0.28,
-      iconBoxClass: "bg-[rgb(51,0,0)]",
+      iconBoxClass: "border-amber-200 bg-amber-100 text-amber-800",
     },
   ];
 
@@ -216,7 +216,7 @@ export function OrdersHeroStats({ stats, online }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
         className={cn(
-          "relative overflow-hidden rounded-2xl border border-cb-border/80 bg-[rgb(51,0,0)] p-6 shadow-[var(--shadow-editorial)] sm:p-8",
+          "admin-hero-surface relative overflow-hidden rounded-2xl border border-cb-border/80 p-6 shadow-[var(--shadow-editorial)] sm:p-8",
         )}
       >
         <div className="pointer-events-none absolute -right-16 -top-12 h-48 w-48 rounded-full bg-amber-300/16 blur-3xl dark:bg-amber-900/15" aria-hidden />
@@ -226,15 +226,15 @@ export function OrdersHeroStats({ stats, online }: Props) {
             <motion.div
               whileHover={reduceMotion ? undefined : { scale: 1.04, rotate: [-1.5, 1.5, 0] }}
               transition={{ type: "spring", stiffness: 380, damping: 18 }}
-              className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-amber-200 shadow-sm backdrop-blur-sm"
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-cb-border bg-white/90 text-amber-700 shadow-sm dark:bg-stone-900/80 dark:text-amber-300"
             >
               <Package className="h-7 w-7" aria-hidden />
             </motion.div>
             <div>
-              <h1 className="font-serif text-2xl font-bold tracking-tight text-stone-50 sm:text-3xl">
+              <h1 className="font-serif text-2xl font-bold tracking-tight text-cb-text-strong sm:text-3xl">
                 Order Operations Board
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-200 sm:text-[15px]">
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cb-text sm:text-[15px]">
                 إدارة طابور الطلبات المباشر، المدفوعات، الشحن، التنفيذ، طلبات العملاء، والعمليات الجماعية — لوحة عمليات
                 على مستوى المؤسسات.
               </p>

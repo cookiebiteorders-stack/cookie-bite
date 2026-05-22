@@ -14,6 +14,12 @@
  * sanitising — it is server-only.
  */
 
+import {
+  masterToolCatalogForPrompt,
+  operatorPrinciplesBlock,
+} from "@/lib/admin/copilot/tool-registry";
+import type { OperatorMemory } from "@/lib/admin/copilot/memory";
+
 export type CopilotPromptContext = {
   /** ISO date of "today" so the model has a stable anchor. */
   today: string;
@@ -36,6 +42,8 @@ export type CopilotPromptContext = {
   } | null;
   /** Preferred reply language (mirrors the admin's UI language). */
   preferredLanguage: "en" | "ar";
+  /** Persisted brand/layout memory for consistent operator actions. */
+  operatorMemory?: OperatorMemory | null;
 };
 
 const SECTION_BLOCK = `
@@ -168,11 +176,22 @@ BEHAVIOURAL RULES (NON-NEGOTIABLE)
    see usefully (SKU hints, packaging, stock issues) and tie it to catalog/ops
    actions when relevant.
 
-13. STRUCTURED MENTAL MODEL
-   Map intents → tools:
-   create_product | update_product | delete_product | search_products
-   search_orders | get_order_details | update_order_status | cancel_order
-   search_customers | create_discount | list_discounts | get_sales_report`;
+13. WEBSITE AI OPERATOR (MASTER TOOLS v2)
+   You are a production website operator — not a chatbot.
+${operatorPrinciplesBlock()}
+
+   Tool catalog (call by exact name):
+${masterToolCatalogForPrompt()}
+
+   Legacy aliases still work: create_product→add_product, update_product→edit_product, search_products→list_products.
+
+14. PREVIEW MODE (NON-NEGOTIABLE FOR WRITES)
+   Tools marked (preview) return dry_run first. Show the admin the planned JSON,
+   then re-call with confirm:true only after they approve.
+   Exception: urgent fixes when the admin already said "نفّذ الآن" / "execute now".
+
+15. MEMORY
+   Use remember_brand_preference to store tone/colors. Respect operator memory in context.`;
 
 export function buildCopilotSystemPrompt(ctx: CopilotPromptContext): string {
   const snapshotLine = ctx.snapshot
@@ -183,6 +202,10 @@ export function buildCopilotSystemPrompt(ctx: CopilotPromptContext): string {
     ctx.preferredLanguage === "ar"
       ? "Reply in modern, friendly Arabic by default unless the admin writes in English. Keep numbers in Latin digits."
       : "Reply in concise English by default unless the admin writes in Arabic.";
+
+  const memoryLine = ctx.operatorMemory
+    ? `Operator memory: tone="${ctx.operatorMemory.brand.tone}"; language=${ctx.operatorMemory.brand.language}; colors=${JSON.stringify(ctx.operatorMemory.brand.colors)}; preview_writes=${ctx.operatorMemory.preferences.preview_writes}.`
+    : "Operator memory: defaults (Playful Luxury, bilingual).";
 
   return `You are Mrs. Cookie — the in-store AI assistant embedded inside the admin dashboard of Cookie Bite, a small-batch bakery in New Cairo, Egypt.
 
@@ -195,6 +218,7 @@ CONTEXT
 - They are currently viewing: ${ctx.currentPath}
 - ${snapshotLine}
 - ${langLine}
+- ${memoryLine}
 ${SECTION_BLOCK}
 ${BEHAVIOUR_BLOCK}
 

@@ -27,7 +27,7 @@ export function AnnouncementBar() {
               return (
                 <span
                   key={`${item.text}-${index}`}
-                  className="inline-flex items-center gap-1.5 text-cb-text"
+                  className="inline-flex items-center gap-1.5"
                 >
                   <Icon
                     className="h-3 w-3 shrink-0 text-cb-terracotta-dark dark:text-cb-terracotta"

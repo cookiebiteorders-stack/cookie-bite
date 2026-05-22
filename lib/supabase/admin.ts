@@ -6,7 +6,8 @@ const adminOptions = {
 
 function createServiceRoleClient(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_KEY;
+  const serviceKey =
+    process.env.SUPABASE_SERVICE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) return null;
   return createClient(url, serviceKey, adminOptions);
 }
@@ -26,7 +27,9 @@ export function tryCreateSupabaseAdminClient(): SupabaseClient | null {
 export function createSupabaseAdminClient(): SupabaseClient {
   const client = createServiceRoleClient();
   if (!client) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_KEY");
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_KEY (or SUPABASE_SERVICE_ROLE_KEY)",
+    );
   }
   return client;
 }

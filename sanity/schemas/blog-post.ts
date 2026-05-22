@@ -19,5 +19,21 @@ export const blogPostSchema = defineType({
     defineField({ name: "body_ar", type: "array", of: [{ type: "block" }] }),
     defineField({ name: "cover_image", type: "image" }),
     defineField({ name: "is_published", type: "boolean", initialValue: true }),
+    defineField({
+      name: "date_published",
+      type: "datetime",
+      title: "Published at",
+      initialValue: () => new Date().toISOString(),
+    }),
+    defineField({ name: "author_name", type: "string", title: "Author name", initialValue: "Cookie Bite" }),
+    defineField({ name: "seo_title", type: "string", title: "SEO title override" }),
+    defineField({ name: "seo_description", type: "text", title: "SEO meta description" }),
+    defineField({ name: "focus_keyword", type: "string", title: "Focus keyword" }),
+    defineField({
+      name: "related_product_slugs",
+      type: "array",
+      title: "Related product slugs",
+      of: [{ type: "string" }],
+    }),
   ],
 });

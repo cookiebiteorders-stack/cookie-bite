@@ -1,0 +1,317 @@
+{
+  "version": "2.0.0",
+  "operator": {
+    "name": "Mrs. Cookie",
+    "role": "website_ai_operator",
+    "principles": [
+      "Always choose tools when actions are required",
+      "Never hallucinate IDs or data — search first",
+      "Ask for missing required fields",
+      "Confirm destructive actions (delete/remove/ban)",
+      "Use preview mode before writes unless admin said execute now",
+      "Prefer structured actions over long prose",
+      "Optimize for conversion, design quality, and clarity"
+    ]
+  },
+  "tools": [
+    {
+      "name": "add_product",
+      "category": "catalog",
+      "destructive": false,
+      "previewDefault": true,
+      "api": "POST /api/admin/products",
+      "description": "Create a new product in the Cookie Bite store. Generates EN+AR copy and EGP pricing when fields are missing.",
+      "parameters": {
+        "type": "object",
+        "required": ["name", "price"],
+        "properties": {
+          "name": { "type": "string" },
+          "price": { "type": "number", "description": "Price in EGP (price_egp)" },
+          "description": { "type": "string", "description": "English description; Arabic auto-generated if omitted" },
+          "description_ar": { "type": "string" },
+          "category": { "type": "string" },
+          "images": { "type": "array", "items": { "type": "string" }, "description": "Image URLs" },
+          "stock": { "type": "number" },
+          "status": { "type": "string", "enum": ["draft", "active", "archived"], "description": "draft=inactive" },
+          "badges": { "type": "string", "description": "Comma-separated: bestseller,new,trending,featured" },
+          "seasons": { "type": "string" },
+          "confirm": { "type": "boolean", "description": "true to execute after preview" },
+          "preview": { "type": "boolean", "description": "true to plan only (default for new products)" }
+        }
+      }
+    },
+    {
+      "name": "edit_product",
+      "category": "catalog",
+      "destructive": false,
+      "previewDefault": true,
+      "api": "PATCH /api/admin/products",
+      "description": "Edit an existing product by id or name search.",
+      "parameters": {
+        "type": "object",
+        "required": ["product_id", "updates"],
+        "properties": {
+          "product_id": { "type": "string" },
+          "query": { "type": "string", "description": "Name search if product_id unknown" },
+          "updates": { "type": "object", "description": "Partial fields: name, price, description, category, stock, status, badges, seasons" },
+          "confirm": { "type": "boolean" },
+          "preview": { "type": "boolean" }
+        }
+      }
+    },
+    {
+      "name": "delete_product",
+      "category": "catalog",
+      "destructive": true,
+      "previewDefault": true,
+      "api": "DELETE /api/admin/products",
+      "description": "Permanently delete a product. Requires confirm:true after admin approval.",
+      "parameters": {
+        "type": "object",
+        "required": ["product_id"],
+        "properties": {
+          "product_id": { "type": "string" },
+          "query": { "type": "string" },
+          "confirm": { "type": "boolean" }
+        }
+      }
+    },
+    {
+      "name": "list_products",
+      "category": "catalog",
+      "destructive": false,
+      "previewDefault": false,
+      "api": "GET /api/admin/products",
+      "description": "List products with optional category/status filters.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "category": { "type": "string" },
+          "status": { "type": "string", "enum": ["active", "draft", "archived", "all"] },
+          "query": { "type": "string" },
+          "limit": { "type": "number" }
+        }
+      }
+    },
+    {
+      "name": "generate_product_content",
+      "category": "content",
+      "destructive": false,
+      "previewDefault": false,
+      "description": "Generate product name, bilingual descriptions, SEO fields, category, badges — does not save until add_product.",
+      "parameters": {
+        "type": "object",
+        "required": ["prompt"],
+        "properties": {
+          "prompt": { "type": "string" },
+          "tone": { "type": "string" },
+          "language": { "type": "string", "enum": ["en", "ar", "bilingual"] }
+        }
+      }
+    },
+    {
+      "name": "update_page_content",
+      "category": "cms",
+      "destructive": false,
+      "previewDefault": true,
+      "description": "Stage text content for a page section (stored as draft until published via CMS).",
+      "parameters": {
+        "type": "object",
+        "required": ["page", "section", "content"],
+        "properties": {
+          "page": { "type": "string" },
+          "section": { "type": "string" },
+          "content": { "type": "string" },
+          "confirm": { "type": "boolean" }
+        }
+      }
+    },
+    {
+      "name": "update_page_style",
+      "category": "cms",
+      "destructive": false,
+      "previewDefault": true,
+      "description": "Stage visual styles for a page section (Playful Luxury tokens).",
+      "parameters": {
+        "type": "object",
+        "required": ["page", "section", "styles"],
+        "properties": {
+          "page": { "type": "string" },
+          "section": { "type": "string" },
+          "styles": {
+            "type": "object",
+            "properties": {
+              "background": { "type": "string" },
+              "text_color": { "type": "string" },
+              "layout": { "type": "string" },
+              "spacing": { "type": "string" },
+              "font": { "type": "string" }
+            }
+          },
+          "confirm": { "type": "boolean" }
+        }
+      }
+    },
+    {
+      "name": "add_section",
+      "category": "cms",
+      "destructive": false,
+      "previewDefault": true,
+      "description": "Add a new section draft to a page layout.",
+      "parameters": {
+        "type": "object",
+        "required": ["page", "type"],
+        "properties": {
+          "page": { "type": "string" },
+          "type": { "type": "string", "enum": ["hero", "features", "products", "testimonials", "cta", "gallery"] },
+          "content": { "type": "object" },
+          "confirm": { "type": "boolean" }
+        }
+      }
+    },
+    {
+      "name": "remove_section",
+      "category": "cms",
+      "destructive": true,
+      "previewDefault": true,
+      "description": "Remove a section from page draft. Requires confirm:true.",
+      "parameters": {
+        "type": "object",
+        "required": ["page", "section_id"],
+        "properties": {
+          "page": { "type": "string" },
+          "section_id": { "type": "string" },
+          "confirm": { "type": "boolean" }
+        }
+      }
+    },
+    {
+      "name": "reorder_sections",
+      "category": "cms",
+      "destructive": false,
+      "previewDefault": true,
+      "description": "Reorder sections on a page draft.",
+      "parameters": {
+        "type": "object",
+        "required": ["page", "order"],
+        "properties": {
+          "page": { "type": "string" },
+          "order": { "type": "array", "items": { "type": "string" } },
+          "confirm": { "type": "boolean" }
+        }
+      }
+    },
+    {
+      "name": "generate_seo_content",
+      "category": "content",
+      "destructive": false,
+      "previewDefault": false,
+      "description": "Generate SEO title, meta description, and keywords for a topic.",
+      "parameters": {
+        "type": "object",
+        "required": ["topic"],
+        "properties": {
+          "topic": { "type": "string" },
+          "language": { "type": "string", "enum": ["en", "ar", "bilingual"] }
+        }
+      }
+    },
+    {
+      "name": "analyze_website",
+      "category": "insights",
+      "destructive": false,
+      "previewDefault": false,
+      "description": "Analyze UX, UI, SEO, performance, or conversion using live store context.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "focus": { "type": "string", "enum": ["ui", "ux", "seo", "performance", "conversion", "all"] }
+        }
+      }
+    },
+    {
+      "name": "apply_theme",
+      "category": "design",
+      "destructive": false,
+      "previewDefault": true,
+      "description": "Apply or stage a Playful Luxury theme variant (updates operator memory + CSS token recommendations).",
+      "parameters": {
+        "type": "object",
+        "required": ["theme_name"],
+        "properties": {
+          "theme_name": { "type": "string" },
+          "mode": { "type": "string", "enum": ["light", "dark", "luxury", "modern", "playful_luxury"] },
+          "confirm": { "type": "boolean" }
+        }
+      }
+    },
+    {
+      "name": "generate_image",
+      "category": "media",
+      "destructive": false,
+      "previewDefault": false,
+      "description": "Return a production-ready image prompt for Cloudinary/product upload (no external gen API yet).",
+      "parameters": {
+        "type": "object",
+        "required": ["prompt"],
+        "properties": {
+          "prompt": { "type": "string" },
+          "style": { "type": "string" },
+          "size": { "type": "string" }
+        }
+      }
+    },
+    {
+      "name": "manage_orders",
+      "category": "orders",
+      "destructive": false,
+      "previewDefault": true,
+      "api": "PATCH /api/admin/orders",
+      "description": "List orders or update order status.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": { "type": "string", "enum": ["list", "update_status"] },
+          "order_id": { "type": "string" },
+          "order_number": { "type": "string" },
+          "status": { "type": "string" },
+          "days": { "type": "number" },
+          "confirm": { "type": "boolean" }
+        }
+      }
+    },
+    {
+      "name": "manage_users",
+      "category": "customers",
+      "destructive": true,
+      "previewDefault": true,
+      "api": "GET /api/admin/customers",
+      "description": "List customers or stage admin actions (ban/promote require confirm and staff role APIs).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": { "type": "string", "enum": ["list", "ban", "promote"] },
+          "user_id": { "type": "string" },
+          "query": { "type": "string" },
+          "confirm": { "type": "boolean" }
+        }
+      }
+    },
+    {
+      "name": "remember_brand_preference",
+      "category": "memory",
+      "destructive": false,
+      "previewDefault": false,
+      "description": "Persist brand tone, colors, or layout preferences for consistent future actions.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "tone": { "type": "string" },
+          "language": { "type": "string", "enum": ["en", "ar", "bilingual"] },
+          "colors": { "type": "object" },
+          "layout_notes": { "type": "string" }
+        }
+      }
+    }
+  ]
+}
