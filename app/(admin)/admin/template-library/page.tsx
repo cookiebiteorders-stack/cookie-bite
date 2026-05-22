@@ -229,10 +229,10 @@ export default function TemplateLibraryPage() {
               <Sparkles className="h-3.5 w-3.5" />
               Notification Library
             </p>
-            <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-stone-950 dark:text-white sm:text-4xl">
+            <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-stone-950 sm:text-4xl">
               Template Library & Designer
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-800 dark:text-stone-300 sm:text-base">
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-700 sm:text-base">
               مكتبة موحّدة لكل قوالب البريد والتقارير والتنبيهات. عاين كل قالب
               مع بيانات تجريبية، أرسل اختبار، وانسخ الـHTML الجاهز لإرساله من أي
               مكان.
