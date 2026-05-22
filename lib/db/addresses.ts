@@ -65,24 +65,68 @@ export function buildAddressInsertRow(
   const building = (addr.building ?? "").trim() || "-";
   const notes = addr.delivery_notes?.trim() || null;
 
-  return {
+  const row: Record<string, string | number | boolean | null> = {
     user_id: userId,
     label: (addr.label ?? "Home").trim() || "Home",
     recipient,
-    full_name: recipient,
     phone: (addr.phone ?? fallback.phone).trim() || fallback.phone,
-    phone_secondary: addr.phone_secondary ?? null,
     street: (addr.street ?? "").trim() || "-",
     building,
-    floor: addr.floor ?? null,
-    apartment: addr.apartment ?? null,
-    city,
-    area: city,
     governorate: (addr.governorate ?? "Cairo").trim() || "Cairo",
-    delivery_notes: notes,
-    landmark: notes,
+    city,
     latitude: coords.latitude,
     longitude: coords.longitude,
     is_default: true,
   };
+
+  if (addr.phone_secondary) row.phone_secondary = addr.phone_secondary;
+  if (addr.floor) row.floor = addr.floor;
+  if (addr.apartment) row.apartment = addr.apartment;
+  if (notes) {
+    row.delivery_notes = notes;
+  }
+
+  return row;
+}
+
+const ADDRESS_OPTIONAL_COLS = [
+  "phone_secondary",
+  "building",
+  "floor",
+  "apartment",
+  "delivery_notes",
+  "latitude",
+  "longitude",
+] as const;
+
+/** إدراج عنوان مع إسقاط أعمدة غير موجودة بعد migrations قديمة. */
+export function minimalAddressInsertRow(
+  full: Record<string, string | number | boolean | null>,
+): Record<string, string | number | boolean | null> {
+  const minimal: Record<string, string | number | boolean | null> = {
+    user_id: full.user_id,
+    label: full.label,
+    recipient: full.recipient,
+    phone: full.phone,
+    street: full.street,
+    city: full.city,
+    governorate: full.governorate ?? "Cairo",
+    is_default: full.is_default,
+  };
+  if (full.building != null && String(full.building).trim()) {
+    minimal.building = full.building;
+  }
+  return minimal;
+}
+
+export function stripMissingAddressColumns(
+  row: Record<string, string | number | boolean | null>,
+  errorMessage: string,
+): Record<string, string | number | boolean | null> | null {
+  if (!/column.*does not exist/i.test(errorMessage)) return null;
+  const next = { ...row };
+  for (const col of ADDRESS_OPTIONAL_COLS) {
+    delete next[col];
+  }
+  return Object.keys(next).length > 0 ? next : null;
 }

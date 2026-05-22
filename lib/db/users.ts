@@ -39,7 +39,11 @@ export async function upsertUserFromClerk(input: UpsertInput): Promise<UserRow |
     .single();
 
   if (error) {
-    console.error("upsertUserFromClerk error", error);
+    console.error("upsertUserFromClerk error", error.message, error.code, error.details);
+    if (error.code === "23505") {
+      const byClerk = await getUserByClerkId(input.clerkUserId);
+      if (byClerk) return byClerk;
+    }
     return null;
   }
   return data as UserRow;
@@ -100,12 +104,38 @@ export async function updateUserProfile(
     return (data as UserRow) ?? null;
   }
 
-  const { data, error } = await supabase
-    .from("users")
-    .update(patch)
-    .eq("id", userId)
-    .select("*")
-    .maybeSingle();
+  const runUpdate = async (p: Record<string, string | null>) => {
+    return supabase.from("users").update(p).eq("id", userId).select("*").maybeSingle();
+  };
+
+  let { data, error } = await runUpdate(patch);
+
+  const stripOptionalProfileCols = (p: Record<string, string | null>) => {
+    const safe = { ...p };
+    for (const col of [
+      "full_name_en",
+      "full_name_ar",
+      "phone",
+      "phone_secondary",
+      "profile_notes",
+    ] as const) {
+      delete safe[col];
+    }
+    return safe;
+  };
+
+  if (
+    error &&
+    (error.code === "42703" || /column.*does not exist/i.test(error.message ?? ""))
+  ) {
+    const safe = stripOptionalProfileCols(patch);
+    if (Object.keys(safe).length > 0) {
+      const retry = await runUpdate(safe);
+      data = retry.data;
+      error = retry.error;
+    }
+  }
+
   if (error) {
     console.error("updateUserProfile error", error.message, error.code, error.details);
     return null;
