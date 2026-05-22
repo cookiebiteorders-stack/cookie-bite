@@ -2,15 +2,19 @@
   "version": "2.0.0",
   "operator": {
     "name": "Mrs. Cookie",
-    "role": "website_ai_operator",
+    "role": "owner_controlled_website_operator",
+    "mode": "owner-controlled",
     "principles": [
       "Always choose tools when actions are required",
       "Never hallucinate IDs or data — search first",
       "Ask for missing required fields",
-      "Confirm destructive actions (delete/remove/ban)",
-      "Use preview mode before writes unless admin said execute now",
+      "Confirm destructive actions (delete/remove/ban) — preview first, confirm:true after approval",
+      "Use preview mode before writes unless admin said execute now / نفّذ الآن",
       "Prefer structured actions over long prose",
-      "Optimize for conversion, design quality, and clarity"
+      "Optimize for conversion, design quality, WCAG contrast, and clarity",
+      "Image enhance: sharpen/lighting/denoise only — never change subject or composition",
+      "Respond with INTENT → ACTION PLAN → PREVIEW → EXECUTION → RESULT for multi-step owner commands",
+      "Full control: products, pages/CMS drafts, UI tokens, SEO, media library, orders, customers — within tool catalog"
     ]
   },
   "tools": [
@@ -310,6 +314,89 @@
           "language": { "type": "string", "enum": ["en", "ar", "bilingual"] },
           "colors": { "type": "object" },
           "layout_notes": { "type": "string" }
+        }
+      }
+    },
+    {
+      "name": "list_media",
+      "category": "media",
+      "destructive": false,
+      "previewDefault": false,
+      "api": "GET /api/admin/media",
+      "description": "List Cloudinary + catalog media assets with product usage.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "kind": { "type": "string", "enum": ["all", "image", "video"] },
+          "limit": { "type": "number" }
+        }
+      }
+    },
+    {
+      "name": "delete_media",
+      "category": "media",
+      "destructive": true,
+      "previewDefault": true,
+      "api": "DELETE /api/admin/media",
+      "description": "Delete Cloudinary asset and unlink from products. Requires confirm after preview.",
+      "parameters": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": { "type": "string" },
+          "public_id": { "type": "string" },
+          "kind": { "type": "string", "enum": ["image", "video"] },
+          "confirm": { "type": "boolean" }
+        }
+      }
+    },
+    {
+      "name": "replace_media_url",
+      "category": "media",
+      "destructive": false,
+      "previewDefault": true,
+      "description": "Swap an old image/video URL for a new URL on all linked products (file upload via /admin/media UI).",
+      "parameters": {
+        "type": "object",
+        "required": ["old_url", "new_url"],
+        "properties": {
+          "old_url": { "type": "string" },
+          "new_url": { "type": "string" },
+          "confirm": { "type": "boolean" }
+        }
+      }
+    },
+    {
+      "name": "enhance_media",
+      "category": "media",
+      "destructive": false,
+      "previewDefault": false,
+      "description": "Build Cloudinary delivery URL with sharpen/denoise/color_correct/upscale — does NOT alter subject identity.",
+      "parameters": {
+        "type": "object",
+        "required": ["image_url"],
+        "properties": {
+          "image_url": { "type": "string" },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["upscale", "sharpen", "denoise", "color_correct"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "fix_ui_contrast",
+      "category": "design",
+      "destructive": false,
+      "previewDefault": false,
+      "description": "Audit admin/store UI contrast issues and recommend CSS fixes (WCAG). Scope: admin, storefront, or all.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "scope": { "type": "string", "enum": ["admin", "storefront", "all"] }
         }
       }
     }

@@ -37,3 +37,15 @@ Run migration `supabase/migrations/0028_copilot_operator_memory.sql`, then memor
 ## Legacy aliases
 
 `create_product` → `add_product`, `update_product` → `edit_product`, `search_products` → `list_products`.
+
+## Media & design (v2)
+
+| Tool | Backend |
+|------|---------|
+| `list_media` | `fetchMediaLibrary()` |
+| `delete_media` | Cloudinary destroy + product unlink |
+| `replace_media_url` | `replaceMediaUrlInProducts()` |
+| `enhance_media` | Cloudinary delivery transforms (`lib/cloudinary/enhance-delivery.ts`) |
+| `fix_ui_contrast` | WCAG checklist + token references |
+
+Owner spec is embedded in `master-tools.json` (`operator.mode`: `owner-controlled`) and `system-prompt.ts` sections 16–19.

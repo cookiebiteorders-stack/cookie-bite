@@ -22,6 +22,17 @@ import {
 } from "@/lib/admin/copilot/memory";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizeProductImages, primaryImageFromProduct } from "@/lib/products/media";
+import { fetchMediaLibrary } from "@/lib/admin/media-library";
+import {
+  removeMediaUrlFromProducts,
+  replaceMediaUrlInProducts,
+} from "@/lib/admin/media-mutations";
+import type { CloudinaryUploadKind } from "@/lib/cloudinary/admin-upload";
+import { destroyCloudinaryAsset } from "@/lib/cloudinary/manage-resource";
+import {
+  buildEnhancedDeliveryUrl,
+  type EnhanceOperation,
+} from "@/lib/cloudinary/enhance-delivery";
 
 type Json = Record<string, unknown> | unknown[] | string | number | boolean | null;
 
@@ -594,6 +605,149 @@ export async function remember_brand_preference(
   return { ok: true, action: "remember_brand_preference", brand: next.brand };
 }
 
+export async function list_media(
+  args: Record<string, unknown>,
+  _actor: CopilotToolActor,
+): Promise<Json> {
+  const kind = typeof args.kind === "string" ? args.kind : "all";
+  const limit = Math.min(50, Math.max(1, Math.floor(num(args.limit) || 20)));
+  try {
+    const lib = await fetchMediaLibrary();
+    let items = lib.items;
+    if (kind === "image" || kind === "video") {
+      items = items.filter((i) => i.kind === kind);
+    }
+    return {
+      ok: true,
+      configured: lib.configured,
+      count: items.length,
+      product_only_count: lib.productOnlyCount,
+      items: items.slice(0, limit).map((i) => ({
+        id: i.id,
+        url: i.url,
+        public_id: i.publicId,
+        kind: i.kind,
+        source: i.source,
+        used_by_count: i.usedBy.length,
+        used_by: i.usedBy.slice(0, 3),
+      })),
+      ui: "/admin/media",
+    };
+  } catch (e) {
+    return { warning: e instanceof Error ? e.message : "list_media failed", items: [] };
+  }
+}
+
+export async function delete_media(
+  args: Record<string, unknown>,
+  actor: CopilotToolActor,
+): Promise<Json> {
+  const meta = MASTER_TOOL_META.delete_media;
+  const url = typeof args.url === "string" ? args.url.trim() : "";
+  const publicId = typeof args.public_id === "string" ? args.public_id.trim() : "";
+  const kind: CloudinaryUploadKind = args.kind === "video" ? "video" : "image";
+
+  if (!url && !publicId) return { warning: "url or public_id is required." };
+
+  const planned = { url, public_id: publicId || null, kind, unlink_products: true };
+
+  if (shouldPreview(args, meta)) {
+    return previewBlock("delete_media", planned);
+  }
+
+  try {
+    let productsUpdated = 0;
+    const targetUrl = url || (await fetchMediaLibrary()).items.find((i) => i.publicId === publicId)?.url;
+    if (targetUrl) {
+      productsUpdated = await removeMediaUrlFromProducts(targetUrl);
+    }
+    if (publicId) {
+      await destroyCloudinaryAsset(publicId, kind);
+    }
+    return { ok: true, destroyed: Boolean(publicId), productsUpdated, url: targetUrl };
+  } catch (e) {
+    return { warning: e instanceof Error ? e.message : "delete_media failed" };
+  }
+}
+
+export async function replace_media_url(
+  args: Record<string, unknown>,
+  _actor: CopilotToolActor,
+): Promise<Json> {
+  const meta = MASTER_TOOL_META.replace_media_url;
+  const oldUrl = typeof args.old_url === "string" ? args.old_url.trim() : "";
+  const newUrl = typeof args.new_url === "string" ? args.new_url.trim() : "";
+  if (!oldUrl || !newUrl) return { warning: "old_url and new_url are required." };
+
+  if (shouldPreview(args, meta)) {
+    return previewBlock("replace_media_url", { old_url: oldUrl, new_url: newUrl });
+  }
+
+  try {
+    const productsUpdated = await replaceMediaUrlInProducts(oldUrl, newUrl);
+    return { ok: true, productsUpdated, old_url: oldUrl, new_url: newUrl };
+  } catch (e) {
+    return { warning: e instanceof Error ? e.message : "replace_media_url failed" };
+  }
+}
+
+export async function enhance_media(args: Record<string, unknown>): Promise<Json> {
+  const imageUrl = typeof args.image_url === "string" ? args.image_url.trim() : "";
+  if (!imageUrl) return { warning: "image_url is required." };
+
+  const ops = Array.isArray(args.operations)
+    ? (args.operations.filter((o) => typeof o === "string") as EnhanceOperation[])
+    : undefined;
+
+  const result = buildEnhancedDeliveryUrl(imageUrl, ops);
+  if ("error" in result) {
+    return { warning: result.error, allowed_operations: ["upscale", "sharpen", "denoise", "color_correct"] };
+  }
+
+  return {
+    ok: true,
+    ...result,
+    rules: [
+      "No composition or subject changes",
+      "No added/removed objects",
+      "No stylization unless admin explicitly requests it",
+    ],
+  };
+}
+
+export async function fix_ui_contrast(args: Record<string, unknown>): Promise<Json> {
+  const scope = typeof args.scope === "string" ? args.scope : "all";
+  const checks: Array<{ area: string; issue: string; fix: string }> = [
+    {
+      area: "admin",
+      issue: "dark: utilities on cream admin-panel-surface",
+      fix: "Use text-stone-950/700 on admin panels; rely on app/styles/admin.css locks",
+    },
+    {
+      area: "admin",
+      issue: "hero panels with text-cb-text-strong on light scrim",
+      fix: "Force dark text in admin-hero-surface and admin-panel-surface children",
+    },
+    {
+      area: "storefront",
+      issue: "muted text on pastel backgrounds",
+      fix: "Prefer text-cb-text-strong for headings; cb-text-muted only for secondary copy",
+    },
+  ];
+
+  const filtered =
+    scope === "all" ? checks : checks.filter((c) => c.area === scope || scope === "admin" && c.area === "admin");
+
+  return {
+    ok: true,
+    scope,
+    wcag_target: "AA minimum for body text (4.5:1)",
+    findings: filtered,
+    apply_via: ["ui.update_page_style", "apply_theme", "manual CSS in app/styles/admin.css"],
+    storefront_tokens: playfulLuxuryColors,
+  };
+}
+
 /** Map product images from add_product */
 export async function attach_product_images(
   productId: string,
@@ -630,4 +784,9 @@ export const OPERATOR_TOOL_HANDLERS: Record<
   manage_orders,
   manage_users,
   remember_brand_preference,
+  list_media,
+  delete_media,
+  replace_media_url,
+  enhance_media,
+  fix_ui_contrast,
 };
