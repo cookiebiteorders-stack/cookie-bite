@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 
 from core.config import get_settings
 from core.logger import get_logger
-from routers import events, health, recommendations
+from routers import events, health, import_parser, parse_pdf_alias, recommendations
 
 logger = get_logger("api-gateway")
 settings = get_settings()
@@ -32,6 +32,8 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(events.router)
 app.include_router(recommendations.router)
+app.include_router(import_parser.router)
+app.include_router(parse_pdf_alias.router)
 
 
 @app.on_event("startup")

@@ -67,14 +67,14 @@
   opacity: 0.18;
 }
 
-/* Panels stay cream in dark mode — hero copy must not use dark-theme light text */
-.dark .admin-console .admin-panel-surface > .relative > div:first-child > :is(h1, h2, h3),
-.dark .admin-console .admin-hero-surface > .relative > div:first-child > :is(h1, h2, h3) {
+/* Cream panels stay light under OS dark / .dark — hero copy always dark (beats base h1 + dark: utilities) */
+.admin-console .admin-panel-surface > .relative.flex > div:first-child > :is(h1, h2, h3),
+.admin-console .admin-hero-surface > .relative.flex > div:first-child > :is(h1, h2, h3) {
   color: #1c1917 !important;
 }
 
-.dark .admin-console .admin-panel-surface > .relative > div:first-child > p.max-w-2xl,
-.dark .admin-console .admin-hero-surface > .relative > div:first-child > p.max-w-2xl {
+.admin-console .admin-panel-surface > .relative.flex > div:first-child > p.max-w-2xl,
+.admin-console .admin-hero-surface > .relative.flex > div:first-child > p.max-w-2xl {
   color: #44403c !important;
 }
 

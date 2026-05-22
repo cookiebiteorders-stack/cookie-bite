@@ -50,7 +50,7 @@ async function fetchModuleRows(
 
   const { data, error } = await q;
   if (error) throw new Error(error.message);
-  return (data ?? []) as Record<string, unknown>[];
+  return (data ?? []) as unknown as Record<string, unknown>[];
 }
 
 export async function exportModuleData(params: {

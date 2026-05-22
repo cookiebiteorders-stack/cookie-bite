@@ -60,7 +60,7 @@ export async function parsePdfBuffer(buffer: Buffer): Promise<ParsedSheet> {
     new Blob([new Uint8Array(buffer)], { type: "application/pdf" }),
     "import.pdf",
   );
-  const res = await fetch(`${base}/parse-pdf`, {
+  const res = await fetch(`${base}/import/parse-pdf`, {
     method: "POST",
     body: form,
     signal: AbortSignal.timeout(120_000),

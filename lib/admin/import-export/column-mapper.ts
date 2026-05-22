@@ -1,6 +1,6 @@
-import type { ColumnDef } from "@/lib/admin/import-export/types";
+import type { ColumnDef, ColumnMapping } from "@/lib/admin/import-export/types";
 
-export type ColumnMapping = Record<string, string>;
+export type { ColumnMapping };
 
 /** يطابق رؤوس الملف مع مفاتيح القالب (تطابق تام أو جزئي). */
 export function suggestColumnMapping(

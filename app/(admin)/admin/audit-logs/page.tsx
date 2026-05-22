@@ -225,10 +225,10 @@ export default function AdminAuditLogsPage() {
               <Shield className="h-3.5 w-3.5" />
               Security Intelligence
             </p>
-            <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-stone-950 dark:text-white sm:text-4xl">
+            <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-stone-950 sm:text-4xl">
               Audit Logs Mission Control
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-800 dark:text-stone-300">
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-700">
               مراقبة لحظية، تحليل مخاطر ذكي، واستكشاف متقدم للأحداث الحساسة عبر النظام بالكامل.
             </p>
           </div>

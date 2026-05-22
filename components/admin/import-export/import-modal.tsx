@@ -141,7 +141,7 @@ export function ImportModal({ open, onClose, module, onSuccess }: Props) {
                             className="rounded-lg border border-cb-border bg-cb-surface px-2 py-1.5 text-xs"
                             value={mapping[col.key] ?? ""}
                             onChange={(e) =>
-                              setMapping((m) => ({ ...m, [col.key]: e.target.value }))
+                              setMapping((m: ColumnMapping) => ({ ...m, [col.key]: e.target.value }))
                             }
                           >
                             <option value="">—</option>

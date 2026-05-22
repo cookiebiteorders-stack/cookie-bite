@@ -51,6 +51,8 @@ export type ColumnDef = {
   required?: boolean;
 };
 
+export type ColumnMapping = Record<string, string>;
+
 export type ModuleImportExportConfig = {
   module: ImportExportModule;
   label: string;
