@@ -588,6 +588,30 @@ table.cb-table tbody tr:last-child td {
   border-bottom: none;
 }
 
+/* Admin products table — roomier rows + slimmer horizontal scroll */
+.cb-table-wrap--products {
+  scrollbar-width: thin;
+  scrollbar-color: var(--cb-border) transparent;
+}
+
+.cb-table-wrap--products::-webkit-scrollbar {
+  height: 6px;
+}
+
+.cb-table-wrap--products::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--cb-border);
+}
+
+.cb-table-wrap--products tbody tr {
+  min-height: 3.25rem;
+}
+
+.cb-table-wrap--products tbody td {
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+
 .cb-field,
 input.cb-field,
 select.cb-field,

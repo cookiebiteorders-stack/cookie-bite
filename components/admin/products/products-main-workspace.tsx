@@ -10,13 +10,10 @@ import {
 import { format } from "date-fns";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
-  BarChart3,
   Copy,
   Download,
-  Eye,
   Filter,
   Loader2,
-  MoreHorizontal,
   Package,
   Plus,
   RefreshCw,
@@ -25,6 +22,10 @@ import {
   Tag,
   Trash2,
 } from "lucide-react";
+import {
+  ProductRowActionsMenu,
+  type ProductMenuAnchor,
+} from "@/components/admin/products/product-row-actions-menu";
 import { useDebounce } from "@/src/hooks/useDebounce";
 import type { AdminProductRow } from "@/lib/admin/products-dashboard-types";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
@@ -78,6 +79,12 @@ type Props = {
   onAdd: () => void;
 };
 
+type ColumnMeta = { headerClass?: string; cellClass?: string };
+
+function columnClasses(meta: unknown): ColumnMeta {
+  return (meta as ColumnMeta | undefined) ?? {};
+}
+
 export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) {
   const reduceMotion = useReducedMotion();
   const products = useProductsDashboardStore((s) => s.products);
@@ -124,25 +131,7 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
   const debouncedSearch = useDebounce(localSearch, 320);
   const advancedOpen = useProductsDashboardStore((s) => s.advancedFiltersOpen);
   const setAdvancedOpen = useProductsDashboardStore((s) => s.setAdvancedFiltersOpen);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!openMenuId) return;
-    const close = () => setOpenMenuId(null);
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-    };
-    const onPointer = (e: MouseEvent | PointerEvent) => {
-      const root = document.getElementById(`product-actions-root-${openMenuId}`);
-      if (root && !root.contains(e.target as Node)) close();
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPointer, true);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onPointer, true);
-    };
-  }, [openMenuId]);
+  const [openMenu, setOpenMenu] = useState<ProductMenuAnchor | null>(null);
 
   useEffect(() => {
     setSearch(debouncedSearch);
@@ -221,16 +210,11 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
         ),
       },
       { accessorKey: "sku", header: "SKU", cell: (c) => c.getValue() ?? "—" },
-      { accessorKey: "category", header: "التصنيف", cell: (c) => c.getValue() ?? "—" },
       {
-        id: "brand",
-        header: "العلامة",
-        cell: () => <span className="text-cb-text-muted">Cookie Bite</span>,
-      },
-      {
-        id: "variants",
-        header: "متغيرات",
-        cell: () => <span className="text-cb-text-muted">—</span>,
+        accessorKey: "category",
+        header: "التصنيف",
+        cell: (c) => <span className="text-cb-text-muted">{String(c.getValue() ?? "—")}</span>,
+        meta: { headerClass: "hidden lg:table-cell", cellClass: "hidden lg:table-cell" },
       },
       {
         accessorKey: "stock",
@@ -253,6 +237,7 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
       {
         id: "discount",
         header: "خصم",
+        meta: { headerClass: "hidden xl:table-cell", cellClass: "hidden xl:table-cell" },
         cell: ({ row }) =>
           row.original.compare_price_egp ? (
             <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-bold text-orange-900 dark:bg-orange-950/50 dark:text-orange-100">
@@ -261,15 +246,6 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
           ) : (
             "—"
           ),
-      },
-      {
-        id: "revenue",
-        header: "قيمة مخزون",
-        cell: ({ row }) => (
-          <span className="font-mono text-xs text-cb-text-muted">
-            {(row.original.price_egp * row.original.stock).toLocaleString("ar-EG")}
-          </span>
-        ),
       },
       {
         id: "status",
@@ -302,113 +278,40 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
       },
       {
         id: "actions",
-        header: "",
+        header: "إجراءات",
+        meta: {
+          headerClass: "sticky end-0 z-20 w-14 bg-[var(--cb-table-header-bg)]",
+          cellClass:
+            "sticky end-0 z-10 w-14 bg-cb-surface-elevated group-hover:bg-[var(--bg-hover)] shadow-[-10px_0_16px_-12px_rgba(0,0,0,0.12)]",
+        },
         cell: ({ row }) => {
           const p = row.original;
-          const open = openMenuId === p.id;
-          const label = p.title_en ?? p.name;
+          const isOpen = openMenu?.productId === p.id;
           return (
-            <div id={`product-actions-root-${p.id}`} className="relative text-end">
-              <button
-                type="button"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent hover:border-cb-border hover:bg-cb-surface-2 focus-visible:outline focus-visible:ring-2 focus-visible:ring-amber-400"
-                aria-expanded={open}
-                aria-haspopup="menu"
-                aria-label={`إجراءات ${label}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenMenuId(open ? null : p.id);
-                }}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
-              <AnimatePresence>
-                {open ? (
-                  <motion.ul
-                    onMouseDown={(e) => e.stopPropagation()}
-                    initial={reduceMotion ? false : { opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    role="menu"
-                    className="absolute end-0 z-20 mt-1 min-w-[180px] overflow-hidden rounded-xl border border-cb-border bg-cb-surface-elevated py-1 text-start shadow-xl"
-                  >
-                    <li>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        disabled={!canWrite}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold hover:bg-amber-50 disabled:opacity-50 dark:hover:bg-amber-950/30"
-                        onClick={() => {
-                          setOpenMenuId(null);
-                          onEdit(p);
-                        }}
-                      >
-                        تعديل
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        disabled={!canWrite}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold hover:bg-amber-50 disabled:opacity-50 dark:hover:bg-amber-950/30"
-                        onClick={() => {
-                          setOpenMenuId(null);
-                          void duplicateProduct(p);
-                        }}
-                      >
-                        <Copy className="h-3.5 w-3.5" /> تكرار
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        disabled={!canWrite}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold hover:bg-amber-50 disabled:opacity-50 dark:hover:bg-amber-950/30"
-                        onClick={() => {
-                          setOpenMenuId(null);
-                          const slug = (p.slug ?? "").trim();
-                          if (!slug) {
-                            pushToast("لا يوجد slug للمنتج — احفظ المنتج أولاً.", "info");
-                            return;
-                          }
-                          window.open(`/shop/${encodeURIComponent(slug)}`, "_blank", "noopener,noreferrer");
-                        }}
-                      >
-                        <Eye className="h-3.5 w-3.5" /> معاينة في المتجر
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                        onClick={() => setOpenMenuId(null)}
-                      >
-                        <BarChart3 className="h-3.5 w-3.5" /> تحليلات
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        disabled={!canDelete}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-950/30"
-                        onClick={() => {
-                          setOpenMenuId(null);
-                          if (!canDelete) return;
-                          if (!confirm(`حذف "${p.title_en ?? p.name}"؟`)) return;
-                          void bulkDelete([p.id]);
-                        }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" /> حذف
-                      </button>
-                    </li>
-                  </motion.ul>
-                ) : null}
-              </AnimatePresence>
-            </div>
+            <ProductRowActionsMenu
+              product={p}
+              open={isOpen}
+              anchor={isOpen ? openMenu : null}
+              canWrite={canWrite}
+              canDelete={canDelete}
+              onOpen={setOpenMenu}
+              onClose={() => setOpenMenu(null)}
+              onEdit={onEdit}
+              onDuplicate={(row) => void duplicateProduct(row)}
+              onDelete={(row) => {
+                if (!canDelete) return;
+                if (!confirm(`حذف "${row.title_en ?? row.name}"؟`)) return;
+                void bulkDelete([row.id]);
+              }}
+              onPreview={(row) => {
+                const slug = (row.slug ?? "").trim();
+                if (!slug) {
+                  pushToast("لا يوجد slug للمنتج — احفظ المنتج أولاً.", "info");
+                  return;
+                }
+                window.open(`/shop/${encodeURIComponent(slug)}`, "_blank", "noopener,noreferrer");
+              }}
+            />
           );
         },
       },
@@ -424,8 +327,7 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
       onEdit,
       duplicateProduct,
       bulkDelete,
-      openMenuId,
-      reduceMotion,
+      openMenu,
       pushToast,
     ],
   );
@@ -725,17 +627,23 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
       </div>
 
       {/* Desktop table */}
-      <div className="cb-table-wrap hidden md:block">
-        <table className="cb-table w-full min-w-[1100px] text-sm" data-cb-zebra="true">
+      <div className="cb-table-wrap cb-table-wrap--products hidden md:block">
+        <table className="cb-table w-full min-w-[52rem] text-sm" data-cb-zebra="true">
           <caption className="sr-only">جدول المنتجات — التصفية والترقيم والإجراءات</caption>
           <thead>
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
-                {hg.headers.map((h) => (
-                  <th key={h.id} className="border-b border-cb-border px-3 py-3">
-                    {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
-                  </th>
-                ))}
+                {hg.headers.map((h) => {
+                  const meta = columnClasses(h.column.columnDef.meta);
+                  return (
+                    <th
+                      key={h.id}
+                      className={cn("border-b border-cb-border px-3 py-3.5 text-sm", meta.headerClass)}
+                    >
+                      {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
+                    </th>
+                  );
+                })}
               </tr>
             ))}
           </thead>
@@ -757,11 +665,14 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
                   layout={!reduceMotion}
                   className="group transition"
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-3 py-2.5 align-middle">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const meta = columnClasses(cell.column.columnDef.meta);
+                    return (
+                      <td key={cell.id} className={cn("px-3 py-3.5 align-middle", meta.cellClass)}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    );
+                  })}
                 </motion.tr>
               ))
             )}
@@ -798,16 +709,21 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-cb-border bg-cb-surface-elevated px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-cb-text-muted">
-          صفحة {page} / {totalPages} — إجمالي النتائج المصفاة: {total}
+      <div className="flex flex-col gap-4 rounded-2xl border border-cb-border bg-cb-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm font-medium text-cb-text-strong">
+          <span className="text-cb-text-muted">صفحة</span> {page}{" "}
+          <span className="text-cb-text-muted">من</span> {totalPages}
+          <span className="mx-2 text-cb-border" aria-hidden>
+            ·
+          </span>
+          <span className="text-cb-text-muted">إجمالي النتائج المصفاة:</span> {total}
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             disabled={page <= 1 || loading}
             onClick={() => setPage(Math.max(1, page - 1))}
-            className="rounded-xl border border-cb-border px-4 py-2 text-xs font-bold disabled:opacity-50"
+            className="min-h-10 rounded-xl border border-cb-border bg-cb-surface px-5 text-sm font-bold text-cb-text-strong transition hover:bg-cb-surface-2 disabled:opacity-50"
           >
             السابق
           </button>
@@ -815,7 +731,7 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
             type="button"
             disabled={page >= totalPages || loading}
             onClick={() => setPage(Math.min(totalPages, page + 1))}
-            className="rounded-xl border border-cb-border px-4 py-2 text-xs font-bold disabled:opacity-50"
+            className="min-h-10 rounded-xl border border-cb-border bg-cb-surface px-5 text-sm font-bold text-cb-text-strong transition hover:bg-cb-surface-2 disabled:opacity-50"
           >
             التالي
           </button>
