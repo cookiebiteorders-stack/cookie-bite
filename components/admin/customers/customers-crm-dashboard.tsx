@@ -176,11 +176,12 @@ export function CustomersCrmDashboard() {
         initial={reduceMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          "admin-panel-surface flex flex-col gap-4 rounded-2xl p-5 shadow-sm",
+          "admin-panel-surface relative flex flex-col gap-4 overflow-hidden rounded-2xl p-5 shadow-sm",
         )}
       >
         <div className="admin-panel-scrim" aria-hidden />
-        <div className="min-w-0 flex-1">
+        <div className="relative z-[1] flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-800">CRM</p>
           <h1 id="crm-dashboard-title" className="mt-1 font-serif text-xl font-bold text-stone-950 sm:text-2xl">
             Customer Management &amp; CRM
@@ -193,8 +194,20 @@ export function CustomersCrmDashboard() {
             <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] text-stone-800">N</kbd> لإضافة عميل. تحديث
             تلقائي كل 90 ثانية.
           </p>
+          </div>
+          <div
+            className={cn(
+              "inline-flex shrink-0 items-center gap-2 self-start rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-wide",
+              online
+                ? "border-emerald-300/80 bg-emerald-50/90 text-emerald-900"
+                : "border-amber-300/80 bg-amber-50/90 text-amber-950",
+            )}
+          >
+            <span className={cn("h-2 w-2 rounded-full", online ? "animate-pulse bg-emerald-500" : "bg-amber-500")} />
+            {online ? "مزامنة البيانات" : "تحقق من الاتصال"}
+          </div>
         </div>
-        <div className="w-full overflow-x-auto">
+        <div className="relative z-[1] w-full overflow-x-auto">
           <div className="flex min-w-max flex-nowrap items-center gap-2 pb-1">
             <button
               type="button"
@@ -334,7 +347,7 @@ export function CustomersCrmDashboard() {
         </div>
       </motion.div>
 
-      <CrmHeroStats stats={stats} online={online} />
+      <CrmHeroStats stats={stats} />
       <CrmAnalyticsStrip customers={customers} stats={stats} />
       <CrmMainWorkspace searchInputRef={searchRef} onOpenProfile={openProfile} />
 

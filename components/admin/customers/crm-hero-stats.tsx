@@ -9,7 +9,6 @@ import {
   RefreshCw,
   Sparkles,
   TrendingUp,
-  Users,
 } from "lucide-react";
 import type { CustomerStats } from "@/lib/admin/crm-types";
 import { MiniSparkline } from "@/components/admin/products/mini-sparkline";
@@ -30,7 +29,7 @@ type Card = {
   value: string;
   sub?: string;
   trendPct: number;
-  icon: typeof Users;
+  icon: typeof TrendingUp;
   seed: number;
   accent: string;
   wrap: string;
@@ -80,9 +79,9 @@ function StatCard({ title, value, sub, trendPct, icon: Icon, seed, accent, wrap,
   );
 }
 
-type Props = { stats: CustomerStats; online: boolean };
+type Props = { stats: CustomerStats };
 
-export function CrmHeroStats({ stats, online }: Props) {
+export function CrmHeroStats({ stats }: Props) {
   const reduceMotion = useReducedMotion();
   const churnShare = stats.total_customers
     ? Math.min(99, Math.round((stats.at_risk_proxy / stats.total_customers) * 100))
@@ -180,50 +179,10 @@ export function CrmHeroStats({ stats, online }: Props) {
   ];
 
   return (
-    <div className="space-y-5">
-      <motion.header
-        initial={reduceMotion ? false : { opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="admin-hero-surface rounded-2xl p-6 shadow-[var(--shadow-editorial)] sm:p-8"
-      >
-        <div className="pointer-events-none absolute -right-20 -top-16 h-52 w-52 rounded-full bg-violet-200/18 blur-3xl" aria-hidden />
-        <div className="admin-panel-scrim" aria-hidden />
-        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex gap-4">
-            <motion.div
-              whileHover={reduceMotion ? undefined : { scale: 1.04 }}
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-cb-border bg-white/90 text-amber-700 shadow-sm"
-            >
-              <Users className="h-7 w-7" aria-hidden />
-            </motion.div>
-            <div>
-              <h1 className="font-serif text-2xl font-bold tracking-tight text-stone-950 sm:text-3xl">
-                Customer Management &amp; CRM
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-700 sm:text-[15px]">
-                إدارة ملفات العملاء، الولاء، التجزئة، الاحتفاظ، التفاعل، وأتمتة دورة الحياة — لوحة CRM بمستوى SaaS مميز.
-              </p>
-            </div>
-          </div>
-          <div
-            className={cn(
-              "inline-flex items-center gap-2 self-start rounded-full border px-3 py-1.5 text-xs font-bold uppercase tracking-wide",
-              online
-                ? "border-emerald-300/80 bg-emerald-50/90 text-emerald-900"
-                : "border-amber-300/80 bg-amber-50/90 text-amber-950",
-            )}
-          >
-            <span className={cn("h-2 w-2 rounded-full", online ? "animate-pulse bg-emerald-500" : "bg-amber-500")} />
-            {online ? "مزامنة البيانات" : "تحقق من الاتصال"}
-          </div>
-        </div>
-      </motion.header>
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
-        {cards.map((c) => (
-          <StatCard key={c.title} {...c} />
-        ))}
-      </div>
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
+      {cards.map((c) => (
+        <StatCard key={c.title} {...c} />
+      ))}
     </div>
   );
 }
