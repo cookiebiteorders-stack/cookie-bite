@@ -79,7 +79,7 @@ function statusClass(status: string) {
   if (status === "Active") return "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200";
   if (status === "Expiring Soon") return "bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200";
   if (status === "Expired") return "bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-200";
-  return "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200";
+  return "bg-stone-200 text-stone-800";
 }
 
 function fakePerformance(code: string) {
@@ -274,7 +274,7 @@ export default function AdminDiscountsPage() {
         <div className="pointer-events-none absolute -right-14 -top-10 h-40 w-40 rounded-full bg-amber-300/25 blur-3xl" />
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-amber-200/80 bg-white/75 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-900 dark:border-amber-800 dark:bg-stone-900/70 dark:text-amber-200">
+            <p className="inline-flex items-center gap-2 rounded-full border border-amber-200/80 bg-white/75 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-900">
               <WandSparkles className="h-3.5 w-3.5" />
               AI Discount Engine
             </p>
@@ -287,7 +287,7 @@ export default function AdminDiscountsPage() {
           </div>
           <button
             type="button"
-            className="inline-flex items-center gap-2 self-start rounded-2xl border border-cb-border bg-white/85 px-4 py-2 text-sm font-bold text-stone-900 shadow-sm transition hover:-translate-y-0.5 hover:bg-white dark:bg-stone-900/80 dark:text-stone-100"
+            className="inline-flex items-center gap-2 self-start rounded-2xl border border-cb-border bg-white/85 px-4 py-2 text-sm font-bold text-stone-900 shadow-sm transition hover:-translate-y-0.5 hover:bg-white"
           >
             <Brain className="h-4 w-4" />
             AI Quick Actions
@@ -302,16 +302,16 @@ export default function AdminDiscountsPage() {
             { k: "Expiring Soon", v: metrics.expiringSoon },
             { k: "Most Used", v: metrics.mostUsed },
           ].map((item) => (
-            <article key={item.k} className="rounded-2xl border border-cb-border/70 bg-white/90 p-4 shadow-sm dark:bg-stone-900/70">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">{item.k}</p>
-              <p className="mt-2 font-serif text-2xl font-bold text-stone-950 dark:text-white">{item.v}</p>
+            <article key={item.k} className="rounded-2xl border border-cb-border/70 bg-white/90 p-4 shadow-sm">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-stone-600">{item.k}</p>
+              <p className="mt-2 font-serif text-2xl font-bold text-stone-950">{item.v}</p>
             </article>
           ))}
         </div>
       </header>
 
       <div className="grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
-        <form onSubmit={(e) => void createDiscount(e)} className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm sm:p-6">
+        <form onSubmit={(e) => void createDiscount(e)} className="rounded-3xl border border-cb-border bg-white/95 p-5 shadow-sm sm:p-6">
           <div className="mb-5 flex flex-wrap items-center gap-2">
             {[1, 2, 3].map((s) => (
               <button
@@ -322,7 +322,7 @@ export default function AdminDiscountsPage() {
                   "rounded-full px-3 py-1.5 text-xs font-bold transition",
                   step === s
                     ? "bg-cb-terracotta-dark text-white"
-                    : "border border-cb-border bg-white text-stone-700 dark:bg-stone-900 dark:text-stone-300",
+                    : "border border-cb-border bg-white text-stone-700",
                 )}
               >
                 Step {s}
@@ -332,7 +332,7 @@ export default function AdminDiscountsPage() {
 
           {step === 1 && (
             <div className="space-y-4">
-              <h2 className="font-serif text-xl font-bold text-stone-900 dark:text-stone-100">Step 1 — Discount Type</h2>
+              <h2 className="font-serif text-xl font-bold text-stone-900">Step 1 — Discount Type</h2>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {typeOptions.map((opt) => (
                   <button
@@ -342,13 +342,13 @@ export default function AdminDiscountsPage() {
                     className={cn(
                       "group rounded-2xl border p-4 text-left transition",
                       builderType === opt.id
-                        ? "border-amber-400 bg-amber-50/80 shadow-[0_8px_24px_-18px_rgba(230,126,34,0.6)] dark:border-amber-700 dark:bg-amber-950/30"
-                        : "border-cb-border bg-white hover:-translate-y-0.5 hover:bg-cb-surface dark:bg-stone-900/70",
+                        ? "border-amber-400 bg-amber-50/80 shadow-[0_8px_24px_-18px_rgba(230,126,34,0.6)]"
+                        : "border-cb-border bg-white hover:-translate-y-0.5 hover:bg-amber-50/40",
                     )}
                   >
-                    <opt.icon className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                    <p className="mt-2 text-sm font-bold text-stone-900 dark:text-stone-100">{opt.label}</p>
-                    <p className="text-xs text-stone-700 dark:text-stone-300">{opt.hint}</p>
+                    <opt.icon className="h-5 w-5 text-amber-700" />
+                    <p className="mt-2 text-sm font-bold text-stone-900">{opt.label}</p>
+                    <p className="text-xs text-stone-700">{opt.hint}</p>
                   </button>
                 ))}
               </div>
@@ -357,19 +357,19 @@ export default function AdminDiscountsPage() {
 
           {step === 2 && (
             <div className="space-y-4">
-              <h2 className="font-serif text-xl font-bold text-stone-900 dark:text-stone-100">Step 2 — Discount Details</h2>
+              <h2 className="font-serif text-xl font-bold text-stone-900">Step 2 — Discount Details</h2>
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
+                <label className="text-xs font-bold uppercase tracking-wide text-stone-700">
                   Discount Code
                   <input
                     value={code}
                     onChange={(e) => setCode(e.target.value.toUpperCase())}
                     required
                     placeholder="COOKIE15"
-                    className="mt-1 w-full rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none ring-amber-200 transition focus:ring-2 dark:bg-stone-900 dark:text-stone-100"
+                    className="mt-1 w-full rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none ring-amber-200 transition focus:ring-2"
                   />
                 </label>
-                <label className="text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
+                <label className="text-xs font-bold uppercase tracking-wide text-stone-700">
                   Value
                   <input
                     value={value}
@@ -378,10 +378,10 @@ export default function AdminDiscountsPage() {
                     type="number"
                     min={0}
                     step="0.01"
-                    className="mt-1 w-full rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none ring-amber-200 transition focus:ring-2 dark:bg-stone-900 dark:text-stone-100"
+                    className="mt-1 w-full rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none ring-amber-200 transition focus:ring-2"
                   />
                 </label>
-                <label className="text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
+                <label className="text-xs font-bold uppercase tracking-wide text-stone-700">
                   Max Uses
                   <input
                     value={maxUses}
@@ -389,34 +389,34 @@ export default function AdminDiscountsPage() {
                     type="number"
                     min={1}
                     placeholder="500"
-                    className="mt-1 w-full rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none ring-amber-200 transition focus:ring-2 dark:bg-stone-900 dark:text-stone-100"
+                    className="mt-1 w-full rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none ring-amber-200 transition focus:ring-2"
                   />
                 </label>
-                <label className="text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
+                <label className="text-xs font-bold uppercase tracking-wide text-stone-700">
                   Expiration Date
                   <input
                     value={expiry}
                     onChange={(e) => setExpiry(e.target.value)}
                     type="date"
-                    className="mt-1 w-full rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none ring-amber-200 transition focus:ring-2 dark:bg-stone-900 dark:text-stone-100"
+                    className="mt-1 w-full rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none ring-amber-200 transition focus:ring-2"
                   />
                 </label>
-                <label className="text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
+                <label className="text-xs font-bold uppercase tracking-wide text-stone-700">
                   Minimum Order (EGP)
                   <input
                     value={minOrder}
                     onChange={(e) => setMinOrder(e.target.value)}
                     type="number"
                     min={0}
-                    className="mt-1 w-full rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none ring-amber-200 transition focus:ring-2 dark:bg-stone-900 dark:text-stone-100"
+                    className="mt-1 w-full rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none ring-amber-200 transition focus:ring-2"
                   />
                 </label>
-                <label className="text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
+                <label className="text-xs font-bold uppercase tracking-wide text-stone-700">
                   Campaign Tag
                   <input
                     value={campaignTag}
                     onChange={(e) => setCampaignTag(e.target.value)}
-                    className="mt-1 w-full rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none ring-amber-200 transition focus:ring-2 dark:bg-stone-900 dark:text-stone-100"
+                    className="mt-1 w-full rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none ring-amber-200 transition focus:ring-2"
                   />
                 </label>
               </div>
@@ -425,9 +425,9 @@ export default function AdminDiscountsPage() {
 
           {step === 3 && (
             <div className="space-y-4">
-              <h2 className="font-serif text-xl font-bold text-stone-900 dark:text-stone-100">Step 3 — Smart Rules Engine</h2>
+              <h2 className="font-serif text-xl font-bold text-stone-900">Step 3 — Smart Rules Engine</h2>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">Condition Mode</span>
+                <span className="text-xs font-bold uppercase tracking-wide text-stone-700">Condition Mode</span>
                 {(["AND", "OR"] as const).map((mode) => (
                   <button
                     key={mode}
@@ -437,7 +437,7 @@ export default function AdminDiscountsPage() {
                       "rounded-full px-3 py-1 text-xs font-bold",
                       ruleMode === mode
                         ? "bg-cb-terracotta-dark text-white"
-                        : "border border-cb-border bg-white text-stone-700 dark:bg-stone-900 dark:text-stone-300",
+                        : "border border-cb-border bg-white text-stone-700",
                     )}
                   >
                     {mode}
@@ -463,8 +463,8 @@ export default function AdminDiscountsPage() {
                     className={cn(
                       "rounded-2xl border p-3 text-left text-sm transition",
                       selectedRules.includes(rule)
-                        ? "border-amber-400 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200"
-                        : "border-cb-border bg-white text-stone-700 dark:bg-stone-900 dark:text-stone-300",
+                        ? "border-amber-400 bg-amber-50 text-amber-900"
+                        : "border-cb-border bg-white text-stone-700",
                     )}
                   >
                     {rule}
@@ -484,7 +484,7 @@ export default function AdminDiscountsPage() {
             <button
               type="button"
               onClick={() => setCode((prev) => `${prev || "COOKIE"}-COPY`)}
-              className="inline-flex items-center gap-1 rounded-2xl border border-cb-border bg-white px-4 py-2 text-sm font-semibold text-stone-800 dark:bg-stone-900 dark:text-stone-200"
+              className="inline-flex items-center gap-1 rounded-2xl border border-cb-border bg-white px-4 py-2 text-sm font-semibold text-stone-800"
             >
               <Copy className="h-4 w-4" />
               Clone Draft
@@ -492,7 +492,7 @@ export default function AdminDiscountsPage() {
             <button
               type="button"
               onClick={() => void load()}
-              className="rounded-2xl border border-cb-border bg-white px-4 py-2 text-sm font-semibold text-stone-800 dark:bg-stone-900 dark:text-stone-200"
+              className="rounded-2xl border border-cb-border bg-white px-4 py-2 text-sm font-semibold text-stone-800"
             >
               Refresh Data
             </button>
@@ -500,37 +500,37 @@ export default function AdminDiscountsPage() {
         </form>
 
         <div className="space-y-4">
-          <aside className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
-            <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
-              <Brain className="h-5 w-5 text-amber-700 dark:text-amber-300" />
+          <aside className="rounded-3xl border border-cb-border bg-white/95 p-5 shadow-sm">
+            <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900">
+              <Brain className="h-5 w-5 text-amber-700" />
               AI Assistant
             </h3>
             <div className="mt-3 space-y-2">
               {aiHints.map((msg) => (
-                <p key={msg} className="rounded-2xl border border-cb-border bg-white/90 px-3 py-2 text-xs text-stone-800 dark:bg-stone-900/80 dark:text-stone-200">
+                <p key={msg} className="rounded-2xl border border-cb-border bg-white/90 px-3 py-2 text-xs text-stone-800">
                   {msg}
                 </p>
               ))}
             </div>
           </aside>
 
-          <aside className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
-            <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
-              <Ticket className="h-5 w-5 text-amber-700 dark:text-amber-300" />
+          <aside className="rounded-3xl border border-cb-border bg-white/95 p-5 shadow-sm">
+            <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900">
+              <Ticket className="h-5 w-5 text-amber-700" />
               Live Preview
             </h3>
-            <div className="mt-4 rounded-2xl border border-cb-border bg-[#FFF6EE] p-4 dark:bg-stone-900">
-              <p className="text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">Coupon Card</p>
-              <p className="mt-1 font-serif text-2xl font-bold text-stone-950 dark:text-white">{code || "YOUR-CODE"}</p>
-              <p className="text-sm text-stone-800 dark:text-stone-300">
+            <div className="mt-4 rounded-2xl border border-cb-border bg-[#FFF6EE] p-4 text-stone-900">
+              <p className="text-xs font-bold uppercase tracking-wide text-stone-700">Coupon Card</p>
+              <p className="mt-1 font-serif text-2xl font-bold text-stone-950">{code || "YOUR-CODE"}</p>
+              <p className="text-sm text-stone-800">
                 {previewValue} off • Min order EGP {Number(minOrder || 0)}
               </p>
-              <p className="mt-1 text-xs text-stone-700 dark:text-stone-300">Expires: {previewExpiry}</p>
+              <p className="mt-1 text-xs text-stone-700">Expires: {previewExpiry}</p>
               <div className="mt-3 flex gap-2">
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900">
                   {campaignTag}
                 </span>
-                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-900 dark:bg-blue-950/50 dark:text-blue-200">
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-900">
                   {ruleMode} {selectedRules.length} rules
                 </span>
               </div>
@@ -539,14 +539,14 @@ export default function AdminDiscountsPage() {
         </div>
       </div>
 
-      <section className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm sm:p-6">
+      <section className="rounded-3xl border border-cb-border bg-white/95 p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-serif text-2xl font-bold text-stone-900 dark:text-stone-100">Advanced Campaign Table</h2>
-            <p className="text-sm text-stone-700 dark:text-stone-300">Search, filter, sort, and monitor discount performance in one place.</p>
+            <h2 className="font-serif text-2xl font-bold text-stone-900">Advanced Campaign Table</h2>
+            <p className="text-sm text-stone-700">Search, filter, sort, and monitor discount performance in one place.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex items-center gap-2 rounded-2xl border border-cb-border bg-white px-3 py-2 dark:bg-stone-900">
+            <label className="inline-flex items-center gap-2 rounded-2xl border border-cb-border bg-white px-3 py-2">
               <Search className="h-4 w-4 text-stone-500" />
               <input
                 value={query}
@@ -558,7 +558,7 @@ export default function AdminDiscountsPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm dark:bg-stone-900"
+              className="rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm"
             >
               <option value="all">All states</option>
               <option value="active">Active</option>
@@ -568,23 +568,23 @@ export default function AdminDiscountsPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm dark:bg-stone-900"
+              className="rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm"
             >
               <option value="performance">Sort by performance</option>
               <option value="code">Sort by code</option>
               <option value="value">Sort by value</option>
               <option value="expires">Sort by expiry</option>
             </select>
-            <button type="button" className="inline-flex items-center gap-1 rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm font-semibold dark:bg-stone-900">
+            <button type="button" className="inline-flex items-center gap-1 rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm font-semibold text-stone-800">
               <Filter className="h-4 w-4" />
               Saved Views
             </button>
           </div>
         </div>
 
-        <div className="mt-4 overflow-x-auto rounded-2xl border border-cb-border bg-white/90 dark:bg-stone-900/70">
+        <div className="mt-4 overflow-x-auto rounded-2xl border border-cb-border bg-white/90">
           <table className="w-full min-w-[1200px] text-sm">
-            <thead className="sticky top-0 border-b border-cb-border bg-cb-surface-2/90 text-left text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">
+            <thead className="sticky top-0 border-b border-cb-border bg-cb-surface-2/90 text-left text-xs font-bold uppercase tracking-wide text-stone-700">
               <tr>
                 <th className="px-4 py-3">Code</th>
                 <th className="px-4 py-3">Type</th>
@@ -601,19 +601,19 @@ export default function AdminDiscountsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td className="px-4 py-5 text-stone-700 dark:text-stone-300" colSpan={10}>
+                  <td className="px-4 py-5 text-stone-700" colSpan={10}>
                     Loading campaigns...
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td className="px-4 py-5 text-rose-700 dark:text-rose-300" colSpan={10}>
+                  <td className="px-4 py-5 text-rose-700" colSpan={10}>
                     {error}
                   </td>
                 </tr>
               ) : pagedRows.length === 0 ? (
                 <tr>
-                  <td className="px-4 py-8 text-center text-stone-700 dark:text-stone-300" colSpan={10}>
+                  <td className="px-4 py-8 text-center text-stone-700" colSpan={10}>
                     No campaigns match your filters.
                   </td>
                 </tr>
@@ -626,20 +626,20 @@ export default function AdminDiscountsPage() {
                       idx % 2 === 0 ? "bg-transparent" : "bg-cb-surface/30",
                     )}
                   >
-                    <td className="px-4 py-3 font-bold text-stone-900 dark:text-stone-100">{d.code}</td>
-                    <td className="px-4 py-3 text-stone-800 dark:text-stone-200">{typeLabel(d.type)}</td>
+                    <td className="px-4 py-3 font-bold text-stone-900">{d.code}</td>
+                    <td className="px-4 py-3 text-stone-800">{typeLabel(d.type)}</td>
                     <td className="px-4 py-3">
                       <span className={cn("rounded-full px-2 py-1 text-[11px] font-bold", statusClass(d.status))}>{d.status}</span>
                     </td>
-                    <td className="px-4 py-3 text-stone-800 dark:text-stone-200">EGP {(d.value * 170).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-stone-800">EGP {(d.value * 170).toLocaleString()}</td>
                     <td className="px-4 py-3">
-                      <div className="h-2 w-24 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700">
+                      <div className="h-2 w-24 overflow-hidden rounded-full bg-stone-200">
                         <div className="h-full rounded-full bg-emerald-500" style={{ width: `${d.usage}%` }} />
                       </div>
-                      <span className="text-xs text-stone-700 dark:text-stone-300">{d.usage}%</span>
+                      <span className="text-xs text-stone-700">{d.usage}%</span>
                     </td>
-                    <td className="px-4 py-3 text-stone-800 dark:text-stone-200">{d.remaining == null ? "Unlimited" : d.remaining}</td>
-                    <td className="px-4 py-3 text-stone-800 dark:text-stone-200">
+                    <td className="px-4 py-3 text-stone-800">{d.remaining == null ? "Unlimited" : d.remaining}</td>
+                    <td className="px-4 py-3 text-stone-800">
                       {d.valid_until ? new Date(d.valid_until).toLocaleDateString() : "No expiry"}
                     </td>
                     <td className="px-4 py-3">
@@ -648,7 +648,7 @@ export default function AdminDiscountsPage() {
                         {d.perf}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-stone-700 dark:text-stone-300">
+                    <td className="px-4 py-3 text-xs text-stone-700">
                       {d.perf >= 75 ? "Scale this campaign" : "Try +2% value test"}
                     </td>
                     <td className="px-4 py-3">
@@ -664,24 +664,24 @@ export default function AdminDiscountsPage() {
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs text-stone-700 dark:text-stone-300">
+          <p className="text-xs text-stone-700">
             Showing {(activePage - 1) * pageSize + 1} - {Math.min(activePage * pageSize, rows.length)} of {rows.length}
           </p>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="rounded-xl border border-cb-border bg-white px-3 py-1.5 text-xs font-bold text-stone-700 dark:bg-stone-900 dark:text-stone-300"
+              className="rounded-xl border border-cb-border bg-white px-3 py-1.5 text-xs font-bold text-stone-700"
             >
               Prev
             </button>
-            <span className="text-xs font-bold text-stone-700 dark:text-stone-300">
+            <span className="text-xs font-bold text-stone-700">
               {activePage} / {pages}
             </span>
             <button
               type="button"
               onClick={() => setPage((p) => Math.min(pages, p + 1))}
-              className="rounded-xl border border-cb-border bg-white px-3 py-1.5 text-xs font-bold text-stone-700 dark:bg-stone-900 dark:text-stone-300"
+              className="rounded-xl border border-cb-border bg-white px-3 py-1.5 text-xs font-bold text-stone-700"
             >
               Next
             </button>
@@ -710,13 +710,13 @@ export default function AdminDiscountsPage() {
             icon: Brain,
           },
         ].map((card) => (
-          <article key={card.title} className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
+          <article key={card.title} className="rounded-3xl border border-cb-border bg-white/95 p-5 shadow-sm">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">{card.title}</p>
-              <card.icon className="h-4 w-4 text-amber-700 dark:text-amber-300" />
+              <p className="text-xs font-bold uppercase tracking-wide text-amber-800">{card.title}</p>
+              <card.icon className="h-4 w-4 text-amber-700" />
             </div>
-            <p className="mt-3 font-serif text-3xl font-bold text-stone-950 dark:text-white">{card.value}</p>
-            <p className="text-sm text-stone-700 dark:text-stone-300">{card.note}</p>
+            <p className="mt-3 font-serif text-3xl font-bold text-stone-950">{card.value}</p>
+            <p className="text-sm text-stone-700">{card.note}</p>
           </article>
         ))}
       </section>

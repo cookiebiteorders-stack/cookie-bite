@@ -55,7 +55,7 @@ export async function sendAutomatedEmailNow(
       await updateQueueStatus(queueId, {
         status: "sent",
         provider: result.provider,
-        provider_message_id: result.messageId ?? null,
+        provider_message_id: result.messageId ?? undefined,
         sent_at: new Date().toISOString(),
       });
     }

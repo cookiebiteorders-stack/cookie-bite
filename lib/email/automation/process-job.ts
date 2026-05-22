@@ -36,7 +36,7 @@ export async function processEmailQueueRow(row: Record<string, unknown>): Promis
     await updateQueueStatus(id, {
       status: "sent",
       provider: result.provider,
-      provider_message_id: result.messageId ?? null,
+      provider_message_id: result.messageId ?? undefined,
       sent_at: new Date().toISOString(),
     });
     await writeEmailLog({

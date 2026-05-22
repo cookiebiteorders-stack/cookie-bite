@@ -22,7 +22,11 @@ export async function GET() {
     integrations,
     cron: {
       configured: cronConfigured,
-      endpoint: "POST /api/cron/notification-jobs",
+      endpoints: [
+        "POST /api/cron/notification-jobs",
+        "POST /api/cron/email-worker",
+        "POST /api/cron/email-health",
+      ],
       schedule_hint: "every 5 minutes (Hostinger cron)",
       auth_header: "x-internal-secret",
     },
