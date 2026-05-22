@@ -6,6 +6,7 @@ import {
   firstProfileSchemaError,
   hasAnyProfileFields,
   hasMeaningfulAddress,
+  isSkipProfileRequest,
 } from "@/lib/account/profile-schema";
 import {
   getUserByClerkId,
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(bilingualError("Unauthorized", "غير مصرح"), { status: 401 });
   }
 
-  const parsed = completeProfileSchema.safeParse(await req.json().catch(() => null));
+  const parsed = completeProfileSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
     const { en, ar } = firstProfileSchemaError(parsed.error);
     return NextResponse.json({ ...bilingualError(en, ar) }, { status: 400 });
@@ -95,7 +96,8 @@ export async function POST(req: NextRequest) {
     dbUser = await upsertUserFromClerk({
       clerkUserId: userId,
       email,
-      fullName: parsed.data.full_name_en ?? null,
+      fullName:
+        isSkipProfileRequest(parsed.data) ? null : (parsed.data.full_name_en ?? null),
       avatarUrl: clerkUser?.imageUrl ?? null,
     });
   }
@@ -108,7 +110,7 @@ export async function POST(req: NextRequest) {
 
   const body = parsed.data;
 
-  if (!body.skip_profile && hasAnyProfileFields(body)) {
+  if (!isSkipProfileRequest(body) && hasAnyProfileFields(body)) {
     const updated = await updateUserProfile(dbUser.id, {
       ...(body.full_name_en != null ? { full_name_en: body.full_name_en } : {}),
       ...(body.full_name_ar != null ? { full_name_ar: body.full_name_ar } : {}),
@@ -154,7 +156,7 @@ export async function POST(req: NextRequest) {
     longitude: number;
   } | null = null;
 
-  if (!body.skip_profile && hasMeaningfulAddress(body.address)) {
+  if (!isSkipProfileRequest(body) && hasMeaningfulAddress(body.address)) {
     const addr = body.address!;
     const lat = addr.latitude ?? 30.0444;
     const lng = addr.longitude ?? 31.2357;
@@ -229,7 +231,7 @@ export async function POST(req: NextRequest) {
     console.error("staff profile alert failed", err);
   }
 
-  if (body.full_name_en) {
+  if (!isSkipProfileRequest(body) && body.full_name_en) {
     try {
       const client = await clerkClient();
       const parts = body.full_name_en.trim().split(/\s+/);
@@ -248,6 +250,6 @@ export async function POST(req: NextRequest) {
     ok: true,
     profile: profileUser,
     complete: true,
-    skipped: Boolean(body.skip_profile),
+    skipped: isSkipProfileRequest(body),
   });
 }

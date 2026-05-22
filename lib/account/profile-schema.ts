@@ -20,80 +20,80 @@ function trimToNull(value: unknown): string | null {
   return t.length > 0 ? t : null;
 }
 
+/** Zod 4: nullish input — غياب الحقل لا يفشّل التحقق (مهم لتخطي الملف) */
 function optionalEgyptPhone() {
-  return z
-    .union([z.string(), z.null(), z.undefined()])
-    .transform((v) => {
-      const raw = typeof v === "string" ? v : "";
-      const n = normalizeEgyptPhone(raw);
-      return n.length > 0 ? n : null;
-    })
-    .refine((v) => v === null || EGYPT_PHONE_RE.test(v), {
-      message: "رقم مصر: 01xxxxxxxxx (11 رقم)",
-    });
+  return z.nullish(z.string()).transform((v) => {
+    const n = normalizeEgyptPhone(v ?? "");
+    if (!n.length) return null;
+    return EGYPT_PHONE_RE.test(n) ? n : null;
+  });
 }
 
 function optionalName(max = 120) {
-  return z
-    .union([z.string(), z.null(), z.undefined()])
-    .transform((v) => {
-      const t = trimToNull(v);
-      if (t && t.length === 1) return null;
-      return t;
-    })
-    .refine((v) => v === null || (v.length >= 2 && v.length <= max), {
-      message: "الاسم يجب أن يكون حرفين على الأقل إن أُدخل",
-    });
+  return z.nullish(z.string()).transform((v) => {
+    const t = trimToNull(v);
+    if (t && t.length === 1) return null;
+    if (t && (t.length < 2 || t.length > max)) return null;
+    return t;
+  });
 }
 
-const optionalAddressSchema = z
-  .object({
-    label: z.union([z.string(), z.null(), z.undefined()]).transform(trimToNull),
-    recipient: optionalName(120),
-    phone: optionalEgyptPhone(),
-    phone_secondary: optionalEgyptPhone(),
-    street: z
-      .union([z.string(), z.null(), z.undefined()])
-      .transform(trimToNull)
-      .refine((v) => v === null || (v.length >= 3 && v.length <= 240), {
-        message: "الشارع قصير جداً",
-      }),
-    building: z.union([z.string(), z.null(), z.undefined()]).transform(trimToNull),
-    floor: z.union([z.string(), z.null(), z.undefined()]).transform(trimToNull),
-    apartment: z.union([z.string(), z.null(), z.undefined()]).transform(trimToNull),
-    city: z
-      .union([z.string(), z.null(), z.undefined()])
-      .transform(trimToNull)
-      .refine((v) => v === null || (v.length >= 2 && v.length <= 80), {
-        message: "اسم المدينة قصير",
-      }),
-    governorate: z
-      .union([z.string(), z.null(), z.undefined()])
-      .transform(trimToNull)
-      .refine((v) => v === null || (v.length >= 2 && v.length <= 80), {
-        message: "اسم المحافظة قصير",
-      }),
-    delivery_notes: z.union([z.string(), z.null(), z.undefined()]).transform(trimToNull),
-    latitude: z.union([z.number(), z.null(), z.undefined()]).optional(),
-    longitude: z.union([z.number(), z.null(), z.undefined()]).optional(),
-  })
-  .optional()
-  .nullable();
+function optionalStreet() {
+  return z.nullish(z.string()).transform((v) => {
+    const t = trimToNull(v);
+    if (t && t.length < 3) return null;
+    return t;
+  });
+}
 
-export const completeProfileSchema = z.object({
-  /** تخطي الإكمال — يُحدَّد الملف كمكتمل دون إلزام حقول */
-  skip_profile: z.boolean().optional(),
+function optionalCityOrGov() {
+  return z.nullish(z.string()).transform((v) => {
+    const t = trimToNull(v);
+    if (t && t.length < 2) return null;
+    return t;
+  });
+}
+
+const profileFieldsSchema = z.object({
   full_name_en: optionalName(120),
   full_name_ar: optionalName(120),
   phone: optionalEgyptPhone(),
   phone_secondary: optionalEgyptPhone(),
-  profile_notes: z.union([z.string(), z.null(), z.undefined()]).transform(trimToNull),
-  address: optionalAddressSchema,
+  profile_notes: z.nullish(z.string()).transform(trimToNull),
+  address: z
+    .object({
+      label: z.nullish(z.string()).transform(trimToNull),
+      recipient: optionalName(120),
+      phone: optionalEgyptPhone(),
+      phone_secondary: optionalEgyptPhone(),
+      street: optionalStreet(),
+      building: z.nullish(z.string()).transform(trimToNull),
+      floor: z.nullish(z.string()).transform(trimToNull),
+      apartment: z.nullish(z.string()).transform(trimToNull),
+      city: optionalCityOrGov(),
+      governorate: optionalCityOrGov(),
+      delivery_notes: z.nullish(z.string()).transform(trimToNull),
+      latitude: z.nullish(z.number()),
+      longitude: z.nullish(z.number()),
+    })
+    .nullish(),
 });
+
+const skipProfileSchema = z.object({
+  skip_profile: z.literal(true),
+});
+
+/** تخطي صريح أو إرسال حقول اختيارية — متوافق مع Zod 4 */
+export const completeProfileSchema = z.union([
+  skipProfileSchema,
+  profileFieldsSchema.extend({
+    skip_profile: z.literal(false).nullish(),
+  }),
+]);
 
 export type CompleteProfileInput = z.infer<typeof completeProfileSchema>;
 
-export type ParsedAddress = NonNullable<CompleteProfileInput["address"]>;
+export type ParsedAddress = NonNullable<z.infer<typeof profileFieldsSchema>["address"]>;
 
 /** عنوان كامل بما يكفي للحفظ في قاعدة البيانات (حقول not null) */
 export function hasMeaningfulAddress(
@@ -108,7 +108,14 @@ export function hasMeaningfulAddress(
   );
 }
 
+export function isSkipProfileRequest(
+  body: CompleteProfileInput,
+): body is z.infer<typeof skipProfileSchema> {
+  return "skip_profile" in body && body.skip_profile === true;
+}
+
 export function hasAnyProfileFields(body: CompleteProfileInput): boolean {
+  if (isSkipProfileRequest(body)) return false;
   return Boolean(
     body.full_name_en ||
       body.full_name_ar ||
