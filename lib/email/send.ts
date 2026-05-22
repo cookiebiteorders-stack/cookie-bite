@@ -1,4 +1,5 @@
 import { EMAIL_CONFIG, getResend } from "@/lib/email/resend";
+import { sendAutomatedEmail } from "@/lib/email/automation/pipeline";
 import { contactNotification, contactAutoReply } from "@/lib/email/templates";
 import { renderTemplate } from "@/lib/notification-library";
 
@@ -24,7 +25,32 @@ async function dispatch(opts: {
   html: string;
   replyTo?: string;
   attachments?: EmailAttachment[];
+  emailType?: "transactional" | "notification" | "otp" | "invoice" | "marketing";
+  templateKey?: string;
+  immediate?: boolean;
 }): Promise<SendResult> {
+  const useAutomation = process.env.EMAIL_AUTOMATION_ENABLED !== "false";
+  if (useAutomation) {
+    const result = await sendAutomatedEmail({
+      to: opts.to,
+      subject: opts.subject,
+      html: opts.html,
+      replyTo: opts.replyTo ?? EMAIL_CONFIG.replyTo,
+      emailType: opts.emailType ?? "transactional",
+      templateKey: opts.templateKey,
+      immediate: opts.immediate ?? false,
+      attachments: opts.attachments?.map((a) => ({
+        filename: a.filename,
+        content:
+          typeof a.content === "string" ? a.content : a.content.toString("base64"),
+      })),
+    });
+    if (!result.ok) {
+      throw new Error(result.error ?? "Email send failed");
+    }
+    return { data: { id: result.messageId ?? result.queueId } } as SendResult;
+  }
+
   const resend = getResend();
   return resend.emails.send({
     from: EMAIL_CONFIG.from,
@@ -168,6 +194,8 @@ export async function sendTemplateEmail(opts: {
     html: rendered.html,
     replyTo: opts.replyTo,
     attachments: opts.attachments,
+    templateKey: opts.templateKey,
+    emailType: "notification",
   });
 }
 

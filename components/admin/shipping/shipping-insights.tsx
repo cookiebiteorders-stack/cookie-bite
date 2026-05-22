@@ -37,28 +37,25 @@ export function ShippingInsights({ zones }: ShippingInsightsProps) {
       label: "Total zones",
       value: String(total),
       icon: MapPin,
-      className: "border-sky-200/90 bg-white text-stone-950 dark:border-sky-900/50 dark:bg-stone-900 dark:text-stone-100",
+      className: "border-sky-200/90 bg-white text-stone-950",
     },
     {
       label: "Active",
       value: String(activeCount),
       icon: Zap,
-      className:
-        "border-emerald-200/90 bg-white text-stone-950 dark:border-emerald-900/50 dark:bg-stone-900 dark:text-stone-100",
+      className: "border-emerald-200/90 bg-white text-stone-950",
     },
     {
       label: "Avg delivery (mid)",
       value: avgEta(zones),
       icon: Clock,
-      className:
-        "border-violet-200/90 bg-white text-stone-950 dark:border-violet-900/50 dark:bg-stone-900 dark:text-stone-100",
+      className: "border-violet-200/90 bg-white text-stone-950",
     },
     {
       label: "Avg base fee",
       value: avgFee(zones),
       icon: Coins,
-      className:
-        "border-amber-200/90 bg-white text-stone-950 dark:border-amber-900/50 dark:bg-stone-900 dark:text-stone-100",
+      className: "border-amber-200/90 bg-white text-stone-950",
     },
   ];
 
@@ -73,10 +70,10 @@ export function ShippingInsights({ zones }: ShippingInsightsProps) {
           className={cn(cardBase, item.className)}
         >
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-bold uppercase tracking-wide text-stone-700 dark:text-stone-300">{item.label}</p>
-            <item.icon className="h-4 w-4 text-amber-700 dark:text-amber-300" aria-hidden />
+            <p className="text-xs font-bold uppercase tracking-wide text-stone-700">{item.label}</p>
+            <item.icon className="h-4 w-4 text-amber-700" aria-hidden />
           </div>
-          <p className="mt-2 font-serif text-2xl font-bold tabular-nums text-stone-950 dark:text-white">{item.value}</p>
+          <p className="mt-2 font-serif text-2xl font-bold tabular-nums text-stone-950">{item.value}</p>
         </motion.div>
       ))}
     </div>

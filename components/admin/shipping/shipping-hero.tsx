@@ -41,12 +41,12 @@ export function ShippingHero({ online }: ShippingHeroProps) {
           </motion.div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-serif text-2xl font-bold tracking-tight text-cb-text-strong sm:text-3xl">
+              <h1 className="font-serif text-2xl font-bold tracking-tight text-stone-950 sm:text-3xl">
                 Shipping Orchestration
               </h1>
-              <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-300" aria-hidden />
+              <Sparkles className="h-4 w-4 text-amber-700" aria-hidden />
             </div>
-            <p className="mt-2 max-w-xl text-sm font-medium leading-relaxed text-stone-900 dark:text-stone-200 sm:text-base">
+            <p className="mt-2 max-w-xl text-sm font-medium leading-relaxed text-stone-700 sm:text-base">
               Manage delivery zones, fees, SLA ranges, and priority — with live validation and
               enterprise-grade controls.
             </p>

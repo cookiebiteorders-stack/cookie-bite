@@ -625,13 +625,13 @@ export function DeliveryZonesMap() {
     <section className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
       <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-amber-800">
             Delivery zones manager
           </p>
-          <h2 className="mt-1 font-serif text-2xl font-bold text-cb-text-strong">
+          <h2 className="mt-1 font-serif text-2xl font-bold text-stone-950">
             Map-based zone placement
           </h2>
-          <p className="mt-1 max-w-2xl text-sm text-cb-text">
+          <p className="mt-1 max-w-2xl text-sm text-stone-700">
             ارسم مناطق التوصيل بصرياً على الخريطة. استخدم البحث أعلى الخريطة
             للعثور على حي أو مدينة أو منطقة توصيل، ثم اضغط لإضافة منطقة وحدّد
             النصف-قطر والسعر. الموقع الجغرافي يُحفظ محلياً
@@ -899,11 +899,11 @@ export function DeliveryZonesMap() {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-cb-border bg-cb-surface px-4 py-3">
-      <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-cb-text-muted">
+    <div className="rounded-2xl border border-cb-border bg-white px-4 py-3">
+      <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-stone-600">
         {label}
       </p>
-      <p className="mt-1 font-serif text-xl font-semibold text-cb-text-strong">
+      <p className="mt-1 font-serif text-xl font-semibold text-stone-950">
         {value}
       </p>
     </div>

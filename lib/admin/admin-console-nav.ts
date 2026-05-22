@@ -24,6 +24,7 @@ export const ADMIN_CONSOLE_NAV_ITEMS: AdminConsoleNavItem[] = [
   { href: "/admin/media", label: "Media", module: "media" },
   { href: "/admin/cms", label: "CMS", module: "cms" },
   { href: "/admin/template-library", label: "Templates", module: "templates" },
+  { href: "/admin/email", label: "Email", module: "settings" },
   { href: "/admin/settings", label: "Settings", module: "settings" },
 ];
 

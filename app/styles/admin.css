@@ -81,12 +81,23 @@
 
 /* Cream panels stay light under OS dark / .dark — hero copy always dark (beats base h1 + dark: utilities) */
 .admin-console .admin-panel-surface > .relative.flex > div:first-child > :is(h1, h2, h3),
-.admin-console .admin-hero-surface > .relative.flex > div:first-child > :is(h1, h2, h3) {
+.admin-console .admin-hero-surface > .relative.flex > div:first-child > :is(h1, h2, h3),
+.admin-console .admin-hero-surface :is(h1, h2, h3) {
   color: #1c1917 !important;
 }
 
 .admin-console .admin-panel-surface > .relative.flex > div:first-child > p.max-w-2xl,
-.admin-console .admin-hero-surface > .relative.flex > div:first-child > p.max-w-2xl {
+.admin-console .admin-hero-surface > .relative.flex > div:first-child > p.max-w-2xl,
+.admin-console .admin-hero-surface p.max-w-xl,
+.admin-console .admin-hero-surface p.max-w-2xl {
+  color: #44403c !important;
+}
+
+.admin-console section.rounded-3xl.border-cb-border :is(h2, h3) {
+  color: #1c1917 !important;
+}
+
+.admin-console section.rounded-3xl.border-cb-border p.max-w-2xl {
   color: #44403c !important;
 }
 
