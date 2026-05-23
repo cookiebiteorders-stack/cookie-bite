@@ -318,6 +318,7 @@ export async function POST(req: NextRequest) {
   });
 
   try {
+    revalidatePath("/");
     revalidatePath("/shop");
     revalidatePath(`/shop/${data.slug}`);
     revalidatePath("/api/products");
@@ -365,6 +366,7 @@ export async function PATCH(req: NextRequest) {
   });
 
   try {
+    revalidatePath("/");
     revalidatePath("/shop");
     for (const row of data ?? []) {
       if (row?.slug) revalidatePath(`/shop/${row.slug}`);

@@ -33,9 +33,11 @@ const HeroSection5 = dynamic(
   },
 );
 
-const ProductCarousel = dynamic(
+const HomeProductCarousel = dynamic(
   () =>
-    import("@/components/sections/product-carousel").then((m) => m.ProductCarousel),
+    import("@/components/sections/home-product-carousel").then((m) => ({
+      default: m.HomeProductCarousel,
+    })),
   { loading: () => <div className="h-40 animate-pulse bg-cb-peach/30" /> },
 );
 
@@ -72,7 +74,7 @@ export default function HomePage() {
       <HeroSection5 />
       <TrustBar />
       <ExploreCategories />
-      <ProductCarousel />
+      <HomeProductCarousel />
       <HomeStorySnippet />
       <TestimonialSlider />
       <InstagramGrid />

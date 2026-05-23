@@ -6,17 +6,21 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ViewReveal } from "@/components/motion/view-reveal";
-import { PRODUCTS } from "@/lib/data";
+import type { Product } from "@/lib/data";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { buttonClassName } from "@/components/ui/button";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 
-const featured = PRODUCTS;
+type ProductCarouselProps = {
+  /** من الخادم — منتجات بشارة featured؛ إن فُرغ يُخفى الكاروسيل */
+  products?: Product[];
+};
 
-export function ProductCarousel() {
+export function ProductCarousel({ products = [] }: ProductCarouselProps) {
   const { t } = useLanguage();
   const [index, setIndex] = useState(0);
+  const featured = products;
   const hasFeatured = featured.length > 0;
 
   const triple = hasFeatured
@@ -30,12 +34,14 @@ export function ProductCarousel() {
   const next = useCallback(() => {
     if (!hasFeatured) return;
     setIndex((i) => (i + 1) % featured.length);
-  }, [hasFeatured]);
+  }, [hasFeatured, featured.length]);
 
   const prev = useCallback(() => {
     if (!hasFeatured) return;
     setIndex((i) => (i - 1 + featured.length) % featured.length);
-  }, [hasFeatured]);
+  }, [hasFeatured, featured.length]);
+
+  if (!hasFeatured) return null;
 
   return (
     <section className="cb-pl-bestsellers relative border-y border-[var(--color-border-soft)] bg-white py-16 md:py-24">

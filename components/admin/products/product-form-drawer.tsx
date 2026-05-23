@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Cookie,
   FileText,
+  Home,
   Images,
   Sparkles,
   Tag,
@@ -17,8 +18,10 @@ import { fetchJson } from "@/lib/http/fetch-json";
 import type { AdminProductRow } from "@/lib/admin/products-dashboard-types";
 import {
   EMPTY_PRODUCT_FORM,
+  badgesIncludeHomepage,
   formToApiPayload,
   rowToProductForm,
+  syncBadgesWithHomepage,
   type ProductFormState,
 } from "@/lib/admin/products-dashboard-types";
 import { ProductMediaEditor } from "@/components/admin/products/product-media-editor";
@@ -267,7 +270,17 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       } else {
         await fetchJson("/api/admin/products", { method: "POST", jsonBody: payload });
       }
-      pushToast(editing ? "تم تحديث المنتج — يمكنك تعديله مجدداً من الجدول." : "تم إنشاء المنتج.", "success");
+      const homepageNote =
+        form.show_on_homepage && form.is_active
+          ? " سيظهر في الصفحة الرئيسية."
+          : form.show_on_homepage && !form.is_active
+            ? " مُعلَّم للرئيسية — فعِّل «نشط» ليظهر للعملاء."
+            : "";
+      pushToast(
+        (editing ? "تم تحديث المنتج — يمكنك تعديله مجدداً من الجدول." : "تم إنشاء المنتج.") +
+          homepageNote,
+        "success",
+      );
       clearProductFormDraft();
       draftToastShown.current = false;
       lastAutoNameRef.current = "";
@@ -484,7 +497,13 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     hint="كما في المتجر: الأكثر مبيعًا، جديد، رائج، مميز"
                     options={PRODUCT_BADGE_OPTIONS}
                     valueCsv={form.badges}
-                    onChangeCsv={(badges) => setForm((f) => ({ ...f, badges }))}
+                    onChangeCsv={(badges) =>
+                      setForm((f) => ({
+                        ...f,
+                        badges,
+                        show_on_homepage: badgesIncludeHomepage(badges),
+                      }))
+                    }
                     parse={(csv) => filterValidBadges(parseCatalogCsv(csv))}
                     join={joinCatalogCsv}
                     labelFor={labelForBadge}
@@ -633,20 +652,44 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     onChange={(e) => setForm((f) => ({ ...f, pieces_count: e.target.value }))}
                   />
                 </label>
-                <label
+                <div
                   className={cn(
-                    "inline-flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-emerald-200/90 bg-emerald-50/80 px-4 py-3 text-sm font-semibold text-emerald-900 shadow-sm transition hover:border-emerald-300 sm:col-span-2",
+                    "flex flex-col gap-2 sm:col-span-2",
                     formStep !== 3 && "hidden",
                   )}
                 >
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500"
-                    checked={form.is_active}
-                    onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
-                  />
-                  نشط — يظهر في المتجر للعملاء
-                </label>
+                  <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-emerald-200/90 bg-emerald-50/80 px-4 py-3 text-sm font-semibold text-emerald-900 shadow-sm transition hover:border-emerald-300">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500"
+                      checked={form.is_active}
+                      onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
+                    />
+                    نشط — يظهر في المتجر للعملاء
+                  </label>
+                  <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-amber-200/90 bg-amber-50/80 px-4 py-3 text-sm font-semibold text-amber-950 shadow-sm transition hover:border-amber-300">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+                      checked={form.show_on_homepage}
+                      onChange={(e) => {
+                        const show_on_homepage = e.target.checked;
+                        setForm((f) => ({
+                          ...f,
+                          show_on_homepage,
+                          badges: syncBadgesWithHomepage(f.badges, show_on_homepage),
+                        }));
+                      }}
+                    />
+                    <Home className="h-4 w-4 shrink-0 text-amber-700" aria-hidden />
+                    <span>
+                      عرض في الصفحة الرئيسية
+                      <span className="mt-0.5 block text-[10px] font-medium text-amber-800/90">
+                        يُضاف تلقائياً شارة «مميز» ويظهر في كاروسيل الأكثر مبيعاً
+                      </span>
+                    </span>
+                  </label>
+                </div>
 
                 <div
                   className={cn(

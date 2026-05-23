@@ -27,6 +27,7 @@ function reviveForm(raw: ProductFormState): ProductFormState {
     ...raw,
     images,
     is_active: raw.is_active !== false,
+    show_on_homepage: Boolean(raw.show_on_homepage),
   };
 }
 

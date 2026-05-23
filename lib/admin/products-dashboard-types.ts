@@ -84,6 +84,8 @@ export type ProductFormState = {
   images: ProductImageFormItem[];
   video_url: string;
   is_active: boolean;
+  /** يضيف شارة featured وتعرض المنتج في كاروسيل الصفحة الرئيسية */
+  show_on_homepage: boolean;
   meta_title: string;
   meta_description: string;
 };
@@ -115,9 +117,31 @@ export const EMPTY_PRODUCT_FORM: ProductFormState = {
   images: [{ ...EMPTY_PRODUCT_IMAGE_SLOT }],
   video_url: "",
   is_active: true,
+  show_on_homepage: false,
   meta_title: "",
   meta_description: "",
 };
+
+/** هل المنتج مُعلَّم للصفحة الرئيسية (شارة featured) */
+export function badgesIncludeHomepage(badgesCsv: string): boolean {
+  return badgesCsv
+    .split(/[\n,،]/g)
+    .map((x) => x.trim().toLowerCase())
+    .filter(Boolean)
+    .includes("featured");
+}
+
+/** مزامنة حقل الشارات مع خيار الصفحة الرئيسية */
+export function syncBadgesWithHomepage(badgesCsv: string, showOnHomepage: boolean): string {
+  const list = filterValidBadges(
+    badgesCsv
+      .split(/[\n,،]/g)
+      .map((x) => x.trim().toLowerCase())
+      .filter(Boolean),
+  ).filter((b) => b !== "featured");
+  if (showOnHomepage) list.push("featured");
+  return list.join(", ");
+}
 
 export function imagesFromRow(item: AdminProductRow): ProductImageFormItem[] {
   const normalized = normalizeProductImages(item.images, item.image_url);
@@ -161,6 +185,7 @@ export function rowToProductForm(item: AdminProductRow): ProductFormState {
     images: images.slice(0, MAX_PRODUCT_IMAGES),
     video_url: item.video_url ?? "",
     is_active: item.is_active,
+    show_on_homepage: (item.badges ?? []).includes("featured"),
     meta_title: (item.title_en ?? item.name ?? "").slice(0, 70),
     meta_description: (item.description_en ?? "").slice(0, 160),
   };
@@ -172,7 +197,7 @@ export function formToApiPayload(form: ProductFormState) {
     .map((x) => x.trim())
     .filter(Boolean);
   const badgesList = filterValidBadges(
-    form.badges
+    syncBadgesWithHomepage(form.badges, form.show_on_homepage)
       .split(/[\n,،]/g)
       .map((x) => x.trim().toLowerCase())
       .filter(Boolean),
