@@ -31,6 +31,9 @@ import {
   adminTabClass,
 } from "@/components/admin/admin-badge";
 
+/** حقول استوديو القوالب — عرض كامل + سهم select من `.cb-field` */
+const tplStudioFieldClass = "cb-field min-w-0 w-full dark:bg-stone-900";
+
 type HealthResponse = {
   canonical_host: string;
   node_env: string;
@@ -611,7 +614,7 @@ export default function AdminSettingsPage() {
                   <select
                     value={waPresetKey}
                     onChange={(e) => loadWaPreset(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-cb-border bg-white px-3 py-2 text-sm dark:bg-stone-900"
+                    className={cn("mt-1", tplStudioFieldClass)}
                   >
                     {WHATSAPP_TEMPLATE_CATALOG.map((d) => (
                       <option key={d.key} value={d.key}>
@@ -621,11 +624,12 @@ export default function AdminSettingsPage() {
                   </select>
                 </div>
               ) : null}
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="mt-3 flex flex-wrap items-stretch gap-3">
                 <select
                   value={tplChannel}
                   onChange={(e) => setTplChannel(e.target.value as "email" | "sms" | "whatsapp" | "push")}
-                  className="rounded-xl border border-cb-border bg-white px-3 py-2 text-sm dark:bg-stone-900"
+                  aria-label="قناة القالب"
+                  className={cn(tplStudioFieldClass, "min-w-[9.5rem] flex-[1_1_9.5rem] sm:max-w-[12rem]")}
                 >
                   <option value="email">email</option>
                   <option value="sms">sms</option>
@@ -636,7 +640,8 @@ export default function AdminSettingsPage() {
                   value={tplKey}
                   onChange={(e) => setTplKey(e.target.value)}
                   placeholder="template key"
-                  className="rounded-xl border border-cb-border bg-white px-3 py-2 text-sm dark:bg-stone-900"
+                  aria-label="مفتاح القالب"
+                  className={cn(tplStudioFieldClass, "min-w-[10rem] flex-[1.2_1_10rem]")}
                 />
                 <select
                   value={tplLanguage}
@@ -648,7 +653,8 @@ export default function AdminSettingsPage() {
                       setTplBody(lang === "ar" ? def.defaultBodyAr : def.defaultBodyEn);
                     }
                   }}
-                  className="rounded-xl border border-cb-border bg-white px-3 py-2 text-sm dark:bg-stone-900"
+                  aria-label="لغة القالب"
+                  className={cn(tplStudioFieldClass, "min-w-[5.5rem] flex-[0.55_1_5.5rem] sm:max-w-[7rem]")}
                 >
                   <option value="en">en</option>
                   <option value="ar">ar</option>
@@ -657,13 +663,14 @@ export default function AdminSettingsPage() {
                   value={tplSubject}
                   onChange={(e) => setTplSubject(e.target.value)}
                   placeholder="subject"
-                  className="rounded-xl border border-cb-border bg-white px-3 py-2 text-sm dark:bg-stone-900"
+                  aria-label="موضوع البريد"
+                  className={cn(tplStudioFieldClass, "min-w-[9rem] flex-[1_1_9rem]")}
                 />
                 <button
                   type="button"
                   disabled={tplBusy}
                   onClick={() => void upsertTemplate()}
-                  className="rounded-xl bg-[#E67E22] px-4 py-2 text-sm font-bold text-white shadow-[0_8px_24px_-14px_rgba(230,126,34,0.6)] hover:bg-[#d56c12] disabled:opacity-60"
+                  className="shrink-0 self-stretch rounded-xl bg-[#E67E22] px-5 py-2 text-sm font-bold text-white shadow-[0_8px_24px_-14px_rgba(230,126,34,0.6)] hover:bg-[#d56c12] disabled:opacity-60 sm:min-w-[5.5rem]"
                 >
                   {tplBusy ? "…" : "حفظ"}
                 </button>

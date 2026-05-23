@@ -629,6 +629,20 @@ textarea.cb-field {
     box-shadow 0.2s ease;
 }
 
+/* Native select — hide OS chevron, reserve space so label text never overlaps */
+select.cb-field {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-inline-end: 2.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2344403c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.625rem center;
+  background-size: 1rem;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
 .cb-field::placeholder,
 input.cb-field::placeholder,
 textarea.cb-field::placeholder {
@@ -777,6 +791,10 @@ textarea.cb-field:focus-visible {
 .dark select.cb-field,
 .dark textarea.cb-field {
   background-color: var(--cb-surface);
+}
+
+.dark select.cb-field {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23d6d3d1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 .dark .cb-table-wrap thead th,
