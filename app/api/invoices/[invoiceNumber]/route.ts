@@ -5,45 +5,12 @@ import { resolveStaffRole } from "@/lib/admin/auth-role";
 import { bilingualError } from "@/lib/validations";
 import { fetchOrderItemsByOrderIds } from "@/lib/db/order-items-fetch";
 
-type InvoiceStatus = "paid" | "pending" | "failed" | "refunded";
+import type { InvoiceDetailPayload, InvoiceDetailStatus } from "@/lib/invoices/invoice-detail-types";
+import { loadManualInvoiceByStoredNumber } from "@/lib/invoices/load-invoice-by-number";
 
-type InvoiceItemPayload = {
-  id: string;
-  product_name: string;
-  quantity: number;
-  unit_price_egp: number;
-  total_price_egp: number | null;
-};
+export type { InvoiceDetailPayload } from "@/lib/invoices/invoice-detail-types";
 
-export type InvoiceDetailPayload = {
-  id: string;
-  invoice_number: string;
-  amount_egp: number;
-  status: InvoiceStatus;
-  issued_at: string;
-  customer_name: string | null;
-  customer_email: string | null;
-  order: {
-    id: string | null;
-    order_code: string | null;
-    status: string | null;
-    items: InvoiceItemPayload[];
-    subtotal_egp: number | null;
-    discount_amount_egp: number | null;
-    delivery_fee_egp: number | null;
-    notes: string | null;
-    shipping_address: Record<string, unknown> | null;
-  };
-  payment: {
-    id: string | null;
-    method: string | null;
-    transaction_id: string | null;
-    status: string | null;
-    paid_at: string | null;
-  };
-};
-
-function toInvoiceStatus(raw: unknown): InvoiceStatus {
+function toInvoiceStatus(raw: unknown): InvoiceDetailStatus {
   const value = typeof raw === "string" ? raw.toLowerCase() : "";
   if (value === "paid") return "paid";
   if (value === "failed") return "failed";
@@ -62,11 +29,16 @@ function normalizeInvoiceNumber(id: string, createdAt: string): string {
  *  - INV-NNNNNNNN          →  fallback: من جدول `orders` بـ order_number
  */
 function parseInvoiceNumber(input: string): {
-  kind: "invoice-id-prefix" | "order-number";
+  kind: "invoice-id-prefix" | "order-number" | "stored-invoice-number";
   prefix?: string;
   orderNumber?: number;
+  storedNumber?: string;
 } | null {
   const trimmed = input.trim().toUpperCase();
+  const manualSeqMatch = trimmed.match(/^INV-(\d{4})-(\d{4,})$/);
+  if (manualSeqMatch) {
+    return { kind: "stored-invoice-number", storedNumber: trimmed };
+  }
   const fullMatch = trimmed.match(/^INV-(\d{8})-([0-9A-F]{8})$/);
   if (fullMatch) {
     return { kind: "invoice-id-prefix", prefix: fullMatch[2] };
@@ -139,11 +111,15 @@ export async function GET(
 
   let payload: InvoiceDetailPayload | null = null;
 
+  if (parsed.kind === "stored-invoice-number") {
+    payload = await loadManualInvoiceByStoredNumber(supabase, invoiceNumber.trim().toUpperCase());
+  }
+
   /**
    * نتجنب تضمين order_items في الـ embed لأن بعض البيئات لا تحتوي على
    * عمود `product_name` (تستخدم `product_snapshot.name`)؛ نجلب البنود لاحقاً.
    */
-  if (parsed.kind === "invoice-id-prefix" && parsed.prefix) {
+  if (!payload && parsed.kind === "invoice-id-prefix" && parsed.prefix) {
     const lowerPrefix = parsed.prefix.toLowerCase();
     const { data, error } = await supabase
       .from("invoices")
@@ -363,8 +339,13 @@ export async function GET(
    *  - العميل: فقط إذا كانت الفاتورة لطلبه (user_id يطابق، أو guest_email يطابق بريد المستخدم).
    */
   if (!isStaff) {
+    const clientEmail = payload.customer_email?.toLowerCase() ?? null;
+    const matchesManualClient =
+      Boolean(clientEmail && dbUserEmail && clientEmail === dbUserEmail.toLowerCase());
+
     const matchesUser =
-      dbUserId &&
+      matchesManualClient ||
+      (dbUserId &&
       payload.order.id != null &&
       // أعد جلب user_id للطلب للتحقق
       (await (async () => {
@@ -384,7 +365,7 @@ export async function GET(
           return true;
         }
         return false;
-      })());
+      })()));
 
     if (!matchesUser) {
       return NextResponse.json(

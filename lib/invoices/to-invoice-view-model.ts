@@ -11,6 +11,7 @@ export type RawInvoice = {
   amount_egp: number;
   status: InvoiceStatus;
   issued_at: string;
+  due_at?: string | null;
   customer_name: string | null;
   customer_email: string | null;
   order: {
@@ -117,7 +118,7 @@ export function toInvoiceViewModel(raw: RawInvoice): InvoiceViewModel {
     invoice_number: raw.invoice_number,
     order_number: raw.order.order_code ?? raw.order.id ?? null,
     issued_at: raw.issued_at,
-    due_at: raw.payment?.paid_at ?? raw.issued_at,
+    due_at: raw.due_at ?? raw.payment?.paid_at ?? raw.issued_at,
     status: raw.status,
     customer_name: raw.customer_name,
     customer_email: raw.customer_email,

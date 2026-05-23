@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -9,44 +10,16 @@ import {
   fetchLatestPaymentsByOrderIds,
   isMissingInvoicesTableError,
 } from "@/lib/db/payments-fetch";
-
-type InvoiceStatus = "paid" | "pending" | "failed" | "refunded";
-
-type InvoiceApiRow = {
-  id: string;
-  invoice_number: string;
-  amount_egp: number;
-  status: InvoiceStatus;
-  issued_at: string;
-  customer_name: string | null;
-  customer_email: string | null;
-  order: {
-    id: string | null;
-    order_code: string | null;
-    status: string | null;
-    items: Array<{
-      id: string;
-      product_name: string;
-      quantity: number;
-      unit_price_egp: number;
-    }>;
-  };
-  payment: {
-    id: string | null;
-    method: string | null;
-    transaction_id: string | null;
-    status: string | null;
-    paid_at: string | null;
-  };
-};
-
-function toInvoiceStatus(raw: unknown): InvoiceStatus {
-  const value = typeof raw === "string" ? raw.toLowerCase() : "";
-  if (value === "paid") return "paid";
-  if (value === "failed") return "failed";
-  if (value === "refunded") return "refunded";
-  return "pending";
-}
+import type { InvoiceApiRow } from "@/lib/invoices/admin-invoice-types";
+import {
+  computeInvoiceTotals,
+  createManualInvoiceSchema,
+  generateInvoiceNumber,
+  lifecycleToDbStatus,
+  manualInvoiceDocumentSchema,
+  normalizeManualDocument,
+} from "@/lib/invoices/manual-invoice";
+import { documentGrandTotal, invoiceRowToApiPayload, toInvoiceStatus } from "@/lib/invoices/map-invoice-row";
 
 function toNumber(value: string | null, fallback: number): number {
   const n = Number(value);
@@ -139,6 +112,10 @@ export async function GET(request: NextRequest) {
       status,
       issued_at,
       created_at,
+      invoice_number,
+      due_at,
+      currency,
+      document,
       orders:order_id (
         id,
         order_code,
@@ -212,38 +189,25 @@ export async function GET(request: NextRequest) {
       const orderId = typeof order?.id === "string" ? order.id : null;
       const items = orderId ? itemsByOrderId.get(orderId) ?? [] : [];
 
-      return {
-        id: String(row.id ?? ""),
-        invoice_number: normalizeInvoiceNumber(String(row.id ?? ""), issuedAt, "INV"),
-        amount_egp: Number(row.amount ?? 0),
-        status: toInvoiceStatus(row.status),
-        issued_at: issuedAt,
-        customer_name: typeof user?.full_name === "string" ? user.full_name : null,
-        customer_email:
-          typeof user?.email === "string"
-            ? user.email
-            : typeof order?.guest_email === "string"
-              ? order.guest_email
-              : null,
-        order: {
-          id: orderId,
-          order_code: typeof order?.order_code === "string" ? order.order_code : null,
-          status: typeof order?.status === "string" ? order.status : null,
-          items: items.map((item) => ({
-            id: item.id,
-            product_name: item.product_name,
-            quantity: item.quantity,
-            unit_price_egp: item.unit_price_egp,
-          })),
+      return invoiceRowToApiPayload(
+        {
+          id: String(row.id ?? ""),
+          order_id: orderId,
+          amount: Number(row.amount ?? 0),
+          status: String(row.status ?? "pending"),
+          issued_at: issuedAt,
+          created_at: typeof row.created_at === "string" ? row.created_at : issuedAt,
+          invoice_number:
+            typeof row.invoice_number === "string" ? row.invoice_number : null,
+          due_at: typeof row.due_at === "string" ? row.due_at : null,
+          currency: typeof row.currency === "string" ? row.currency : "EGP",
+          document: row.document,
         },
-        payment: {
-          id: payment?.id ?? null,
-          method: payment?.method ?? null,
-          transaction_id: payment?.transaction_id ?? null,
-          status: payment?.status ?? null,
-          paid_at: payment?.created_at ?? null,
-        },
-      };
+        order,
+        user,
+        items,
+        payment,
+      );
     });
     debug.source = "invoices";
   } else {
@@ -407,14 +371,113 @@ export async function POST(req: NextRequest) {
   const actor = await requireAdminAccess("invoices");
   requireWritePermission(actor);
 
-  const parsed = createInvoiceSchema.safeParse(await req.json().catch(() => null));
+  const body = await req.json().catch(() => null);
+  const supabase = createSupabaseAdminClient();
+
+  const manualParsed = createManualInvoiceSchema.safeParse(body);
+  if (manualParsed.success) {
+    const payload = manualParsed.data;
+    const document = normalizeManualDocument(manualInvoiceDocumentSchema.parse(payload.document));
+    const orderId = payload.order_id ?? document.reference_order_id ?? null;
+
+    if (orderId) {
+      const { data: orderRow } = await supabase.from("orders").select("id").eq("id", orderId).maybeSingle();
+      if (!orderRow) {
+        return NextResponse.json(bilingualError("Order not found", "الطلب غير موجود"), { status: 404 });
+      }
+    }
+
+    const grandTotal = documentGrandTotal(document);
+    const invoiceNumber =
+      payload.invoice_number?.trim() || (await generateInvoiceNumber(supabase));
+    const issuedAt = payload.issued_at ?? new Date().toISOString();
+    const dueAt = payload.due_at ?? null;
+    const dbStatus = lifecycleToDbStatus(document.lifecycle_status);
+
+    const { data, error } = await supabase
+      .from("invoices")
+      .insert({
+        order_id: orderId,
+        amount: grandTotal,
+        status: dbStatus,
+        issued_at: issuedAt,
+        invoice_number: invoiceNumber,
+        due_at: dueAt,
+        currency: payload.currency,
+        document,
+        created_by: actor.user_id,
+      })
+      .select(
+        "id, order_id, amount, status, issued_at, invoice_number, due_at, currency, document",
+      )
+      .single();
+
+    if (error || !data) {
+      console.error("manual invoice insert", error);
+      if (error && isMissingInvoicesTableError(error.message)) {
+        return NextResponse.json(
+          {
+            ...bilingualError(
+              "Invoices table is missing. Run migration 0032_manual_invoice_document.sql on Supabase.",
+              "جدول الفواتير غير مكتمل. طبّق ترحيل 0032 على Supabase.",
+            ),
+            code: "invoices_table_missing",
+            migration: "0032_manual_invoice_document.sql",
+          },
+          { status: 503 },
+        );
+      }
+      return NextResponse.json(bilingualError("Failed to create invoice", "فشل إنشاء الفاتورة"), {
+        status: 500,
+      });
+    }
+
+    await writeAuditLog({
+      actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
+      action: "invoices.create_manual",
+      module: "invoices",
+      entity_id: data.id,
+      after: data,
+      request: req,
+    });
+
+    try {
+      revalidatePath("/");
+      revalidatePath("/admin/invoices");
+    } catch {
+      /* non-fatal */
+    }
+
+    const apiRow = invoiceRowToApiPayload({
+      id: String(data.id),
+      order_id: data.order_id,
+      amount: Number(data.amount),
+      status: String(data.status),
+      issued_at: String(data.issued_at),
+      created_at: String(data.issued_at),
+      invoice_number: data.invoice_number,
+      due_at: data.due_at,
+      currency: data.currency,
+      document: data.document,
+    });
+
+    return NextResponse.json(
+      {
+        ok: true,
+        invoice: apiRow,
+        totals: computeInvoiceTotals(document),
+      },
+      { status: 201 },
+    );
+  }
+
+  const parsed = createInvoiceSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(bilingualError("Invalid payload", "بيانات غير صالحة"), {
       status: 400,
     });
   }
 
-  const supabase = createSupabaseAdminClient();
   if (parsed.data.order_id) {
     const { data: orderRow } = await supabase
       .from("orders")

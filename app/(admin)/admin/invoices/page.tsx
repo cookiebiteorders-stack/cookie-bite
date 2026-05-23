@@ -16,6 +16,7 @@ import { buttonClassName } from "@/components/ui/button";
 import { InvoiceView } from "@/components/invoices/invoice-view";
 import { PrintActions } from "@/components/print/print-actions";
 import { toInvoiceViewModel } from "@/lib/invoices/to-invoice-view-model";
+import { ManualInvoiceDrawer } from "@/components/admin/invoices/manual-invoice-drawer";
 import { cn } from "@/lib/utils";
 
 type InvoiceStatus = "paid" | "pending" | "failed" | "refunded";
@@ -242,7 +243,7 @@ export default function AdminInvoicesPage() {
   const [selected, setSelected] = useState<Invoice | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const [manualDrawerOpen, setManualDrawerOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     status: "all",
     customer: "",
@@ -357,40 +358,6 @@ export default function AdminInvoicesPage() {
     await loadInvoices({ reset: true, silent: true });
   };
 
-  const createManualInvoice = async () => {
-    const orderId = window.prompt("Optional: link to order UUID from Supabase (leave empty for standalone draft)")?.trim() ?? "";
-    const amountRaw = window.prompt("Amount in EGP (optional for draft, default 0)")?.trim() ?? "";
-    const amountEgp = amountRaw === "" ? 0 : Number(amountRaw);
-    if (amountRaw !== "" && (!Number.isFinite(amountEgp) || amountEgp < 0)) {
-      setNotice("Invalid amount.");
-      return;
-    }
-    setCreatingInvoice(true);
-    try {
-      const res = await fetch("/api/admin/invoices", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          order_id: orderId === "" ? null : orderId,
-          amount_egp: amountEgp,
-          status: "pending",
-        }),
-      });
-      const payload = (await res.json().catch(() => ({}))) as { error?: { en?: string; ar?: string }; ok?: boolean };
-      if (!res.ok) {
-        const msg = payload.error?.en ?? payload.error?.ar ?? "Failed to create invoice";
-        throw new Error(msg);
-      }
-      setNotice("Invoice created (pending).");
-      await loadInvoices({ reset: true, silent: true });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Unknown error";
-      setNotice(`Create invoice failed: ${msg}`);
-    } finally {
-      setCreatingInvoice(false);
-    }
-  };
-
   const empty = !loading && !error && rows.length === 0;
 
   return (
@@ -486,12 +453,11 @@ export default function AdminInvoicesPage() {
           <button
             type="button"
             className={buttonClassName("subtle", "px-4 py-2 text-xs")}
-            disabled={creatingInvoice || loading}
-            title="Create invoice via POST /api/admin/invoices (optional order UUID link)"
-            onClick={() => void createManualInvoice()}
+            disabled={loading}
+            onClick={() => setManualDrawerOpen(true)}
           >
             <FilePlus2 className="h-4 w-4" />
-            {creatingInvoice ? "Creating…" : "Create Invoice"}
+            فاتورة يدوية
           </button>
           <button type="button" className={buttonClassName("ghost", "px-4 py-2 text-xs")} onClick={() => void refresh()} disabled={refreshing}>
             <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
@@ -675,6 +641,15 @@ export default function AdminInvoicesPage() {
       ) : null}
 
       <InvoiceDrawer invoice={selected} open={Boolean(selected)} onClose={() => setSelected(null)} />
+
+      <ManualInvoiceDrawer
+        open={manualDrawerOpen}
+        onOpenChange={setManualDrawerOpen}
+        onCreated={(invoiceNumber) => {
+          setNotice(`تم إنشاء الفاتورة ${invoiceNumber}.`);
+          void loadInvoices({ reset: true, silent: true });
+        }}
+      />
     </section>
   );
 }
