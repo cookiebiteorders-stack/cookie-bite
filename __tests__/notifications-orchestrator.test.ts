@@ -7,6 +7,10 @@ import {
 import { generateInvoicePdfBuffer } from "@/lib/invoices/generate-invoice-pdf";
 import type { InvoiceViewModel } from "@/components/invoices/invoice-view";
 
+jest.mock("@/lib/print/html-to-pdf-buffer", () => ({
+  htmlToPdfBuffer: jest.fn().mockResolvedValue(null),
+}));
+
 describe("notification whatsapp bodies", () => {
   it("builds order confirmed message with track url", () => {
     const body = buildOrderConfirmedWhatsAppBody({

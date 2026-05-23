@@ -60,7 +60,8 @@ describe("api/admin/settings/health GET", () => {
     expect(body.env.ok).toBe(true);
     expect(body.integrations.supabase).toBe(true);
     expect(body.database.ok).toBe(true);
-    expect(body.cron.endpoint).toBe("POST /api/cron/notification-jobs");
+    expect(body.cron.endpoints).toContain("POST /api/cron/notification-jobs");
+    expect(body.cron.endpoints).toContain("POST /api/cron/email-worker");
     expect(requireAdminAccessMock).toHaveBeenCalledWith("settings");
   });
 });

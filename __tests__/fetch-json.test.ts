@@ -40,6 +40,6 @@ describe("fetchJson", () => {
         JSON.stringify({ error: { en: "Bad", ar: "سيء" }, ok: false }),
     });
 
-    await expect(fetchJson("/bad")).rejects.toThrow("Bad");
+    await expect(fetchJson("/bad")).rejects.toThrow("سيء");
   });
 });
