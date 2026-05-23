@@ -16,7 +16,11 @@ import { buttonClassName } from "@/components/ui/button";
 import { InvoiceView } from "@/components/invoices/invoice-view";
 import { PrintActions } from "@/components/print/print-actions";
 import { toInvoiceViewModel } from "@/lib/invoices/to-invoice-view-model";
-import { ManualInvoiceDrawer } from "@/components/admin/invoices/manual-invoice-drawer";
+import {
+  ManualInvoiceDrawer,
+  type ManualInvoiceEditTarget,
+} from "@/components/admin/invoices/manual-invoice-drawer";
+import { InvoiceRowActions } from "@/components/admin/invoices/invoice-row-actions";
 import { cn } from "@/lib/utils";
 
 type InvoiceStatus = "paid" | "pending" | "failed" | "refunded";
@@ -47,6 +51,7 @@ type Invoice = {
     status: string | null;
     paid_at: string | null;
   };
+  is_editable?: boolean;
 };
 
 type ApiPayload = {
@@ -244,6 +249,7 @@ export default function AdminInvoicesPage() {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [manualDrawerOpen, setManualDrawerOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<ManualInvoiceEditTarget | null>(null);
   const [filters, setFilters] = useState<FilterState>({
     status: "all",
     customer: "",
@@ -358,6 +364,47 @@ export default function AdminInvoicesPage() {
     await loadInvoices({ reset: true, silent: true });
   };
 
+  const openCreateManual = () => {
+    setEditTarget(null);
+    setManualDrawerOpen(true);
+  };
+
+  const openEditInvoice = async (row: Invoice) => {
+    try {
+      const res = await fetch(`/api/admin/invoices/${row.id}`, { cache: "no-store" });
+      const payload = (await res.json()) as {
+        document?: ManualInvoiceEditTarget["document"];
+        invoice?: {
+          invoice_number: string;
+          issued_at: string;
+          due_at?: string | null;
+          currency?: string;
+        };
+        error?: { en?: string; ar?: string };
+      };
+      if (!res.ok || !payload.document || !payload.invoice) {
+        throw new Error(payload.error?.ar ?? payload.error?.en ?? "تعذّر تحميل الفاتورة للتعديل");
+      }
+      setEditTarget({
+        id: row.id,
+        invoice_number: payload.invoice.invoice_number,
+        issued_at: payload.invoice.issued_at,
+        due_at: payload.invoice.due_at ?? null,
+        currency: payload.invoice.currency ?? "EGP",
+        document: payload.document,
+      });
+      setManualDrawerOpen(true);
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "تعذّر فتح التعديل");
+    }
+  };
+
+  const handleInvoiceDeleted = (id: string) => {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+    if (selected?.id === id) setSelected(null);
+    setNotice("تم حذف الفاتورة.");
+  };
+
   const empty = !loading && !error && rows.length === 0;
 
   return (
@@ -454,7 +501,7 @@ export default function AdminInvoicesPage() {
             type="button"
             className={buttonClassName("subtle", "px-4 py-2 text-xs")}
             disabled={loading}
-            onClick={() => setManualDrawerOpen(true)}
+            onClick={openCreateManual}
           >
             <FilePlus2 className="h-4 w-4" />
             فاتورة يدوية
@@ -564,35 +611,15 @@ export default function AdminInvoicesPage() {
                     <td className="px-4 py-3 text-cb-text-strong">{row.payment.status ?? "—"}</td>
                     <td className="px-4 py-3 text-xs text-cb-text-muted">{new Date(row.issued_at).toLocaleString()}</td>
                     <td className="px-4 py-3 text-end">
-                      <div className="inline-flex items-center gap-1">
-                        <button
-                          type="button"
-                          className={buttonClassName(
-                            "ghost",
-                            "min-h-0 rounded-lg px-3 py-1.5 text-xs",
-                          )}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelected(row);
-                          }}
-                        >
-                          Preview
-                        </button>
-                        <a
-                          href={`/invoices/${row.invoice_number}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={buttonClassName(
-                            "outline",
-                            "min-h-0 rounded-lg px-3 py-1.5 text-xs",
-                          )}
-                          onClick={(e) => e.stopPropagation()}
-                          title="Open the full styled invoice in a new tab"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          Open
-                        </a>
-                      </div>
+                      <InvoiceRowActions
+                        invoiceId={row.id}
+                        invoiceNumber={row.invoice_number}
+                        isEditable={row.is_editable !== false}
+                        onPreview={() => setSelected(row)}
+                        onEdit={() => void openEditInvoice(row)}
+                        onDeleted={() => handleInvoiceDeleted(row.id)}
+                        onError={(msg) => setNotice(msg)}
+                      />
                     </td>
                   </motion.tr>
                 ))}
@@ -602,25 +629,46 @@ export default function AdminInvoicesPage() {
 
           <div className="grid gap-3 md:hidden">
             {rows.map((row) => (
-              <button
+              <div
                 key={`card-${row.id}`}
-                type="button"
-                className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-4 text-start"
-                onClick={() => setSelected(row)}
+                className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-4"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-mono text-xs font-semibold text-cb-text-strong">{row.invoice_number}</p>
-                  <StatusBadge status={row.status} />
+                <button
+                  type="button"
+                  className="w-full text-start"
+                  onClick={() => setSelected(row)}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-mono text-xs font-semibold text-cb-text-strong">
+                      {row.invoice_number}
+                    </p>
+                    <StatusBadge status={row.status} />
+                  </div>
+                  <p className="mt-2 text-sm font-semibold text-cb-text-strong">
+                    {row.customer_name ?? "Guest"}
+                  </p>
+                  <p className="text-xs text-cb-text-muted">{row.customer_email ?? "—"}</p>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <p className="text-cb-text-muted">Amount</p>
+                    <p className="text-end font-semibold text-cb-text-strong">{money(row.amount_egp)}</p>
+                    <p className="text-cb-text-muted">Order</p>
+                    <p className="text-end text-cb-text-strong">{row.order.order_code ?? "—"}</p>
+                  </div>
+                </button>
+                <div className="mt-3 border-t border-cb-border pt-3">
+                  <InvoiceRowActions
+                    invoiceId={row.id}
+                    invoiceNumber={row.invoice_number}
+                    isEditable={row.is_editable !== false}
+                    compact
+                    className="w-full justify-start"
+                    onPreview={() => setSelected(row)}
+                    onEdit={() => void openEditInvoice(row)}
+                    onDeleted={() => handleInvoiceDeleted(row.id)}
+                    onError={(msg) => setNotice(msg)}
+                  />
                 </div>
-                <p className="mt-2 text-sm font-semibold text-cb-text-strong">{row.customer_name ?? "Guest"}</p>
-                <p className="text-xs text-cb-text-muted">{row.customer_email ?? "—"}</p>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                  <p className="text-cb-text-muted">Amount</p>
-                  <p className="text-end font-semibold text-cb-text-strong">{money(row.amount_egp)}</p>
-                  <p className="text-cb-text-muted">Order</p>
-                  <p className="text-end text-cb-text-strong">{row.order.order_code ?? "—"}</p>
-                </div>
-              </button>
+              </div>
             ))}
           </div>
 
@@ -644,9 +692,17 @@ export default function AdminInvoicesPage() {
 
       <ManualInvoiceDrawer
         open={manualDrawerOpen}
-        onOpenChange={setManualDrawerOpen}
+        editTarget={editTarget}
+        onOpenChange={(open) => {
+          setManualDrawerOpen(open);
+          if (!open) setEditTarget(null);
+        }}
         onCreated={(invoiceNumber) => {
           setNotice(`تم إنشاء الفاتورة ${invoiceNumber}.`);
+          void loadInvoices({ reset: true, silent: true });
+        }}
+        onUpdated={(invoiceNumber) => {
+          setNotice(`تم تحديث الفاتورة ${invoiceNumber}.`);
           void loadInvoices({ reset: true, silent: true });
         }}
       />

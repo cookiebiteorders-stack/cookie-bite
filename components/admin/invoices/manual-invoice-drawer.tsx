@@ -32,10 +32,21 @@ type ProductOption = {
   price_egp: number;
 };
 
+export type ManualInvoiceEditTarget = {
+  id: string;
+  invoice_number: string;
+  issued_at: string;
+  due_at: string | null;
+  currency: string;
+  document: ManualInvoiceDocument;
+};
+
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  editTarget?: ManualInvoiceEditTarget | null;
   onCreated?: (invoiceNumber: string) => void;
+  onUpdated?: (invoiceNumber: string) => void;
 };
 
 function toDateInputValue(iso?: string): string {
@@ -52,7 +63,14 @@ function money(n: number): string {
   return `EGP ${n.toLocaleString("en-EG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export function ManualInvoiceDrawer({ open, onOpenChange, onCreated }: Props) {
+export function ManualInvoiceDrawer({
+  open,
+  onOpenChange,
+  editTarget = null,
+  onCreated,
+  onUpdated,
+}: Props) {
+  const isEdit = Boolean(editTarget?.id);
   const reduceMotion = useReducedMotion();
   const [doc, setDoc] = useState<ManualInvoiceDocument>(() => createEmptyManualInvoiceDocument());
   const [invoiceNumber, setInvoiceNumber] = useState("");
@@ -88,8 +106,25 @@ export function ManualInvoiceDrawer({ open, onOpenChange, onCreated }: Props) {
 
   useEffect(() => {
     if (!open) return;
+    if (editTarget) {
+      setDoc(editTarget.document);
+      setInvoiceNumber(editTarget.invoice_number);
+      setIssuedDate(toDateInputValue(editTarget.issued_at));
+      setDueDate(
+        editTarget.due_at
+          ? toDateInputValue(editTarget.due_at)
+          : toDateInputValue(
+              new Date(Date.now() + 7 * 86400000).toISOString(),
+            ),
+      );
+      setCurrency(editTarget.currency || "EGP");
+      setError(null);
+      setCustomerQuery("");
+      setCustomerHits([]);
+      return;
+    }
     resetForm();
-  }, [open, resetForm]);
+  }, [open, editTarget, resetForm]);
 
   useEffect(() => {
     if (!open || customerQuery.trim().length < 2) {
@@ -206,28 +241,39 @@ export function ManualInvoiceDrawer({ open, onOpenChange, onCreated }: Props) {
 
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/invoices", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          invoice_number: invoiceNumber.trim() || undefined,
-          issued_at: dateInputToIso(issuedDate),
-          due_at: dateInputToIso(dueDate, true),
-          currency,
-          order_id: cleaned.reference_order_id ?? null,
-          document: cleaned,
-        }),
-      });
+      const body = {
+        invoice_number: invoiceNumber.trim() || undefined,
+        issued_at: dateInputToIso(issuedDate),
+        due_at: dateInputToIso(dueDate, true),
+        currency,
+        order_id: cleaned.reference_order_id ?? null,
+        document: cleaned,
+      };
+      const res = await fetch(
+        isEdit && editTarget
+          ? `/api/admin/invoices/${editTarget.id}`
+          : "/api/admin/invoices",
+        {
+          method: isEdit ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
+      );
       const payload = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         invoice?: { invoice_number?: string };
         error?: { en?: string; ar?: string };
       };
       if (!res.ok) {
-        throw new Error(payload.error?.ar ?? payload.error?.en ?? "فشل إنشاء الفاتورة");
+        throw new Error(
+          payload.error?.ar ??
+            payload.error?.en ??
+            (isEdit ? "فشل تحديث الفاتورة" : "فشل إنشاء الفاتورة"),
+        );
       }
       const num = payload.invoice?.invoice_number ?? invoiceNumber;
-      onCreated?.(num);
+      if (isEdit) onUpdated?.(num);
+      else onCreated?.(num);
       onOpenChange(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "خطأ غير معروف");
@@ -261,10 +307,12 @@ export function ManualInvoiceDrawer({ open, onOpenChange, onCreated }: Props) {
             <header className="flex shrink-0 items-start justify-between gap-3 border-b border-cb-border bg-white/95 px-5 py-4">
               <div>
                 <h2 id="manual-invoice-title" className="font-serif text-xl font-bold text-cb-text-strong">
-                  إنشاء فاتورة يدوية
+                  {isEdit ? "تعديل الفاتورة" : "إنشاء فاتورة يدوية"}
                 </h2>
                 <p className="mt-1 text-xs text-cb-text-muted">
-                  حساب تلقائي للمجاميع · PDF بعد الحفظ
+                  {isEdit
+                    ? "عدّل البيانات ثم احفظ — يمكنك تصدير PDF من القائمة"
+                    : "حساب تلقائي للمجاميع · PDF بعد الحفظ"}
                 </p>
               </div>
               <button
@@ -814,7 +862,7 @@ export function ManualInvoiceDrawer({ open, onOpenChange, onCreated }: Props) {
                 ) : (
                   <Check className="h-4 w-4" />
                 )}
-                {saving ? "جاري الحفظ…" : "حفظ الفاتورة"}
+                {saving ? "جاري الحفظ…" : isEdit ? "حفظ التعديلات" : "حفظ الفاتورة"}
               </button>
             </footer>
           </motion.aside>

@@ -346,6 +346,7 @@ export async function GET(request: NextRequest) {
           status: typeof o.payment_status === "string" ? o.payment_status : null,
           paid_at: typeof o.updated_at === "string" ? o.updated_at : createdAt,
         },
+        is_editable: false,
       };
     });
   }

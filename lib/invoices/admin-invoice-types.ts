@@ -27,6 +27,8 @@ export type InvoiceApiRow = {
     paid_at: string | null;
   };
   is_manual?: boolean;
+  /** من جدول invoices — يمكن تعديلها/حذفها */
+  is_editable?: boolean;
   lifecycle_status?: string | null;
   currency?: string;
   due_at?: string | null;
