@@ -3,7 +3,6 @@
 import { useCallback, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/providers/language-provider";
-import { useMorphTransition } from "@/hooks/useMorphTransition";
 
 type LanguageToggleProps = {
   className?: string;
@@ -11,9 +10,7 @@ type LanguageToggleProps = {
 };
 
 export function LanguageToggle({ className, mobile = false }: LanguageToggleProps) {
-  const { lang, t } = useLanguage();
-  const { morphToLanguage } = useMorphTransition();
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const { lang, toggleLanguage, t } = useLanguage();
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
@@ -27,19 +24,6 @@ export function LanguageToggle({ className, mobile = false }: LanguageToggleProp
     setTilt({ x: 0, y: 0 });
   }, []);
 
-  const handleClick = () => {
-    const next = lang === "ar" ? "en" : "ar";
-    const el = btnRef.current;
-    const rect = el?.getBoundingClientRect();
-    const origin = rect
-      ? {
-          x: (rect.left + rect.width / 2) / window.innerWidth,
-          y: (rect.top + rect.height / 2) / window.innerHeight,
-        }
-      : { x: lang === "ar" ? 0.9 : 0.1, y: 0.08 };
-    void morphToLanguage(next, origin);
-  };
-
   const innerStyle = {
     transform: `perspective(520px) rotateX(${tilt.y}deg) rotateY(${tilt.x}deg)`,
     transition: tilt.x === 0 && tilt.y === 0 ? "transform 0.35s cubic-bezier(0.22,1,0.36,1)" : "none",
@@ -48,9 +32,8 @@ export function LanguageToggle({ className, mobile = false }: LanguageToggleProp
   if (mobile) {
     return (
       <button
-        ref={btnRef}
         type="button"
-        onClick={handleClick}
+        onClick={toggleLanguage}
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
         className={cn(
@@ -68,9 +51,8 @@ export function LanguageToggle({ className, mobile = false }: LanguageToggleProp
 
   return (
     <button
-      ref={btnRef}
       type="button"
-      onClick={handleClick}
+      onClick={toggleLanguage}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
       className={cn(
