@@ -18,6 +18,7 @@ import {
   useScroll,
 } from "motion/react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { LogoMark } from "@/components/brand/logo-mark";
 import { SiteLogoLink } from "@/components/brand/site-logo";
 import { NavDropdown } from "@/components/layout/nav-dropdown";
 import { LanguageToggle } from "@/components/layout/language-toggle";
@@ -43,6 +44,10 @@ const storeNavGroupClass =
 
 const utilityGroupClass =
   "flex items-center gap-0.5 rounded-2xl border border-cb-border/50 bg-cb-surface-2/25 p-0.5 sm:gap-1 dark:border-cb-border/60";
+
+/** شارة الصفحة الحالية في لوحة الإدارة — منفصلة عن الشعار لتجنب التداخل */
+const adminContextBadgeClass =
+  "flex min-w-0 max-w-[10.5rem] shrink-0 flex-col justify-center rounded-xl border border-cb-border/60 bg-cb-surface-2/40 px-2.5 py-1.5 transition-colors hover:bg-cb-peach/25 sm:max-w-[12rem] lg:max-w-[13.5rem]";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -167,22 +172,35 @@ export function SiteHeader() {
                   <Menu className="h-5 w-5" aria-hidden />
                 )}
               </button>
-              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                <SiteLogoLink className={admin ? "max-w-[min(180px,38vw)]" : undefined} />
+              <div className="flex min-w-0 items-center gap-2 overflow-hidden sm:gap-3">
                 {admin ? (
-                  <Link
-                    href={currentAdminPage?.href ?? "/admin"}
-                    className="hidden min-w-0 max-w-[9.5rem] flex-col justify-center rounded-xl border border-cb-border/60 bg-cb-surface-2/40 px-2.5 py-1.5 transition-colors hover:bg-cb-peach/25 sm:max-w-[11rem] md:flex lg:max-w-[12.5rem]"
-                    title={consoleLabel}
-                  >
-                    <p className="truncate text-xs font-bold leading-tight text-cb-text-strong">
-                      {currentAdminPage?.label ?? "Dashboard"}
-                    </p>
-                    <p className="truncate text-[9px] font-semibold uppercase leading-tight tracking-[0.14em] text-cb-terracotta-dark">
-                      {getRoleLabel(admin.role)}
-                    </p>
-                  </Link>
-                ) : null}
+                  <>
+                    <Link
+                      href="/"
+                      className="inline-flex shrink-0 items-center rounded-lg outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cb-luxury-gold"
+                      aria-label={t("mobileHeader.home")}
+                    >
+                      <LogoMark
+                        className="h-9 w-9 text-cb-brand-logo sm:h-10 sm:w-10"
+                        title="Cookie Bite"
+                      />
+                    </Link>
+                    <Link
+                      href={currentAdminPage?.href ?? "/admin"}
+                      className={adminContextBadgeClass}
+                      title={consoleLabel}
+                    >
+                      <p className="truncate text-xs font-bold leading-tight text-cb-text-strong">
+                        {currentAdminPage?.label ?? "Dashboard"}
+                      </p>
+                      <p className="truncate text-[9px] font-semibold uppercase leading-tight tracking-[0.14em] text-cb-terracotta-dark">
+                        {getRoleLabel(admin.role)}
+                      </p>
+                    </Link>
+                  </>
+                ) : (
+                  <SiteLogoLink />
+                )}
               </div>
             </div>
 
