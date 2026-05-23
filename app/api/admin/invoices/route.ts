@@ -8,8 +8,10 @@ import { bilingualError } from "@/lib/validations";
 import { fetchOrderItemsByOrderIds } from "@/lib/db/order-items-fetch";
 import {
   fetchLatestPaymentsByOrderIds,
+  isMissingColumnError,
   isMissingInvoicesTableError,
 } from "@/lib/db/payments-fetch";
+import { invoiceNumberFromOrder } from "@/lib/invoices/order-invoice-number";
 import type { InvoiceApiRow } from "@/lib/invoices/admin-invoice-types";
 import {
   computeInvoiceTotals,
@@ -102,10 +104,16 @@ export async function GET(request: NextRequest) {
    * وكان PostgREST يفشل بـ "column order_items_1.product_name does not exist".
    * بدلاً من ذلك نجلب البنود بـ select * منفصل ونوحّدها في الذاكرة.
    */
-  const invoicesQuery = supabase
-    .from("invoices")
-    .select(
-      `
+  const invoicesOrderEmbed = `
+      orders:order_id (
+        id,
+        order_code,
+        status,
+        guest_email,
+        user_id
+      )`;
+
+  const invoicesSelectExtended = `
       id,
       order_id,
       amount,
@@ -116,20 +124,46 @@ export async function GET(request: NextRequest) {
       due_at,
       currency,
       document,
-      orders:order_id (
-        id,
-        order_code,
-        status,
-        guest_email,
-        user_id
-      )
-    `,
-      { count: "exact" },
-    )
+      ${invoicesOrderEmbed}`;
+
+  const invoicesSelectCore = `
+      id,
+      order_id,
+      amount,
+      status,
+      issued_at,
+      created_at,
+      ${invoicesOrderEmbed}`;
+
+  let invoicesData: unknown[] | null = null;
+  let invoicesError: { message: string; code?: string } | null = null;
+  let invoicesCount: number | null = null;
+
+  const extendedResult = await supabase
+    .from("invoices")
+    .select(invoicesSelectExtended, { count: "exact" })
     .order("issued_at", { ascending: false })
     .range(from, to);
 
-  const { data: invoicesData, error: invoicesError, count: invoicesCount } = await invoicesQuery;
+  invoicesData = extendedResult.data;
+  invoicesError = extendedResult.error;
+  invoicesCount = extendedResult.count;
+
+  if (
+    invoicesError &&
+    !isMissingInvoicesTableError(invoicesError.message) &&
+    isMissingColumnError(invoicesError.message)
+  ) {
+    debug.invoices_column_fallback = invoicesError.message;
+    const coreResult = await supabase
+      .from("invoices")
+      .select(invoicesSelectCore, { count: "exact" })
+      .order("issued_at", { ascending: false })
+      .range(from, to);
+    invoicesData = coreResult.data;
+    invoicesError = coreResult.error;
+    invoicesCount = coreResult.count;
+  }
 
   if (invoicesError && isMissingInvoicesTableError(invoicesError.message)) {
     return NextResponse.json(
@@ -221,7 +255,6 @@ export async function GET(request: NextRequest) {
       .select(
         `
         id,
-        order_number,
         order_code,
         total_egp,
         payment_status,
@@ -274,13 +307,13 @@ export async function GET(request: NextRequest) {
       const userId = o.user_id != null ? String(o.user_id) : null;
       const user = userId ? userLookup.get(userId) : undefined;
       const createdAt = typeof o.created_at === "string" ? o.created_at : new Date().toISOString();
-      const orderNumber = Number(o.order_number ?? 0);
       const orderId = String(o.id ?? "");
       const items = itemsByOrderId.get(orderId) ?? [];
-      const invoiceNumber =
-        Number.isFinite(orderNumber) && orderNumber > 0
-          ? `INV-${String(orderNumber).padStart(8, "0")}`
-          : normalizeInvoiceNumber(orderId, createdAt, "INV");
+      const invoiceNumber = invoiceNumberFromOrder({
+        id: orderId,
+        created_at: createdAt,
+        order_code: typeof o.order_code === "string" ? o.order_code : null,
+      });
       return {
         id: orderId,
         invoice_number: invoiceNumber,

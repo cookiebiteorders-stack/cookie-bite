@@ -53,3 +53,11 @@ export function isMissingInvoicesTableError(message: string): boolean {
     (m.includes("schema cache") && m.includes("invoices"))
   );
 }
+
+/** PostgREST: عمود غير موجود (مثلاً بعد ترحيل لم يُطبَّق بعد) */
+export function isMissingColumnError(message: string, column?: string): boolean {
+  const m = message.toLowerCase();
+  if (!m.includes("does not exist")) return false;
+  if (column) return m.includes(column.toLowerCase());
+  return m.includes("column");
+}

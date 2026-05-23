@@ -21,7 +21,7 @@ export async function fetchRawInvoiceForOrder(
   const { data: order, error: orderErr } = await supabase
     .from("orders")
     .select(
-      "id, order_code, order_number, status, guest_email, user_id, subtotal_egp, discount_amount_egp, delivery_fee_egp, total_egp, notes, shipping_address, payment_method, paymob_transaction_id, payment_status",
+      "id, order_code, status, guest_email, user_id, subtotal_egp, discount_amount_egp, delivery_fee_egp, total_egp, notes, shipping_address, payment_method, paymob_transaction_id, payment_status, created_at",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -87,7 +87,7 @@ export async function fetchRawInvoiceForOrder(
     customer_email: customerEmail,
     order: {
       id: order.id as string,
-      order_code: (order.order_code as string | null) ?? `#${order.order_number}`,
+      order_code: (order.order_code as string | null) ?? String(order.id).slice(0, 8),
       status: order.status as string,
       items,
       subtotal_egp: Number(order.subtotal_egp),

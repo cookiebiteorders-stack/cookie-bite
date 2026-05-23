@@ -7,6 +7,7 @@ import { fetchOrderItemsByOrderIds } from "@/lib/db/order-items-fetch";
 
 import type { InvoiceDetailPayload, InvoiceDetailStatus } from "@/lib/invoices/invoice-detail-types";
 import { loadManualInvoiceByStoredNumber } from "@/lib/invoices/load-invoice-by-number";
+import { invoiceNumberFromOrder } from "@/lib/invoices/order-invoice-number";
 
 export type { InvoiceDetailPayload } from "@/lib/invoices/invoice-detail-types";
 
@@ -134,7 +135,6 @@ export async function GET(
         orders:order_id (
           id,
           order_code,
-          order_number,
           status,
           guest_email,
           user_id,
@@ -230,12 +230,8 @@ export async function GET(
   if (!payload) {
     let orderRow: Record<string, unknown> | null = null;
     if (parsed.kind === "order-number" && parsed.orderNumber) {
-      const { data, error } = await supabase
-        .from("orders")
-        .select(
-          `
+      const orderSelect = `
           id,
-          order_number,
           order_code,
           subtotal_egp,
           discount_amount_egp,
@@ -251,14 +247,21 @@ export async function GET(
           shipping_address,
           created_at,
           updated_at
-        `,
-        )
-        .eq("order_number", parsed.orderNumber)
-        .maybeSingle();
-      if (error) {
-        console.error("[api/invoices/:n] orders lookup", error.message);
+        `;
+      const suffix4 = String(parsed.orderNumber).padStart(4, "0");
+      const { data: byCode, error: byCodeErr } = await supabase
+        .from("orders")
+        .select(orderSelect)
+        .ilike("order_code", `%-${suffix4}`)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (byCodeErr) {
+        console.error("[api/invoices/:n] orders lookup by code", byCodeErr.message);
       }
-      orderRow = (data as Record<string, unknown> | null) ?? null;
+      orderRow = ((byCode?.[0] as Record<string, unknown> | undefined) ?? null) as Record<
+        string,
+        unknown
+      > | null;
     }
 
     if (!orderRow) {
@@ -279,11 +282,11 @@ export async function GET(
     const items = orderId ? (itemsByOrderId.get(orderId) ?? []) : [];
     const createdAt =
       typeof orderRow.created_at === "string" ? orderRow.created_at : new Date().toISOString();
-    const orderNumber = Number(orderRow.order_number ?? 0);
-    const invoiceNum =
-      Number.isFinite(orderNumber) && orderNumber > 0
-        ? `INV-${String(orderNumber).padStart(8, "0")}`
-        : normalizeInvoiceNumber(orderId, createdAt);
+    const invoiceNum = invoiceNumberFromOrder({
+      id: orderId,
+      created_at: createdAt,
+      order_code: typeof orderRow.order_code === "string" ? orderRow.order_code : null,
+    });
 
     payload = {
       id: orderId,
