@@ -5,7 +5,6 @@ import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { useShippingOrchestrationStore } from "@/stores/shipping-orchestration-store";
 import { ShippingHero } from "@/components/admin/shipping/shipping-hero";
 import { ShippingInsights } from "@/components/admin/shipping/shipping-insights";
-import { ShippingZoneForm } from "@/components/admin/shipping/shipping-zone-form";
 import { ShippingZonesPanel } from "@/components/admin/shipping/shipping-zones-panel";
 import { ShippingToasts } from "@/components/admin/shipping/shipping-toasts";
 import { DeliveryZonesMap } from "@/components/admin/shipping/delivery-zones-map";
@@ -30,17 +29,14 @@ export function ShippingOrchestrationDashboard() {
     <div className="space-y-6 pb-10">
       <ShippingHero online={online && !error} />
       <ShippingInsights zones={zones} />
-      <DeliveryZonesMap />
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,400px)_1fr]">
-        <ShippingZoneForm existingNames={existingNames} />
-        <div className="space-y-4">
-          {!loading && zones.length === 0 && !error ? (
-            <p className="rounded-xl border border-dashed border-cb-border bg-cb-surface/40 px-4 py-3 text-sm text-stone-700">
-              No shipping zones yet. Add your first zone with the form, or import a CSV.
-            </p>
-          ) : null}
-          <ShippingZonesPanel />
-        </div>
+      <DeliveryZonesMap existingNames={existingNames} />
+      <div className="space-y-4">
+        {!loading && zones.length === 0 && !error ? (
+          <p className="rounded-xl border border-dashed border-cb-border bg-cb-surface/40 px-4 py-3 text-sm text-stone-700">
+            لا توجد مناطق شحن بعد. أضِف أول منطقة من الخريطة أعلاه، أو استورد CSV من الجدول.
+          </p>
+        ) : null}
+        <ShippingZonesPanel />
       </div>
       <ShippingToasts />
     </div>

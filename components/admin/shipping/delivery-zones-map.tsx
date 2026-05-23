@@ -11,20 +11,25 @@ import {
 import {
   AlertTriangle,
   CheckCircle2,
+  Crosshair,
   Edit3,
   Loader2,
   MapPin,
   Plus,
   Trash2,
+  Wifi,
   X,
 } from "lucide-react";
 import type { ShippingZoneRow } from "@/lib/shipping/types";
+import { filterEgyptCities } from "@/lib/shipping/egypt-cities";
 import { useShippingOrchestrationStore } from "@/stores/shipping-orchestration-store";
 import {
   placeLabelToZoneName,
   searchPlacesNominatim,
   type MapSearchResult,
 } from "@/lib/map/geocode-search";
+import { CAIRO_MAP_CENTER, loadLeafletFromCDN } from "@/lib/map/leaflet-cdn";
+import { fetchIpGeolocation, reverseGeocode } from "@/lib/map/reverse-geocode";
 import {
   ZONE_GEO_PALETTE,
   deleteZoneGeo,
@@ -35,81 +40,46 @@ import {
   type ZoneGeo,
 } from "@/lib/shipping/zone-geo";
 import { MapPlaceSearch } from "@/components/admin/shipping/map-place-search";
+import "@/components/admin/shipping/delivery-zones-map-scoped.css";
 
-const LEAFLET_CSS = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
-const LEAFLET_JS = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
-const DEFAULT_CENTER: [number, number] = [30.0444, 31.2357];
+const DEFAULT_CENTER = CAIRO_MAP_CENTER;
 const DEFAULT_ZOOM = 10;
 
 type LayerHandles = { circle: LeafletCircle; marker: LeafletCircleMarker };
 
 type DraftState = {
   name: string;
+  cities: string[];
   feeEgp: string;
-  etaDays: string;
+  etaMinDays: string;
+  etaMaxDays: string;
   radiusKm: string;
   color: string;
   latlng: LeafletLatLng | null;
   editingZoneId: string | null;
+  freeShippingEnabled: boolean;
+  freeShippingThreshold: string;
+  isActive: boolean;
 };
 
 const EMPTY_DRAFT: DraftState = {
   name: "",
+  cities: [],
   feeEgp: "",
-  etaDays: "",
+  etaMinDays: "1",
+  etaMaxDays: "3",
   radiusKm: "5",
   color: ZONE_GEO_PALETTE[0],
   latlng: null,
   editingZoneId: null,
+  freeShippingEnabled: false,
+  freeShippingThreshold: "",
+  isActive: true,
 };
 
-let cdnLoaderPromise: Promise<LeafletStatic> | null = null;
-
-function loadLeafletFromCDN(): Promise<LeafletStatic> {
-  if (typeof window === "undefined") {
-    return Promise.reject(new Error("Leaflet can only load in the browser"));
-  }
-  if (window.L) return Promise.resolve(window.L);
-  if (cdnLoaderPromise) return cdnLoaderPromise;
-
-  cdnLoaderPromise = new Promise<LeafletStatic>((resolve, reject) => {
-    if (!document.querySelector(`link[href="${LEAFLET_CSS}"]`)) {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = LEAFLET_CSS;
-      link.crossOrigin = "";
-      document.head.appendChild(link);
-    }
-
-    const existing = document.querySelector<HTMLScriptElement>(
-      `script[src="${LEAFLET_JS}"]`,
-    );
-    if (existing) {
-      existing.addEventListener("load", () => {
-        if (window.L) resolve(window.L);
-        else reject(new Error("Leaflet loaded without exposing L"));
-      });
-      existing.addEventListener("error", () =>
-        reject(new Error("Failed to load Leaflet from CDN")),
-      );
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = LEAFLET_JS;
-    script.async = true;
-    script.crossOrigin = "";
-    script.onload = () => {
-      if (window.L) resolve(window.L);
-      else reject(new Error("Leaflet loaded without exposing L"));
-    };
-    script.onerror = () =>
-      reject(new Error("Failed to load Leaflet from CDN"));
-    document.head.appendChild(script);
-  });
-
-  return cdnLoaderPromise;
-}
+type DeliveryZonesMapProps = {
+  existingNames?: string[];
+};
 
 function popupHTML(z: ShippingZoneRow, geo: ZoneGeo): string {
   const eta =
@@ -130,7 +100,7 @@ function escape(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-export function DeliveryZonesMap() {
+export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) {
   const zones = useShippingOrchestrationStore((s) => s.zones);
   const mutating = useShippingOrchestrationStore((s) => s.mutating);
   const createZone = useShippingOrchestrationStore((s) => s.createZone);
@@ -160,6 +130,15 @@ export function DeliveryZonesMap() {
     text: string;
   }>({ kind: "info", text: "Click on the map to place this zone" });
   const [nameError, setNameError] = useState(false);
+  const [cityDraft, setCityDraft] = useState("");
+  const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
+  const [locating, setLocating] = useState<"gps" | "ip" | null>(null);
+  const [locateError, setLocateError] = useState<string | null>(null);
+
+  const nameList = useMemo(
+    () => existingNames.map((n) => n.trim().toLowerCase()),
+    [existingNames],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -423,13 +402,136 @@ export function DeliveryZonesMap() {
     [geoStore],
   );
 
+  const commitCities = useCallback((raw: string) => {
+    const parts = raw
+      .split(/[,;\n]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!parts.length) return;
+    setDraft((d) => {
+      const lower = new Set(d.cities.map((c) => c.toLowerCase()));
+      const next = [...d.cities];
+      for (const p of parts) {
+        if (!lower.has(p.toLowerCase())) {
+          next.push(p);
+          lower.add(p.toLowerCase());
+        }
+      }
+      return { ...d, cities: next };
+    });
+    setCityDraft("");
+    setCitySuggestions([]);
+  }, []);
+
+  const applyCoordsOnMap = useCallback(
+    (lat: number, lng: number, label?: string) => {
+      if (!mapRef.current) return;
+      mapRef.current.flyTo([lat, lng], 14, { duration: 0.65 });
+      showSearchPin(lat, lng);
+      setLocateError(null);
+
+      if (!formOpen) {
+        const color = pickNextColor(usedColors);
+        setDraft({ ...EMPTY_DRAFT, color });
+        setFormOpen(true);
+        setPicking(true);
+        setNameError(false);
+        setHint({
+          kind: "info",
+          text: "تم تحديد الموقع — أكمل التفاصيل واحفظ",
+        });
+      }
+
+      placeDraftAt(lat, lng, label);
+      void reverseGeocode(lat, lng).then((hint) => {
+        if (!hint) return;
+        setDraft((d) => {
+          const lower = new Set(d.cities.map((c) => c.toLowerCase()));
+          const next = [...d.cities];
+          for (const c of [hint.city, hint.governorate].filter(Boolean) as string[]) {
+            if (!lower.has(c.toLowerCase())) {
+              next.push(c);
+              lower.add(c.toLowerCase());
+            }
+          }
+          const suggestedName =
+            d.name.trim().length >= 2
+              ? d.name
+              : hint.city
+                ? placeLabelToZoneName(hint.city)
+                : label
+                  ? placeLabelToZoneName(label)
+                  : d.name;
+          return {
+            ...d,
+            cities: next,
+            name: suggestedName,
+          };
+        });
+      });
+    },
+    [formOpen, placeDraftAt, showSearchPin, usedColors],
+  );
+
+  const useDeviceGps = useCallback(() => {
+    if (!LRef) return;
+    if (!navigator.geolocation) {
+      setLocateError("المتصفح لا يدعم GPS — استخدم الشبكة أو البحث");
+      return;
+    }
+    setLocating("gps");
+    setLocateError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(null);
+        void applyCoordsOnMap(
+          pos.coords.latitude,
+          pos.coords.longitude,
+          "موقعك الحالي (GPS)",
+        );
+      },
+      (err) => {
+        setLocating(null);
+        const msg =
+          err.code === err.PERMISSION_DENIED
+            ? "لم يُسمح بالوصول للموقع — فعّل GPS أو استخدم الشبكة"
+            : err.code === err.TIMEOUT
+              ? "انتهت مهلة GPS — جرّب مرة أخرى"
+              : "تعذّر قراءة GPS";
+        setLocateError(msg);
+      },
+      { enableHighAccuracy: true, timeout: 14_000, maximumAge: 60_000 },
+    );
+  }, [LRef, applyCoordsOnMap]);
+
+  const useNetworkLocation = useCallback(() => {
+    if (!LRef) return;
+    setLocating("ip");
+    setLocateError(null);
+    void fetchIpGeolocation()
+      .then((geo) => {
+        setLocating(null);
+        const note =
+          geo.source === "ip"
+            ? `${geo.label} (تقريبي من الشبكة)`
+            : `${geo.label} (افتراضي)`;
+        return applyCoordsOnMap(geo.lat, geo.lng, note);
+      })
+      .catch(() => {
+        setLocating(null);
+        setLocateError("تعذّر تحديد الموقع التقريبي — ابحث يدوياً");
+      });
+  }, [LRef, applyCoordsOnMap]);
+
   const openCreateForm = () => {
     const color = pickNextColor(usedColors);
     setDraft({ ...EMPTY_DRAFT, color });
+    setCityDraft("");
     setFormOpen(true);
     setPicking(true);
     setNameError(false);
-    setHint({ kind: "info", text: "Click on the map to place this zone" });
+    setLocateError(null);
+    setHint({ kind: "info", text: "انقر على الخريطة أو استخدم GPS/الشبكة لتحديد الموقع" });
     clearTempLayers();
   };
 
@@ -437,13 +539,22 @@ export function DeliveryZonesMap() {
     const geo = geoStore[zone.id] ?? null;
     setDraft({
       name: zone.name,
+      cities: [...zone.cities],
       feeEgp: String(zone.base_fee_egp),
-      etaDays: String(Math.max(1, zone.eta_min_days)),
+      etaMinDays: String(Math.max(0, zone.eta_min_days)),
+      etaMaxDays: String(Math.max(zone.eta_min_days, zone.eta_max_days)),
       radiusKm: String(geo?.radiusKm ?? 5),
       color: geo?.color ?? pickNextColor(usedColors),
       latlng: null,
       editingZoneId: zone.id,
+      freeShippingEnabled: zone.free_shipping_threshold_egp != null,
+      freeShippingThreshold:
+        zone.free_shipping_threshold_egp != null
+          ? String(zone.free_shipping_threshold_egp)
+          : "",
+      isActive: zone.is_active,
     });
+    setCityDraft("");
     setFormOpen(true);
     setPicking(true);
     setNameError(false);
@@ -463,7 +574,10 @@ export function DeliveryZonesMap() {
     setFormOpen(false);
     setPicking(false);
     setDraft(EMPTY_DRAFT);
+    setCityDraft("");
+    setCitySuggestions([]);
     setNameError(false);
+    setLocateError(null);
     clearTempLayers();
   };
 
@@ -488,36 +602,20 @@ export function DeliveryZonesMap() {
         lat = places[0].lat;
         lng = places[0].lng;
       }
-      if (!mapRef.current) return;
-      mapRef.current.flyTo([lat, lng], 14, { duration: 0.65 });
-      showSearchPin(lat, lng);
-
-      if (formOpen && picking) {
-        placeDraftAt(lat, lng, result.label);
-        return;
-      }
-
-      if (!formOpen) {
-        const color = pickNextColor(usedColors);
-        setDraft({ ...EMPTY_DRAFT, color });
-        setFormOpen(true);
-        setPicking(true);
-        setNameError(false);
-        setHint({
-          kind: "info",
-          text: "تم تحديد الموقع — أدخل اسم المنطقة والسعر ثم احفظ",
-        });
-        placeDraftAt(lat, lng, result.label);
+      applyCoordsOnMap(lat, lng, result.label);
+      if (result.kind === "city" || result.kind === "place") {
+        const hint = await reverseGeocode(lat, lng);
+        const cityName = hint?.city ?? result.label.split(",")[0]?.trim();
+        if (cityName) {
+          setDraft((d) => {
+            const lower = new Set(d.cities.map((c) => c.toLowerCase()));
+            if (lower.has(cityName.toLowerCase())) return d;
+            return { ...d, cities: [...d.cities, cityName] };
+          });
+        }
       }
     },
-    [
-      formOpen,
-      picking,
-      placeDraftAt,
-      showSearchPin,
-      pushToast,
-      usedColors,
-    ],
+    [applyCoordsOnMap, pushToast],
   );
 
   const handleSearchZone = useCallback(
@@ -542,19 +640,53 @@ export function DeliveryZonesMap() {
       setNameError(true);
       return;
     }
+    const nameKey = name.toLowerCase();
+    if (
+      !draft.editingZoneId &&
+      nameList.includes(nameKey)
+    ) {
+      setNameError(true);
+      setHint({
+        kind: "warn",
+        text: "يوجد منطقة بنفس الاسم — اختر اسماً مختلفاً",
+      });
+      return;
+    }
+    const cities =
+      draft.cities.length > 0
+        ? draft.cities.map((c) => c.trim()).filter(Boolean)
+        : [name];
+    if (!cities.length) {
+      setHint({ kind: "warn", text: "أضف مدينة واحدة على الأقل" });
+      return;
+    }
     const fee = Math.max(0, Number(draft.feeEgp) || 0);
-    const etaDays = Math.max(1, Math.floor(Number(draft.etaDays) || 1));
+    const etaMin = Math.max(0, Math.floor(Number(draft.etaMinDays) || 0));
+    const etaMax = Math.max(etaMin, Math.floor(Number(draft.etaMaxDays) || etaMin));
     const radiusKm = Math.max(1, Number(draft.radiusKm) || 5);
+    const freeThreshold = draft.freeShippingEnabled
+      ? Math.max(0, Number(draft.freeShippingThreshold) || 0)
+      : null;
 
     if (!draft.editingZoneId && !draft.latlng) {
       setHint({
         kind: "warn",
-        text: "Click on the map first to set the zone location",
+        text: "حدّد الموقع على الخريطة أو عبر GPS/الشبكة أولاً",
       });
       return;
     }
 
     setNameError(false);
+    const zonePatch = {
+      name,
+      cities,
+      base_fee_egp: fee,
+      free_shipping_threshold_egp: freeThreshold,
+      eta_min_days: etaMin,
+      eta_max_days: etaMax,
+      is_active: draft.isActive,
+    };
+
     if (draft.editingZoneId) {
       const previousGeo = getZoneGeo(draft.editingZoneId);
       const latlng = draft.latlng
@@ -565,7 +697,7 @@ export function DeliveryZonesMap() {
       if (!latlng) {
         setHint({
           kind: "warn",
-          text: "Click on the map to set this zone's location",
+          text: "انقر على الخريطة لتحديد موقع هذه المنطقة",
         });
         return;
       }
@@ -576,22 +708,9 @@ export function DeliveryZonesMap() {
         color: draft.color,
       });
       setGeoStore(loadZoneGeoStore());
-      await updateZone(draft.editingZoneId, {
-        name,
-        base_fee_egp: fee,
-        eta_min_days: etaDays,
-        eta_max_days: etaDays,
-      });
+      await updateZone(draft.editingZoneId, zonePatch);
     } else if (draft.latlng) {
-      const created = await createZone({
-        name,
-        cities: [name],
-        base_fee_egp: fee,
-        free_shipping_threshold_egp: null,
-        eta_min_days: etaDays,
-        eta_max_days: etaDays,
-        is_active: true,
-      });
+      const created = await createZone(zonePatch);
       if (created) {
         saveZoneGeo(created.id, {
           lat: draft.latlng.lat,
@@ -632,11 +751,9 @@ export function DeliveryZonesMap() {
             Map-based zone placement
           </h2>
           <p className="mt-1 max-w-2xl text-sm text-stone-700">
-            ارسم مناطق التوصيل بصرياً على الخريطة. استخدم البحث أعلى الخريطة
-            للعثور على حي أو مدينة أو منطقة توصيل، ثم اضغط لإضافة منطقة وحدّد
-            النصف-قطر والسعر. الموقع الجغرافي يُحفظ محلياً
-            في المتصفح بينما الاسم والسعر والـETA يُزامَنون مع قاعدة البيانات
-            تلقائياً.
+            أضِف مناطق التوصيل من مكان واحد: ابحث، أو استخدم GPS/الشبكة، أو انقر
+            على الخريطة، ثم أكمل الاسم والمدن والرسوم. الموقع الجغرافي يُحفظ
+            محلياً في المتصفح؛ بقية البيانات تُزامَن مع قاعدة البيانات.
           </p>
         </div>
       </header>
@@ -696,6 +813,80 @@ export function DeliveryZonesMap() {
                   }`}
                 />
               </label>
+              <div className="block">
+                <span className="block text-[10px] font-bold uppercase tracking-wide text-cb-text-muted">
+                  Cities
+                </span>
+                <div className="mt-1 flex min-h-[40px] flex-wrap gap-1.5 rounded-lg border border-cb-border bg-cb-surface p-2">
+                  {draft.cities.map((city, index) => (
+                    <span
+                      key={`${city}-${index}`}
+                      className="inline-flex items-center gap-1 rounded-full border border-cb-border bg-cb-cream-2/80 px-2 py-0.5 text-[11px] font-semibold text-cb-text-strong"
+                    >
+                      {city}
+                      <button
+                        type="button"
+                        className="rounded-full p-0.5 hover:bg-cb-hover-overlay"
+                        onClick={() =>
+                          setDraft((d) => ({
+                            ...d,
+                            cities: d.cities.filter((_, i) => i !== index),
+                          }))
+                        }
+                        aria-label={`Remove ${city}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    className="min-w-[100px] flex-1 border-0 bg-transparent px-1 py-0.5 text-sm outline-none"
+                    value={cityDraft}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setCityDraft(v);
+                      setCitySuggestions(filterEgyptCities(v));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === ",") {
+                        e.preventDefault();
+                        commitCities(cityDraft);
+                      } else if (
+                        e.key === "Backspace" &&
+                        !cityDraft &&
+                        draft.cities.length
+                      ) {
+                        setDraft((d) => ({
+                          ...d,
+                          cities: d.cities.slice(0, -1),
+                        }));
+                      }
+                    }}
+                    onBlur={() => {
+                      if (cityDraft.trim()) commitCities(cityDraft);
+                    }}
+                    placeholder={
+                      draft.cities.length ? "Add city…" : "City, Enter"
+                    }
+                  />
+                </div>
+                {citySuggestions.length > 0 && cityDraft.trim() ? (
+                  <ul className="mt-1 max-h-24 overflow-auto rounded-lg border border-cb-border bg-cb-surface text-xs shadow-md">
+                    {citySuggestions.map((c) => (
+                      <li key={c}>
+                        <button
+                          type="button"
+                          className="block w-full px-2 py-1.5 text-start hover:bg-cb-hover-overlay"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => commitCities(c)}
+                        >
+                          {c}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <label className="block">
                   <span className="block text-[10px] font-bold uppercase tracking-wide text-cb-text-muted">
@@ -712,23 +903,79 @@ export function DeliveryZonesMap() {
                     className="mt-1 w-full rounded-lg border border-cb-border bg-cb-surface px-2.5 py-1.5 text-sm outline-none focus:border-cb-brand-500 focus:ring-2 focus:ring-cb-brand-500/25"
                   />
                 </label>
+                <label className="flex items-end gap-2 pb-1.5 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={draft.isActive}
+                    onChange={(e) =>
+                      setDraft((d) => ({ ...d, isActive: e.target.checked }))
+                    }
+                    className="h-4 w-4 rounded"
+                  />
+                  <span className="font-semibold text-cb-text-strong">Active</span>
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
                 <label className="block">
                   <span className="block text-[10px] font-bold uppercase tracking-wide text-cb-text-muted">
-                    Est. days
+                    ETA min (days)
                   </span>
                   <input
                     type="number"
-                    min={1}
-                    max={30}
-                    value={draft.etaDays}
+                    min={0}
+                    value={draft.etaMinDays}
                     onChange={(e) =>
-                      setDraft((d) => ({ ...d, etaDays: e.target.value }))
+                      setDraft((d) => ({ ...d, etaMinDays: e.target.value }))
                     }
-                    placeholder="1"
+                    className="mt-1 w-full rounded-lg border border-cb-border bg-cb-surface px-2.5 py-1.5 text-sm outline-none focus:border-cb-brand-500 focus:ring-2 focus:ring-cb-brand-500/25"
+                  />
+                </label>
+                <label className="block">
+                  <span className="block text-[10px] font-bold uppercase tracking-wide text-cb-text-muted">
+                    ETA max (days)
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={draft.etaMaxDays}
+                    onChange={(e) =>
+                      setDraft((d) => ({ ...d, etaMaxDays: e.target.value }))
+                    }
                     className="mt-1 w-full rounded-lg border border-cb-border bg-cb-surface px-2.5 py-1.5 text-sm outline-none focus:border-cb-brand-500 focus:ring-2 focus:ring-cb-brand-500/25"
                   />
                 </label>
               </div>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={draft.freeShippingEnabled}
+                  onChange={(e) =>
+                    setDraft((d) => ({
+                      ...d,
+                      freeShippingEnabled: e.target.checked,
+                    }))
+                  }
+                  className="h-4 w-4 rounded"
+                />
+                <span className="font-semibold text-cb-text-strong">
+                  Free shipping threshold (EGP)
+                </span>
+              </label>
+              {draft.freeShippingEnabled ? (
+                <input
+                  type="number"
+                  min={0}
+                  value={draft.freeShippingThreshold}
+                  onChange={(e) =>
+                    setDraft((d) => ({
+                      ...d,
+                      freeShippingThreshold: e.target.value,
+                    }))
+                  }
+                  placeholder="500"
+                  className="w-full rounded-lg border border-cb-border bg-cb-surface px-2.5 py-1.5 text-sm outline-none focus:border-cb-brand-500 focus:ring-2 focus:ring-cb-brand-500/25"
+                />
+              ) : null}
               <label className="block">
                 <span className="block text-[10px] font-bold uppercase tracking-wide text-cb-text-muted">
                   Radius (km)
@@ -863,15 +1110,46 @@ export function DeliveryZonesMap() {
           </div>
         </aside>
 
-        <div className="relative flex flex-col gap-2">
+        <div className="delivery-zones-map-frame relative flex flex-col gap-2 overflow-hidden rounded-2xl border border-cb-border bg-cb-surface/40 p-2">
           <MapPlaceSearch
             zones={zones}
             geoStore={geoStore}
             onSelectPlace={(r) => void handleSearchPlace(r)}
             onSelectZone={handleSearchZone}
           />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={!LRef || locating !== null}
+              onClick={useDeviceGps}
+              className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-xs font-bold text-cb-text-strong transition hover:border-amber-300 hover:bg-amber-50 disabled:opacity-50 sm:flex-none dark:hover:bg-amber-950/25"
+            >
+              {locating === "gps" ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Crosshair className="h-4 w-4 shrink-0 text-amber-700" aria-hidden />
+              )}
+              موقعي (GPS)
+            </button>
+            <button
+              type="button"
+              disabled={!LRef || locating !== null}
+              onClick={useNetworkLocation}
+              className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-xs font-bold text-cb-text-strong transition hover:border-sky-300 hover:bg-sky-50 disabled:opacity-50 sm:flex-none dark:hover:bg-sky-950/25"
+            >
+              {locating === "ip" ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Wifi className="h-4 w-4 shrink-0 text-sky-700" aria-hidden />
+              )}
+              موقع تقريبي (شبكة)
+            </button>
+          </div>
+          {locateError ? (
+            <p className="text-xs font-medium text-red-600">{locateError}</p>
+          ) : null}
           {loadError ? (
-            <div className="flex h-[460px] items-center justify-center rounded-2xl border border-dashed border-red-300 bg-red-50/60 px-6 text-center text-sm text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-100">
+            <div className="flex h-[460px] items-center justify-center rounded-xl border border-dashed border-red-300 bg-red-50/60 px-6 text-center text-sm text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-100">
               <div>
                 <AlertTriangle className="mx-auto mb-2 h-6 w-6" />
                 <p className="font-semibold">Map failed to load</p>
@@ -879,17 +1157,19 @@ export function DeliveryZonesMap() {
               </div>
             </div>
           ) : !LRef ? (
-            <div className="flex h-[460px] items-center justify-center rounded-2xl border border-cb-border bg-cb-surface/60 text-sm text-cb-text-muted">
+            <div className="flex h-[460px] items-center justify-center rounded-xl border border-cb-border bg-cb-surface/60 text-sm text-cb-text-muted">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Loading map…
             </div>
           ) : null}
           <div
             ref={containerRef}
-            className={`h-[460px] w-full overflow-hidden rounded-2xl border ${
-              picking ? "border-cb-brand-500" : "border-cb-border"
+            className={`relative z-0 h-[460px] w-full overflow-hidden rounded-xl border ${
+              picking ? "border-cb-brand-500 ring-2 ring-cb-brand-500/20" : "border-cb-border"
             } ${loadError || !LRef ? "hidden" : ""}`}
             style={{ cursor: picking ? "crosshair" : undefined }}
+            role="application"
+            aria-label="خريطة مناطق التوصيل"
           />
         </div>
       </div>

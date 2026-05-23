@@ -137,7 +137,7 @@ export function MapPlaceSearch({
 
       {open && (results.length > 0 || error || loading) ? (
         <ul
-          className="absolute start-0 end-0 top-full z-[500] mt-1 max-h-64 overflow-y-auto rounded-2xl border border-cb-border bg-cb-surface py-1 shadow-xl"
+          className="absolute start-0 end-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-2xl border border-cb-border bg-cb-surface py-1 shadow-xl"
           role="listbox"
         >
           {loading && results.length === 0 ? (
