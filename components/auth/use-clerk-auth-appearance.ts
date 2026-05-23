@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
+import { CLERK_BRAND_VARIABLES } from "@/lib/auth/clerk-brand-appearance";
 
 type Options = {
   /** إخفاء عنوان Clerk داخل البطاقة — العنوان في AuthLayout */
@@ -19,9 +20,7 @@ export function useClerkAuthAppearance(options: Options = {}) {
       baseTheme: "light" as const,
       variables: {
         ...clerkAuthAppearance.variables,
-        colorPrimary: "#e8782a",
-        colorBackground: "#fffaf4",
-        colorInputBackground: "#fff8f0",
+        ...CLERK_BRAND_VARIABLES,
       },
       elements: {
         ...clerkAuthAppearance.elements,

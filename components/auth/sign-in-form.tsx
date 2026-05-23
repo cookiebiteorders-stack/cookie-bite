@@ -13,7 +13,7 @@ export function SignInForm({ afterAuth }: SignInFormProps) {
 
   return (
     <ClerkAuthShell>
-      <div className="auth-form-scroll w-full min-h-[min(20rem,44vh)]">
+      <div className="w-full min-h-[min(18rem,40dvh)] sm:min-h-[min(20rem,44vh)]">
         <SignIn
           routing="path"
           path="/sign-in"

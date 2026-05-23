@@ -1,0 +1,92 @@
+/* صفحات تسجيل الدخول / إنشاء الحساب — متوافقة مع tokens.css */
+
+.auth-page {
+  --auth-form-max: min(100%, 28rem);
+  --auth-shell-max: min(100%, 26rem);
+}
+
+.auth-page__backdrop {
+  background:
+    radial-gradient(ellipse 120% 80% at 100% 0%, color-mix(in oklab, var(--cb-pink) 14%, transparent), transparent 55%),
+    radial-gradient(ellipse 90% 60% at 0% 100%, color-mix(in oklab, var(--cb-mint) 12%, transparent), transparent 50%),
+    linear-gradient(
+      165deg,
+      var(--cb-cream) 0%,
+      color-mix(in oklab, var(--cb-peach) 55%, var(--cb-cream)) 45%,
+      var(--cb-cream-2) 100%
+    );
+}
+
+.dark .auth-page__backdrop {
+  background:
+    radial-gradient(ellipse 100% 70% at 90% 0%, color-mix(in oklab, var(--cb-brand-500) 12%, transparent), transparent 55%),
+    radial-gradient(ellipse 80% 50% at 0% 100%, color-mix(in oklab, var(--cb-mint) 8%, transparent), transparent 50%),
+    linear-gradient(165deg, var(--bg-main) 0%, var(--bg-card) 100%);
+}
+
+.auth-page__card {
+  box-shadow: var(--shadow-editorial);
+}
+
+@media (max-width: 639px) {
+  .auth-page {
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+  }
+
+  .auth-page__card {
+    min-height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+    box-shadow: none;
+  }
+
+  .auth-page__panel {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (min-width: 640px) {
+  .auth-page__card {
+    min-height: min(100dvh - 3rem, 720px);
+    max-height: min(100dvh - 3rem, 780px);
+  }
+}
+
+@media (min-width: 768px) {
+  .auth-page__aside {
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--cb-brand-900) 25%, transparent) 0%,
+      color-mix(in oklab, var(--cb-dark-accent) 88%, #000) 100%
+    );
+  }
+}
+
+.auth-page__form-zone {
+  max-width: var(--auth-form-max);
+}
+
+.auth-page .clerk-auth-shell .cl-rootBox,
+.auth-page .clerk-auth-shell .cl-cardBox {
+  width: 100%;
+  max-width: var(--auth-shell-max);
+  margin-inline: auto;
+}
+
+.auth-page .clerk-auth-shell .cl-card {
+  max-width: var(--auth-shell-max) !important;
+}
+
+@media (max-width: 380px) {
+  .auth-page .clerk-auth-shell .cl-socialButtonsBlockButton,
+  .auth-page .clerk-auth-shell .cl-formButtonPrimary,
+  .auth-page .clerk-auth-shell .cl-formFieldInput {
+    min-height: 3rem !important;
+    height: 3rem !important;
+    font-size: 0.9375rem !important;
+  }
+}

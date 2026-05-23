@@ -21,7 +21,7 @@ export function SignUpForm({ afterAuth }: SignUpFormProps) {
 
   return (
     <ClerkAuthShell>
-      <div className="auth-form-scroll w-full min-h-[min(22rem,48vh)]">
+      <div className="w-full min-h-[min(20rem,42dvh)] sm:min-h-[min(22rem,48vh)]">
         <SignUp
           routing="path"
           path="/sign-up"
