@@ -45,9 +45,9 @@ const storeNavGroupClass =
 const utilityGroupClass =
   "flex items-center gap-0.5 rounded-2xl border border-cb-border/50 bg-cb-surface-2/25 p-0.5 sm:gap-1 dark:border-cb-border/60";
 
-/** شارة الصفحة الحالية في لوحة الإدارة — منفصلة عن الشعار لتجنب التداخل */
+/** شارة الصفحة — تُخفى من lg لأن الشريط الجانبي يعرض نفس الصفحة (تجنّب تكرار Dashboard) */
 const adminContextBadgeClass =
-  "flex min-w-0 max-w-[10.5rem] shrink-0 flex-col justify-center rounded-xl border border-cb-border/60 bg-cb-surface-2/40 px-2.5 py-1.5 transition-colors hover:bg-cb-peach/25 sm:max-w-[12rem] lg:max-w-[13.5rem]";
+  "flex min-w-0 max-w-[10.5rem] shrink-0 flex-col justify-center rounded-xl border border-cb-border/60 bg-cb-surface-2/40 px-2.5 py-1.5 no-underline transition-colors hover:bg-cb-peach/25 hover:no-underline sm:max-w-[12rem] lg:hidden";
 
 export function SiteHeader() {
   const pathname = usePathname();

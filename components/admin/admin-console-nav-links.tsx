@@ -32,10 +32,10 @@ export function AdminConsoleNavLinks({
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors duration-200",
+              "admin-console-nav-link flex min-h-[2.5rem] items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold no-underline transition-colors duration-200",
               active
-                ? "bg-cb-terracotta-dark text-white shadow-[var(--shadow-hover)]"
-                : "text-cb-text-strong hover:bg-cb-hover-overlay hover:text-cb-text-strong",
+                ? "bg-cb-terracotta-dark text-white shadow-[var(--shadow-hover)] hover:bg-cb-terracotta-dark hover:text-white hover:no-underline"
+                : "text-cb-text-strong hover:bg-cb-hover-overlay hover:text-cb-text-strong hover:no-underline",
             )}
           >
             <Icon className="h-4 w-4 shrink-0" aria-hidden />

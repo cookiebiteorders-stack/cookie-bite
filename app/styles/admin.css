@@ -449,6 +449,40 @@ html.dark .admin-console button.admin-btn-secondary,
   scroll-margin-top: 4.5rem;
 }
 
+/* تنقل الجانبي — تجاوز underline/لون الروابط العامة (@layer base) */
+.admin-console nav[aria-label="Admin navigation"] .admin-console-nav-link {
+  text-decoration: none !important;
+  color: var(--cb-text-strong) !important;
+}
+
+.admin-console nav[aria-label="Admin navigation"] .admin-console-nav-link:hover {
+  text-decoration: none !important;
+}
+
+.admin-console nav[aria-label="Admin navigation"] .admin-console-nav-link[aria-current="page"] {
+  color: #ffffff !important;
+  background-color: var(--cb-terracotta-dark);
+}
+
+.admin-console nav[aria-label="Admin navigation"] .admin-console-nav-link[aria-current="page"]:hover {
+  color: #ffffff !important;
+}
+
+/* مؤشر عادي في اللوحة — المخلب يظهر فوق النص ويبدو كتداخل */
+.admin-console {
+  cursor: auto;
+}
+
+.admin-console :where(
+  a[href],
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  [role="menuitem"]:not([aria-disabled="true"])
+) {
+  cursor: pointer;
+}
+
 /* درج المنتج بخلفية فاتحة — نثبت نصاً داكناً حتى في وضع dark للوحة */
 .admin-product-drawer-light {
   --cb-text-strong: #3d2814;
