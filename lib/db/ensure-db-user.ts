@@ -1,6 +1,6 @@
 import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import type { UserRow } from "@/lib/db/types";
-import { getUserByClerkId, upsertUserFromClerk } from "@/lib/db/users";
+import { getUserByClerkId, getUserByEmail, upsertUserFromClerk } from "@/lib/db/users";
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export function isSupabaseAdminConfigured(): boolean {
@@ -64,10 +64,13 @@ export async function ensureDbUserForClerk(clerkUserId: string): Promise<UserRow
     return null;
   }
 
-  return upsertUserFromClerk({
+  const created = await upsertUserFromClerk({
     clerkUserId,
     email: identity.email,
     fullName: identity.fullName,
     avatarUrl: identity.avatarUrl,
   });
+  if (created) return created;
+
+  return getUserByEmail(identity.email);
 }

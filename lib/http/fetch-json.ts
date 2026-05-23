@@ -116,6 +116,14 @@ export async function fetchJson<TResult>(
       (typeof errObj?.en === "string" && errObj.en) ||
       `Request failed (${res.status})`;
 
+    const errorCode =
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "error_code" in parsed &&
+      typeof (parsed as { error_code?: unknown }).error_code === "string"
+        ? (parsed as { error_code: string }).error_code
+        : null;
+
     const dbgRaw =
       typeof parsed === "object" &&
       parsed !== null &&
@@ -129,6 +137,9 @@ export async function fetchJson<TResult>(
       typeof (dbgRaw as { message?: unknown }).message === "string"
         ? (dbgRaw as { message: string; hint?: string })
         : null;
+    if (errorCode) {
+      message = `${message} [${errorCode}]`;
+    }
     if (dbg?.message) {
       message = `${message} — ${dbg.message}${dbg.hint ? ` (${dbg.hint})` : ""}`;
     }

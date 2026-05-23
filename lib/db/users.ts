@@ -18,17 +18,59 @@ export type ProfileUpdateInput = {
   full_name?: string | null;
 };
 
+async function relinkClerkToExistingUser(
+  input: UpsertInput,
+  existing: UserRow,
+): Promise<UserRow | null> {
+  const supabase = tryCreateSupabaseAdminClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("users")
+    .update({
+      clerk_user_id: input.clerkUserId,
+      full_name: input.fullName ?? existing.full_name,
+      avatar_url: input.avatarUrl ?? existing.avatar_url,
+    })
+    .eq("id", existing.id)
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    console.error("relinkClerkToExistingUser error", error.message, error.code, error.details);
+    return null;
+  }
+  return (data as UserRow) ?? null;
+}
+
+export async function getUserByEmail(email: string): Promise<UserRow | null> {
+  const supabase = tryCreateSupabaseAdminClient();
+  if (!supabase) return null;
+  const normalized = email.trim().toLowerCase();
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("email", normalized)
+    .maybeSingle();
+  if (error) {
+    console.error("getUserByEmail error", error.message, error.code);
+    return null;
+  }
+  return (data as UserRow) ?? null;
+}
+
 export async function upsertUserFromClerk(input: UpsertInput): Promise<UserRow | null> {
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return null;
-  const role = resolveStaffRoleFromEmail(input.email);
+  const email = input.email.trim().toLowerCase();
+  const role = resolveStaffRoleFromEmail(email);
 
   const { data, error } = await supabase
     .from("users")
     .upsert(
       {
         clerk_user_id: input.clerkUserId,
-        email: input.email.toLowerCase(),
+        email,
         full_name: input.fullName ?? null,
         avatar_url: input.avatarUrl ?? null,
         role,
@@ -43,6 +85,10 @@ export async function upsertUserFromClerk(input: UpsertInput): Promise<UserRow |
     if (error.code === "23505") {
       const byClerk = await getUserByClerkId(input.clerkUserId);
       if (byClerk) return byClerk;
+      const byEmail = await getUserByEmail(email);
+      if (byEmail) {
+        return relinkClerkToExistingUser(input, byEmail);
+      }
     }
     return null;
   }
@@ -65,17 +111,34 @@ export async function markProfileCompleted(userId: string): Promise<UserRow | nu
     console.error("markProfileCompleted: Supabase admin client unavailable");
     return null;
   }
-  const { data, error } = await supabase
+
+  const { data: existing, error: readError } = await supabase
     .from("users")
-    .update({ profile_completed_at: new Date().toISOString() })
-    .eq("id", userId)
     .select("*")
-    .single();
-  if (error) {
-    console.error("markProfileCompleted error", error);
+    .eq("id", userId)
+    .maybeSingle();
+  if (readError) {
+    console.error("markProfileCompleted read error", readError.message, readError.code);
     return null;
   }
-  return data as UserRow;
+  if (!existing) return null;
+  if ((existing as UserRow).profile_completed_at) {
+    return existing as UserRow;
+  }
+
+  const completedAt = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("users")
+    .update({ profile_completed_at: completedAt })
+    .eq("id", userId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    console.error("markProfileCompleted error", error.message, error.code, error.details);
+    return null;
+  }
+  return (data as UserRow) ?? null;
 }
 
 export async function updateUserProfile(

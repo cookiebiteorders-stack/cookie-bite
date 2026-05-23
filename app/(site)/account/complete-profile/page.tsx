@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { CompleteProfileForm } from "@/components/account/complete-profile-form";
 import { isProfileComplete } from "@/lib/account/profile-complete";
-import { getUserByClerkId } from "@/lib/db/users";
+import { ensureDbUserForClerk } from "@/lib/db/ensure-db-user";
 import { buildPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -19,7 +19,7 @@ export default async function CompleteProfilePage() {
     redirect("/sign-in?redirect_url=/account/complete-profile");
   }
 
-  const dbUser = await getUserByClerkId(userId);
+  const dbUser = await ensureDbUserForClerk(userId);
   if (dbUser && isProfileComplete(dbUser)) {
     redirect("/account");
   }

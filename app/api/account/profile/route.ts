@@ -32,19 +32,30 @@ function devDbDebug(message: string, hint?: string) {
   return { message, hint };
 }
 
-function supabaseUnavailableResponse() {
+function profileError(
+  en: string,
+  ar: string,
+  status: number,
+  errorCode: string,
+  hint?: string,
+) {
   return NextResponse.json(
     {
-      ...bilingualError(
-        "Database not configured on server",
-        "قاعدة البيانات غير مضبوطة على السيرفر — أضف SUPABASE_SERVICE_KEY",
-      ),
-      debug: devDbDebug(
-        "SUPABASE_ADMIN_UNAVAILABLE",
-        "تحقق من .env على Hostinger: NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_KEY",
-      ),
+      ...bilingualError(en, ar),
+      error_code: errorCode,
+      debug: devDbDebug(errorCode, hint),
     },
-    { status: 503 },
+    { status },
+  );
+}
+
+function supabaseUnavailableResponse() {
+  return profileError(
+    "Database not configured on server",
+    "قاعدة البيانات غير مضبوطة على السيرفر — أضف SUPABASE_SERVICE_KEY",
+    503,
+    "SUPABASE_ADMIN_UNAVAILABLE",
+    "تحقق من Hostinger: NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_KEY",
   );
 }
 
@@ -99,15 +110,12 @@ export async function POST(req: NextRequest) {
 
   const dbUser = await ensureDbUserForClerk(userId);
   if (!dbUser) {
-    return NextResponse.json(
-      {
-        ...bilingualError("Could not save profile", "تعذّر حفظ الملف"),
-        debug: devDbDebug(
-          "ensureDbUserForClerk failed",
-          "تأكد من webhook Clerk أو شغّل POST /api/account/provision ثم أعد المحاولة",
-        ),
-      },
-      { status: 500 },
+    return profileError(
+      "Could not save profile",
+      "تعذّر حفظ الملف",
+      500,
+      "ENSURE_DB_USER_FAILED",
+      "البريد مسجّل بحساب Clerk آخر — جرّب تسجيل الدخول بنفس الطريقة السابقة أو تواصل مع الدعم",
     );
   }
 
@@ -115,13 +123,11 @@ export async function POST(req: NextRequest) {
 
   if (!isSkipProfileRequest(body) && hasAnyProfileFields(body)) {
     const updated = await updateUserProfile(dbUser.id, {
-      ...(body.full_name_en != null ? { full_name_en: body.full_name_en } : {}),
-      ...(body.full_name_ar != null ? { full_name_ar: body.full_name_ar } : {}),
-      ...(body.phone != null ? { phone: body.phone } : {}),
-      ...(body.phone_secondary != null
-        ? { phone_secondary: body.phone_secondary }
-        : {}),
-      ...(body.profile_notes != null ? { profile_notes: body.profile_notes } : {}),
+      ...(body.full_name_en ? { full_name_en: body.full_name_en } : {}),
+      ...(body.full_name_ar ? { full_name_ar: body.full_name_ar } : {}),
+      ...(body.phone ? { phone: body.phone } : {}),
+      ...(body.phone_secondary ? { phone_secondary: body.phone_secondary } : {}),
+      ...(body.profile_notes ? { profile_notes: body.profile_notes } : {}),
       ...(body.full_name_en
         ? { full_name: body.full_name_en }
         : body.full_name_ar
@@ -129,15 +135,12 @@ export async function POST(req: NextRequest) {
           : {}),
     });
     if (!updated) {
-      return NextResponse.json(
-        {
-          ...bilingualError("Could not save profile", "تعذّر حفظ الملف"),
-          debug: devDbDebug(
-            "updateUserProfile failed",
-            "شغّل npm run supabase:migrate (0027, 0029) على مشروع Supabase",
-          ),
-        },
-        { status: 500 },
+      return profileError(
+        "Could not save profile",
+        "تعذّر حفظ الملف",
+        500,
+        "UPDATE_PROFILE_FAILED",
+        "تحقق من migrations 0027 على Supabase",
       );
     }
     Object.assign(dbUser, updated);
@@ -194,12 +197,12 @@ export async function POST(req: NextRequest) {
 
     if (addrError) {
       console.error("complete profile address insert", addrError);
-      return NextResponse.json(
-        {
-          ...bilingualError("Could not save address", "تعذّر حفظ العنوان"),
-          debug: devDbDebug(addrError.message, addrError.code ?? addrError.hint ?? undefined),
-        },
-        { status: 500 },
+      return profileError(
+        "Could not save address",
+        "تعذّر حفظ العنوان",
+        500,
+        "ADDRESS_INSERT_FAILED",
+        addrError.message,
       );
     }
 
@@ -222,15 +225,11 @@ export async function POST(req: NextRequest) {
 
   const completed = await markProfileCompleted(dbUser.id);
   if (!completed) {
-    return NextResponse.json(
-      {
-        ...bilingualError(
-          "Could not mark profile complete — database unavailable",
-          "تعذّر إكمال الملف — تحقق من اتصال قاعدة البيانات",
-        ),
-        debug: devDbDebug("markProfileCompleted failed"),
-      },
-      { status: 503 },
+    return profileError(
+      "Could not mark profile complete — database unavailable",
+      "تعذّر إكمال الملف — تحقق من اتصال قاعدة البيانات",
+      503,
+      "MARK_PROFILE_COMPLETE_FAILED",
     );
   }
   const profileUser = completed;

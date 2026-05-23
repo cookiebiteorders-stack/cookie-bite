@@ -205,39 +205,52 @@ export function CompleteProfileForm() {
     };
   }, [form]);
 
+  const ensureProvisioned = useCallback(async () => {
+    await fetch("/api/account/provision", { method: "POST" }).catch(() => null);
+  }, []);
+
+  const finishProfileFlow = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.location.assign("/account");
+      return;
+    }
+    router.replace("/account");
+    router.refresh();
+  }, [router]);
+
   const submit = useCallback(async () => {
     setError(null);
     setSaving(true);
     try {
+      await ensureProvisioned();
       await fetchJson("/api/account/profile", {
         method: "POST",
         jsonBody: buildPayload(),
       });
-      router.replace("/account");
-      router.refresh();
+      finishProfileFlow();
     } catch (e) {
       setError(e instanceof Error ? e.message : "تعذّر الحفظ");
     } finally {
       setSaving(false);
     }
-  }, [buildPayload, router]);
+  }, [buildPayload, ensureProvisioned, finishProfileFlow]);
 
   const skip = useCallback(async () => {
     setError(null);
     setSaving(true);
     try {
+      await ensureProvisioned();
       await fetchJson("/api/account/profile", {
         method: "POST",
         jsonBody: { skip_profile: true },
       });
-      router.replace("/account");
-      router.refresh();
+      finishProfileFlow();
     } catch (e) {
       setError(e instanceof Error ? e.message : "تعذّر المتابعة");
     } finally {
       setSaving(false);
     }
-  }, [router]);
+  }, [ensureProvisioned, finishProfileFlow]);
 
   if (loading) {
     return (
