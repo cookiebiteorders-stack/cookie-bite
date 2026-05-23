@@ -21,6 +21,7 @@ import { StaffAdminNavProvider } from "@/components/providers/staff-admin-nav-pr
 import { ErrorBoundary } from "@/components/error-boundary";
 import { LokiBootstrap } from "@/components/effects/loki-bootstrap";
 import { LokiSvgFilters } from "@/components/effects/loki-svg-filters";
+import { TrackerBootstrap } from "@/components/tracking/TrackerBootstrap";
 import { LANG_COOKIE } from "@/lib/preferences/client-cookies";
 import { cn } from "@/lib/utils";
 import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
@@ -249,6 +250,7 @@ export default async function RootLayout({
                 <LokiBootstrap />
                 <SiteJsonLd />
                 <GA4Tracker />
+                <TrackerBootstrap />
                 <ErrorBoundary>{children}</ErrorBoundary>
               </LanguageProvider>
             </ThemeProvider>

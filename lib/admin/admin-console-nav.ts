@@ -14,6 +14,7 @@ export const ADMIN_CONSOLE_NAV_ITEMS: AdminConsoleNavItem[] = [
   { href: "/admin/orders", label: "Orders", module: "orders" },
   { href: "/admin/customers", label: "Customers", module: "customers" },
   { href: "/admin/discounts", label: "Discounts", module: "discounts" },
+  { href: "/admin/analytics", label: "Analytics", module: "analytics" },
   { href: "/admin/reports", label: "Reports", module: "analytics" },
   { href: "/admin/financial", label: "Financial", module: "financial" },
   { href: "/admin/invoices", label: "Invoices", module: "invoices" },

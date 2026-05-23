@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  Activity,
   BarChart3,
   BadgePercent,
   Boxes,
@@ -27,6 +28,7 @@ const iconByHref: Record<string, LucideIcon> = {
   "/admin/orders": ShoppingCart,
   "/admin/customers": Users,
   "/admin/discounts": BadgePercent,
+  "/admin/analytics": Activity,
   "/admin/reports": BarChart3,
   "/admin/financial": Wallet,
   "/admin/invoices": Receipt,
