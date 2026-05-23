@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
-import { Send, X } from "lucide-react";
+import { Send, Square, X } from "lucide-react";
 import {
   ChatImageAttachButton,
   ChatImagePreviewStrip,
@@ -16,6 +15,8 @@ import { useCart } from "@/components/providers/cart-provider";
 import { cn } from "@/lib/utils";
 import { buttonClassName } from "@/components/ui/button";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
+import { streamMrBrownieChat } from "@/lib/mr-brownie/stream-client";
+import { MessageBubble } from "@/components/ai-chat/message-bubble";
 import {
   clampFabBottom,
   defaultFabPosition,
@@ -284,6 +285,8 @@ export function MrBrownieChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const skipLsSaveRef = useRef(true);
+  const streamAbortRef = useRef<AbortController | null>(null);
+  const [streamingIndex, setStreamingIndex] = useState<number | null>(null);
 
   const [fabPos, setFabPos] = useState<MrBrownieFabPosition>(() => {
     if (typeof window === "undefined") return defaultFabPosition(false);
@@ -749,47 +752,83 @@ export function MrBrownieChat() {
       setLoading(true);
       setError(null);
 
-      try {
-        const res = await fetch("/api/mr-brownie/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: nextMessages.map(({ role, content, imageUrls: imgs }) => ({
-              role,
-              content,
-              attachments: imgs?.map((url) => ({ url })),
-            })),
-            cart: { lines },
-          }),
-        });
-        const data = await res.json().catch(() => null);
-        if (!res.ok) {
-          const msg =
-            data?.error?.ar ??
-            data?.error?.en ??
-            "حدث خطأ. تحقق من الاتصال أو أعد المحاولة.";
-          setError(msg);
-          return;
-        }
-        const reply = typeof data?.reply === "string" ? data.reply : "";
-        if (!reply) {
-          setError("Empty reply from assistant.");
-          return;
-        }
-        const metaRole = data?.meta?.role;
-        if (typeof metaRole === "string" && metaRole.length > 0) {
-          setSessionRole(metaRole);
-        }
-        const assistantTs = Date.now();
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: reply, createdAt: assistantTs },
-        ]);
+      const assistantTs = Date.now();
+      const streamingIdx = nextMessages.length;
+      setStreamingIndex(streamingIdx);
+      setMessages([
+        ...nextMessages,
+        { role: "assistant", content: "", createdAt: assistantTs },
+      ]);
 
+      const controller = new AbortController();
+      streamAbortRef.current = controller;
+
+      try {
+        const reply = await streamMrBrownieChat({
+          messages: nextMessages.map(({ role, content, imageUrls: imgs }) => ({
+            role,
+            content,
+            attachments: imgs?.map((url) => ({ url })),
+          })),
+          cartLines: lines,
+          signal: controller.signal,
+          callbacks: {
+            onToken: (fullText) => {
+              setMessages((prev) => {
+                const copy = [...prev];
+                if (copy[streamingIdx]) {
+                  copy[streamingIdx] = { ...copy[streamingIdx], content: fullText };
+                }
+                return copy;
+              });
+            },
+            onDone: (meta) => {
+              const metaRole = meta?.role;
+              if (typeof metaRole === "string" && metaRole.length > 0) {
+                setSessionRole(metaRole);
+              }
+            },
+            onError: (msg) => setError(msg),
+          },
+        });
+
+        if (!reply.trim()) {
+          setError("Empty reply from assistant.");
+          setMessages((prev) => prev.slice(0, -1));
+          return;
+        }
+
+        setMessages((prev) => {
+          const copy = [...prev];
+          if (copy[streamingIdx]) {
+            copy[streamingIdx] = { ...copy[streamingIdx], content: reply };
+          }
+          return copy;
+        });
         enqueueSaveMessage("assistant", reply);
-      } catch {
-        setError("Network error.");
+      } catch (e) {
+        if (controller.signal.aborted) {
+          setMessages((prev) => {
+            const copy = [...prev];
+            const last = copy[streamingIdx];
+            if (last?.content.trim()) {
+              enqueueSaveMessage("assistant", last.content);
+              return copy;
+            }
+            return copy.slice(0, -1);
+          });
+        } else {
+          setMessages((prev) => {
+            if (prev[streamingIdx] && !prev[streamingIdx]?.content.trim()) {
+              return prev.slice(0, -1);
+            }
+            return prev;
+          });
+          setError(e instanceof Error ? e.message : "Network error.");
+        }
       } finally {
+        streamAbortRef.current = null;
+        setStreamingIndex(null);
         setLoading(false);
       }
     },
@@ -1140,42 +1179,15 @@ export function MrBrownieChat() {
                     </p>
                   ) : null}
                   {messages.map((m, i) => (
-                    <div
-                      key={`${m.role}-${i}`}
-                      className={cn(
-                        "max-w-[92%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm",
-                        m.role === "user"
-                          ? "ms-auto bg-gradient-to-br from-cb-terracotta-dark to-cb-terracotta text-white shadow-[var(--shadow-card)]"
-                          : "me-auto bg-cb-cream/95 text-cb-text-strong ring-1 ring-cb-border/55 dark:bg-cb-surface-2",
-                      )}
-                    >
-                      {m.imageUrls && m.imageUrls.length > 0 ? (
-                        <div className="mb-2 flex flex-wrap gap-1.5">
-                          {m.imageUrls.map((url) => (
-                            <a
-                              key={url}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="relative block h-16 w-16 overflow-hidden rounded-lg ring-1 ring-cb-border/60"
-                            >
-                              <Image
-                                src={url}
-                                alt=""
-                                fill
-                                className="object-cover"
-                                unoptimized
-                              />
-                            </a>
-                          ))}
-                        </div>
-                      ) : null}
-                      {m.content}
-                    </div>
+                    <MessageBubble
+                      key={`${m.role}-${m.createdAt ?? i}`}
+                      role={m.role}
+                      content={m.content}
+                      isStreaming={loading && streamingIndex === i && m.role === "assistant"}
+                      imageUrls={m.imageUrls}
+                      variant="mr-brownie"
+                    />
                   ))}
-                  {loading ? (
-                    <p className="text-xs text-cb-text-muted">جاري التفكير…</p>
-                  ) : null}
                   {error ? (
                     <div
                       role="alert"
@@ -1230,20 +1242,31 @@ export function MrBrownieChat() {
                 />
                 <button
                   type="button"
-                  onClick={send}
+                  onClick={() => {
+                    if (loading && streamAbortRef.current) {
+                      streamAbortRef.current.abort();
+                      return;
+                    }
+                    send();
+                  }}
                   disabled={
-                    loading ||
                     historyLoading ||
                     hasUploadingAttachments(pendingImages) ||
-                    (!input.trim() && readyAttachments(pendingImages).length === 0)
+                    (!loading &&
+                      !input.trim() &&
+                      readyAttachments(pendingImages).length === 0)
                   }
                   className={cn(
                     buttonClassName("primary", "shrink-0 self-end px-4 py-3"),
                     "min-h-[48px] rounded-2xl shadow-[var(--shadow-card)]",
                   )}
-                  aria-label="إرسال"
+                  aria-label={loading ? "إيقاف التوليد" : "إرسال"}
                 >
-                  <Send className="h-4 w-4" />
+                  {loading ? (
+                    <Square className="h-4 w-4 fill-current" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                 </button>
               </div>
               <p className="mb-2 mt-3 text-[11px] font-medium text-cb-text-muted">

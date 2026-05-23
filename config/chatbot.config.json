@@ -1,0 +1,39 @@
+{
+  "typing": {
+    "enabled": true,
+    "minDelay": 5,
+    "maxDelay": 25,
+    "punctuationDelay": 60,
+    "newlineDelay": 80,
+    "humanize": true
+  },
+  "streaming": {
+    "enabled": true,
+    "chunkSize": 3,
+    "smoothStreaming": true,
+    "useSSE": true
+  },
+  "cursor": {
+    "enabled": true,
+    "blinkSpeed": 0.8,
+    "style": "|"
+  },
+  "animations": {
+    "messageFade": true,
+    "smoothScroll": true,
+    "bubbleAnimation": true
+  },
+  "markdown": {
+    "enabled": true,
+    "syntaxHighlight": true,
+    "liveRendering": true
+  },
+  "mobile": {
+    "responsive": true,
+    "safeArea": true
+  },
+  "theme": {
+    "default": "dark",
+    "allowToggle": true
+  }
+}

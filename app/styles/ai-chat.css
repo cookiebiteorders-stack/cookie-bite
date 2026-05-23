@@ -1,0 +1,19 @@
+@keyframes ai-chat-cursor-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.ai-chat-prose pre {
+  margin: 0;
+}
+
+.ai-chat-prose code.hljs {
+  background: transparent;
+  padding: 0;
+}
