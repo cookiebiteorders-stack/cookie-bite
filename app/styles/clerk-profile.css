@@ -1,0 +1,70 @@
+/* Clerk UserProfile — تخطيط كامل العرض داخل إعدادات الحساب */
+
+.cb-clerk-profile {
+  direction: ltr;
+  width: 100%;
+  min-width: 0;
+}
+
+.cb-clerk-profile .cl-rootBox,
+.cb-clerk-profile .cl-cardBox,
+.cb-clerk-profile .cl-card {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0;
+}
+
+.cb-clerk-profile .cl-profilePage,
+.cb-clerk-profile .cb-clerk-profile__profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .cb-clerk-profile .cl-profilePage,
+  .cb-clerk-profile .cb-clerk-profile__profile-page {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.cb-clerk-profile .cl-navbar,
+.cb-clerk-profile .cb-clerk-profile__navbar {
+  flex-shrink: 0;
+}
+
+.cb-clerk-profile .cl-pageScrollBox,
+.cb-clerk-profile .cb-clerk-profile__scroll {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cb-clerk-profile .cl-profileSection,
+.cb-clerk-profile .cl-profileSectionContent {
+  width: 100%;
+  min-width: 0;
+}
+
+.cb-clerk-profile .cl-formFieldRow,
+.cb-clerk-profile .cl-formFieldInputGroup {
+  width: 100%;
+  min-width: 0;
+}
+
+/* صفوف الحقول — عمود على الجوال */
+.cb-clerk-profile .cl-profileSectionContent > div {
+  max-width: 100%;
+}
+
+.cb-clerk-profile .cl-accordionTriggerButton,
+.cb-clerk-profile .cl-profileSectionPrimaryButton {
+  max-width: 100%;
+}
+
+/* إخفاء صفحة API keys الفارغة إن ظهرت */
+.cb-clerk-profile .cl-navbarButton[data-localization-key="userProfile.navbar.apiKeys"],
+.cb-clerk-profile .cl-navbarButton:has([data-localization-key="userProfile.navbar.apiKeys"]) {
+  display: none;
+}

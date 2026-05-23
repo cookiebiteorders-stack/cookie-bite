@@ -1,7 +1,7 @@
 "use client";
 
-import { UserProfile } from "@clerk/nextjs";
 import Link from "next/link";
+import { ClerkUserProfileEmbed } from "@/components/account/clerk-user-profile-embed";
 import { useCallback, useEffect, useState } from "react";
 import {
   Bell,
@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { AccountSidebar } from "@/components/account/account-sidebar";
 import { LanguageToggle } from "@/components/layout/language-toggle";
-import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 
@@ -136,25 +135,6 @@ export function AccountSettingsClient({
     }
   }, [t]);
 
-  const profileAppearance = {
-    ...clerkAuthAppearance,
-    elements: {
-      ...clerkAuthAppearance.elements,
-      rootBox: "mx-auto w-full max-w-full",
-      card: [
-        "shadow-none w-full max-w-full rounded-2xl",
-        "bg-cb-surface ring-1 ring-cb-border",
-        "overflow-x-hidden",
-      ].join(" "),
-      navbar: "rounded-xl bg-cb-cream/80 dark:bg-cb-surface-2/80",
-      navbarButton:
-        "text-cb-text-strong text-sm font-semibold data-[active=true]:bg-cb-terracotta-dark data-[active=true]:text-white rounded-lg",
-      pageScrollBox: "max-h-none",
-      profileSectionTitle: "font-serif text-lg font-semibold text-cb-text-strong",
-      formFieldLabel: "text-xs font-bold uppercase tracking-wide text-cb-text-strong",
-    },
-  };
-
   return (
     <div className="bg-cb-cream pb-24 pt-8 dark:bg-background">
       <div className="mx-auto flex max-w-7xl flex-col gap-8 cb-gutter lg:flex-row">
@@ -258,8 +238,8 @@ export function AccountSettingsClient({
             description={t("accountSettings.securityDesc")}
             icon={Lock}
           >
-            <div className="min-h-[28rem] w-full overflow-hidden rounded-2xl border border-cb-border bg-cb-surface">
-              <UserProfile routing="path" path="/account/settings" appearance={profileAppearance} />
+            <div className="w-full min-w-0 overflow-visible rounded-2xl border border-cb-border/80 bg-cb-cream/40 p-3 sm:p-4 dark:bg-cb-surface-2/30">
+              <ClerkUserProfileEmbed />
             </div>
           </SettingsSection>
 
