@@ -24,6 +24,12 @@ import { fetchJson } from "@/lib/http/fetch-json";
 import { renderTemplateString } from "@/lib/notifications/template-vars";
 import { WHATSAPP_TEMPLATE_CATALOG } from "@/lib/notifications/whatsapp-template-catalog";
 import { cn } from "@/lib/utils";
+import {
+  AdminBadge,
+  AdminBadgeButton,
+  adminPillClass,
+  adminTabClass,
+} from "@/components/admin/admin-badge";
 
 type HealthResponse = {
   canonical_host: string;
@@ -403,7 +409,7 @@ export default function AdminSettingsPage() {
       ) : (
         <>
           {migrationWarning ? (
-            <div className="rounded-2xl border border-amber-300/80 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-100">
+            <div className="admin-alert admin-alert--warning rounded-2xl border p-4 text-sm">
               <p className="font-semibold">{migrationWarning.en}</p>
               <p className="mt-1 text-xs opacity-90" dir="rtl">
                 {migrationWarning.ar}
@@ -412,13 +418,13 @@ export default function AdminSettingsPage() {
           ) : null}
 
           {error ? (
-            <div className="rounded-2xl border border-rose-300/80 bg-rose-50/90 p-5 text-sm text-rose-900 dark:border-rose-700/50 dark:bg-rose-950/30 dark:text-rose-100">
+            <div className="admin-alert admin-alert--danger rounded-2xl border p-5 text-sm">
               <p className="font-semibold">Environment check failed</p>
               <p className="mt-1">{error}</p>
               <button
                 type="button"
                 onClick={() => void load()}
-                className="mt-3 rounded-xl border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-900 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-100"
+                className="mt-3 rounded-xl border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-900"
               >
                 Retry / إعادة المحاولة
               </button>
@@ -426,7 +432,7 @@ export default function AdminSettingsPage() {
           ) : null}
 
           {templatesError ? (
-            <div className="rounded-2xl border border-amber-300/80 bg-amber-50/90 p-5 text-sm text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/25 dark:text-amber-100">
+            <div className="admin-alert admin-alert--warning rounded-2xl border p-5 text-sm">
               <p className="font-semibold">Notification templates</p>
               <p className="mt-1">{templatesError}</p>
               <p className="mt-2 text-xs text-cb-text-muted">
@@ -458,7 +464,7 @@ export default function AdminSettingsPage() {
                   قياسات شبكة حية.
                 </p>
                 {health.env.missing.length > 0 ? (
-                  <div className="mt-4 rounded-2xl border border-rose-300/80 bg-rose-50/90 p-4 text-sm text-rose-950 dark:border-rose-800/60 dark:bg-rose-950/35 dark:text-rose-100">
+                  <div className="admin-alert admin-alert--danger mt-4 rounded-2xl border p-4 text-sm">
                     <p className="font-bold">Missing on server (hPanel → Environment variables)</p>
                     <p className="mt-1 text-xs opacity-90" dir="rtl">
                       متغيرات ناقصة — أضفها ثم Redeploy. محلياً:{" "}
@@ -472,7 +478,7 @@ export default function AdminSettingsPage() {
                   </div>
                 ) : null}
                 {health.database && !health.database.ok ? (
-                  <div className="mt-4 rounded-2xl border border-amber-300/80 bg-amber-50/90 p-4 text-sm text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/35 dark:text-amber-100">
+                  <div className="admin-alert admin-alert--warning mt-4 rounded-2xl border p-4 text-sm">
                     <p className="font-bold">Database schema needs attention</p>
                     {health.database.missing_tables.length > 0 ? (
                       <p className="mt-1 text-xs">
@@ -501,19 +507,12 @@ export default function AdminSettingsPage() {
                       >
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-sm font-bold text-stone-900 dark:text-stone-100">{row.name}</p>
-                          <span
-                            className={cn(
-                              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold",
-                              row.ok
-                                ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200"
-                                : "bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-200",
-                            )}
-                          >
+                          <AdminBadge tone={row.ok ? "success" : "danger"} className="gap-1 rounded-full">
                             <span
-                              className={cn("h-1.5 w-1.5 rounded-full", row.ok ? "bg-emerald-500" : "bg-rose-500")}
+                              className={cn("h-1.5 w-1.5 rounded-full", row.ok ? "bg-emerald-600" : "bg-rose-600")}
                             />
                             {row.ok ? "Healthy" : "Issue"}
-                          </span>
+                          </AdminBadge>
                         </div>
                         <p className="mt-2 text-xs text-stone-700 dark:text-stone-300">Latency: {row.latency}</p>
                         {!row.ok && missingForCard.length > 0 ? (
@@ -551,10 +550,10 @@ export default function AdminSettingsPage() {
                     Canonical host: <span className="font-bold">{health.canonical_host}</span>
                   </p>
                   <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
-                    <span className="rounded-xl bg-emerald-100 px-2 py-1 font-bold text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200">SSL: Valid</span>
-                    <span className="rounded-xl bg-blue-100 px-2 py-1 font-bold text-blue-900 dark:bg-blue-950/60 dark:text-blue-200">DNS: Verified</span>
-                    <span className="rounded-xl bg-amber-100 px-2 py-1 font-bold text-amber-900 dark:bg-amber-950/60 dark:text-amber-200">SEO Check: 92%</span>
-                    <span className="rounded-xl bg-stone-200 px-2 py-1 font-bold text-stone-800 dark:bg-stone-800 dark:text-stone-200">ENV: {health.node_env}</span>
+                    <AdminBadge tone="success">SSL: Valid</AdminBadge>
+                    <AdminBadge tone="info">DNS: Verified</AdminBadge>
+                    <AdminBadge tone="warning">SEO Check: 92%</AdminBadge>
+                    <AdminBadge tone="neutral">ENV: {health.node_env}</AdminBadge>
                   </div>
                 </article>
               </section>
@@ -573,12 +572,7 @@ export default function AdminSettingsPage() {
                     key={tab}
                     type="button"
                     onClick={() => selectTemplateTab(tab)}
-                    className={cn(
-                      "w-full rounded-2xl border px-3 py-2 text-left text-sm font-bold capitalize transition",
-                      templateTab === tab
-                        ? "border-amber-400 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200"
-                        : "border-cb-border bg-white text-stone-700 dark:bg-stone-900 dark:text-stone-300",
-                    )}
+                    className={cn(adminTabClass(templateTab === tab), "capitalize")}
                   >
                     {tab}
                   </button>
@@ -594,7 +588,10 @@ export default function AdminSettingsPage() {
                   type="button"
                   disabled={tplBusy}
                   onClick={() => void seedWhatsAppTemplates()}
-                  className="mt-3 w-full rounded-2xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-100 disabled:opacity-60 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
+                  className={cn(
+                    adminTabClass(false),
+                    "mt-3 border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 disabled:opacity-60",
+                  )}
                 >
                   استيراد قوالب واتساب الافتراضية
                 </button>
@@ -687,45 +684,22 @@ export default function AdminSettingsPage() {
                   ? waCatalogEntry.variables
                   : ["customer_name", "order_id", "tracking_url"]
                 ).map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => insertTemplateVar(v)}
-                    className="rounded-full border border-cb-border bg-stone-100 px-2 py-0.5 font-mono text-[10px] font-bold text-stone-800 dark:bg-stone-800 dark:text-stone-200"
-                  >
+                  <AdminBadgeButton key={v} tone="code" onClick={() => insertTemplateVar(v)}>
                     {`{{${v}}}`}
-                  </button>
+                  </AdminBadgeButton>
                 ))}
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveLocale("en")}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs font-bold",
-                    activeLocale === "en"
-                      ? "bg-cb-terracotta-dark text-white"
-                      : "border border-cb-border bg-white text-stone-700 dark:bg-stone-900 dark:text-stone-300",
-                  )}
-                >
+                <button type="button" onClick={() => setActiveLocale("en")} className={adminPillClass(activeLocale === "en")}>
                   EN
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveLocale("ar")}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs font-bold",
-                    activeLocale === "ar"
-                      ? "bg-cb-terracotta-dark text-white"
-                      : "border border-cb-border bg-white text-stone-700 dark:bg-stone-900 dark:text-stone-300",
-                  )}
-                >
+                <button type="button" onClick={() => setActiveLocale("ar")} className={adminPillClass(activeLocale === "ar")}>
                   AR / RTL
                 </button>
-                <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-blue-900 dark:bg-blue-950/60 dark:text-blue-200">
-                  <Languages className="h-3 w-3" />
+                <AdminBadge tone="info" className="gap-1 rounded-full">
+                  <Languages className="h-3 w-3 shrink-0" />
                   Locale completeness: {templates.length > 2 ? "Good" : "Needs expansion"}
-                </span>
+                </AdminBadge>
               </div>
               <div className="mt-4 max-h-64 space-y-2 overflow-y-auto">
                 {filteredTemplates.length === 0 ? (
@@ -792,9 +766,15 @@ export default function AdminSettingsPage() {
                   Security Center
                 </h3>
                 <div className="mt-3 space-y-2 text-xs">
-                  <p className="rounded-xl bg-emerald-100 px-3 py-2 font-bold text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200">Session tracking active</p>
-                  <p className="rounded-xl bg-blue-100 px-3 py-2 font-bold text-blue-900 dark:bg-blue-950/60 dark:text-blue-200">2FA prompts enabled for owner actions</p>
-                  <p className="rounded-xl bg-amber-100 px-3 py-2 font-bold text-amber-900 dark:bg-amber-950/60 dark:text-amber-200">Suspicious IP watchlist: 0 alerts</p>
+                  <AdminBadge as="p" tone="success" className="w-full rounded-xl px-3 py-2">
+                    Session tracking active
+                  </AdminBadge>
+                  <AdminBadge as="p" tone="info" className="w-full rounded-xl px-3 py-2">
+                    2FA prompts enabled for owner actions
+                  </AdminBadge>
+                  <AdminBadge as="p" tone="warning" className="w-full rounded-xl px-3 py-2">
+                    Suspicious IP watchlist: 0 alerts
+                  </AdminBadge>
                 </div>
               </article>
             </aside>
@@ -846,8 +826,8 @@ export default function AdminSettingsPage() {
                     className={cn(
                       "flex w-full items-center justify-between rounded-2xl border px-3 py-2 text-xs font-bold",
                       activeFlags.includes(flag)
-                        ? "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200"
-                        : "border-cb-border bg-white text-stone-700 dark:bg-stone-900 dark:text-stone-300",
+                        ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+                        : "border-cb-border bg-white text-stone-800",
                     )}
                   >
                     {flag}
