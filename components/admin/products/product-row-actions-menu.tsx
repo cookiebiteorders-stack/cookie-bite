@@ -10,8 +10,12 @@ import { cn } from "@/lib/utils";
 export type ProductMenuAnchor = {
   productId: string;
   top: number;
-  insetInlineEnd: number;
+  /** Viewport X — always physical `left` for fixed positioning */
+  left: number;
 };
+
+const MENU_WIDTH_PX = 232;
+const VIEWPORT_PAD = 8;
 
 type Props = {
   product: AdminProductRow;
@@ -79,7 +83,7 @@ export function ProductRowActionsMenu({
         className="fixed z-[220] w-[min(14.5rem,calc(100vw-1.5rem))] rounded-2xl border border-cb-border bg-cb-surface-elevated p-1.5 text-start shadow-2xl ring-1 ring-black/5"
         style={{
           top: anchor.top,
-          insetInlineEnd: anchor.insetInlineEnd,
+          left: anchor.left,
         }}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -177,10 +181,19 @@ export function ProductRowActionsMenu({
             const below = window.innerHeight - rect.bottom;
             const top =
               below >= menuHeightEstimate ? rect.bottom + 8 : Math.max(8, rect.top - menuHeightEstimate - 8);
+
+            // Align menu trailing edge with button; clamp to viewport (RTL-safe — uses physical coords)
+            let left = rect.right - MENU_WIDTH_PX;
+            if (left < VIEWPORT_PAD) left = rect.left;
+            left = Math.max(
+              VIEWPORT_PAD,
+              Math.min(left, window.innerWidth - MENU_WIDTH_PX - VIEWPORT_PAD),
+            );
+
             onOpen({
               productId: product.id,
               top,
-              insetInlineEnd: window.innerWidth - rect.right,
+              left,
             });
           }}
         >
