@@ -34,7 +34,10 @@ import {
   productFormDraftHasContent,
   saveProductFormDraft,
 } from "@/lib/admin/product-form-draft";
-import { generateProductFieldsFromName } from "@/lib/admin/product-auto-fill";
+import {
+  deriveComparePriceFromSalePrice,
+  generateProductFieldsFromName,
+} from "@/lib/admin/product-auto-fill";
 import { CatalogMultiSelect } from "@/components/admin/products/catalog-multi-select";
 import {
   PRODUCT_BADGE_OPTIONS,
@@ -86,6 +89,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
   const hasUnsavedDraft = !editingId && productFormDraftHasContent(form);
   const draftToastShown = useRef(false);
   const lastAutoNameRef = useRef("");
+  const [comparePriceManual, setComparePriceManual] = useState(false);
   const autoFillAbortRef = useRef<AbortController | null>(null);
   const aiAssistAbortRef = useRef<AbortController | null>(null);
   const [autoFillBusy, setAutoFillBusy] = useState(false);
@@ -98,6 +102,15 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       setForm(rowToProductForm(editing));
       setFormStep(1);
       lastAutoNameRef.current = editing.name.trim();
+      const sale = Number(editing.price_egp);
+      const compare = Number(editing.compare_price_egp);
+      setComparePriceManual(
+        Number.isFinite(compare) &&
+          compare > 0 &&
+          Number.isFinite(sale) &&
+          sale > 0 &&
+          compare > sale,
+      );
       return;
     }
     const draft = loadProductFormDraft();
@@ -105,6 +118,16 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       setForm(draft.form);
       setFormStep(draft.formStep);
       lastAutoNameRef.current = draft.form.name.trim();
+      const sale = Number(draft.form.price_egp);
+      const compare = Number(draft.form.compare_price_egp);
+      setComparePriceManual(
+        draft.form.compare_price_egp.trim().length > 0 &&
+          Number.isFinite(compare) &&
+          compare > 0 &&
+          Number.isFinite(sale) &&
+          sale > 0 &&
+          compare > sale,
+      );
       if (!draftToastShown.current) {
         draftToastShown.current = true;
         pushToast("تم استعادة مسودة المنتج من آخر جلسة.", "info");
@@ -113,8 +136,30 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       setForm(EMPTY_PRODUCT_FORM);
       setFormStep(1);
       lastAutoNameRef.current = "";
+      setComparePriceManual(false);
     }
   }, [open, editingId, editing, pushToast]);
+
+  const handlePriceChange = useCallback(
+    (value: string) => {
+      setForm((f) => {
+        const next: ProductFormState = { ...f, price_egp: value };
+        if (!comparePriceManual) {
+          const price = Number(value);
+          if (Number.isFinite(price) && price > 0) {
+            next.compare_price_egp = deriveComparePriceFromSalePrice(price);
+          }
+        }
+        return next;
+      });
+    },
+    [comparePriceManual],
+  );
+
+  const handleComparePriceChange = useCallback((value: string) => {
+    setComparePriceManual(value.trim().length > 0);
+    setForm((f) => ({ ...f, compare_price_egp: value }));
+  }, []);
 
   useEffect(() => {
     if (!open || editingId) return;
@@ -126,6 +171,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
     clearProductFormDraft();
     draftToastShown.current = false;
     lastAutoNameRef.current = "";
+    setComparePriceManual(false);
     setForm(EMPTY_PRODUCT_FORM);
     setFormStep(1);
     pushToast("تم مسح المسودة.", "success");
@@ -138,6 +184,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
 
       const generated = generateProductFieldsFromName(trimmed);
       lastAutoNameRef.current = trimmed;
+      setComparePriceManual(false);
       setForm((f) => ({
         ...f,
         ...generated,
@@ -817,7 +864,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     min="0.01"
                     step="0.01"
                     value={form.price_egp}
-                    onChange={(e) => setForm((f) => ({ ...f, price_egp: e.target.value }))}
+                    onChange={(e) => handlePriceChange(e.target.value)}
                   />
                   {formErrors.price_egp ? (
                     <p className="text-xs font-medium text-red-600">{formErrors.price_egp}</p>
@@ -831,8 +878,13 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     min="0"
                     step="0.01"
                     value={form.compare_price_egp}
-                    onChange={(e) => setForm((f) => ({ ...f, compare_price_egp: e.target.value }))}
+                    onChange={(e) => handleComparePriceChange(e.target.value)}
                   />
+                  {!comparePriceManual && form.price_egp.trim() ? (
+                    <p className="text-xs text-cb-text-muted">
+                      يُحدَّث تلقائياً (~12% أعلى من السعر)
+                    </p>
+                  ) : null}
                   {formErrors.compare_price_egp ? (
                     <p className="text-xs font-medium text-red-600">{formErrors.compare_price_egp}</p>
                   ) : null}

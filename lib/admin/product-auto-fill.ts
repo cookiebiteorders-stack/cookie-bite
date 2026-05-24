@@ -11,6 +11,14 @@ import {
 import type { ProductFormState } from "@/lib/admin/products-dashboard-types";
 import { deriveProductSlug } from "@/lib/products/slug";
 
+/** نسبة سعر المقارنة فوق السعر الفعلي (~12% خصم ظاهر). */
+export const COMPARE_PRICE_MARKUP = 1.12;
+
+export function deriveComparePriceFromSalePrice(price: number): string {
+  if (!Number.isFinite(price) || price <= 0) return "";
+  return String(Math.round(price * COMPARE_PRICE_MARKUP));
+}
+
 type Script = "ar" | "en" | "digit" | "other";
 
 export type AnalyzedWord = {
@@ -487,7 +495,7 @@ export function generateProductFieldsFromName(name: string): GeneratedProductFie
   const price = defaultPriceForCategory(category);
   const { description_en, description_ar } = buildDescriptions(analysis, title_en, title_ar);
   const { weight_grams, pieces_count } = weightAndPieces(category, analysis);
-  const compare = Math.round(price * 1.12);
+  const compare_price_egp = deriveComparePriceFromSalePrice(price);
 
   return {
     name: trimmed,
@@ -500,7 +508,7 @@ export function generateProductFieldsFromName(name: string): GeneratedProductFie
     category,
     sku: skuFromSlug(slug),
     price_egp: String(price),
-    compare_price_egp: String(compare),
+    compare_price_egp,
     stock: category.includes("Gift") ? "12" : "24",
     badges: inferBadges(trimmed),
     seasons: inferSeasons(trimmed),
