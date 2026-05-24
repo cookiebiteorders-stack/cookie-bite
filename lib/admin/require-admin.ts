@@ -84,6 +84,23 @@ export function requireWritePermission(actor: AdminActor): void {
   }
 }
 
+/** Owner فقط — لإعدادات حساسة (مفاتيح المتجر، feature flags). */
+export async function requireOwnerAccess(module: ModuleKey = "settings"): Promise<AdminActor> {
+  const actor = await requireAdminAccess(module);
+  if (actor.role !== "owner") {
+    throw new Response(
+      JSON.stringify({
+        error: {
+          en: "Owner access required",
+          ar: "يتطلب صلاحية المالك",
+        },
+      }),
+      { status: 403, headers: { "Content-Type": "application/json" } },
+    );
+  }
+  return actor;
+}
+
 /** يفرض صلاحية كاملة فقط (owner، أو admin مع full). */
 export function requireFullPermission(actor: AdminActor): void {
   if (actor.permission !== "full") {

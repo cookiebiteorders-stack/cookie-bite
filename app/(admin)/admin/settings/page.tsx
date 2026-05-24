@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Clock3,
   Globe,
-  KeyRound,
   Languages,
   Link2,
   Shield,
@@ -30,6 +29,7 @@ import {
   adminPillClass,
   adminTabClass,
 } from "@/components/admin/admin-badge";
+import { OwnerControlsPanel } from "@/components/admin/owner-controls-panel";
 
 /** حقول استوديو القوالب — عرض كامل + سهم select من `.cb-field` */
 const tplStudioFieldClass = "cb-field min-w-0 w-full dark:bg-stone-900";
@@ -58,6 +58,7 @@ type HealthResponse = {
     failed_tables: string[];
     migrate_hint?: string;
   };
+  actor?: { role: string };
 };
 
 /** بطاقات العرض ← مفتاح `integrations` من الـ API (أزمن ثابتة توضيحية). */
@@ -109,7 +110,6 @@ export default function AdminSettingsPage() {
   const [waPresetKey, setWaPresetKey] = useState("order_confirm");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "rtl">("desktop");
   const [activeLocale, setActiveLocale] = useState<"en" | "ar">("en");
-  const [activeFlags, setActiveFlags] = useState<string[]>(["smart_retries", "high_contrast_mode"]);
 
   async function load() {
     setLoading(true);
@@ -280,6 +280,7 @@ export default function AdminSettingsPage() {
   }, [tplBody, waCatalogEntry]);
 
   const activeTemplates = templates.filter((t) => t.is_active).length;
+  const isOwner = health?.actor?.role === "owner";
   const serviceHealth = health?.env.ok ? "Healthy" : "Degraded";
   const warningCount = health?.env.warnings.length ?? 0;
   const missingCount = health?.env.missing.length ?? 0;
@@ -350,13 +351,9 @@ export default function AdminSettingsPage() {
   const logEvents = [
     "Owner updated canonical host",
     "Template order_confirmed saved",
-    "Feature flag smart_retries toggled",
+    "Owner feature flag toggled",
     "Role matrix reviewed by owner",
   ];
-
-  function toggleFlag(flag: string) {
-    setActiveFlags((prev) => (prev.includes(flag) ? prev.filter((f) => f !== flag) : [...prev, flag]));
-  }
 
   const headerStats = [
     { label: "Store Health", value: serviceHealth, icon: Activity },
@@ -819,30 +816,7 @@ export default function AdminSettingsPage() {
               </div>
             </article>
 
-            <article className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
-              <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
-                <KeyRound className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                Owner Controls
-              </h3>
-              <div className="mt-3 space-y-2">
-                {["smart_retries", "high_contrast_mode", "maintenance_mode", "beta_features"].map((flag) => (
-                  <button
-                    key={flag}
-                    type="button"
-                    onClick={() => toggleFlag(flag)}
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-2xl border px-3 py-2 text-xs font-bold",
-                      activeFlags.includes(flag)
-                        ? "border-emerald-300 bg-emerald-50 text-emerald-900"
-                        : "border-cb-border bg-white text-stone-800",
-                    )}
-                  >
-                    {flag}
-                    <span>{activeFlags.includes(flag) ? "ON" : "OFF"}</span>
-                  </button>
-                ))}
-              </div>
-            </article>
+            <OwnerControlsPanel canManage={isOwner} />
           </section>
 
           <section className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">

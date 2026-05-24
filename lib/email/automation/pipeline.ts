@@ -8,6 +8,7 @@ import {
 } from "@/lib/email/automation/db";
 import { addEmailBullJob } from "@/lib/email/automation/bull-queue";
 import { processEmailQueueRow } from "@/lib/email/automation/process-job";
+import { isSmartRetriesEnabled } from "@/lib/store/owner-flags";
 
 const USE_QUEUE =
   process.env.EMAIL_USE_QUEUE !== "false" &&
@@ -80,13 +81,16 @@ export async function sendAutomatedEmailNow(
   }
 
   const err = result.error ?? "all_providers_failed";
+  const smartRetries = await isSmartRetriesEnabled();
   if (queueId) {
     const attempts = 1;
     await updateQueueStatus(queueId, {
       status: "failed",
       attempts,
       error_summary: err,
-      next_retry_at: new Date(Date.now() + retryDelayMs(attempts)).toISOString(),
+      ...(smartRetries
+        ? { next_retry_at: new Date(Date.now() + retryDelayMs(attempts)).toISOString() }
+        : {}),
     });
   }
   await writeFailedEmail({
@@ -95,7 +99,9 @@ export async function sendAutomatedEmailNow(
     subject: payload.subject,
     provider: result.provider,
     errorMessage: err,
-    nextRetryAt: new Date(Date.now() + retryDelayMs(1)).toISOString(),
+    ...(smartRetries
+      ? { nextRetryAt: new Date(Date.now() + retryDelayMs(1)).toISOString() }
+      : {}),
     payload: { html: payload.html.slice(0, 500) },
   });
   await writeEmailLog({

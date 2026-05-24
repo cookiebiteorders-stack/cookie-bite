@@ -68,6 +68,24 @@ body {
 [data-theme="dark"] {
   color-scheme: dark;
 }
+
+/* Owner flag: high contrast storefront (set via StoreFlagsProvider) */
+html[data-high-contrast="true"] {
+  --cb-text-strong: #1a0a00;
+  --cb-text: #2d1810;
+  --cb-text-muted: #4a3020;
+  --cb-border: #5c3d28;
+  --cb-border-strong: #3d2418;
+}
+
+html[data-high-contrast="true"] body {
+  background: var(--cb-cream);
+}
+
+html[data-high-contrast="true"] a:not([class]) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 html[dir="rtl"] body {
   font-family: var(--font-ar);
 }

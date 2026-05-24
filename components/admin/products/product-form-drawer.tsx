@@ -84,6 +84,8 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
   const hasUnsavedDraft = !editingId && productFormDraftHasContent(form);
   const draftToastShown = useRef(false);
   const lastAutoNameRef = useRef("");
+  const autoFillAbortRef = useRef<AbortController | null>(null);
+  const [autoFillBusy, setAutoFillBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -125,9 +127,10 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
   }, [pushToast]);
 
   const applyAutoFromName = useCallback(
-    (name: string, options?: { silent?: boolean; keepMedia?: boolean }) => {
+    (name: string, options?: { silent?: boolean; keepMedia?: boolean; ai?: boolean }) => {
       const trimmed = name.trim();
       if (trimmed.length < 2) return;
+
       const generated = generateProductFieldsFromName(trimmed);
       lastAutoNameRef.current = trimmed;
       setForm((f) => ({
@@ -142,9 +145,60 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
             }
           : {}),
       }));
-      if (!options?.silent) {
-        pushToast("تم توليد كل الحقول من اسم المنتج.", "success");
+
+      if (options?.ai === false) {
+        if (!options?.silent) {
+          pushToast("تم توليد الحقول من اسم المنتج.", "success");
+        }
+        return;
       }
+
+      autoFillAbortRef.current?.abort();
+      const ac = new AbortController();
+      autoFillAbortRef.current = ac;
+      setAutoFillBusy(true);
+
+      void fetchJson<{
+        fields: Partial<ProductFormState>;
+        source: "local" | "ai";
+      }>("/api/admin/products/auto-fill", {
+        method: "POST",
+        jsonBody: { name: trimmed },
+        signal: ac.signal,
+      })
+        .then((res) => {
+          if (ac.signal.aborted) return;
+          setForm((f) => ({
+            ...f,
+            ...res.fields,
+            name: trimmed,
+            ...(options?.keepMedia !== false
+              ? {
+                  images: f.images,
+                  video_url: f.video_url,
+                  image_url: f.image_url,
+                }
+              : {}),
+          }));
+          if (!options?.silent) {
+            pushToast(
+              res.source === "ai"
+                ? "تم تحليل الاسم بالذكاء الاصطناعي وتعبئة الحقول."
+                : "تم توليد الحقول من اسم المنتج.",
+              "success",
+            );
+          }
+        })
+        .catch((e) => {
+          if (ac.signal.aborted) return;
+          if (!options?.silent) {
+            const msg = e instanceof Error ? e.message : "تعذّر التحليل بالذكاء الاصطناعي";
+            pushToast(msg, "error");
+          }
+        })
+        .finally(() => {
+          if (!ac.signal.aborted) setAutoFillBusy(false);
+        });
     },
     [pushToast],
   );
@@ -157,10 +211,17 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
 
     const timer = window.setTimeout(() => {
       applyAutoFromName(trimmed, { silent: true, keepMedia: true });
-    }, 550);
+    }, 180);
 
     return () => window.clearTimeout(timer);
   }, [form.name, open, editingId, applyAutoFromName]);
+
+  useEffect(() => {
+    if (!open) {
+      autoFillAbortRef.current?.abort();
+      setAutoFillBusy(false);
+    }
+  }, [open]);
 
   const formErrors = useMemo<FormErrors>(() => {
     const errors: FormErrors = {};
@@ -440,7 +501,9 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     placeholder="مثال: كوكيز الشوكولاتة الفاخرة"
                   />
                   <p className="text-[10px] text-cb-text-muted">
-                    يُملأ تلقائياً: Slug، عناوين، وصف، تصنيف، سعر، SKU، شارات، مخزون…
+                    {autoFillBusy
+                      ? "جاري تحليل الاسم وتعبئة الحقول…"
+                      : "يُملأ فوراً: Slug، عناوين EN/AR منفصلة، وصف، تصنيف، سعر، SKU…"}
                   </p>
                   {formErrors.name ? (
                     <p className="flex items-center gap-1 text-xs font-medium text-red-600">

@@ -3,10 +3,23 @@ import { NextResponse } from "next/server";
 import { adminRouteModuleMap, canAccess } from "@/lib/admin/rbac";
 import { resolveStaffRole } from "@/lib/admin/auth-role";
 import { PRODUCTION_HOST } from "@/lib/config/production-lock";
+import { getOwnerFlags } from "@/lib/store/owner-flags";
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 const isAccountRoute = createRouteMatcher(["/account(.*)"]);
 const isWebhook = createRouteMatcher(["/api/webhooks(.*)"]);
+const isMaintenanceBypass = createRouteMatcher([
+  "/maintenance",
+  "/admin(.*)",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/api/(.*)",
+  "/_next/(.*)",
+  "/favicon.ico",
+  "/icon.png",
+  "/icon.svg",
+  "/manifest.webmanifest",
+]);
 
 /**
  * Rate limit في الذاكرة (يكفي لمرحلة الاختبار + Vercel Edge بعد التوسعة).
@@ -60,6 +73,18 @@ export default clerkMiddleware(async (auth, request) => {
   // 1) Webhooks تمر بدون أي تدخل (Clerk/Paymob/Sanity verify HMAC داخلياً)
   if (isWebhook(request)) {
     return;
+  }
+
+  // 1b) Maintenance mode — storefront only; admin + APIs stay up
+  if (!isMaintenanceBypass(request)) {
+    try {
+      const flags = await getOwnerFlags();
+      if (flags.maintenance_mode && path !== "/maintenance") {
+        return NextResponse.redirect(new URL("/maintenance", request.url));
+      }
+    } catch {
+      /* fail open — do not block traffic if flags cannot load */
+    }
   }
 
   // 2) Rate limit للنقاط الحساسة

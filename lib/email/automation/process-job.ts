@@ -4,6 +4,7 @@ import {
   writeEmailLog,
   writeFailedEmail,
 } from "@/lib/email/automation/db";
+import { isSmartRetriesEnabled } from "@/lib/store/owner-flags";
 import type { SendEmailPayload } from "@/lib/email/automation/types";
 
 function retryDelayMs(attempt: number): number {
@@ -54,7 +55,8 @@ export async function processEmailQueueRow(row: Record<string, unknown>): Promis
   }
 
   const err = result.error ?? "failed";
-  if (attempts >= maxAttempts) {
+  const smartRetries = await isSmartRetriesEnabled();
+  if (attempts >= maxAttempts || !smartRetries) {
     await updateQueueStatus(id, { status: "failed", error_summary: err });
     await writeFailedEmail({
       queueId: id,

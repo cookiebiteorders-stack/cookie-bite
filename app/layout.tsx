@@ -17,6 +17,7 @@ import {
 } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { LanguageProvider } from "@/components/providers/language-provider";
+import { StoreFlagsProvider } from "@/components/providers/store-flags-provider";
 import { StaffAdminNavProvider } from "@/components/providers/staff-admin-nav-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { LokiBootstrap } from "@/components/effects/loki-bootstrap";
@@ -258,11 +259,13 @@ export default async function RootLayout({
           <StaffAdminNavProvider>
             <ThemeProvider>
               <LanguageProvider initialLang={lang}>
-                <LokiBootstrap />
-                <SiteJsonLd />
-                <GA4Tracker />
-                <TrackerBootstrap />
-                <ErrorBoundary>{children}</ErrorBoundary>
+                <StoreFlagsProvider>
+                  <LokiBootstrap />
+                  <SiteJsonLd />
+                  <GA4Tracker />
+                  <TrackerBootstrap />
+                  <ErrorBoundary>{children}</ErrorBoundary>
+                </StoreFlagsProvider>
               </LanguageProvider>
             </ThemeProvider>
           </StaffAdminNavProvider>
