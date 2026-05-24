@@ -51,7 +51,7 @@ export function StoreFlagsProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({ ...flags, loaded }), [flags, loaded]);
 
-  return <StoreFlagsContext.Provider value={value}>{value}</StoreFlagsContext.Provider>;
+  return <StoreFlagsContext.Provider value={value}>{children}</StoreFlagsContext.Provider>;
 }
 
 export function useStoreFlags() {
