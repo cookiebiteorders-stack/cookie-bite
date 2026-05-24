@@ -8,34 +8,20 @@ import {
   generateProductFieldsFromName,
   mergeAiProductFields,
 } from "@/lib/admin/product-auto-fill";
+import { improveProductCopyWithAi } from "@/lib/admin/product-ai-assist";
+import { extractJsonObject } from "@/lib/admin/json-from-model";
 import { DEFAULT_PRODUCT_CATEGORIES, isKnownProductCategory } from "@/lib/admin/product-categories";
 
 const bodySchema = z.object({
   name: z.string().min(2).max(200),
+  description_en: z.string().max(3000).optional(),
+  description_ar: z.string().max(3000).optional(),
+  ingredients: z.string().max(500).optional(),
+  title_en: z.string().max(200).optional(),
+  title_ar: z.string().max(200).optional(),
 });
 
 const CATEGORY_VALUES = DEFAULT_PRODUCT_CATEGORIES.map((c) => c.value).join(", ");
-
-function extractJsonObject(text: string): Record<string, unknown> | null {
-  const trimmed = text.trim();
-  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const raw = (fenced?.[1] ?? trimmed).trim();
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : null;
-  } catch {
-    const start = raw.indexOf("{");
-    const end = raw.lastIndexOf("}");
-    if (start === -1 || end <= start) return null;
-    try {
-      return JSON.parse(raw.slice(start, end + 1)) as Record<string, unknown>;
-    } catch {
-      return null;
-    }
-  }
-}
 
 function sanitizeAiFields(
   json: Record<string, unknown>,
@@ -82,18 +68,39 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const name = parsed.data.name.trim();
+  const { name: rawName, description_en, description_ar, ingredients, title_en, title_ar } =
+    parsed.data;
+  const name = rawName.trim();
   const local = generateProductFieldsFromName(name);
   const analysis = analyzeProductTitle(name);
 
   let source: "local" | "ai" = "local";
   let fields = local;
 
+  const hasExistingCopy = [description_en, description_ar, ingredients, title_en, title_ar].some(
+    (v) => typeof v === "string" && v.trim().length > 0,
+  );
+
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (apiKey) {
     try {
-      const raw = await runMrBrownieGemini({
-        systemInstruction: `You analyze bakery product titles for Cookie Bite e-commerce.
+      if (hasExistingCopy) {
+        const { fields: improved } = await improveProductCopyWithAi({
+          name,
+          title_en,
+          title_ar,
+          description_en,
+          description_ar,
+          ingredients,
+        });
+        fields = mergeAiProductFields(local, {
+          ...improved,
+          name: improved.name ?? name,
+        } as Partial<import("@/lib/admin/products-dashboard-types").ProductFormState>);
+        source = "ai";
+      } else {
+        const raw = await runMrBrownieGemini({
+          systemInstruction: `You analyze bakery product titles for Cookie Bite e-commerce.
 Return ONLY valid JSON (no markdown). Rules:
 - title_en: English ONLY — zero Arabic characters.
 - title_ar: Arabic ONLY — zero Latin letters (a-z A-Z).
@@ -103,21 +110,25 @@ Return ONLY valid JSON (no markdown). Rules:
 - badges: comma-separated from: bestseller,new,trending,featured (or empty)
 - seasons: comma-separated from: ramadan,eid,summer,winter,spring,valentine,christmas (or empty)
 - ingredients: brief bilingual note separated by comma (EN part, AR part)`,
-        messages: [
-          {
-            role: "user",
-            content: `Analyze this product title and fill fields:\n"${name}"\n\nDetected tokens EN: ${analysis.englishTokens.join(", ") || "none"}\nDetected tokens AR: ${analysis.arabicTokens.join(", ") || "none"}\nSuggested category: ${analysis.category}`,
-          },
-        ],
-        temperature: 0.35,
-        maxOutputTokens: 768,
-      });
+          messages: [
+            {
+              role: "user",
+              content: `Analyze this product title and fill fields:\n"${name}"\n\nDetected tokens EN: ${analysis.englishTokens.join(", ") || "none"}\nDetected tokens AR: ${analysis.arabicTokens.join(", ") || "none"}\nSuggested category: ${analysis.category}`,
+            },
+          ],
+          temperature: 0.35,
+          maxOutputTokens: 768,
+        });
 
-      const json = extractJsonObject(raw);
-      if (json) {
-        const aiSlice = sanitizeAiFields(json);
-        fields = mergeAiProductFields(local, aiSlice as Partial<import("@/lib/admin/products-dashboard-types").ProductFormState>);
-        source = "ai";
+        const json = extractJsonObject(raw);
+        if (json) {
+          const aiSlice = sanitizeAiFields(json);
+          fields = mergeAiProductFields(
+            local,
+            aiSlice as Partial<import("@/lib/admin/products-dashboard-types").ProductFormState>,
+          );
+          source = "ai";
+        }
       }
     } catch {
       /* fallback to local — already set */

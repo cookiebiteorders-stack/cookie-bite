@@ -628,6 +628,8 @@ table.cb-table tbody tr:last-child td {
 .cb-table-wrap--products tbody td {
   padding-top: 0.85rem;
   padding-bottom: 0.85rem;
+  overflow: visible;
+  line-height: 1.45;
 }
 
 .cb-field,

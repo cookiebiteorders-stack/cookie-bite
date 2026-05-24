@@ -10,8 +10,10 @@ import {
   FileText,
   Home,
   Images,
+  Loader2,
   Sparkles,
   Tag,
+  Wand2,
   X,
 } from "lucide-react";
 import { fetchJson } from "@/lib/http/fetch-json";
@@ -85,7 +87,10 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
   const draftToastShown = useRef(false);
   const lastAutoNameRef = useRef("");
   const autoFillAbortRef = useRef<AbortController | null>(null);
+  const aiAssistAbortRef = useRef<AbortController | null>(null);
   const [autoFillBusy, setAutoFillBusy] = useState(false);
+  const [aiCopyBusy, setAiCopyBusy] = useState(false);
+  const [aiImageBusy, setAiImageBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -219,7 +224,10 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
   useEffect(() => {
     if (!open) {
       autoFillAbortRef.current?.abort();
+      aiAssistAbortRef.current?.abort();
       setAutoFillBusy(false);
+      setAiCopyBusy(false);
+      setAiImageBusy(false);
     }
   }, [open]);
 
@@ -310,6 +318,123 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
     }
     applyAutoFromName(form.name, { silent: false, keepMedia: true });
   }, [form.name, applyAutoFromName, pushToast]);
+
+  const improveCopyWithAi = useCallback(() => {
+    const hasText =
+      form.name.trim().length >= 2 ||
+      form.title_en.trim() ||
+      form.title_ar.trim() ||
+      form.description_en.trim() ||
+      form.description_ar.trim() ||
+      form.ingredients.trim();
+
+    if (!hasText) {
+      pushToast("اكتب نصاً في الاسم أو الوصف أو المكونات أولاً.", "info");
+      return;
+    }
+
+    aiAssistAbortRef.current?.abort();
+    const ac = new AbortController();
+    aiAssistAbortRef.current = ac;
+    setAiCopyBusy(true);
+
+    void fetchJson<{
+      fields: Partial<ProductFormState>;
+      source: "ai" | "none";
+    }>("/api/admin/products/ai-assist", {
+      method: "POST",
+      jsonBody: {
+        action: "improve",
+        name: form.name,
+        title_en: form.title_en,
+        title_ar: form.title_ar,
+        description_en: form.description_en,
+        description_ar: form.description_ar,
+        ingredients: form.ingredients,
+      },
+      signal: ac.signal,
+    })
+      .then((res) => {
+        if (ac.signal.aborted) return;
+        setForm((f) => ({ ...f, ...res.fields }));
+        pushToast(
+          res.source === "ai"
+            ? "تم تحسين الصياغة — نفس المعنى بأسلوب أوضح."
+            : "لا يوجد نص لتحسينه.",
+          res.source === "ai" ? "success" : "info",
+        );
+      })
+      .catch((e) => {
+        if (ac.signal.aborted) return;
+        const msg = e instanceof Error ? e.message : "تعذّر تحسين النص";
+        pushToast(msg, "error");
+      })
+      .finally(() => {
+        if (!ac.signal.aborted) setAiCopyBusy(false);
+      });
+  }, [form, pushToast]);
+
+  const generateProductImageWithAi = useCallback(() => {
+    if (form.name.trim().length < 2) {
+      pushToast("اكتب اسم المنتج أولاً لتوليد صورة مناسبة.", "info");
+      return;
+    }
+
+    aiAssistAbortRef.current?.abort();
+    const ac = new AbortController();
+    aiAssistAbortRef.current = ac;
+    setAiImageBusy(true);
+
+    void fetchJson<{
+      image: { url: string; source: string; alt_en: string; alt_ar: string };
+    }>("/api/admin/products/ai-assist", {
+      method: "POST",
+      jsonBody: {
+        action: "image",
+        name: form.name.trim(),
+        title_en: form.title_en.trim() || undefined,
+        description_en: form.description_en.trim() || undefined,
+        description_ar: form.description_ar.trim() || undefined,
+        category: form.category.trim() || undefined,
+      },
+      signal: ac.signal,
+    })
+      .then((res) => {
+        if (ac.signal.aborted) return;
+        const { url, alt_en, alt_ar, source } = res.image;
+        setForm((f) => {
+          const images = [...f.images];
+          const emptyIdx = images.findIndex((img) => !img.url.trim());
+          const slot = emptyIdx >= 0 ? emptyIdx : 0;
+          while (images.length <= slot) {
+            images.push({ url: "", alt_en: "", alt_ar: "" });
+          }
+          images[slot] = { url, alt_en, alt_ar };
+          return {
+            ...f,
+            images,
+            image_url: slot === 0 || !f.image_url.trim() ? url : f.image_url,
+          };
+        });
+        const sourceLabel =
+          source === "generated"
+            ? "توليد بالذكاء الاصطناعي"
+            : source === "unsplash"
+              ? "بحث Unsplash"
+              : source === "stock"
+                ? "مكتبة صور الكوكيز"
+                : "رابط خارجي";
+        pushToast(`تمت إضافة صورة المنتج (${sourceLabel}).`, "success");
+      })
+      .catch((e) => {
+        if (ac.signal.aborted) return;
+        const msg = e instanceof Error ? e.message : "تعذّر توليد الصورة";
+        pushToast(msg, "error");
+      })
+      .finally(() => {
+        if (!ac.signal.aborted) setAiImageBusy(false);
+      });
+  }, [form, pushToast]);
 
   const submitForm = useCallback(async () => {
     if (!canWrite || saving) return;
@@ -485,14 +610,30 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                 <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className={labelClass}>اسم المنتج *</span>
-                    <button
-                      type="button"
-                      onClick={regenerateFromName}
-                      className="inline-flex items-center gap-1 rounded-full bg-cb-terracotta-dark/10 px-2.5 py-0.5 text-[10px] font-bold text-cb-terracotta-dark transition hover:bg-cb-terracotta-dark/15"
-                    >
-                      <Sparkles className="h-3 w-3" aria-hidden />
-                      توليد الكل من الاسم
-                    </button>
+                    <motion.div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        disabled={aiCopyBusy || autoFillBusy || !canWrite}
+                        onClick={improveCopyWithAi}
+                        className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-[10px] font-bold text-violet-900 transition hover:bg-violet-200 disabled:opacity-50"
+                      >
+                        {aiCopyBusy ? (
+                          <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                        ) : (
+                          <Wand2 className="h-3 w-3" aria-hidden />
+                        )}
+                        تحسين الصياغة
+                      </button>
+                      <button
+                        type="button"
+                        disabled={autoFillBusy || !canWrite}
+                        onClick={regenerateFromName}
+                        className="inline-flex items-center gap-1 rounded-full bg-cb-terracotta-dark/10 px-2.5 py-0.5 text-[10px] font-bold text-cb-terracotta-dark transition hover:bg-cb-terracotta-dark/15 disabled:opacity-50"
+                      >
+                        <Sparkles className="h-3 w-3" aria-hidden />
+                        توليد الكل من الاسم
+                      </button>
+                    </motion.div>
                   </div>
                   <input
                     className={cn(inputClass, formErrors.name && inputErrorClass)}
@@ -620,7 +761,22 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   </datalist>
                 </div>
 
-                <p className={cn(labelClass, formStep !== 2 && "hidden")}>الوصف (يُولَّد من الاسم)</p>
+                <div className={cn("flex flex-wrap items-center justify-between gap-2", formStep !== 2 && "hidden")}>
+                  <p className={labelClass}>الوصف والمكونات</p>
+                  <button
+                    type="button"
+                    disabled={aiCopyBusy || !canWrite}
+                    onClick={improveCopyWithAi}
+                    className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-[10px] font-bold text-violet-900 transition hover:bg-violet-200 disabled:opacity-50"
+                  >
+                    {aiCopyBusy ? (
+                      <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                    ) : (
+                      <Wand2 className="h-3 w-3" aria-hidden />
+                    )}
+                    تحسين الصياغة (بدون تغيير المعنى)
+                  </button>
+                </div>
                 <label className={cn("space-y-2", formStep !== 2 && "hidden")}>
                   <span className={labelClass}>Description EN</span>
                   <textarea
@@ -760,10 +916,25 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     formStep !== 3 && "hidden",
                   )}
                 >
-                  <p className="mb-3 flex items-center gap-2 text-xs font-bold text-cb-terracotta-dark">
-                    <Images className="h-4 w-4" aria-hidden />
-                    الصور والفيديو (حتى ٥ صور)
-                  </p>
+                  <motion.div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <p className="flex items-center gap-2 text-xs font-bold text-cb-terracotta-dark">
+                      <Images className="h-4 w-4" aria-hidden />
+                      الصور والفيديو (حتى ٥ صور)
+                    </p>
+                    <button
+                      type="button"
+                      disabled={aiImageBusy || !canWrite}
+                      onClick={generateProductImageWithAi}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-l from-violet-600 to-cb-terracotta-dark px-3 py-1.5 text-[10px] font-bold text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
+                    >
+                      {aiImageBusy ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                      )}
+                      توليد / بحث صورة بالذكاء الاصطناعي
+                    </button>
+                  </motion.div>
                   <ProductMediaEditor
                     images={form.images}
                     videoUrl={form.video_url}

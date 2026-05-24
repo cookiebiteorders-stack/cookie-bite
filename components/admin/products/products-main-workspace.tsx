@@ -32,6 +32,17 @@ import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
 import { buttonClassName } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/** شارات الجدول — padding و line-height كافيان للعربية */
+const TABLE_BADGE = cn(
+  "inline-flex min-h-[1.5rem] items-center justify-center rounded-full px-2.5 py-1",
+  "text-[11px] font-bold leading-normal whitespace-nowrap",
+);
+
+const TABLE_BADGE_WRAP = cn(
+  "inline-flex min-h-[1.5rem] max-w-[9rem] items-center justify-center rounded-full px-2.5 py-1",
+  "text-[11px] font-bold leading-snug text-center",
+);
+
 function stockTone(stock: number, active: boolean) {
   if (!active) return { label: "غير نشط", cls: "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-200" };
   if (stock <= 0) return { label: "نفاد", cls: "bg-red-50 text-red-800 dark:bg-red-950/50 dark:text-red-200" };
@@ -42,7 +53,7 @@ function stockTone(stock: number, active: boolean) {
 function statusLabel(p: AdminProductRow) {
   if (!p.is_active) return { text: "مسودة", tone: "bg-stone-200 text-stone-800 dark:bg-stone-700 dark:text-stone-100" };
   if (p.stock <= 0) return { text: "نفاد مخزون", tone: "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-100" };
-  if (p.stock <= 10) return { text: "نشط · مخزون منخفض", tone: "bg-amber-100 text-amber-950 dark:bg-amber-900/40 dark:text-amber-50" };
+  if (p.stock <= 10) return { text: "مخزون منخفض", tone: "bg-amber-100 text-amber-950 dark:bg-amber-900/40 dark:text-amber-50" };
   return { text: "نشط", tone: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100" };
 }
 
@@ -222,9 +233,9 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
         cell: ({ row }) => {
           const t = stockTone(row.original.stock, row.original.is_active);
           return (
-            <div className="flex flex-col gap-0.5">
-              <span className="font-mono text-sm font-bold">{row.original.stock}</span>
-              <span className={cn("w-fit rounded-full px-2 py-0.5 text-[10px] font-bold", t.cls)}>{t.label}</span>
+            <div className="flex flex-col items-start gap-1">
+              <span className="text-sm font-bold tabular-nums">{row.original.stock.toLocaleString("ar-EG")}</span>
+              <span className={cn(TABLE_BADGE, t.cls)}>{t.label}</span>
             </div>
           );
         },
@@ -232,7 +243,11 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
       {
         accessorKey: "price_egp",
         header: "السعر",
-        cell: ({ row }) => <span className="font-mono text-sm">{row.original.price_egp.toLocaleString("ar-EG")}</span>,
+        cell: ({ row }) => (
+          <span className="text-sm font-bold tabular-nums">
+            {row.original.price_egp.toLocaleString("ar-EG")}
+          </span>
+        ),
       },
       {
         id: "discount",
@@ -240,8 +255,13 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
         meta: { headerClass: "hidden xl:table-cell", cellClass: "hidden xl:table-cell" },
         cell: ({ row }) =>
           row.original.compare_price_egp ? (
-            <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-bold text-orange-900 dark:bg-orange-950/50 dark:text-orange-100">
-              مقارنة {Number(row.original.compare_price_egp).toLocaleString("ar-EG")}
+            <span
+              className={cn(
+                TABLE_BADGE,
+                "bg-orange-50 text-orange-900 dark:bg-orange-950/50 dark:text-orange-100",
+              )}
+            >
+              مقارنة · {Number(row.original.compare_price_egp).toLocaleString("ar-EG")}
             </span>
           ) : (
             "—"
@@ -252,7 +272,9 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
         header: "الحالة",
         cell: ({ row }) => {
           const s = statusLabel(row.original);
-          return <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", s.tone)}>{s.text}</span>;
+          return (
+            <span className={cn(TABLE_BADGE_WRAP, s.tone)}>{s.text}</span>
+          );
         },
       },
       {
@@ -594,10 +616,10 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
                   <p className="font-semibold text-stone-900 dark:text-stone-50">{p.title_en ?? p.name}</p>
                   <p className="text-xs text-cb-text-muted">SKU {p.sku ?? "—"}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", statusLabel(p).tone)}>
+                    <span className={cn(TABLE_BADGE_WRAP, statusLabel(p).tone)}>
                       {statusLabel(p).text}
                     </span>
-                    <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold", stockTone(p.stock, p.is_active).cls)}>
+                    <span className={cn(TABLE_BADGE, stockTone(p.stock, p.is_active).cls)}>
                       {stockTone(p.stock, p.is_active).label}
                     </span>
                   </div>
