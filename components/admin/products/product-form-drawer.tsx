@@ -11,6 +11,7 @@ import {
   Home,
   Images,
   Loader2,
+  Search,
   Sparkles,
   Tag,
   Wand2,
@@ -20,6 +21,7 @@ import { fetchJson } from "@/lib/http/fetch-json";
 import type { AdminProductRow } from "@/lib/admin/products-dashboard-types";
 import {
   EMPTY_PRODUCT_FORM,
+  EMPTY_PRODUCT_IMAGE_SLOT,
   badgesIncludeHomepage,
   formToApiPayload,
   rowToProductForm,
@@ -27,6 +29,9 @@ import {
   type ProductFormState,
 } from "@/lib/admin/products-dashboard-types";
 import { ProductMediaEditor } from "@/components/admin/products/product-media-editor";
+import { ProductAiImagePicker } from "@/components/admin/products/product-ai-image-picker";
+import type { ProductImageCandidate } from "@/lib/admin/product-ai-assist";
+import { MAX_PRODUCT_IMAGES } from "@/lib/products/media";
 import { DEFAULT_PRODUCT_CATEGORIES } from "@/lib/admin/product-categories";
 import {
   clearProductFormDraft,
@@ -98,6 +103,8 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
   const [autoFillBusy, setAutoFillBusy] = useState(false);
   const [aiCopyBusy, setAiCopyBusy] = useState(false);
   const [aiImageBusy, setAiImageBusy] = useState(false);
+  const [aiImagePickerOpen, setAiImagePickerOpen] = useState(false);
+  const [aiImageCandidates, setAiImageCandidates] = useState<ProductImageCandidate[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -460,67 +467,95 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       });
   }, [form, pushToast]);
 
-  const generateProductImageWithAi = useCallback(() => {
-    if (form.name.trim().length < 2) {
-      pushToast("اكتب اسم المنتج أولاً لتوليد صورة مناسبة.", "info");
-      return;
-    }
-
-    aiAssistAbortRef.current?.abort();
-    const ac = new AbortController();
-    aiAssistAbortRef.current = ac;
-    setAiImageBusy(true);
-
-    void fetchJson<{
-      image: { url: string; source: string; alt_en: string; alt_ar: string };
-    }>("/api/admin/products/ai-assist", {
-      method: "POST",
-      jsonBody: {
-        action: "image",
-        name: form.name.trim(),
-        title_en: form.title_en.trim() || undefined,
-        description_en: form.description_en.trim() || undefined,
-        description_ar: form.description_ar.trim() || undefined,
-        category: form.category.trim() || undefined,
-      },
-      signal: ac.signal,
-    })
-      .then((res) => {
-        if (ac.signal.aborted) return;
-        const { url, alt_en, alt_ar, source } = res.image;
-        setForm((f) => {
-          const images = [...f.images];
-          const emptyIdx = images.findIndex((img) => !img.url.trim());
-          const slot = emptyIdx >= 0 ? emptyIdx : 0;
-          while (images.length <= slot) {
-            images.push({ url: "", alt_en: "", alt_ar: "" });
+  const applyAiImagesToForm = useCallback(
+    (selected: ProductImageCandidate[]) => {
+      if (selected.length === 0) return;
+      setForm((f) => {
+        const images = [...f.images];
+        for (const candidate of selected) {
+          let slot = images.findIndex((img) => !img.url.trim());
+          if (slot < 0) {
+            if (images.length >= MAX_PRODUCT_IMAGES) break;
+            images.push({ ...EMPTY_PRODUCT_IMAGE_SLOT });
+            slot = images.length - 1;
           }
-          images[slot] = { url, alt_en, alt_ar };
-          return {
-            ...f,
-            images,
-            image_url: slot === 0 || !f.image_url.trim() ? url : f.image_url,
+          images[slot] = {
+            url: candidate.url,
+            alt_en: candidate.alt_en,
+            alt_ar: candidate.alt_ar,
           };
-        });
-        const sourceLabel =
-          source === "generated"
-            ? "توليد بالذكاء الاصطناعي"
-            : source === "unsplash"
-              ? "بحث Unsplash"
-              : source === "stock"
-                ? "مكتبة صور الكوكيز"
-                : "رابط خارجي";
-        pushToast(`تمت إضافة صورة المنتج (${sourceLabel}).`, "success");
-      })
-      .catch((e) => {
-        if (ac.signal.aborted) return;
-        const msg = e instanceof Error ? e.message : "تعذّر توليد الصورة";
-        pushToast(msg, "error");
-      })
-      .finally(() => {
-        if (!ac.signal.aborted) setAiImageBusy(false);
+        }
+        const primary = images.find((x) => x.url.trim())?.url.trim() ?? "";
+        return {
+          ...f,
+          images: images.slice(0, MAX_PRODUCT_IMAGES),
+          image_url: primary || f.image_url,
+        };
       });
-  }, [form, pushToast]);
+
+      const generated = selected.filter((s) => s.source === "generated").length;
+      const searched = selected.filter((s) => s.source === "unsplash" || s.source === "stock").length;
+      const parts = [
+        generated > 0 ? `${generated} مُولَّدة` : null,
+        searched > 0 ? `${searched} من البحث` : null,
+      ].filter(Boolean);
+      pushToast(
+        parts.length > 0
+          ? `تمت إضافة ${selected.length} صورة (${parts.join(" + ")})`
+          : `تمت إضافة ${selected.length} صورة`,
+        "success",
+      );
+      setAiImagePickerOpen(false);
+      setAiImageCandidates([]);
+    },
+    [pushToast],
+  );
+
+  const requestProductImagesWithAi = useCallback(
+    (mode: "both" | "generate" | "search" = "both") => {
+      if (form.name.trim().length < 2) {
+        pushToast("اكتب اسم المنتج أولاً لتوليد صورة مناسبة.", "info");
+        return;
+      }
+
+      aiAssistAbortRef.current?.abort();
+      const ac = new AbortController();
+      aiAssistAbortRef.current = ac;
+      setAiImageBusy(true);
+      setAiImageCandidates([]);
+      setAiImagePickerOpen(true);
+
+      void fetchJson<{
+        images: ProductImageCandidate[];
+      }>("/api/admin/products/ai-assist", {
+        method: "POST",
+        jsonBody: {
+          action: "image",
+          mode,
+          name: form.name.trim(),
+          title_en: form.title_en.trim() || undefined,
+          description_en: form.description_en.trim() || undefined,
+          description_ar: form.description_ar.trim() || undefined,
+          category: form.category.trim() || undefined,
+        },
+        signal: ac.signal,
+      })
+        .then((res) => {
+          if (ac.signal.aborted) return;
+          setAiImageCandidates(res.images ?? []);
+        })
+        .catch((e) => {
+          if (ac.signal.aborted) return;
+          const msg = e instanceof Error ? e.message : "تعذّر توليد الصور";
+          pushToast(msg, "error");
+          setAiImagePickerOpen(false);
+        })
+        .finally(() => {
+          if (!ac.signal.aborted) setAiImageBusy(false);
+        });
+    },
+    [form, pushToast],
+  );
 
   const submitForm = useCallback(async () => {
     if (!canWrite || saving) return;
@@ -1029,19 +1064,38 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                       <Images className="h-4 w-4" aria-hidden />
                       الصور والفيديو (حتى ٥ صور)
                     </p>
-                    <button
-                      type="button"
-                      disabled={aiImageBusy || !canWrite}
-                      onClick={generateProductImageWithAi}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-l from-violet-600 to-cb-terracotta-dark px-3 py-1.5 text-[10px] font-bold text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
-                    >
-                      {aiImageBusy ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                      ) : (
-                        <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                      )}
-                      توليد / بحث صورة بالذكاء الاصطناعي
-                    </button>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <button
+                        type="button"
+                        disabled={aiImageBusy || !canWrite}
+                        onClick={() => requestProductImagesWithAi("both")}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-l from-violet-600 to-cb-terracotta-dark px-3 py-1.5 text-[10px] font-bold text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
+                      >
+                        {aiImageBusy ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                        ) : (
+                          <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                        )}
+                        توليد + بحث
+                      </button>
+                      <button
+                        type="button"
+                        disabled={aiImageBusy || !canWrite}
+                        onClick={() => requestProductImagesWithAi("generate")}
+                        className="inline-flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-2.5 py-1.5 text-[10px] font-bold text-violet-800 transition hover:bg-violet-100 disabled:opacity-50"
+                      >
+                        توليد
+                      </button>
+                      <button
+                        type="button"
+                        disabled={aiImageBusy || !canWrite}
+                        onClick={() => requestProductImagesWithAi("search")}
+                        className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1.5 text-[10px] font-bold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-50"
+                      >
+                        <Search className="h-3 w-3" aria-hidden />
+                        بحث
+                      </button>
+                    </div>
                   </motion.div>
                   <ProductMediaEditor
                     images={form.images}
@@ -1120,6 +1174,18 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
           </motion.aside>
         </motion.div>
       ) : null}
+      <ProductAiImagePicker
+        open={aiImagePickerOpen}
+        busy={aiImageBusy}
+        candidates={aiImageCandidates}
+        onClose={() => {
+          aiAssistAbortRef.current?.abort();
+          setAiImagePickerOpen(false);
+          setAiImageBusy(false);
+          setAiImageCandidates([]);
+        }}
+        onConfirm={applyAiImagesToForm}
+      />
     </AnimatePresence>
   );
 }

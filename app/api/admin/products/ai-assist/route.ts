@@ -4,8 +4,9 @@ import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-
 import { bilingualError } from "@/lib/validations";
 import {
   improveProductCopyWithAi,
-  resolveProductImageWithAi,
+  resolveProductImagesWithAi,
   type ImprovedProductCopy,
+  type ProductImageAssistMode,
 } from "@/lib/admin/product-ai-assist";
 
 const copyFieldsSchema = z.object({
@@ -27,6 +28,7 @@ const bodySchema = z.discriminatedUnion("action", [
     description_en: z.string().max(3000).optional(),
     description_ar: z.string().max(3000).optional(),
     category: z.string().max(80).optional(),
+    mode: z.enum(["both", "generate", "search"]).optional(),
   }),
 ]);
 
@@ -89,19 +91,25 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const { name, title_en, description_en, description_ar, category } = parsed.data;
-    const image = await resolveProductImageWithAi({
-      name,
-      title_en,
-      description_en,
-      description_ar,
-      category,
-    });
+    const { name, title_en, description_en, description_ar, category, mode } = parsed.data;
+    const imageMode: ProductImageAssistMode = mode ?? "both";
+    const images = await resolveProductImagesWithAi(
+      {
+        name,
+        title_en,
+        description_en,
+        description_ar,
+        category,
+      },
+      imageMode,
+    );
 
     return NextResponse.json({
       ok: true,
       action: "image",
-      image,
+      mode: imageMode,
+      image: images[0],
+      images,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "AI assist failed";

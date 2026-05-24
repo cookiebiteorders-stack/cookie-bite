@@ -5,6 +5,7 @@ import {
   uploadToCloudinary,
 } from "@/lib/cloudinary/admin-upload";
 import { extractJsonObject } from "@/lib/admin/json-from-model";
+import { MAX_PRODUCT_IMAGES } from "@/lib/products/media";
 
 export type ProductCopyInput = {
   name?: string;
@@ -25,6 +26,17 @@ export type ImprovedProductCopy = {
 };
 
 export type ProductImageSource = "generated" | "unsplash" | "stock" | "remote";
+
+export type ProductImageCandidate = {
+  url: string;
+  source: ProductImageSource;
+  alt_en: string;
+  alt_ar: string;
+};
+
+export type ProductImageAssistMode = "both" | "generate" | "search";
+
+const UNSPLASH_SEARCH_COUNT = 4;
 
 const STOCK_COOKIE_IMAGES = [
   "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=1200&q=85",
@@ -168,36 +180,18 @@ Description AR: ${context.description_ar?.trim() || "n/a"}`,
   return { generation_prompt, search_query, stock_index };
 }
 
-async function generateImageBufferWithGemini(prompt: string): Promise<Buffer | null> {
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey) return null;
+function productImageGeminiModels(): string[] {
+  const configured = process.env.PRODUCT_IMAGE_GEMINI_MODEL?.trim();
+  const defaults = [
+    "gemini-2.0-flash-preview-image-generation",
+    "gemini-2.0-flash-exp-image-generation",
+  ];
+  return configured ? [configured, ...defaults.filter((m) => m !== configured)] : defaults;
+}
 
-  const model =
-    process.env.PRODUCT_IMAGE_GEMINI_MODEL?.trim() ||
-    "gemini-2.0-flash-preview-image-generation";
-
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
-      }),
-    },
-  );
-
-  const json = (await res.json().catch(() => null)) as {
-    candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { data?: string; mimeType?: string } }> } }>;
-    error?: { message?: string };
-  } | null;
-
-  if (!res.ok) {
-    console.warn("[product-ai-assist] image generation failed:", json?.error?.message ?? res.status);
-    return null;
-  }
-
+function extractImageBufferFromGeminiResponse(json: {
+  candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { data?: string } }> } }>;
+} | null): Buffer | null {
   const parts = json?.candidates?.[0]?.content?.parts ?? [];
   for (const part of parts) {
     const data = part.inlineData?.data;
@@ -206,13 +200,50 @@ async function generateImageBufferWithGemini(prompt: string): Promise<Buffer | n
   return null;
 }
 
-async function searchUnsplashImage(query: string): Promise<string | null> {
+async function generateImageBufferWithGemini(prompt: string): Promise<Buffer | null> {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) return null;
+
+  for (const model of productImageGeminiModels()) {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+        }),
+      },
+    );
+
+    const json = (await res.json().catch(() => null)) as {
+      candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { data?: string } }> } }>;
+      error?: { message?: string };
+    } | null;
+
+    if (!res.ok) {
+      console.warn(
+        `[product-ai-assist] image generation failed (${model}):`,
+        json?.error?.message ?? res.status,
+      );
+      continue;
+    }
+
+    const buffer = extractImageBufferFromGeminiResponse(json);
+    if (buffer) return buffer;
+  }
+
+  return null;
+}
+
+async function searchUnsplashImages(query: string, limit = UNSPLASH_SEARCH_COUNT): Promise<string[]> {
   const key = process.env.UNSPLASH_ACCESS_KEY?.trim();
-  if (!key) return null;
+  if (!key) return [];
 
   const url = new URL("https://api.unsplash.com/search/photos");
   url.searchParams.set("query", query);
-  url.searchParams.set("per_page", "1");
+  url.searchParams.set("per_page", String(Math.max(1, Math.min(limit, 10))));
   url.searchParams.set("orientation", "squarish");
   url.searchParams.set("content_filter", "high");
 
@@ -224,8 +255,73 @@ async function searchUnsplashImage(query: string): Promise<string | null> {
     results?: Array<{ urls?: { regular?: string } }>;
   } | null;
 
-  if (!res.ok || !json?.results?.length) return null;
-  return json.results[0]?.urls?.regular?.trim() ?? null;
+  if (!res.ok || !json?.results?.length) return [];
+
+  const seen = new Set<string>();
+  const urls: string[] = [];
+  for (const row of json.results) {
+    const regular = row.urls?.regular?.trim();
+    if (!regular) continue;
+    const dedupeKey = regular.split("?")[0] ?? regular;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    urls.push(regular);
+  }
+  return urls;
+}
+
+function dedupeImageUrl(url: string): string {
+  return url.split("?")[0] ?? url;
+}
+
+async function pushUploadedCandidate(
+  candidates: ProductImageCandidate[],
+  seen: Set<string>,
+  item: ProductImageCandidate,
+): Promise<void> {
+  const key = dedupeImageUrl(item.url);
+  if (seen.has(key)) return;
+  seen.add(key);
+  candidates.push(item);
+}
+
+async function addStockFallbacks(
+  candidates: ProductImageCandidate[],
+  seen: Set<string>,
+  stockIndex: number,
+  alt_en: string,
+  alt_ar: string,
+  maxCount: number,
+): Promise<void> {
+  const indices = [
+    stockIndex,
+    (stockIndex + 1) % STOCK_COOKIE_IMAGES.length,
+    (stockIndex + 2) % STOCK_COOKIE_IMAGES.length,
+    (stockIndex + 3) % STOCK_COOKIE_IMAGES.length,
+  ];
+
+  for (const idx of indices) {
+    if (candidates.length >= maxCount) break;
+    const stockUrl = STOCK_COOKIE_IMAGES[idx];
+    if (!stockUrl || seen.has(dedupeImageUrl(stockUrl))) continue;
+
+    try {
+      const uploaded = await uploadRemoteUrlToCloudinary(stockUrl);
+      await pushUploadedCandidate(candidates, seen, {
+        url: uploaded.url,
+        source: "stock",
+        alt_en,
+        alt_ar,
+      });
+    } catch {
+      await pushUploadedCandidate(candidates, seen, {
+        url: stockUrl,
+        source: "remote",
+        alt_en,
+        alt_ar,
+      });
+    }
+  }
 }
 
 async function uploadBufferToCloudinary(
@@ -273,13 +369,16 @@ export async function uploadRemoteUrlToCloudinary(
   return { url: cloudJson.secure_url };
 }
 
-export async function resolveProductImageWithAi(context: {
-  name: string;
-  description_en?: string;
-  description_ar?: string;
-  category?: string;
-  title_en?: string;
-}): Promise<{ url: string; source: ProductImageSource; alt_en: string; alt_ar: string }> {
+export async function resolveProductImagesWithAi(
+  context: {
+    name: string;
+    description_en?: string;
+    description_ar?: string;
+    category?: string;
+    title_en?: string;
+  },
+  mode: ProductImageAssistMode = "both",
+): Promise<ProductImageCandidate[]> {
   const name = context.name.trim();
   if (name.length < 2) {
     throw new Error("Product name is required for image assist");
@@ -293,28 +392,79 @@ export async function resolveProductImageWithAi(context: {
   const plan = await buildImagePlan(context);
   const alt_en = context.title_en?.trim() || name;
   const alt_ar = name;
+  const maxCount = MAX_PRODUCT_IMAGES;
+  const candidates: ProductImageCandidate[] = [];
+  const seen = new Set<string>();
 
-  const generated = await generateImageBufferWithGemini(plan.generation_prompt);
+  const wantGenerate = mode === "both" || mode === "generate";
+  const wantSearch = mode === "both" || mode === "search";
+
+  const [generated, unsplashUrls] = await Promise.all([
+    wantGenerate ? generateImageBufferWithGemini(plan.generation_prompt) : Promise.resolve(null),
+    wantSearch ? searchUnsplashImages(plan.search_query, UNSPLASH_SEARCH_COUNT) : Promise.resolve([]),
+  ]);
+
   if (generated) {
-    const uploaded = await uploadBufferToCloudinary(generated, "image/jpeg");
-    return { url: uploaded.url, source: "generated", alt_en, alt_ar };
-  }
-
-  const unsplashUrl = await searchUnsplashImage(plan.search_query);
-  if (unsplashUrl) {
     try {
-      const uploaded = await uploadRemoteUrlToCloudinary(unsplashUrl);
-      return { url: uploaded.url, source: "unsplash", alt_en, alt_ar };
-    } catch {
-      return { url: unsplashUrl, source: "remote", alt_en, alt_ar };
+      const uploaded = await uploadBufferToCloudinary(generated, "image/jpeg");
+      await pushUploadedCandidate(candidates, seen, {
+        url: uploaded.url,
+        source: "generated",
+        alt_en,
+        alt_ar,
+      });
+    } catch (e) {
+      console.warn("[product-ai-assist] generated image upload failed:", e);
     }
   }
 
-  const stockUrl = STOCK_COOKIE_IMAGES[plan.stock_index] ?? STOCK_COOKIE_IMAGES[0]!;
-  try {
-    const uploaded = await uploadRemoteUrlToCloudinary(stockUrl);
-    return { url: uploaded.url, source: "stock", alt_en, alt_ar };
-  } catch {
-    return { url: stockUrl, source: "remote", alt_en, alt_ar };
+  for (const unsplashUrl of unsplashUrls) {
+    if (candidates.length >= maxCount) break;
+    try {
+      const uploaded = await uploadRemoteUrlToCloudinary(unsplashUrl);
+      await pushUploadedCandidate(candidates, seen, {
+        url: uploaded.url,
+        source: "unsplash",
+        alt_en,
+        alt_ar,
+      });
+    } catch {
+      await pushUploadedCandidate(candidates, seen, {
+        url: unsplashUrl,
+        source: "remote",
+        alt_en,
+        alt_ar,
+      });
+    }
   }
+
+  if (candidates.length === 0) {
+    await addStockFallbacks(candidates, seen, plan.stock_index, alt_en, alt_ar, maxCount);
+  } else if (wantSearch && candidates.length < maxCount) {
+    await addStockFallbacks(
+      candidates,
+      seen,
+      plan.stock_index,
+      alt_en,
+      alt_ar,
+      Math.min(maxCount, candidates.length + 2),
+    );
+  }
+
+  if (candidates.length === 0) {
+    throw new Error("Could not resolve any product images");
+  }
+
+  return candidates.slice(0, maxCount);
+}
+
+export async function resolveProductImageWithAi(context: {
+  name: string;
+  description_en?: string;
+  description_ar?: string;
+  category?: string;
+  title_en?: string;
+}): Promise<ProductImageCandidate> {
+  const images = await resolveProductImagesWithAi(context, "both");
+  return images[0]!;
 }
