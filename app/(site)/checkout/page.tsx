@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/components/providers/cart-provider";
 import { FreeDeliveryBar } from "@/components/cart/free-delivery-bar";
+import { PromoCodeField } from "@/components/checkout/promo-code-field";
 import { buttonClassName } from "@/components/ui/button";
 import { stashPendingPurchaseEvents } from "@/components/checkout/purchase-events-tracker";
 import { siteConfig } from "@/lib/site-config";
@@ -13,7 +14,8 @@ type Step = 1 | 2 | 3;
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { lines, subtotalEgp, itemCount, clearCart } = useCart();
+  const { lines, subtotalEgp, discountEgp, itemCount, clearCart, promo, applyPromo, clearPromo } =
+    useCart();
   const [step, setStep] = useState<Step>(1);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -43,11 +45,16 @@ export default function CheckoutPage() {
           items: lines.map((l) => ({ id: l.productId, quantity: l.quantity })),
           shipping: { name, email, phone, address, city, notes },
           paymentMethod: payment,
+          promo_code: promo?.code,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setErrorMsg(data.error ?? "Payment setup failed");
+        setErrorMsg(
+          (typeof data.error_ar === "string" && data.error_ar) ||
+            data.error ||
+            "Payment setup failed",
+        );
         setStatus("error");
         return;
       }
@@ -95,8 +102,10 @@ export default function CheckoutPage() {
   }
 
   const deliveryFee =
-    subtotalEgp >= siteConfig.freeDeliveryThresholdEgp ? 0 : 45;
-  const total = subtotalEgp + deliveryFee;
+    subtotalEgp >= siteConfig.freeDeliveryThresholdEgp
+      ? 0
+      : siteConfig.standardDeliveryFeeEgp;
+  const total = Math.max(0, subtotalEgp - discountEgp + deliveryFee);
 
   return (
     <div className="bg-cb-cream pb-24 pt-10">
@@ -278,6 +287,12 @@ export default function CheckoutPage() {
                   </li>
                 ))}
                 <li className="flex justify-between border-t border-cb-border pt-2">
+                  <span>Discount</span>
+                  <span className="text-emerald-700">
+                    {discountEgp > 0 ? `−${discountEgp.toFixed(0)} EGP` : "—"}
+                  </span>
+                </li>
+                <li className="flex justify-between">
                   <span>Delivery</span>
                   <span>{deliveryFee === 0 ? "Free" : `${deliveryFee} EGP`}</span>
                 </li>
@@ -287,6 +302,13 @@ export default function CheckoutPage() {
                 </li>
               </ul>
               <FreeDeliveryBar subtotalEgp={subtotalEgp} className="mt-4" />
+              <PromoCodeField
+                cartSubtotal={subtotalEgp}
+                applied={promo}
+                onApply={applyPromo}
+                onClear={clearPromo}
+                className="mt-4"
+              />
             </div>
             <p className="text-sm text-cb-text-muted">
               {name} · {phone} · {address}, {city}

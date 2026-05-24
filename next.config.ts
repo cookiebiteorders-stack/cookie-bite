@@ -1,24 +1,16 @@
+import { createRequire } from "node:module";
 import path from "node:path";
 import type { NextConfig } from "next";
-import withPWAInit from "next-pwa";
 import { resolveClerkJsUrlForNextEnv } from "./lib/auth/clerk-js-fallback";
 import { assertProductionEnvOrWarn } from "./lib/config/production-lock";
 
 assertProductionEnvOrWarn();
 
+/** next-pwa is CJS — createRequire avoids broken ESM default interop on some hosts (Next 16). */
+const require = createRequire(path.resolve(process.cwd(), "package.json"));
 type PwaWrap = (config: NextConfig) => NextConfig;
-type PwaFactory = (options: Record<string, unknown>) => PwaWrap;
 
-function resolvePwaFactory(): PwaFactory {
-  const mod = withPWAInit as PwaFactory | { default: PwaFactory };
-  const factory = typeof mod === "function" ? mod : mod.default;
-  if (typeof factory !== "function") {
-    throw new TypeError("next-pwa: expected a factory function export");
-  }
-  return factory;
-}
-
-const withPWA = resolvePwaFactory()({
+const withPWA = (require("next-pwa") as (options: Record<string, unknown>) => PwaWrap)({
   dest: "public",
   register: true,
   skipWaiting: true,

@@ -16,7 +16,10 @@ import {
   type CartLine,
 } from "@/lib/cart/types";
 
+import type { AppliedPromo } from "@/components/checkout/promo-code-field";
+
 const STORAGE_KEY = "cb-cart-v1";
+const PROMO_STORAGE_KEY = "cb-promo-v1";
 
 type CartContextValue = {
   lines: CartLine[];
@@ -30,6 +33,10 @@ type CartContextValue = {
   clearCart: () => void;
   itemCount: number;
   subtotalEgp: number;
+  promo: AppliedPromo | null;
+  discountEgp: number;
+  applyPromo: (promo: AppliedPromo) => void;
+  clearPromo: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -85,8 +92,22 @@ function tryMigrateLegacyZustandCart(): CartLine[] | null {
   }
 }
 
+function loadPromo(): AppliedPromo | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(PROMO_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as AppliedPromo;
+    if (!parsed?.code || typeof parsed.discount_amount !== "number") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
+  const [promo, setPromo] = useState<AppliedPromo | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
 
@@ -103,6 +124,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
       }
       setLines(initial);
+      setPromo(loadPromo());
       setHydrated(true);
     });
     return () => {
@@ -114,6 +136,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
   }, [lines, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (promo) {
+      localStorage.setItem(PROMO_STORAGE_KEY, JSON.stringify(promo));
+    } else {
+      localStorage.removeItem(PROMO_STORAGE_KEY);
+    }
+  }, [promo, hydrated]);
 
   const openDrawer = useCallback(() => setDrawerOpen(true), []);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
@@ -147,10 +178,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setLines((prev) => prev.filter((l) => l.productId !== productId));
   }, []);
 
-  const clearCart = useCallback(() => setLines([]), []);
+  const clearCart = useCallback(() => {
+    setLines([]);
+    setPromo(null);
+  }, []);
+
+  const applyPromo = useCallback((next: AppliedPromo) => {
+    setPromo(next);
+  }, []);
+
+  const clearPromo = useCallback(() => {
+    setPromo(null);
+  }, []);
 
   const itemCount = useMemo(() => cartItemCount(lines), [lines]);
   const subtotalEgp = useMemo(() => cartSubtotal(lines), [lines]);
+  const discountEgp = promo?.discount_amount ?? 0;
 
   const value = useMemo(
     () => ({
@@ -165,6 +208,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       clearCart,
       itemCount,
       subtotalEgp,
+      promo,
+      discountEgp,
+      applyPromo,
+      clearPromo,
     }),
     [
       lines,
@@ -178,6 +225,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       clearCart,
       itemCount,
       subtotalEgp,
+      promo,
+      discountEgp,
+      applyPromo,
+      clearPromo,
     ],
   );
 

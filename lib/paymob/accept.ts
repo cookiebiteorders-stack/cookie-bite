@@ -123,6 +123,7 @@ export function buildPaymobBillingData(input: {
 export function buildPaymobLineItems(
   resolved: { id: string; name: string; unitPrice: number; quantity: number }[],
   deliveryFeeEgp: number,
+  discountEgp = 0,
 ): PaymobLineItem[] {
   const items: PaymobLineItem[] = resolved.map((l) => ({
     name: l.name,
@@ -130,6 +131,14 @@ export function buildPaymobLineItems(
     description: l.id,
     quantity: String(l.quantity),
   }));
+  if (discountEgp > 0) {
+    items.push({
+      name: "Promo discount",
+      amount_cents: -Math.round(discountEgp * 100),
+      description: "promo",
+      quantity: "1",
+    });
+  }
   if (deliveryFeeEgp > 0) {
     items.push({
       name: "Delivery",

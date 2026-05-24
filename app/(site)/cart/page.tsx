@@ -8,12 +8,26 @@ import { QuantitySelector } from "@/src/components/cart/QuantitySelector";
 import { buttonClassName } from "@/components/ui/button";
 import { siteConfig } from "@/lib/site-config";
 import { useLanguage } from "@/components/providers/language-provider";
+import { PromoCodeField } from "@/components/checkout/promo-code-field";
 
 export default function CartPage() {
   const { t } = useLanguage();
-  const { lines, setQuantity, removeItem, subtotalEgp, itemCount } = useCart();
-  const shipping = subtotalEgp >= siteConfig.freeDeliveryThresholdEgp ? 0 : 15;
-  const total = subtotalEgp + shipping;
+  const {
+    lines,
+    setQuantity,
+    removeItem,
+    subtotalEgp,
+    discountEgp,
+    itemCount,
+    promo,
+    applyPromo,
+    clearPromo,
+  } = useCart();
+  const shipping =
+    subtotalEgp >= siteConfig.freeDeliveryThresholdEgp
+      ? 0
+      : siteConfig.standardDeliveryFeeEgp;
+  const total = Math.max(0, subtotalEgp - discountEgp + shipping);
   const fmt = (n: number) => `${n.toFixed(2)} EGP`;
 
   return (
@@ -111,7 +125,9 @@ export default function CartPage() {
             </div>
             <div className="flex items-center justify-between text-cb-text-muted">
               <span>{t("pages.cart.savings")}</span>
-              <span className="text-emerald-600">−{fmt(0)}</span>
+              <span className={discountEgp > 0 ? "text-emerald-600" : ""}>
+                −{fmt(discountEgp)}
+              </span>
             </div>
             <div className="flex items-center justify-between text-cb-text-muted">
               <span>{t("pages.cart.shipping")}</span>
@@ -122,6 +138,15 @@ export default function CartPage() {
               <span>{fmt(total)}</span>
             </div>
           </div>
+          {lines.length > 0 ? (
+            <PromoCodeField
+              cartSubtotal={subtotalEgp}
+              applied={promo}
+              onApply={applyPromo}
+              onClear={clearPromo}
+              className="mt-4"
+            />
+          ) : null}
           <Link
             href="/checkout"
             className={buttonClassName("primary", "mt-5 w-full rounded-md text-center")}

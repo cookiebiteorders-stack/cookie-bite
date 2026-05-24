@@ -3,12 +3,16 @@ import {
   tryCreateSupabaseAdminClient,
 } from "@/lib/supabase/admin";
 import type { OrderItemRow, OrderRow } from "@/lib/db/types";
+import { recordPromoUse } from "@/lib/promo/validate-promo";
 
 export type InsertCheckoutOrderInput = {
   userId: string | null;
   lines: { slug: string; name: string; unitPrice: number; quantity: number }[];
   subtotalEgp: number;
   deliveryFeeEgp: number;
+  discountAmountEgp?: number;
+  promoCode?: string | null;
+  promoId?: string | null;
   totalEgp: number;
   paymentMethod: string;
   paymentStatus: OrderRow["payment_status"];
@@ -42,6 +46,12 @@ export async function insertCheckoutOrder(
   };
   if (params.guestEmail) {
     insertRow.guest_email = params.guestEmail;
+  }
+  if (params.discountAmountEgp != null && params.discountAmountEgp > 0) {
+    insertRow.discount_amount_egp = params.discountAmountEgp;
+  }
+  if (params.promoCode) {
+    insertRow.promo_code = params.promoCode;
   }
   if (params.paymobAcceptOrderId != null) {
     insertRow.paymob_accept_order_id = params.paymobAcceptOrderId;
@@ -93,6 +103,19 @@ export async function insertCheckoutOrder(
     console.error("insertCheckoutOrder items error", itemsErr);
     await supabase.from("orders").delete().eq("id", orderId);
     return null;
+  }
+
+  if (params.promoId) {
+    try {
+      await recordPromoUse({
+        supabase,
+        promoId: params.promoId,
+        orderId,
+        userId: params.userId,
+      });
+    } catch (promoErr) {
+      console.error("insertCheckoutOrder promo use error (non-fatal)", promoErr);
+    }
   }
 
   return { id: orderId, orderNumber };

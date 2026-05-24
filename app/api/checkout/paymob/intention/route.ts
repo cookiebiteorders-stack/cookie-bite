@@ -13,6 +13,12 @@ import {
   paymobRegisterEcommerceOrder,
 } from "@/lib/paymob/accept";
 import { resolvePaymobHmacSecret } from "@/lib/paymob/env";
+import { siteConfig } from "@/lib/site-config";
+import {
+  fetchActivePromoByCode,
+  validatePromoForCart,
+} from "@/lib/promo/validate-promo";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const BodySchema = z.object({
   items: z.array(
@@ -30,6 +36,7 @@ const BodySchema = z.object({
     email: z.union([z.string().email(), z.literal("")]).optional(),
   }),
   paymentMethod: z.enum(["card", "wallet", "cod"]),
+  promo_code: z.string().min(3).max(20).optional(),
 });
 
 async function resolveSupabaseUserId(): Promise<string | null> {
@@ -63,7 +70,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { items, shipping, paymentMethod } = parsed.data;
+  const { items, shipping, paymentMethod, promo_code: promoCodeRaw } = parsed.data;
   const shippingEmail =
     shipping.email && shipping.email.length > 0 ? shipping.email : undefined;
 
@@ -76,9 +83,35 @@ export async function POST(req: Request) {
   }
   const { lines: resolved, subtotal } = pricing;
 
-  const threshold = Number(process.env.NEXT_PUBLIC_FREE_DELIVERY_THRESHOLD_EGP ?? 500) || 500;
-  const deliveryFee = subtotal >= threshold ? 0 : 45;
-  const total = subtotal + deliveryFee;
+  const threshold = siteConfig.freeDeliveryThresholdEgp;
+  const deliveryFee = subtotal >= threshold ? 0 : siteConfig.standardDeliveryFeeEgp;
+
+  let discountAmount = 0;
+  let appliedPromoCode: string | null = null;
+  let appliedPromoId: string | null = null;
+
+  if (promoCodeRaw?.trim()) {
+    try {
+      const supabase = createSupabaseAdminClient();
+      const promo = await fetchActivePromoByCode(supabase, promoCodeRaw.trim());
+      const validation = validatePromoForCart(promo, subtotal);
+      if (validation.valid) {
+        discountAmount = validation.discount_amount;
+        appliedPromoCode = validation.promo.code;
+        appliedPromoId = validation.promo.id;
+      } else {
+        return Response.json(
+          { ok: false, error: validation.error_en, error_ar: validation.error_ar },
+          { status: 400 },
+        );
+      }
+    } catch (err) {
+      console.error("promo validation failed", err);
+      return Response.json({ ok: false, error: "Promo validation failed" }, { status: 500 });
+    }
+  }
+
+  const total = Math.max(0, subtotal - discountAmount + deliveryFee);
 
   const apiKey = process.env.PAYMOB_API_KEY?.trim() ?? "";
   const hmacSecret = resolvePaymobHmacSecret();
@@ -113,6 +146,9 @@ export async function POST(req: Request) {
       })),
       subtotalEgp: subtotal,
       deliveryFeeEgp: deliveryFee,
+      discountAmountEgp: discountAmount,
+      promoCode: appliedPromoCode,
+      promoId: appliedPromoId,
       totalEgp: total,
       paymentMethod: "cod",
       paymentStatus: "unpaid",
@@ -135,6 +171,9 @@ export async function POST(req: Request) {
       persisted: Boolean(inserted),
       subtotalEgp: subtotal,
       deliveryFeeEgp: deliveryFee,
+      discountAmountEgp: discountAmount,
+      promoCode: appliedPromoCode,
+      promoId: appliedPromoId,
       totalEgp: total,
       lines: resolved,
       shipping: { ...shipping, email: shippingEmail ?? "" },
@@ -151,6 +190,9 @@ export async function POST(req: Request) {
       paymentMethod,
       subtotalEgp: subtotal,
       deliveryFeeEgp: deliveryFee,
+      discountAmountEgp: discountAmount,
+      promoCode: appliedPromoCode,
+      promoId: appliedPromoId,
       totalEgp: total,
       lines: resolved,
       shipping,
@@ -168,7 +210,7 @@ export async function POST(req: Request) {
   }
 
   const amountCents = Math.round(total * 100);
-  const paymobItems = buildPaymobLineItems(resolved, deliveryFee);
+  const paymobItems = buildPaymobLineItems(resolved, deliveryFee, discountAmount);
   const itemsSum = paymobItems.reduce((s, i) => s + i.amount_cents, 0);
   if (itemsSum !== amountCents) {
     console.error("Paymob line items sum mismatch", { itemsSum, amountCents });
@@ -189,6 +231,9 @@ export async function POST(req: Request) {
       })),
       subtotalEgp: subtotal,
       deliveryFeeEgp: deliveryFee,
+      discountAmountEgp: discountAmount,
+      promoCode: appliedPromoCode,
+      promoId: appliedPromoId,
       totalEgp: total,
       paymentMethod,
       paymentStatus: "unpaid",
@@ -230,6 +275,9 @@ export async function POST(req: Request) {
       paymobOrderId,
       subtotalEgp: subtotal,
       deliveryFeeEgp: deliveryFee,
+      discountAmountEgp: discountAmount,
+      promoCode: appliedPromoCode,
+      promoId: appliedPromoId,
       totalEgp: total,
       lines: resolved,
       shipping: { ...shipping, email: shippingEmail ?? "" },

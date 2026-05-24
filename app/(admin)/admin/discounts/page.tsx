@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   Sparkles,
   Ticket,
-  TrendingUp,
   Truck,
   Users,
   WandSparkles,
@@ -30,6 +29,8 @@ type Discount = {
   is_active: boolean;
   valid_until: string | null;
   max_uses: number | null;
+  used_count: number;
+  min_order_amount_egp?: number;
 };
 
 type BuilderType =
@@ -80,11 +81,6 @@ function statusClass(status: string) {
   if (status === "Expiring Soon") return "bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200";
   if (status === "Expired") return "bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-200";
   return "bg-stone-200 text-stone-800";
-}
-
-function fakePerformance(code: string) {
-  const base = code.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return Math.min(98, (base % 65) + 28);
 }
 
 export default function AdminDiscountsPage() {
@@ -217,16 +213,42 @@ export default function AdminDiscountsPage() {
     await load();
   }
 
+  async function toggleActive(d: Discount) {
+    setError(null);
+    const res = await fetch(`/api/admin/discounts/${d.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active: !d.is_active }),
+    });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => null)) as { error?: { en?: string } } | null;
+      setError(data?.error?.en ?? "Failed to update discount");
+      return;
+    }
+    await load();
+  }
+
+  async function deleteDiscount(d: Discount) {
+    if (!window.confirm(`Delete coupon ${d.code}? This cannot be undone.`)) return;
+    setError(null);
+    const res = await fetch(`/api/admin/discounts/${d.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => null)) as { error?: { en?: string } } | null;
+      setError(data?.error?.en ?? "Failed to delete discount");
+      return;
+    }
+    await load();
+  }
+
   const metrics = useMemo(() => {
     const active = discounts.filter((d) => d.is_active).length;
     const expiringSoon = discounts.filter((d) => statusLabel(d) === "Expiring Soon").length;
-    const avgValue = discounts.length ? discounts.reduce((acc, d) => acc + d.value, 0) / discounts.length : 0;
-    const mostUsed = discounts[0]?.code ?? "N/A";
+    const totalUses = discounts.reduce((acc, d) => acc + (d.used_count ?? 0), 0);
+    const mostUsed = [...discounts].sort((a, b) => (b.used_count ?? 0) - (a.used_count ?? 0))[0]?.code ?? "N/A";
     return {
       active,
       expiringSoon,
-      generatedRevenue: discounts.length * 1240,
-      conversionBoost: Math.round(Math.min(27, avgValue + 6)),
+      totalUses,
       mostUsed,
     };
   }, [discounts]);
@@ -234,9 +256,15 @@ export default function AdminDiscountsPage() {
   const rows = useMemo(() => {
     const enriched = discounts.map((d) => {
       const status = statusLabel(d);
-      const perf = fakePerformance(d.code);
-      const usage = Math.min(100, Math.round((d.max_uses ? (perf / 100) * d.max_uses : perf) % 100));
-      return { ...d, status, perf, usage, remaining: d.max_uses ? Math.max(0, d.max_uses - usage) : null };
+      const used = d.used_count ?? 0;
+      const usage =
+        d.max_uses != null && d.max_uses > 0
+          ? Math.min(100, Math.round((used / d.max_uses) * 100))
+          : used > 0
+            ? 100
+            : 0;
+      const remaining = d.max_uses != null ? Math.max(0, d.max_uses - used) : null;
+      return { ...d, status, usage, remaining, used };
     });
 
     const filtered = enriched.filter((d) => {
@@ -254,7 +282,7 @@ export default function AdminDiscountsPage() {
       if (sortBy === "code") return a.code.localeCompare(b.code);
       if (sortBy === "value") return b.value - a.value;
       if (sortBy === "expires") return (a.valid_until ? new Date(a.valid_until).getTime() : Infinity) - (b.valid_until ? new Date(b.valid_until).getTime() : Infinity);
-      return b.perf - a.perf;
+      return b.used - a.used;
     });
 
     return filtered;
@@ -297,10 +325,9 @@ export default function AdminDiscountsPage() {
         <div className="relative mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {[
             { k: "Active Discounts", v: metrics.active },
-            { k: "Revenue Generated", v: `EGP ${metrics.generatedRevenue.toLocaleString()}` },
-            { k: "Conversion Boost", v: `${metrics.conversionBoost}%` },
+            { k: "Total Redemptions", v: metrics.totalUses },
             { k: "Expiring Soon", v: metrics.expiringSoon },
-            { k: "Most Used", v: metrics.mostUsed },
+            { k: "Most Used Code", v: metrics.mostUsed },
           ].map((item) => (
             <article key={item.k} className="rounded-2xl border border-cb-border/70 bg-white/90 p-4 shadow-sm">
               <p className="text-[11px] font-bold uppercase tracking-wide text-stone-600">{item.k}</p>
@@ -570,7 +597,7 @@ export default function AdminDiscountsPage() {
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
               className="rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm"
             >
-              <option value="performance">Sort by performance</option>
+              <option value="performance">Sort by uses</option>
               <option value="code">Sort by code</option>
               <option value="value">Sort by value</option>
               <option value="expires">Sort by expiry</option>
@@ -589,13 +616,12 @@ export default function AdminDiscountsPage() {
                 <th className="px-4 py-3">Code</th>
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Revenue</th>
+                <th className="px-4 py-3">Uses</th>
                 <th className="px-4 py-3">Usage %</th>
                 <th className="px-4 py-3">Remaining</th>
                 <th className="px-4 py-3">Expires</th>
-                <th className="px-4 py-3">Performance</th>
-                <th className="px-4 py-3">AI Recommendation</th>
-                <th className="px-4 py-3">Tag</th>
+                <th className="px-4 py-3">Min order</th>
+                <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -627,11 +653,13 @@ export default function AdminDiscountsPage() {
                     )}
                   >
                     <td className="px-4 py-3 font-bold text-stone-900">{d.code}</td>
-                    <td className="px-4 py-3 text-stone-800">{typeLabel(d.type)}</td>
+                    <td className="px-4 py-3 text-stone-800">
+                      {d.type === "percent" ? `${d.value}%` : `EGP ${d.value}`}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={cn("rounded-full px-2 py-1 text-[11px] font-bold", statusClass(d.status))}>{d.status}</span>
                     </td>
-                    <td className="px-4 py-3 text-stone-800">EGP {(d.value * 170).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-stone-800">{d.used}</td>
                     <td className="px-4 py-3">
                       <div className="h-2 w-24 overflow-hidden rounded-full bg-stone-200">
                         <div className="h-full rounded-full bg-emerald-500" style={{ width: `${d.usage}%` }} />
@@ -642,19 +670,24 @@ export default function AdminDiscountsPage() {
                     <td className="px-4 py-3 text-stone-800">
                       {d.valid_until ? new Date(d.valid_until).toLocaleDateString() : "No expiry"}
                     </td>
+                    <td className="px-4 py-3 text-stone-800">EGP {d.min_order_amount_egp ?? 0}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-blue-900 dark:bg-blue-950/50 dark:text-blue-200">
-                        <TrendingUp className="h-3 w-3" />
-                        {d.perf}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-stone-700">
-                      {d.perf >= 75 ? "Scale this campaign" : "Try +2% value test"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
-                        {campaignTag}
-                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        <button
+                          type="button"
+                          onClick={() => void toggleActive(d)}
+                          className="rounded-lg border border-cb-border px-2 py-1 text-[11px] font-bold text-stone-800"
+                        >
+                          {d.is_active ? "Pause" : "Activate"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void deleteDiscount(d)}
+                          className="rounded-lg border border-rose-200 px-2 py-1 text-[11px] font-bold text-rose-700"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -692,21 +725,21 @@ export default function AdminDiscountsPage() {
       <section className="grid gap-4 xl:grid-cols-3">
         {[
           {
-            title: "Revenue Pulse",
-            value: `EGP ${(metrics.generatedRevenue * 1.2).toLocaleString()}`,
-            note: "Last 30 days",
+            title: "Total Redemptions",
+            value: String(metrics.totalUses),
+            note: "All-time coupon uses",
             icon: CircleDollarSign,
           },
           {
-            title: "Campaign Velocity",
-            value: `${metrics.conversionBoost}%`,
-            note: "Avg conversion uplift",
+            title: "Active Codes",
+            value: String(metrics.active),
+            note: "Currently accepting at checkout",
             icon: Clock3,
           },
           {
-            title: "AI Risk Radar",
-            value: metrics.expiringSoon > 0 ? `${metrics.expiringSoon} alerts` : "Healthy",
-            note: "Overlap, expiry, margin",
+            title: "Expiring Soon",
+            value: metrics.expiringSoon > 0 ? `${metrics.expiringSoon} codes` : "None",
+            note: "Within 3 days",
             icon: Brain,
           },
         ].map((card) => (
