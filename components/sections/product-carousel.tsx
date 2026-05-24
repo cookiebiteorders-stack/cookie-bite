@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { ViewReveal } from "@/components/motion/view-reveal";
 import type { Product } from "@/lib/data";
 import { SectionHeading } from "@/components/sections/section-heading";
+import { ProductPriceDisplay } from "@/components/product/product-price-display";
 import { buttonClassName } from "@/components/ui/button";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
@@ -121,9 +122,14 @@ export function ProductCarousel({ products = [] }: ProductCarouselProps) {
                   <h3 className="font-serif text-lg font-semibold text-cb-text-strong">
                     {product.name}
                   </h3>
-                  <p className="font-bold text-cb-terracotta-dark">
-                    {product.price} EGP
-                  </p>
+                  <div className="flex justify-center">
+                    <ProductPriceDisplay
+                      price={product.price}
+                      comparePrice={product.comparePrice}
+                      size="sm"
+                      className="items-center text-center"
+                    />
+                  </div>
                 </div>
               </motion.article>
             ))}

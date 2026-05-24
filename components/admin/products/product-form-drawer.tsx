@@ -34,10 +34,13 @@ import {
   productFormDraftHasContent,
   saveProductFormDraft,
 } from "@/lib/admin/product-form-draft";
+import { generateProductFieldsFromName } from "@/lib/admin/product-auto-fill";
 import {
-  deriveComparePriceFromSalePrice,
-  generateProductFieldsFromName,
-} from "@/lib/admin/product-auto-fill";
+  DEFAULT_DISCOUNT_PERCENT,
+  deriveCompareFromDiscountPercent,
+  deriveDiscountPercentFromPrices,
+  getProductDiscount,
+} from "@/lib/products/pricing";
 import { CatalogMultiSelect } from "@/components/admin/products/catalog-multi-select";
 import {
   PRODUCT_BADGE_OPTIONS,
@@ -146,8 +149,9 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
         const next: ProductFormState = { ...f, price_egp: value };
         if (!comparePriceManual) {
           const price = Number(value);
+          const pct = Number(f.discount_percent) || DEFAULT_DISCOUNT_PERCENT;
           if (Number.isFinite(price) && price > 0) {
-            next.compare_price_egp = deriveComparePriceFromSalePrice(price);
+            next.compare_price_egp = deriveCompareFromDiscountPercent(price, pct);
           }
         }
         return next;
@@ -156,10 +160,45 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
     [comparePriceManual],
   );
 
+  const handleDiscountPercentChange = useCallback((value: string) => {
+    setComparePriceManual(false);
+    setForm((f) => {
+      const next: ProductFormState = { ...f, discount_percent: value };
+      const price = Number(f.price_egp);
+      const pct = Number(value);
+      if (
+        Number.isFinite(price) &&
+        price > 0 &&
+        Number.isFinite(pct) &&
+        pct > 0 &&
+        pct < 100
+      ) {
+        next.compare_price_egp = deriveCompareFromDiscountPercent(price, pct);
+      }
+      return next;
+    });
+  }, []);
+
   const handleComparePriceChange = useCallback((value: string) => {
     setComparePriceManual(value.trim().length > 0);
-    setForm((f) => ({ ...f, compare_price_egp: value }));
+    setForm((f) => {
+      const price = Number(f.price_egp);
+      const compare = Number(value);
+      const discount_percent =
+        value.trim() &&
+        Number.isFinite(price) &&
+        Number.isFinite(compare) &&
+        compare > price
+          ? deriveDiscountPercentFromPrices(price, compare) || f.discount_percent
+          : f.discount_percent;
+      return { ...f, compare_price_egp: value, discount_percent };
+    });
   }, []);
+
+  const pricePreview = useMemo(
+    () => getProductDiscount(Number(form.price_egp), Number(form.compare_price_egp)),
+    [form.price_egp, form.compare_price_egp],
+  );
 
   useEffect(() => {
     if (!open || editingId) return;
@@ -871,7 +910,24 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   ) : null}
                 </label>
                 <label className={cn("space-y-2", formStep !== 3 && "hidden")}>
-                  <span className={labelClass}>سعر مقارنة / خصم</span>
+                  <span className={labelClass}>نسبة الخصم (%)</span>
+                  <input
+                    className={inputClass}
+                    type="number"
+                    min="1"
+                    max="99"
+                    step="0.1"
+                    value={form.discount_percent}
+                    onChange={(e) => handleDiscountPercentChange(e.target.value)}
+                  />
+                  {!comparePriceManual ? (
+                    <p className="text-xs text-cb-text-muted">
+                      يُحدَّث سعر المقارنة تلقائياً من النسبة
+                    </p>
+                  ) : null}
+                </label>
+                <label className={cn("space-y-2", formStep !== 3 && "hidden")}>
+                  <span className={labelClass}>سعر مقارنة / قبل الخصم</span>
                   <input
                     className={cn(inputClass, formErrors.compare_price_egp && inputErrorClass)}
                     type="number"
@@ -880,13 +936,13 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     value={form.compare_price_egp}
                     onChange={(e) => handleComparePriceChange(e.target.value)}
                   />
-                  {!comparePriceManual && form.price_egp.trim() ? (
-                    <p className="text-xs text-cb-text-muted">
-                      يُحدَّث تلقائياً (~12% أعلى من السعر)
-                    </p>
-                  ) : null}
                   {formErrors.compare_price_egp ? (
                     <p className="text-xs font-medium text-red-600">{formErrors.compare_price_egp}</p>
+                  ) : pricePreview ? (
+                    <p className="text-xs font-semibold text-emerald-700">
+                      خصم {pricePreview.amountEgp.toLocaleString("ar-EG")} ج.م (
+                      {pricePreview.percent}%)
+                    </p>
                   ) : null}
                 </label>
                 <label className={cn("space-y-2", formStep !== 3 && "hidden")}>

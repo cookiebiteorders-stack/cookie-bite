@@ -8,6 +8,7 @@ import { useAuth } from "@clerk/nextjs";
 import type { Product } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { AddToCartButton } from "@/components/product/add-to-cart-button";
+import { ProductPriceDisplay } from "@/components/product/product-price-display";
 import { ProductSharedImage } from "@/components/product/product-shared-image";
 import { useLanguage } from "@/components/providers/language-provider";
 
@@ -144,9 +145,7 @@ export function ProductCard({
           </p>
         </div>
         <div className="mt-auto flex items-center justify-between gap-3">
-          <p className="text-lg font-bold text-cb-terracotta-dark">
-            {product.price} EGP
-          </p>
+          <ProductPriceDisplay price={product.price} comparePrice={product.comparePrice} size="sm" />
         </div>
         {layout === "grid" ? (
           <AddToCartButton

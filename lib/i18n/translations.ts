@@ -313,6 +313,8 @@ export const translations: Record<Lang, Dictionary> = {
       favoritesAria: "Add to favorites",
       addToCart: "Add to cart",
       viewDetails: "View details",
+      discountPercent: "{percent}% off",
+      saveAmount: "Save {amount} EGP",
       fallbackDescription: "Cookie Bite product",
     },
     common: {
@@ -1075,6 +1077,8 @@ export const translations: Record<Lang, Dictionary> = {
       favoritesAria: "إضافة إلى المفضلة",
       addToCart: "أضف إلى السلة",
       viewDetails: "عرض التفاصيل",
+      discountPercent: "خصم {percent}%",
+      saveAmount: "وفر {amount} ج.م",
       fallbackDescription: "منتج Cookie Bite",
     },
     common: {

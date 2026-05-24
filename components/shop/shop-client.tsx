@@ -32,6 +32,7 @@ type ApiProduct = {
   description_en: string | null;
   description_ar: string | null;
   price_egp: number;
+  compare_price_egp?: number | null;
   image_url: string | null;
   images: Array<{ url?: string | null }> | null;
   badges: string[] | null;
@@ -63,6 +64,10 @@ function normalizeProduct(p: ApiProduct, descFallback: string): ShopProduct {
     name: title,
     description,
     price: p.price_egp,
+    comparePrice:
+      p.compare_price_egp != null && Number.isFinite(Number(p.compare_price_egp))
+        ? Number(p.compare_price_egp)
+        : null,
     image: mainImage,
     category: p.category || "Classic",
     badges: normalizedBadges.length ? normalizedBadges : undefined,

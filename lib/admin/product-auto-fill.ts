@@ -9,14 +9,11 @@ import {
   joinCatalogCsv,
 } from "@/lib/products/catalog-options";
 import type { ProductFormState } from "@/lib/admin/products-dashboard-types";
+import { DEFAULT_DISCOUNT_PERCENT, deriveCompareFromDiscountPercent } from "@/lib/products/pricing";
 import { deriveProductSlug } from "@/lib/products/slug";
 
-/** نسبة سعر المقارنة فوق السعر الفعلي (~12% خصم ظاهر). */
-export const COMPARE_PRICE_MARKUP = 1.12;
-
 export function deriveComparePriceFromSalePrice(price: number): string {
-  if (!Number.isFinite(price) || price <= 0) return "";
-  return String(Math.round(price * COMPARE_PRICE_MARKUP));
+  return deriveCompareFromDiscountPercent(price, DEFAULT_DISCOUNT_PERCENT);
 }
 
 type Script = "ar" | "en" | "digit" | "other";
@@ -508,6 +505,7 @@ export function generateProductFieldsFromName(name: string): GeneratedProductFie
     category,
     sku: skuFromSlug(slug),
     price_egp: String(price),
+    discount_percent: String(DEFAULT_DISCOUNT_PERCENT),
     compare_price_egp,
     stock: category.includes("Gift") ? "12" : "24",
     badges: inferBadges(trimmed),

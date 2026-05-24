@@ -58,6 +58,8 @@ export type Product = {
   name: string;
   description: string;
   price: number;
+  /** سعر قبل الخصم — يُعرض مشطوباً في المتجر */
+  comparePrice?: number | null;
   image: string;
   /** معرض PDP — حتى 5 صور */
   images?: string[];

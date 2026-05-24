@@ -3,6 +3,10 @@ import { normalizeProductImages } from "@/lib/products/media";
 import type { ProductImage } from "@/lib/db/types";
 import { DEFAULT_PRODUCT_CATEGORY } from "@/lib/admin/product-categories";
 import { deriveProductSlug } from "@/lib/products/slug";
+import {
+  DEFAULT_DISCOUNT_PERCENT,
+  deriveDiscountPercentFromPrices,
+} from "@/lib/products/pricing";
 import { filterValidBadges, filterValidSeasons } from "@/lib/products/catalog-options";
 
 export type AdminProductRow = {
@@ -74,6 +78,7 @@ export type ProductFormState = {
   category: string;
   sku: string;
   price_egp: string;
+  discount_percent: string;
   compare_price_egp: string;
   stock: string;
   badges: string;
@@ -107,6 +112,7 @@ export const EMPTY_PRODUCT_FORM: ProductFormState = {
   category: DEFAULT_PRODUCT_CATEGORY,
   sku: "",
   price_egp: "",
+  discount_percent: String(DEFAULT_DISCOUNT_PERCENT),
   compare_price_egp: "",
   stock: "0",
   badges: "",
@@ -166,6 +172,20 @@ export function rowToProductForm(item: AdminProductRow): ProductFormState {
     category: item.category ?? "",
     sku: item.sku ?? "",
     price_egp: String(item.price_egp ?? ""),
+    discount_percent: (() => {
+      const sale = Number(item.price_egp);
+      const compare = Number(item.compare_price_egp);
+      if (
+        item.compare_price_egp != null &&
+        Number.isFinite(compare) &&
+        compare > sale &&
+        Number.isFinite(sale) &&
+        sale > 0
+      ) {
+        return deriveDiscountPercentFromPrices(sale, compare) || String(DEFAULT_DISCOUNT_PERCENT);
+      }
+      return String(DEFAULT_DISCOUNT_PERCENT);
+    })(),
     compare_price_egp:
       item.compare_price_egp != null && Number.isFinite(Number(item.compare_price_egp))
         ? String(item.compare_price_egp)

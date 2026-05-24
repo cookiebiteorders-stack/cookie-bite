@@ -38,6 +38,10 @@ export function productRowToStorefrontProduct(
     name,
     description,
     price: Number(row.price_egp),
+    comparePrice:
+      row.compare_price_egp != null && Number.isFinite(Number(row.compare_price_egp))
+        ? Number(row.compare_price_egp)
+        : null,
     image: mainImage,
     images: gallery.length ? gallery : [mainImage],
     videoUrl,

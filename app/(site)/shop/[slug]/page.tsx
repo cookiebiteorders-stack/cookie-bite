@@ -5,6 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import { PdpMediaGallery } from "@/components/shop/pdp-media-gallery";
 import { PdpActions } from "@/components/shop/pdp-actions";
 import { ProductCard } from "@/components/product/product-card";
+import { ProductPriceDisplay } from "@/components/product/product-price-display";
 import { buttonClassName } from "@/components/ui/button";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { ShareButtons } from "@/components/seo/share-buttons";
@@ -80,9 +81,13 @@ export default async function ProductPage({ params }: Props) {
               {product.name}
             </h1>
             <p className="mt-4 text-lg text-cb-text">{product.description}</p>
-            <p className="mt-6 font-serif text-3xl font-bold text-cb-terracotta-dark">
-              {product.price} EGP
-            </p>
+            <div className="mt-6">
+              <ProductPriceDisplay
+                price={product.price}
+                comparePrice={product.comparePrice}
+                size="lg"
+              />
+            </div>
             {product.stock != null && product.stock <= 10 ? (
               <p className="mt-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
                 {product.stock === 0
