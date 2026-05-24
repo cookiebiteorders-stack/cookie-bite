@@ -216,6 +216,17 @@ export default async function RootLayout({
       style={{ colorScheme: "light" }}
     >
       <head>
+        {/* Inline shell rules — survive main CSS load failures (PWA stale cache, static 503). */}
+        <style
+          id="cb-critical-shell"
+          dangerouslySetInnerHTML={{
+            __html: [
+              ".cb-logo-mark{width:2.5rem;height:2.5rem;max-width:min(100%,4rem);max-height:4rem;flex-shrink:0;display:block}",
+              "@media(max-width:767px){.desktop-header,.desktop-footer,.desktop-whatsapp-fab{display:none!important}.mobile-header{display:flex!important}.mobile-tab-bar{display:block!important}.mobile-footer{display:flex!important}}",
+              "@media(min-width:768px){.mobile-header,.mobile-tab-bar,.mobile-footer{display:none!important}}",
+            ].join(""),
+          }}
+        />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />

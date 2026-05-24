@@ -132,13 +132,7 @@ function loadEnvFile(file) {
 
 
 function hasPaymobHmac() {
-
-  return Boolean(
-
-    process.env.PAYMOB_HMAC_SECRET?.trim() || process.env.PAYMOB_HMAC?.trim(),
-
-  );
-
+  return Boolean(getValue("PAYMOB_HMAC_SECRET") || getValue("PAYMOB_HMAC"));
 }
 
 
@@ -179,6 +173,8 @@ const lines = [
 
   "# Do NOT commit this file. Secrets for empty INTERNAL_* / REVALIDATE_* are shown in terminal only.",
 
+  "# Only keys WITH values are exported — empty keys are listed as comments so import does not wipe Hostinger.",
+
   "",
 
 ];
@@ -199,15 +195,11 @@ for (const key of REQUIRED) {
 
       consoleSecrets.push({ key, value: generated });
 
-      lines.push(`# MISSING — generated once in terminal; paste into hPanel:`);
-
-      lines.push(`${key}=`);
+      lines.push(`# MISSING ${key} — generated once in terminal; paste into hPanel`);
 
     } else {
 
-      lines.push(`# MISSING — set before deploy:`);
-
-      lines.push(`${key}=`);
+      lines.push(`# MISSING ${key} — set in .env then re-run hostinger:env-audit`);
 
     }
 
@@ -225,9 +217,7 @@ if (!hasPaymobHmac()) {
 
   missing.push("PAYMOB_HMAC_SECRET");
 
-  lines.push("# MISSING — Paymob HMAC (webhook + intention verification):");
-
-  lines.push("PAYMOB_HMAC_SECRET=");
+  lines.push("# MISSING PAYMOB_HMAC_SECRET — Paymob dashboard → Settings → HMAC secret");
 
 } else {
 
@@ -273,11 +263,29 @@ writeFileSync(outPath, lines.join("\n") + "\n", "utf8");
 
 console.log("\n=== Hostinger production env audit ===\n");
 
+const paymobMissing = missing.filter((k) => k.startsWith("PAYMOB_"));
+
 if (missing.length) {
 
   console.log("Missing or empty locally (fix in .env then re-run):");
 
   for (const k of missing) console.log(`  - ${k}`);
+
+  if (paymobMissing.length) {
+
+    console.log("\nPaymob (accept.paymob.com → Developers / Integrations):");
+
+    console.log("  - PAYMOB_API_KEY          → Secret API key");
+
+    console.log("  - PAYMOB_HMAC_SECRET      → HMAC secret (webhook + intention)");
+
+    console.log("  - PAYMOB_INTEGRATION_ID_CARD   → numeric integration ID");
+
+    console.log("  - PAYMOB_INTEGRATION_ID_WALLET → numeric integration ID");
+
+    console.log("  Webhook: https://cookie-bite.com/api/webhooks/paymob");
+
+  }
 
 } else {
 

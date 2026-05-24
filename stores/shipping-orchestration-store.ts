@@ -14,6 +14,10 @@ export type CreateZonePayload = {
   eta_min_days: number;
   eta_max_days: number;
   is_active: boolean;
+  center_lat?: number | null;
+  center_lng?: number | null;
+  radius_km?: number | null;
+  map_color?: string | null;
 };
 
 type ApiZoneResponse = { ok: true; zone: unknown };

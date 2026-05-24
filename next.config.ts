@@ -6,19 +6,33 @@ import { assertProductionEnvOrWarn } from "./lib/config/production-lock";
 
 assertProductionEnvOrWarn();
 
-const withPWA = withPWAInit({
+type PwaWrap = (config: NextConfig) => NextConfig;
+type PwaFactory = (options: Record<string, unknown>) => PwaWrap;
+
+function resolvePwaFactory(): PwaFactory {
+  const mod = withPWAInit as PwaFactory | { default: PwaFactory };
+  const factory = typeof mod === "function" ? mod : mod.default;
+  if (typeof factory !== "function") {
+    throw new TypeError("next-pwa: expected a factory function export");
+  }
+  return factory;
+}
+
+const withPWA = resolvePwaFactory()({
   dest: "public",
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
+    // Hashed files are immutable — CacheFirst avoids blank/broken pages when the network
+    // is slow and NetworkFirst would miss CSS after a deploy (symptom: giant LogoMark, no layout).
     {
       urlPattern: /\/_next\/static\/.*/i,
-      handler: "NetworkFirst",
+      handler: "CacheFirst",
       options: {
-        cacheName: "next-static-chunks",
-        networkTimeoutSeconds: 4,
-        expiration: { maxEntries: 200, maxAgeSeconds: 24 * 60 * 60 },
+        cacheName: "next-static-immutable",
+        expiration: { maxEntries: 256, maxAgeSeconds: 365 * 24 * 60 * 60 },
+        cacheableResponse: { statuses: [0, 200] },
       },
     },
     {

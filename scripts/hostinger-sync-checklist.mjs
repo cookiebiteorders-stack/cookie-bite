@@ -53,7 +53,7 @@ loadEnvFile(".env");
 loadEnvFile(".env.local");
 
 const missing = REQUIRED.filter((k) => !hasValue(k));
-if (!process.env.PAYMOB_HMAC_SECRET?.trim() && !process.env.PAYMOB_HMAC?.trim()) {
+if (!hasValue("PAYMOB_HMAC_SECRET") && !hasValue("PAYMOB_HMAC")) {
   missing.push("PAYMOB_HMAC_SECRET");
 }
 

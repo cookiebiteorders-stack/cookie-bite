@@ -52,22 +52,58 @@ export function getSupabaseManagementConfig() {
   return { ref, endpoint, accessToken, url };
 }
 
+const DEFAULT_CONNECT_TIMEOUT_MS = 60_000;
+const DEFAULT_FETCH_RETRIES = 3;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * @returns {Promise<unknown>} Parsed JSON body
  */
 export async function runDatabaseQuery(sql, options = {}) {
   const { endpoint, accessToken } = getSupabaseManagementConfig();
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      query: sql,
-      ...(options.readOnly ? { read_only: true } : {}),
-    }),
-  });
+  const connectTimeoutMs =
+    Number(process.env.SUPABASE_API_CONNECT_TIMEOUT_MS) || DEFAULT_CONNECT_TIMEOUT_MS;
+  const maxAttempts = Number(process.env.SUPABASE_API_FETCH_RETRIES) || DEFAULT_FETCH_RETRIES;
+  const label = options.label ?? "query";
+
+  let res;
+  let lastFetchError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: sql,
+          ...(options.readOnly ? { read_only: true } : {}),
+        }),
+        signal: AbortSignal.timeout(connectTimeoutMs),
+      });
+      lastFetchError = undefined;
+      break;
+    } catch (error) {
+      lastFetchError = error;
+      const retryable =
+        error instanceof TypeError ||
+        (error instanceof Error &&
+          /timeout|fetch failed|ECONNRESET|ENOTFOUND|ETIMEDOUT/i.test(error.message));
+      if (!retryable || attempt >= maxAttempts) throw error;
+      const waitMs = attempt * 2_000;
+      console.warn(
+        `[supabase-api] ${label}: fetch failed (attempt ${attempt}/${maxAttempts}), retry in ${waitMs}ms…`,
+      );
+      await sleep(waitMs);
+    }
+  }
+  if (!res) {
+    throw lastFetchError ?? new Error(`Supabase API fetch failed (${label})`);
+  }
 
   const text = await res.text();
   let data;

@@ -17,6 +17,14 @@ const patchSchema = z.object({
   eta_max_days: z.number().int().min(0).optional(),
   is_active: z.boolean().optional(),
   sort_order: z.number().int().min(0).optional(),
+  center_lat: z.number().min(-90).max(90).nullable().optional(),
+  center_lng: z.number().min(-180).max(180).nullable().optional(),
+  radius_km: z.number().min(1).max(500).nullable().optional(),
+  map_color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .nullable()
+    .optional(),
 });
 
 export async function PATCH(

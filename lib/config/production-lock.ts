@@ -17,11 +17,17 @@ export const PRODUCTION_HOST = PRIMARY_DOMAIN.replace(/^https?:\/\//, "")
 
 export const PRODUCTION_ORIGIN = `https://${PRODUCTION_HOST}`;
 
+function isPlaceholderEnv(value: string | undefined): boolean {
+  const v = value?.trim() ?? "";
+  return !v || v.includes("REPLACE_ME") || v.startsWith("__SET_IN_");
+}
+
 /** Paymob HMAC: webhook + intention use PAYMOB_HMAC_SECRET; PAYMOB_HMAC is legacy alias. */
 export function hasPaymobHmacSecret(): boolean {
-  const a = process.env.PAYMOB_HMAC_SECRET?.trim();
-  const b = process.env.PAYMOB_HMAC?.trim();
-  return Boolean(a || b);
+  return (
+    !isPlaceholderEnv(process.env.PAYMOB_HMAC_SECRET) ||
+    !isPlaceholderEnv(process.env.PAYMOB_HMAC)
+  );
 }
 
 const REQUIRED_PROD_KEYS = [
@@ -140,8 +146,7 @@ export function checkProductionEnv(): ProductionEnvCheck {
   }
 
   for (const key of REQUIRED_PROD_KEYS) {
-    const v = process.env[key];
-    if (!v || v.trim() === "" || v.includes("REPLACE_ME")) {
+    if (isPlaceholderEnv(process.env[key])) {
       missing.push(key);
     }
   }

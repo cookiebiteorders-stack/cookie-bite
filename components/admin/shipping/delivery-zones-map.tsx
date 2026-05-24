@@ -32,10 +32,12 @@ import { CAIRO_MAP_CENTER, loadLeafletFromCDN } from "@/lib/map/leaflet-cdn";
 import { fetchIpGeolocation, reverseGeocode } from "@/lib/map/reverse-geocode";
 import {
   ZONE_GEO_PALETTE,
+  buildZoneGeoIndex,
+  clearGeoDbFields,
   deleteZoneGeo,
-  getZoneGeo,
-  loadZoneGeoStore,
+  geoToDbFields,
   pickNextColor,
+  resolveZoneGeo,
   saveZoneGeo,
   type ZoneGeo,
 } from "@/lib/shipping/zone-geo";
@@ -120,7 +122,7 @@ export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) 
 
   const [LRef, setLRef] = useState<LeafletStatic | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [geoStore, setGeoStore] = useState<Record<string, ZoneGeo>>(() => loadZoneGeoStore());
+  const geoStore = useMemo(() => buildZoneGeoIndex(zones), [zones]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [draft, setDraft] = useState<DraftState>(EMPTY_DRAFT);
@@ -167,9 +169,12 @@ export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) 
       maxZoom: 18,
     }).addTo(map);
     mapRef.current = map;
-    setTimeout(() => map.invalidateSize(), 50);
+    const t0 = setTimeout(() => map.invalidateSize(), 50);
+    const t1 = setTimeout(() => map.invalidateSize(), 350);
 
     return () => {
+      clearTimeout(t0);
+      clearTimeout(t1);
       try {
         map.remove();
       } catch {
@@ -180,6 +185,12 @@ export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) 
       tempLayersRef.current = { circle: null, marker: null };
     };
   }, [LRef]);
+
+  useEffect(() => {
+    if (!LRef || !mapRef.current || loadError) return;
+    const t = setTimeout(() => mapRef.current?.invalidateSize(), 120);
+    return () => clearTimeout(t);
+  }, [LRef, loadError, formOpen]);
 
   const clearTempLayers = useCallback(() => {
     if (!mapRef.current) return;
@@ -536,7 +547,7 @@ export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) 
   };
 
   const openEditForm = (zone: ShippingZoneRow) => {
-    const geo = geoStore[zone.id] ?? null;
+    const geo = resolveZoneGeo(zone, geoStore);
     setDraft({
       name: zone.name,
       cities: [...zone.cities],
@@ -687,8 +698,19 @@ export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) 
       is_active: draft.isActive,
     };
 
+    const geoPayload = (latlng: { lat: number; lng: number }) =>
+      geoToDbFields({
+        lat: latlng.lat,
+        lng: latlng.lng,
+        radiusKm,
+        color: draft.color,
+      });
+
     if (draft.editingZoneId) {
-      const previousGeo = getZoneGeo(draft.editingZoneId);
+      const editingZone = zones.find((z) => z.id === draft.editingZoneId);
+      const previousGeo = editingZone
+        ? resolveZoneGeo(editingZone, geoStore)
+        : null;
       const latlng = draft.latlng
         ? { lat: draft.latlng.lat, lng: draft.latlng.lng }
         : previousGeo
@@ -701,27 +723,43 @@ export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) 
         });
         return;
       }
+      const updated = await updateZone(draft.editingZoneId, {
+        ...zonePatch,
+        ...geoPayload(latlng),
+      });
+      if (!updated) return;
       saveZoneGeo(draft.editingZoneId, {
         lat: latlng.lat,
         lng: latlng.lng,
         radiusKm,
         color: draft.color,
       });
-      setGeoStore(loadZoneGeoStore());
-      await updateZone(draft.editingZoneId, zonePatch);
-    } else if (draft.latlng) {
-      const created = await createZone(zonePatch);
-      if (created) {
-        saveZoneGeo(created.id, {
-          lat: draft.latlng.lat,
-          lng: draft.latlng.lng,
-          radiusKm,
-          color: draft.color,
-        });
-        setGeoStore(loadZoneGeoStore());
-      }
+      cancelForm();
+      return;
     }
 
+    if (!draft.latlng) return;
+
+    const created = await createZone({
+      ...zonePatch,
+      ...geoPayload({
+        lat: draft.latlng.lat,
+        lng: draft.latlng.lng,
+      }),
+    });
+    if (!created) {
+      setHint({
+        kind: "warn",
+        text: "فشل الحفظ — تحقق من الاتصال أو طبّق ترحيل قاعدة البيانات 0034",
+      });
+      return;
+    }
+    saveZoneGeo(created.id, {
+      lat: draft.latlng.lat,
+      lng: draft.latlng.lng,
+      radiusKm,
+      color: draft.color,
+    });
     cancelForm();
   };
 
@@ -730,13 +768,13 @@ export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) 
     const ok = await deleteZone(zone.id);
     if (ok) {
       deleteZoneGeo(zone.id);
-      setGeoStore(loadZoneGeoStore());
     }
   };
 
-  const handleRemoveFromMap = (zone: ShippingZoneRow) => {
+  const handleRemoveFromMap = async (zone: ShippingZoneRow) => {
+    const updated = await updateZone(zone.id, clearGeoDbFields());
+    if (!updated) return;
     deleteZoneGeo(zone.id);
-    setGeoStore(loadZoneGeoStore());
     pushToast(`Removed ${zone.name} from the map`, "success");
   };
 
@@ -753,7 +791,7 @@ export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) 
           <p className="mt-1 max-w-2xl text-sm text-stone-700">
             أضِف مناطق التوصيل من مكان واحد: ابحث، أو استخدم GPS/الشبكة، أو انقر
             على الخريطة، ثم أكمل الاسم والمدن والرسوم. الموقع الجغرافي يُحفظ
-            محلياً في المتصفح؛ بقية البيانات تُزامَن مع قاعدة البيانات.
+            مع قاعدة البيانات (تظهر بعد التحديث في أي متصفح).
           </p>
         </div>
       </header>
@@ -1087,7 +1125,7 @@ export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) 
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleRemoveFromMap(zone)}
+                        onClick={() => void handleRemoveFromMap(zone)}
                         aria-label="Remove from map"
                         title="Remove from map (keep zone)"
                         className="rounded-md border border-cb-border p-1.5 text-cb-text-muted hover:bg-cb-hover-overlay hover:text-cb-text-strong"

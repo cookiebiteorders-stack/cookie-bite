@@ -1,10 +1,10 @@
 /**
- * Per-zone geographic metadata (lat / lng / radius / color) stored client-side.
- *
- * Until we add geo columns to the `shipping_zones` table, we cache the visual
- * map placement in localStorage keyed by zone id. The map UI gracefully treats
- * a zone with no geo entry as "needs placement on the map".
+ * Per-zone geographic metadata for the delivery map.
+ * Primary source: `shipping_zones` columns (center_lat, center_lng, radius_km, map_color).
+ * Legacy fallback: localStorage (`cb.shipping.zone-geo.v1`) for zones saved before DB geo.
  */
+
+import type { ShippingZoneRow } from "@/lib/shipping/types";
 
 export type ZoneGeo = {
   lat: number;
@@ -93,6 +93,61 @@ export function getZoneGeo(id: string): ZoneGeo | null {
   if (!isBrowser() || !id) return null;
   const store = loadZoneGeoStore();
   return store[id] ?? null;
+}
+
+export function geoFromZoneRow(zone: ShippingZoneRow): ZoneGeo | null {
+  const lat = zone.center_lat;
+  const lng = zone.center_lng;
+  if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+  const radiusKm =
+    zone.radius_km != null && Number(zone.radius_km) > 0 ? Number(zone.radius_km) : 5;
+  return {
+    lat,
+    lng,
+    radiusKm,
+    color:
+      typeof zone.map_color === "string" && zone.map_color.length > 0
+        ? zone.map_color
+        : DEFAULT_PALETTE[0],
+  };
+}
+
+/** DB fields for create/update API payloads */
+export function geoToDbFields(geo: ZoneGeo) {
+  return {
+    center_lat: geo.lat,
+    center_lng: geo.lng,
+    radius_km: geo.radiusKm,
+    map_color: geo.color,
+  };
+}
+
+export function clearGeoDbFields() {
+  return {
+    center_lat: null,
+    center_lng: null,
+    radius_km: null,
+    map_color: null,
+  };
+}
+
+/** Merge DB geo (wins) with legacy localStorage entries */
+export function buildZoneGeoIndex(zones: ShippingZoneRow[]): GeoStore {
+  const store: GeoStore = isBrowser() ? { ...loadZoneGeoStore() } : {};
+  for (const zone of zones) {
+    const fromDb = geoFromZoneRow(zone);
+    if (fromDb) store[zone.id] = fromDb;
+  }
+  return store;
+}
+
+export function resolveZoneGeo(
+  zone: ShippingZoneRow,
+  legacyStore?: GeoStore,
+): ZoneGeo | null {
+  return geoFromZoneRow(zone) ?? legacyStore?.[zone.id] ?? getZoneGeo(zone.id);
 }
 
 /** Pick the next palette color that's not yet used among the provided zones. */

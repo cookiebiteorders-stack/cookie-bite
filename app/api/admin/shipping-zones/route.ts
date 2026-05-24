@@ -8,6 +8,17 @@ import {
 import { writeAuditLog } from "@/lib/admin/audit";
 import { bilingualError } from "@/lib/validations";
 
+const geoFields = {
+  center_lat: z.number().min(-90).max(90).nullable().optional(),
+  center_lng: z.number().min(-180).max(180).nullable().optional(),
+  radius_km: z.number().min(1).max(500).nullable().optional(),
+  map_color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .nullable()
+    .optional(),
+};
+
 const createSchema = z.object({
   name: z.string().min(2).max(120),
   cities: z.array(z.string().min(1)).default([]),
@@ -16,6 +27,7 @@ const createSchema = z.object({
   eta_min_days: z.number().int().min(0).default(1),
   eta_max_days: z.number().int().min(0).default(3),
   is_active: z.boolean().default(true),
+  ...geoFields,
 });
 
 export async function GET() {

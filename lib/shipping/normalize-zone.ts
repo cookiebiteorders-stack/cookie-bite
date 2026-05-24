@@ -21,5 +21,21 @@ export function normalizeZone(raw: unknown): ShippingZoneRow {
     sort_order: z.sort_order == null ? undefined : Number(z.sort_order),
     created_at: z.created_at == null ? undefined : String(z.created_at),
     updated_at: z.updated_at == null ? undefined : String(z.updated_at),
+    center_lat:
+      z.center_lat == null || z.center_lat === ""
+        ? null
+        : Number(z.center_lat),
+    center_lng:
+      z.center_lng == null || z.center_lng === ""
+        ? null
+        : Number(z.center_lng),
+    radius_km:
+      z.radius_km == null || z.radius_km === ""
+        ? null
+        : Number(z.radius_km),
+    map_color:
+      z.map_color == null || z.map_color === ""
+        ? null
+        : String(z.map_color),
   };
 }
