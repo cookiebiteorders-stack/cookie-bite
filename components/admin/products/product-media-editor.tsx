@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import {
   GripVertical,
   ImagePlus,
@@ -13,6 +13,11 @@ import {
 import { MAX_PRODUCT_IMAGES } from "@/lib/products/media";
 import type { ProductImageFormItem } from "@/lib/admin/products-dashboard-types";
 import { EMPTY_PRODUCT_IMAGE_SLOT } from "@/lib/admin/products-dashboard-types";
+import {
+  enqueueProductMediaUpload,
+  getProductMediaUploadBusyCount,
+  subscribeProductMediaUploads,
+} from "@/lib/client/product-media-upload";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -23,26 +28,6 @@ type Props = {
   onVideoUrlChange: (url: string) => void;
   onLegacyImageUrlChange?: (url: string) => void;
 };
-
-async function uploadMedia(file: File, kind: "image" | "video"): Promise<string> {
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("kind", kind);
-  const res = await fetch("/api/admin/products/upload-media", { method: "POST", body: fd });
-  const data = (await res.json().catch(() => null)) as
-    | {
-        image?: { url?: string };
-        video?: { url?: string };
-        error?: { en?: string; ar?: string };
-      }
-    | null;
-  if (!res.ok) {
-    throw new Error(data?.error?.ar || data?.error?.en || "فشل الرفع");
-  }
-  const url = kind === "image" ? data?.image?.url : data?.video?.url;
-  if (!url) throw new Error("فشل الرفع — لم يُرجَع رابط");
-  return url;
-}
 
 function normalizeSlots(images: ProductImageFormItem[]): ProductImageFormItem[] {
   const list = images.slice(0, MAX_PRODUCT_IMAGES);
@@ -60,13 +45,23 @@ export function ProductMediaEditor({
 }: Props) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingCount, setUploadingCount] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [slotProgress, setSlotProgress] = useState<Record<number, number>>({});
+  const [globalBusy, setGlobalBusy] = useState(0);
+
+  const slotsRef = useRef<ProductImageFormItem[]>(normalizeSlots(images));
+  slotsRef.current = normalizeSlots(images);
 
   const slots = normalizeSlots(images);
   const filledCount = slots.filter((img) => img.url.trim()).length;
-  const isUploading = uploadingCount > 0;
+  const isUploading = globalBusy > 0 || Object.keys(slotProgress).length > 0;
+
+  useEffect(() => {
+    const sync = () => setGlobalBusy(getProductMediaUploadBusyCount());
+    sync();
+    return subscribeProductMediaUploads(sync);
+  }, []);
 
   const syncImages = useCallback(
     (next: ProductImageFormItem[]) => {
@@ -80,75 +75,109 @@ export function ProductMediaEditor({
 
   const setImageAt = useCallback(
     (index: number, patch: Partial<ProductImageFormItem>) => {
-      const next = [...slots];
+      const next = [...slotsRef.current];
       next[index] = { ...next[index], ...patch };
       syncImages(next);
     },
-    [slots, syncImages],
+    [syncImages],
   );
 
   const removeAt = useCallback(
     (index: number) => {
-      const next = slots.filter((_, i) => i !== index);
+      const next = slotsRef.current.filter((_, i) => i !== index);
       syncImages(next.length ? next : [{ ...EMPTY_PRODUCT_IMAGE_SLOT }]);
     },
-    [slots, syncImages],
+    [syncImages],
   );
 
   const move = useCallback(
     (index: number, dir: -1 | 1) => {
-      const next = [...slots];
+      const next = [...slotsRef.current];
       const target = index + dir;
       if (target < 0 || target >= next.length) return;
       [next[index], next[target]] = [next[target]!, next[index]!];
       syncImages(next);
     },
-    [slots, syncImages],
+    [syncImages],
+  );
+
+  const applyUrlToSlot = useCallback(
+    (target: number, url: string) => {
+      const next = [...slotsRef.current];
+      while (next.length <= target) next.push({ ...EMPTY_PRODUCT_IMAGE_SLOT });
+      next[target] = { ...next[target], url };
+      syncImages(next);
+    },
+    [syncImages],
+  );
+
+  const startImageUpload = useCallback(
+    (file: File, target: number) => {
+      setUploadError(null);
+      setSlotProgress((p) => ({ ...p, [target]: 0 }));
+
+      enqueueProductMediaUpload({
+        file,
+        kind: "image",
+        onProgress: (pct) => setSlotProgress((p) => ({ ...p, [target]: pct })),
+        onSuccess: (url) => {
+          applyUrlToSlot(target, url);
+          setSlotProgress((p) => {
+            const next = { ...p };
+            delete next[target];
+            return next;
+          });
+        },
+        onError: (message) => {
+          setUploadError(message);
+          setSlotProgress((p) => {
+            const next = { ...p };
+            delete next[target];
+            return next;
+          });
+        },
+      });
+    },
+    [applyUrlToSlot],
   );
 
   const uploadFilesToSlots = useCallback(
-    async (files: File[], kind: "image" | "video") => {
+    (files: File[], kind: "image" | "video") => {
       if (!canWrite || files.length === 0) return;
       setUploadError(null);
-      setUploadingCount((c) => c + files.length);
 
-      try {
-        if (kind === "video") {
-          const file = files[0];
-          if (!file) return;
-          const url = await uploadMedia(file, "video");
-          onVideoUrlChange(url);
-          return;
+      if (kind === "video") {
+        const file = files[0];
+        if (!file) return;
+        enqueueProductMediaUpload({
+          file,
+          kind: "video",
+          onSuccess: (url) => onVideoUrlChange(url),
+          onError: (message) => setUploadError(message),
+        });
+        return;
+      }
+
+      const next = [...slotsRef.current];
+      const emptyIndices = next
+        .map((img, i) => (!img.url.trim() ? i : -1))
+        .filter((i) => i >= 0);
+
+      let slotIndex = 0;
+      for (const file of files) {
+        if (!file.type.startsWith("image/")) continue;
+        const target =
+          emptyIndices.shift() ??
+          (slotIndex < MAX_PRODUCT_IMAGES ? slotIndex : -1);
+        if (target < 0) {
+          setUploadError(`الحد الأقصى ${MAX_PRODUCT_IMAGES} صور — احذف صورة لإضافة أخرى`);
+          break;
         }
-
-        let slotIndex = 0;
-        const next = [...slots];
-        const emptyIndices = next
-          .map((img, i) => (!img.url.trim() ? i : -1))
-          .filter((i) => i >= 0);
-
-        for (const file of files) {
-          if (!file.type.startsWith("image/")) continue;
-          let target =
-            emptyIndices.shift() ??
-            (slotIndex < MAX_PRODUCT_IMAGES ? slotIndex : -1);
-          if (target < 0) {
-            setUploadError(`الحد الأقصى ${MAX_PRODUCT_IMAGES} صور — احذف صورة لإضافة أخرى`);
-            break;
-          }
-          const url = await uploadMedia(file, "image");
-          while (next.length <= target) next.push({ ...EMPTY_PRODUCT_IMAGE_SLOT });
-          next[target] = { ...next[target], url };
-          slotIndex = target + 1;
-        }
-        syncImages(next);
-      } catch (e) {
-        setUploadError(e instanceof Error ? e.message : "فشل الرفع");
-      } finally {
-        setUploadingCount(0);
+        startImageUpload(file, target);
+        slotIndex = target + 1;
       }
     },
-    [canWrite, slots, syncImages, onVideoUrlChange],
+    [canWrite, onVideoUrlChange, startImageUpload],
   );
 
   const onImageDrop = useCallback(
@@ -156,15 +185,24 @@ export function ProductMediaEditor({
       e.preventDefault();
       setDragOver(false);
       if (!canWrite) return;
-      const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
-      void uploadFilesToSlots(files.slice(0, MAX_PRODUCT_IMAGES), "image");
+      const files = Array.from(e.dataTransfer.files).filter((f) =>
+        f.type.startsWith("image/"),
+      );
+      uploadFilesToSlots(files.slice(0, MAX_PRODUCT_IMAGES), "image");
     },
     [canWrite, uploadFilesToSlots],
   );
 
+  const overallPct =
+    Object.values(slotProgress).length > 0
+      ? Math.round(
+          Object.values(slotProgress).reduce((a, b) => a + b, 0) /
+            Object.values(slotProgress).length,
+        )
+      : 0;
+
   return (
     <div className="space-y-5">
-      {/* صور — منطقة رفع */}
       <div>
         <div className="mb-2 flex items-center justify-between gap-2">
           <p className="text-xs font-bold text-cb-text-strong">
@@ -191,7 +229,20 @@ export function ProductMediaEditor({
           {isUploading ? (
             <div className="flex flex-col items-center gap-2 text-cb-terracotta-dark">
               <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
-              <p className="text-sm font-semibold">جاري رفع الصور…</p>
+              <p className="text-sm font-semibold">
+                جاري رفع الصور… {overallPct > 0 ? `${overallPct}%` : ""}
+              </p>
+              {overallPct > 0 ? (
+                <div className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-amber-100">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-l from-amber-500 to-cb-terracotta-dark transition-all duration-300"
+                    style={{ width: `${overallPct}%` }}
+                  />
+                </div>
+              ) : null}
+              <p className="text-[10px] text-cb-text-muted">
+                يمكنك حفظ المنتج — يستمر الرفع في الخلفية
+              </p>
             </div>
           ) : (
             <>
@@ -200,7 +251,7 @@ export function ProductMediaEditor({
                 اسحب الصور هنا أو اضغط للاختيار
               </p>
               <p className="mt-1 text-[11px] text-cb-text-muted">
-                PNG · JPG · WebP — حتى {MAX_PRODUCT_IMAGES} صور
+                PNG · JPG · WebP — تُضغَّط تلقائياً إن كانت كبيرة
               </p>
               <button
                 type="button"
@@ -217,10 +268,10 @@ export function ProductMediaEditor({
                 accept="image/png,image/jpeg,image/webp,image/gif"
                 multiple
                 className="hidden"
-                disabled={!canWrite || isUploading}
+                disabled={!canWrite}
                 onChange={(e) => {
                   const files = Array.from(e.target.files ?? []);
-                  void uploadFilesToSlots(files, "image");
+                  uploadFilesToSlots(files, "image");
                   e.currentTarget.value = "";
                 }}
               />
@@ -228,29 +279,38 @@ export function ProductMediaEditor({
           )}
         </div>
 
-        {/* شبكة المعاينات */}
-        {filledCount > 0 ? (
+        {filledCount > 0 || Object.keys(slotProgress).length > 0 ? (
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {slots.map((img, index) => {
-              if (!img.url.trim()) return null;
+              const uploading = slotProgress[index] != null;
+              if (!img.url.trim() && !uploading) return null;
               return (
                 <div
-                  key={`preview-${index}-${img.url.slice(-12)}`}
+                  key={`preview-${index}-${img.url.slice(-12) || "up"}`}
                   className="group relative overflow-hidden rounded-xl border border-cb-border bg-white shadow-sm"
                 >
-                  {index === 0 ? (
+                  {index === 0 && img.url.trim() ? (
                     <span className="absolute start-2 top-2 z-10 inline-flex items-center gap-0.5 rounded-full bg-cb-terracotta-dark px-2 py-0.5 text-[9px] font-bold text-white">
                       <Star className="h-3 w-3 fill-current" aria-hidden />
                       رئيسية
                     </span>
                   ) : null}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img.url} alt="" className="aspect-square w-full object-cover" />
+                  {uploading ? (
+                    <div className="flex aspect-square flex-col items-center justify-center gap-2 bg-amber-50/80 p-3">
+                      <Loader2 className="h-6 w-6 animate-spin text-cb-terracotta-dark" />
+                      <span className="text-[10px] font-bold text-cb-terracotta-dark">
+                        {slotProgress[index]}%
+                      </span>
+                    </div>
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={img.url} alt="" className="aspect-square w-full object-cover" />
+                  )}
                   <div className="flex items-center justify-between gap-1 border-t border-cb-border/60 bg-cb-surface/80 p-1.5">
                     <div className="flex gap-0.5">
                       <button
                         type="button"
-                        disabled={!canWrite || index === 0}
+                        disabled={!canWrite || index === 0 || uploading}
                         onClick={() => move(index, -1)}
                         className="rounded-md p-1 text-cb-text-muted hover:bg-cb-peach disabled:opacity-30"
                         aria-label="تحريك"
@@ -259,7 +319,7 @@ export function ProductMediaEditor({
                       </button>
                       <button
                         type="button"
-                        disabled={!canWrite}
+                        disabled={!canWrite || uploading}
                         onClick={() => removeAt(index)}
                         className="rounded-md p-1 text-red-600 hover:bg-red-50"
                         aria-label="حذف"
@@ -267,29 +327,21 @@ export function ProductMediaEditor({
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                    <label className="cursor-pointer text-[10px] font-bold text-cb-terracotta-dark">
+                    <label
+                      className={cn(
+                        "text-[10px] font-bold text-cb-terracotta-dark",
+                        (!canWrite || uploading) && "pointer-events-none opacity-40",
+                      )}
+                    >
                       استبدال
                       <input
                         type="file"
                         accept="image/*"
                         className="hidden"
-                        disabled={!canWrite || isUploading}
+                        disabled={!canWrite || uploading}
                         onChange={(e) => {
                           const f = e.target.files?.[0];
-                          if (f) {
-                            void (async () => {
-                              setUploadError(null);
-                              setUploadingCount(1);
-                              try {
-                                const url = await uploadMedia(f, "image");
-                                setImageAt(index, { url });
-                              } catch (err) {
-                                setUploadError(err instanceof Error ? err.message : "فشل الرفع");
-                              } finally {
-                                setUploadingCount(0);
-                              }
-                            })();
-                          }
+                          if (f) startImageUpload(f, index);
                           e.currentTarget.value = "";
                         }}
                       />
@@ -301,7 +353,6 @@ export function ProductMediaEditor({
           </div>
         ) : null}
 
-        {/* روابط يدوية (اختياري) */}
         <details className="mt-3 rounded-xl border border-cb-border/60 bg-white/50 px-3 py-2">
           <summary className="cursor-pointer text-[11px] font-semibold text-cb-text-muted">
             لصق رابط صورة يدوياً
@@ -321,7 +372,6 @@ export function ProductMediaEditor({
         </details>
       </div>
 
-      {/* فيديو */}
       <div className="rounded-2xl border border-cb-border/70 bg-gradient-to-br from-white to-cb-surface/40 p-4">
         <p className="flex items-center gap-2 text-xs font-bold text-cb-text-strong">
           <Video className="h-4 w-4 text-cb-terracotta-dark" aria-hidden />
@@ -370,7 +420,7 @@ export function ProductMediaEditor({
             disabled={!canWrite || isUploading}
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) void uploadFilesToSlots([f], "video");
+              if (f) uploadFilesToSlots([f], "video");
               e.currentTarget.value = "";
             }}
           />

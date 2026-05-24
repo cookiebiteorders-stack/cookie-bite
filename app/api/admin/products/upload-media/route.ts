@@ -6,6 +6,10 @@ import {
 import { uploadToCloudinary, type CloudinaryUploadKind } from "@/lib/cloudinary/admin-upload";
 import { bilingualError } from "@/lib/validations";
 
+export const runtime = "nodejs";
+export const maxDuration = 120;
+
+/** رفع عبر الخادم (احتياطي) — يُفضَّل الرفع المباشر عبر /upload-media/sign */
 export async function POST(req: NextRequest) {
   const actor = await requireAdminAccess("products");
   requireWritePermission(actor);

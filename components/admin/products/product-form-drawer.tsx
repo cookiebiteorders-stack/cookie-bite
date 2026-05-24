@@ -29,6 +29,10 @@ import {
   type ProductFormState,
 } from "@/lib/admin/products-dashboard-types";
 import { ProductMediaEditor } from "@/components/admin/products/product-media-editor";
+import {
+  getProductMediaUploadBusyCount,
+  setProductMediaPatchContext,
+} from "@/lib/client/product-media-upload";
 import { ProductAiImagePicker } from "@/components/admin/products/product-ai-image-picker";
 import type { ProductImageCandidate } from "@/lib/admin/product-ai-assist";
 import { MAX_PRODUCT_IMAGES } from "@/lib/products/media";
@@ -569,14 +573,28 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       if (!payload.name || !Number.isFinite(payload.price_egp) || payload.price_egp <= 0) {
         throw new Error("الاسم والسعر مطلوبان");
       }
+      let savedProductId = editing?.id ?? null;
       if (editing) {
         await fetchJson("/api/admin/products", {
           method: "PATCH",
           jsonBody: { ids: [editing.id], patch: payload },
         });
       } else {
-        await fetchJson("/api/admin/products", { method: "POST", jsonBody: payload });
+        const created = await fetchJson<{ product?: { id?: string } }>("/api/admin/products", {
+          method: "POST",
+          jsonBody: payload,
+        });
+        savedProductId = created.product?.id ?? null;
       }
+
+      const uploadsPending = getProductMediaUploadBusyCount() > 0;
+      if (savedProductId) {
+        setProductMediaPatchContext({
+          productId: savedProductId,
+          baseImages: form.images.filter((img) => img.url.trim()),
+        });
+      }
+
       const homepageNote =
         form.show_on_homepage && form.is_active
           ? " سيظهر في الصفحة الرئيسية."
@@ -585,7 +603,8 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
             : "";
       pushToast(
         (editing ? "تم تحديث المنتج — يمكنك تعديله مجدداً من الجدول." : "تم إنشاء المنتج.") +
-          homepageNote,
+          homepageNote +
+          (uploadsPending ? " جاري رفع الصور في الخلفية…" : ""),
         "success",
       );
       clearProductFormDraft();
