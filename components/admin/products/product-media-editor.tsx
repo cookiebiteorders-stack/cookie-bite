@@ -265,7 +265,7 @@ export function ProductMediaEditor({
               <input
                 ref={imageInputRef}
                 type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
+                accept="image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif"
                 multiple
                 className="hidden"
                 disabled={!canWrite}

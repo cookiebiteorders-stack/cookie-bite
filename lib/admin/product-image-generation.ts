@@ -30,9 +30,13 @@ function productImageModels(): string[] {
   return [configured, ...IMAGE_MODEL_DEFAULTS.filter((m) => m !== configured)];
 }
 
-function extractImageBufferFromGeminiResponse(json: {
-  candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { data?: string } }> } } }>;
-} | null): Buffer | null {
+type GeminiImageResponse = {
+  candidates?: Array<{
+    content?: { parts?: Array<{ inlineData?: { data?: string } }> };
+  }>;
+};
+
+function extractImageBufferFromGeminiResponse(json: GeminiImageResponse | null): Buffer | null {
   const parts = json?.candidates?.[0]?.content?.parts ?? [];
   for (const part of parts) {
     const data = part.inlineData?.data;

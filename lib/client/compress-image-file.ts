@@ -1,7 +1,8 @@
-const MAX_EDGE = 2048;
-const TARGET_MAX_BYTES = 2 * 1024 * 1024;
-const MIN_QUALITY = 0.55;
+import { CLIENT_IMAGE_TARGET_BYTES, IMAGE_UPLOAD_MAX_EDGE } from "@/lib/cloudinary/upload-limits";
+
+const MIN_QUALITY = 0.5;
 const START_QUALITY = 0.88;
+const PROCESS_IF_LARGER_THAN_BYTES = 512 * 1024;
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -29,19 +30,26 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number):
   });
 }
 
+function needsProcessing(file: File, width: number, height: number): boolean {
+  if (file.size > CLIENT_IMAGE_TARGET_BYTES) return true;
+  if (file.size > PROCESS_IF_LARGER_THAN_BYTES) return true;
+  return Math.max(width, height) > IMAGE_UPLOAD_MAX_EDGE;
+}
+
 /**
- * يصغّر الصور الكبيرة على المتصفح قبل الرفع لتفادي حدود الخادم وتحسين السرعة.
+ * يصغّر الصور الكبيرة على المتصفح قبل الرفع المباشر إلى Cloudinary.
  */
 export async function compressImageFileForUpload(file: File): Promise<File> {
-  if (!file.type.startsWith("image/") || file.type === "image/gif") {
-    return file;
-  }
-  if (file.size <= TARGET_MAX_BYTES) {
+  if (!file.type.startsWith("image/") || file.type === "image/gif" || file.type === "image/svg+xml") {
     return file;
   }
 
   const img = await loadImage(file);
-  const scale = Math.min(1, MAX_EDGE / Math.max(img.naturalWidth, img.naturalHeight));
+  if (!needsProcessing(file, img.naturalWidth, img.naturalHeight)) {
+    return file;
+  }
+
+  const scale = Math.min(1, IMAGE_UPLOAD_MAX_EDGE / Math.max(img.naturalWidth, img.naturalHeight));
   const w = Math.max(1, Math.round(img.naturalWidth * scale));
   const h = Math.max(1, Math.round(img.naturalHeight * scale));
 
@@ -52,13 +60,27 @@ export async function compressImageFileForUpload(file: File): Promise<File> {
   if (!ctx) return file;
   ctx.drawImage(img, 0, 0, w, h);
 
-  const outType = file.type === "image/png" ? "image/webp" : file.type;
+  const outType =
+    file.type === "image/png" || file.type === "image/jpeg" ? "image/webp" : file.type;
   let quality = START_QUALITY;
   let blob = await canvasToBlob(canvas, outType, quality);
 
-  while (blob.size > TARGET_MAX_BYTES && quality > MIN_QUALITY) {
-    quality -= 0.08;
+  while (blob.size > CLIENT_IMAGE_TARGET_BYTES && quality > MIN_QUALITY) {
+    quality -= 0.07;
     blob = await canvasToBlob(canvas, outType, quality);
+  }
+
+  if (blob.size > CLIENT_IMAGE_TARGET_BYTES && scale > 0.65) {
+    const smaller = Math.max(0.5, scale * 0.75);
+    canvas.width = Math.max(1, Math.round(img.naturalWidth * smaller));
+    canvas.height = Math.max(1, Math.round(img.naturalHeight * smaller));
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    quality = 0.78;
+    blob = await canvasToBlob(canvas, outType, quality);
+    while (blob.size > CLIENT_IMAGE_TARGET_BYTES && quality > MIN_QUALITY) {
+      quality -= 0.08;
+      blob = await canvasToBlob(canvas, outType, quality);
+    }
   }
 
   const ext =

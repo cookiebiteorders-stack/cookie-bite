@@ -16,6 +16,10 @@ import {
   X,
 } from "lucide-react";
 import { fetchJson } from "@/lib/http/fetch-json";
+import {
+  replaceAdminMediaFile,
+  uploadAdminMediaFile,
+} from "@/lib/client/admin-media-upload";
 import { cn } from "@/lib/utils";
 
 type MediaItem = {
@@ -94,14 +98,7 @@ export function MediaLibraryClient() {
   const onUpload = async (file: File, kind: "image" | "video") => {
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("kind", kind);
-      const res = await fetch("/api/admin/media", { method: "POST", body: fd });
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json?.error?.ar ?? json?.error?.en ?? "فشل الرفع");
-      }
+      await uploadAdminMediaFile(file, kind);
       setToast("تم الرفع بنجاح");
       await load();
     } catch (e) {
@@ -156,21 +153,15 @@ export function MediaLibraryClient() {
   const onReplace = async (item: MediaItem, file: File) => {
     setBusyId(item.id);
     try {
-      const fd = new FormData();
-      fd.append("action", "replace");
-      fd.append("file", file);
-      fd.append("url", item.url);
-      fd.append("kind", item.kind);
-      fd.append("updateProducts", "true");
-      if (item.publicId) fd.append("publicId", item.publicId);
-
-      const res = await fetch("/api/admin/media", { method: "PATCH", body: fd });
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json?.error?.ar ?? json?.error?.en ?? "فشل الاستبدال");
-      }
-      const n = json.productsUpdated ?? 0;
-      setToast(n ? `تم استبدال الملف وتحديث ${n} منتج` : "تم استبدال الملف");
+      await replaceAdminMediaFile(file, item.kind, {
+        url: item.url,
+        publicId: item.publicId,
+      });
+      setToast(
+        item.publicId
+          ? "تم استبدال الملف (قد يُحدَّث المنتجات المرتبطة تلقائياً)"
+          : "تم استبدال الملف",
+      );
       await load();
     } catch (e) {
       setToast(e instanceof Error ? e.message : "فشل الاستبدال");
@@ -271,7 +262,7 @@ export function MediaLibraryClient() {
             <input
               ref={fileRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,video/mp4,video/webm,video/quicktime"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
@@ -284,7 +275,7 @@ export function MediaLibraryClient() {
             <input
               ref={replaceRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,video/mp4,video/webm,video/quicktime"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];

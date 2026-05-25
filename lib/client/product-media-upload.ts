@@ -1,6 +1,11 @@
 "use client";
 
 import { compressImageFileForUpload } from "@/lib/client/compress-image-file";
+import {
+  fetchSignedCloudinaryUpload,
+  uploadFileToCloudinarySigned,
+  type UploadProgress,
+} from "@/lib/client/cloudinary-signed-upload";
 import { fetchJson } from "@/lib/http/fetch-json";
 import {
   EMPTY_PRODUCT_IMAGE_SLOT,
@@ -10,17 +15,6 @@ import { MAX_PRODUCT_IMAGES } from "@/lib/products/media";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
 
 export type ProductMediaUploadKind = "image" | "video";
-
-type SignedUpload = {
-  apiKey: string;
-  timestamp: string;
-  signature: string;
-  folder: string;
-  uploadUrl: string;
-  kind: ProductMediaUploadKind;
-};
-
-type UploadProgress = (pct: number) => void;
 
 function networkErrorMessage(err: unknown): string {
   if (err instanceof DOMException && err.name === "AbortError") {
@@ -33,66 +27,6 @@ function networkErrorMessage(err: unknown): string {
   return msg || "فشل الرفع";
 }
 
-async function fetchSignedUpload(kind: ProductMediaUploadKind): Promise<SignedUpload | null> {
-  try {
-    const data = await fetchJson<{ ok?: boolean; upload?: SignedUpload }>(
-      "/api/admin/products/upload-media/sign",
-      { method: "POST", jsonBody: { kind }, timeoutMs: 15_000 },
-    );
-    return data.upload ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function uploadViaXhr(
-  file: File,
-  signed: SignedUpload,
-  onProgress?: UploadProgress,
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", signed.uploadUrl);
-    xhr.timeout = 180_000;
-
-    xhr.upload.onprogress = (ev) => {
-      if (!ev.lengthComputable || !onProgress) return;
-      onProgress(Math.min(99, Math.round((ev.loaded / ev.total) * 100)));
-    };
-
-    xhr.onload = () => {
-      type CloudinaryUploadResponse = {
-        secure_url?: string;
-        error?: { message?: string };
-      };
-      let json: CloudinaryUploadResponse | null = null;
-      try {
-        json = JSON.parse(xhr.responseText) as CloudinaryUploadResponse;
-      } catch {
-        json = null;
-      }
-      if (xhr.status >= 200 && xhr.status < 300 && json?.secure_url) {
-        onProgress?.(100);
-        resolve(json.secure_url);
-        return;
-      }
-      reject(new Error(json?.error?.message || `فشل الرفع (${xhr.status})`));
-    };
-
-    xhr.onerror = () => reject(new Error("تعذّر الاتصال بـ Cloudinary"));
-    xhr.ontimeout = () => reject(new Error("انتهت مهلة الرفع"));
-
-    const body = new FormData();
-    body.append("file", file);
-    body.append("api_key", signed.apiKey);
-    body.append("timestamp", signed.timestamp);
-    body.append("signature", signed.signature);
-    body.append("folder", signed.folder);
-    if (signed.kind === "video") body.append("resource_type", "video");
-    xhr.send(body);
-  });
-}
-
 async function uploadViaApiRoute(file: File, kind: ProductMediaUploadKind): Promise<string> {
   const fd = new FormData();
   fd.append("file", file);
@@ -100,7 +34,7 @@ async function uploadViaApiRoute(file: File, kind: ProductMediaUploadKind): Prom
   const res = await fetch("/api/admin/products/upload-media", {
     method: "POST",
     body: fd,
-    signal: AbortSignal.timeout(180_000),
+    signal: AbortSignal.timeout(240_000),
   });
   const data = (await res.json().catch(() => null)) as
     | {
@@ -126,12 +60,15 @@ export async function uploadProductMediaFile(
     kind === "image" ? await compressImageFileForUpload(file).catch(() => file) : file;
 
   onProgress?.(2);
-  const signed = await fetchSignedUpload(kind);
+  const signed = await fetchSignedCloudinaryUpload({
+    kind,
+    signPath: "/api/admin/products/upload-media/sign",
+  });
   onProgress?.(5);
 
   try {
     if (signed) {
-      return await uploadViaXhr(prepared, signed, onProgress);
+      return await uploadFileToCloudinarySigned(prepared, signed, onProgress);
     }
     onProgress?.(10);
     const url = await uploadViaApiRoute(prepared, kind);

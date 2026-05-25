@@ -8,6 +8,7 @@ import {
   CHAT_IMAGE_TYPES,
   type ChatImageAttachment,
 } from "@/lib/chat/image-attachments";
+import { compressImageFileForUpload } from "@/lib/client/compress-image-file";
 import { cn } from "@/lib/utils";
 
 export type PendingChatImage = {
@@ -32,10 +33,15 @@ function newId() {
 }
 
 async function uploadOne(file: File, context: "admin" | "store") {
+  const prepared = await compressImageFileForUpload(file).catch(() => file);
   const body = new FormData();
-  body.append("file", file);
+  body.append("file", prepared);
   body.append("context", context);
-  const res = await fetch("/api/chat/upload-image", { method: "POST", body });
+  const res = await fetch("/api/chat/upload-image", {
+    method: "POST",
+    body,
+    signal: AbortSignal.timeout(240_000),
+  });
   const data = (await res.json().catch(() => null)) as {
     ok?: boolean;
     url?: string;

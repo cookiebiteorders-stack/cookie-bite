@@ -16,6 +16,9 @@ import {
 } from "@/lib/cloudinary/manage-resource";
 import { bilingualError } from "@/lib/validations";
 
+export const runtime = "nodejs";
+export const maxDuration = 120;
+
 const PUBLIC_ID_RE = /^cookie-bite\/[a-zA-Z0-9_\-./]+$/;
 
 function parseDeleteBody(req: NextRequest) {

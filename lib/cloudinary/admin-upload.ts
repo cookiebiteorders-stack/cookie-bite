@@ -1,4 +1,10 @@
 import { createHash } from "node:crypto";
+import { prepareImageBufferForUpload } from "@/lib/cloudinary/prepare-image-upload";
+import {
+  MAX_IMAGE_UPLOAD_INPUT_BYTES,
+  MAX_IMAGE_UPLOAD_OUTPUT_BYTES,
+  MAX_VIDEO_UPLOAD_BYTES,
+} from "@/lib/cloudinary/upload-limits";
 
 export type CloudinaryUploadKind = "image" | "video";
 
@@ -7,6 +13,8 @@ const IMAGE_TYPES = new Set([
   "image/png",
   "image/webp",
   "image/gif",
+  "image/heic",
+  "image/heif",
 ]);
 const VIDEO_TYPES = new Set([
   "video/mp4",
@@ -14,9 +22,6 @@ const VIDEO_TYPES = new Set([
   "video/quicktime",
   "video/x-msvideo",
 ]);
-
-const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
-const MAX_VIDEO_BYTES = 48 * 1024 * 1024;
 
 export function cloudinaryConfig() {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -43,18 +48,35 @@ export async function uploadToCloudinary(
   if (!cfg) throw new Error("Cloudinary is not configured");
 
   const allowed = kind === "image" ? IMAGE_TYPES : VIDEO_TYPES;
-  const maxBytes = kind === "image" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
+  const maxBytes = kind === "image" ? MAX_IMAGE_UPLOAD_INPUT_BYTES : MAX_VIDEO_UPLOAD_BYTES;
   if (!allowed.has(file.type)) {
     throw new Error(
       kind === "image"
-        ? "Only JPG/PNG/WEBP/GIF are allowed"
+        ? "Only JPG/PNG/WEBP/GIF/HEIC are allowed"
         : "Only MP4/WEBM/MOV/AVI are allowed",
     );
   }
   if (file.size > maxBytes) {
     throw new Error(
-      kind === "image" ? "Image is too large (max 6MB)" : "Video is too large (max 48MB)",
+      kind === "image"
+        ? `Image is too large (max ${Math.round(MAX_IMAGE_UPLOAD_INPUT_BYTES / (1024 * 1024))}MB)`
+        : `Video is too large (max ${Math.round(MAX_VIDEO_UPLOAD_BYTES / (1024 * 1024))}MB)`,
     );
+  }
+
+  let uploadFile = file;
+  if (kind === "image") {
+    const raw = Buffer.from(await file.arrayBuffer());
+    const prepared = await prepareImageBufferForUpload(raw, file.type, file.name);
+    uploadFile = new File([new Uint8Array(prepared.buffer)], prepared.filename, {
+      type: prepared.mimeType,
+      lastModified: Date.now(),
+    });
+    if (uploadFile.size > MAX_IMAGE_UPLOAD_OUTPUT_BYTES) {
+      throw new Error(
+        `Image is too large after compression (max ${Math.round(MAX_IMAGE_UPLOAD_OUTPUT_BYTES / (1024 * 1024))}MB)`,
+      );
+    }
   }
 
   const timestamp = String(Math.floor(Date.now() / 1000));
@@ -72,7 +94,7 @@ export async function uploadToCloudinary(
 
   const signature = cloudinarySignature(signedParams, cfg.apiSecret);
   const uploadBody = new FormData();
-  uploadBody.append("file", file);
+  uploadBody.append("file", uploadFile);
   uploadBody.append("timestamp", timestamp);
   uploadBody.append("api_key", cfg.apiKey);
   uploadBody.append("signature", signature);

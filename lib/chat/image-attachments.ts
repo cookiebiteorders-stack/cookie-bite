@@ -1,6 +1,8 @@
 import type { Part } from "@google/generative-ai";
 
-export const CHAT_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+import { MAX_IMAGE_UPLOAD_INPUT_BYTES } from "@/lib/cloudinary/upload-limits";
+
+export const CHAT_IMAGE_MAX_BYTES = MAX_IMAGE_UPLOAD_INPUT_BYTES;
 export const CHAT_IMAGE_MAX_COUNT = 4;
 export const CHAT_IMAGE_TYPES = new Set([
   "image/jpeg",
@@ -62,7 +64,9 @@ export async function uploadChatImageFile(
     throw new Error("Only JPG, PNG, WEBP, or GIF allowed");
   }
   if (file.size > CHAT_IMAGE_MAX_BYTES) {
-    throw new Error("Image is too large (max 5MB)");
+    throw new Error(
+      `Image is too large (max ${Math.round(CHAT_IMAGE_MAX_BYTES / (1024 * 1024))}MB)`,
+    );
   }
 
   const folder =

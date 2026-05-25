@@ -3,6 +3,9 @@ import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { uploadChatImageFile } from "@/lib/chat/image-attachments";
 import { bilingualError } from "@/lib/validations";
 
+export const runtime = "nodejs";
+export const maxDuration = 120;
+
 export async function POST(req: NextRequest) {
   const form = await req.formData().catch(() => null);
   const fileValue = form?.get("file");
