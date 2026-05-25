@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { CartDrawer } from "@/components/cart/cart-drawer";
+import { AddToHomeScreenPrompt } from "@/components/pwa/add-to-home-screen-prompt";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import { MobileFooter } from "@/components/layout/mobile-footer";
 import { MobileHeader } from "@/components/layout/mobile-header";
@@ -71,6 +72,7 @@ export function PageShell({
         </div>
         <ClientOnlyMrBrownie />
         <CartDrawer />
+        <AddToHomeScreenPrompt />
       </div>
     </CartProvider>
   );

@@ -120,6 +120,20 @@ export const translations: Record<Lang, Dictionary> = {
       skipToMain: "Skip to main content",
       scrollTop: "Scroll to top",
     },
+    pwaInstall: {
+      title: "Add Cookie Bite to your phone?",
+      description:
+        "Open the store from your home screen — faster checkout and order updates, like an app.",
+      addAndroid: "Add to home screen",
+      gotIt: "Got it",
+      notNow: "Not now",
+      close: "Close install prompt",
+      installing: "Adding…",
+      iosStep1: 'Tap Share (□↑) at the bottom of Safari, then choose "Add to Home Screen".',
+      iosStep2: 'Tap Add — the Cookie Bite icon will appear on your home screen.',
+      androidMenuStep1: 'Tap the menu (⋮) in Chrome, then "Install app" or "Add to Home screen".',
+      androidMenuStep2: "Confirm — Cookie Bite will appear on your home screen.",
+    },
     auth: {
       alreadyHaveAccount: "Already have an account?",
     },
@@ -883,6 +897,20 @@ export const translations: Record<Lang, Dictionary> = {
       shoppingCartWithCount: "سلة التسوق، {count} عناصر",
       skipToMain: "تخطي إلى المحتوى الرئيسي",
       scrollTop: "العودة للأعلى",
+    },
+    pwaInstall: {
+      title: "إضافة Cookie Bite إلى هاتفك؟",
+      description:
+        "افتح المتجر من الشاشة الرئيسية — طلب أسرع ومتابعة الطلبات كأنه تطبيق.",
+      addAndroid: "إضافة إلى الشاشة الرئيسية",
+      gotIt: "فهمت",
+      notNow: "ليس الآن",
+      close: "إغلاق نافذة التثبيت",
+      installing: "جاري الإضافة…",
+      iosStep1: 'اضغط مشاركة (□↑) أسفل Safari، ثم اختر «إضافة إلى الشاشة الرئيسية».',
+      iosStep2: "اضغط إضافة — سيظهر أيقونة Cookie Bite على شاشتك الرئيسية.",
+      androidMenuStep1: 'اضغط القائمة (⋮) في Chrome، ثم «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».',
+      androidMenuStep2: "أكّد — سيظهر Cookie Bite على شاشتك الرئيسية.",
     },
     auth: {
       alreadyHaveAccount: "لديك حساب بالفعل؟",

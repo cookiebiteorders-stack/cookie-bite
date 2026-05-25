@@ -5,6 +5,7 @@ import {
   uploadToCloudinary,
 } from "@/lib/cloudinary/admin-upload";
 import { extractJsonObject } from "@/lib/admin/json-from-model";
+import { generateProductImageBuffer } from "@/lib/admin/product-image-generation";
 import { MAX_PRODUCT_IMAGES } from "@/lib/products/media";
 
 export type ProductCopyInput = {
