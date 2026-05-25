@@ -12,7 +12,12 @@ import { ShareButtons } from "@/components/seo/share-buttons";
 import { PdpViewTracker } from "@/components/shop/pdp-view-tracker";
 import { getCartBasedRecommendations } from "@/lib/recommendations/fetch-recommendations";
 import { getActivePdpProduct, listAllActiveSlugs } from "@/lib/storefront/pdp-data";
-import { buildBreadcrumbJsonLd, buildProductJsonLd, buildProductMetadata } from "@/lib/seo";
+import {
+  buildBreadcrumbJsonLd,
+  buildProductJsonLd,
+  buildProductMetadata,
+  getLangFromCookies,
+} from "@/lib/seo";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -25,14 +30,16 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getActivePdpProduct(slug);
+  const lang = await getLangFromCookies();
+  const product = await getActivePdpProduct(slug, lang);
   if (!product) return { title: "Product | Cookie Bite" };
   return buildProductMetadata(product, slug);
 }
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const product = await getActivePdpProduct(slug);
+  const lang = await getLangFromCookies();
+  const product = await getActivePdpProduct(slug, lang);
   if (!product) notFound();
 
   const carousel = await getCartBasedRecommendations(

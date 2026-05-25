@@ -2,11 +2,15 @@ import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProductRow } from "@/lib/db/types";
 import type { Product } from "@/lib/data";
+import type { Lang } from "@/lib/i18n/translations";
 import { productRowToStorefrontProduct } from "@/lib/storefront/map-product-row";
 
 const FALLBACK_DESC = "Fresh handcrafted treats from Cookie Bite — New Cairo.";
 
-export async function getActivePdpProduct(slug: string): Promise<Product | null> {
+export async function getActivePdpProduct(
+  slug: string,
+  lang: Lang = "en",
+): Promise<Product | null> {
   if (!slug || !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return null;
   }
@@ -20,7 +24,7 @@ export async function getActivePdpProduct(slug: string): Promise<Product | null>
       .maybeSingle();
 
     if (error || !data) return null;
-    return productRowToStorefrontProduct(data as ProductRow, FALLBACK_DESC);
+    return productRowToStorefrontProduct(data as ProductRow, FALLBACK_DESC, lang);
   } catch (e) {
     console.error("getActivePdpProduct", e);
     return null;
@@ -31,6 +35,7 @@ export async function getRelatedStorefrontProducts(
   category: string | null,
   excludeSlug: string,
   limit: number,
+  lang: Lang = "en",
 ): Promise<Product[]> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return [];
@@ -52,7 +57,9 @@ export async function getRelatedStorefrontProducts(
     const rows = (primary as ProductRow[] | null) ?? [];
 
     if (rows.length >= limit) {
-      return rows.slice(0, limit).map((r) => productRowToStorefrontProduct(r, FALLBACK_DESC));
+      return rows
+        .slice(0, limit)
+        .map((r) => productRowToStorefrontProduct(r, FALLBACK_DESC, lang));
     }
 
     const { data: fallback } = await supabase
@@ -72,7 +79,9 @@ export async function getRelatedStorefrontProducts(
       }
       if (merged.length >= limit) break;
     }
-    return merged.slice(0, limit).map((r) => productRowToStorefrontProduct(r, FALLBACK_DESC));
+    return merged
+      .slice(0, limit)
+      .map((r) => productRowToStorefrontProduct(r, FALLBACK_DESC, lang));
   } catch (e) {
     console.error("getRelatedStorefrontProducts", e);
     return [];

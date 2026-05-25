@@ -1,5 +1,6 @@
 import type { Product } from "@/lib/data";
 import type { ProductRow } from "@/lib/db/types";
+import type { Lang } from "@/lib/i18n/translations";
 import {
   galleryUrlsFromProduct,
   normalizeProductImages,
@@ -15,14 +16,22 @@ const BADGE_SET = new Set(["bestseller", "new", "trending", "featured"]);
 export function productRowToStorefrontProduct(
   row: ProductRow,
   descriptionFallback: string,
+  lang: Lang = "en",
 ): Product {
   const name =
-    row.title_en?.trim() || row.title_ar?.trim() || row.name || row.slug;
+    lang === "ar"
+      ? row.title_ar?.trim() || row.title_en?.trim() || row.name || row.slug
+      : row.title_en?.trim() || row.title_ar?.trim() || row.name || row.slug;
   const description =
-    row.description_en?.trim() ||
-    row.description_ar?.trim() ||
-    row.description?.trim() ||
-    descriptionFallback;
+    lang === "ar"
+      ? row.description_ar?.trim() ||
+        row.description_en?.trim() ||
+        row.description?.trim() ||
+        descriptionFallback
+      : row.description_en?.trim() ||
+        row.description_ar?.trim() ||
+        row.description?.trim() ||
+        descriptionFallback;
   const imagesNormalized = normalizeProductImages(row.images, row.image_url);
   const gallery = galleryUrlsFromProduct(imagesNormalized, row.image_url);
   const mainImage =

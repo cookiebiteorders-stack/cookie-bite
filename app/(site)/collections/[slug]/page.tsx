@@ -10,6 +10,7 @@ import {
   buildCollectionMetadata,
   type CollectionSeoKey,
 } from "@/lib/seo";
+import { getLangFromCookies } from "@/lib/seo";
 import { isValidCollectionSlug, listProductsForCollection } from "@/lib/storefront/collection-products";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -50,7 +51,8 @@ export default async function CollectionPage({ params }: Props) {
   const { slug } = await params;
   if (!isValidCollectionSlug(slug)) notFound();
 
-  const products = await listProductsForCollection(slug);
+  const lang = await getLangFromCookies();
+  const products = await listProductsForCollection(slug, lang);
   const copy = COLLECTION_COPY[slug];
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([

@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { BRAND } from "@/lib/brand";
 import type { Product } from "@/lib/data";
+import type { Lang } from "@/lib/i18n/translations";
+import { LANG_COOKIE } from "@/lib/preferences/client-cookies";
+import {
+  PAGE_METADATA,
+  type LocalizedPageKey,
+  type PageSeoEntry,
+} from "@/lib/seo/page-metadata";
 
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
 export const BRAND_NAME = "Cookie Bite";
 const TWITTER_SITE = "@cookiebite8";
 
-const OG_LOCALE = "en_US";
-const OG_ALT_LOCALE = "ar_EG";
+const OG_LOCALE_EN = "en_US";
+const OG_LOCALE_AR = "ar_EG";
 
 type BuildMetadataInput = {
   title: string;
@@ -17,7 +25,28 @@ type BuildMetadataInput = {
   image?: string;
   noIndex?: boolean;
   ogType?: "website" | "article";
+  lang?: Lang;
 };
+
+export async function getLangFromCookies(): Promise<Lang> {
+  const store = await cookies();
+  return store.get(LANG_COOKIE)?.value === "en" ? "en" : "ar";
+}
+
+export function getPageSeoEntry(path: LocalizedPageKey, lang: Lang): PageSeoEntry {
+  return PAGE_METADATA[path][lang];
+}
+
+export function buildLocalizedPageMetadata(path: LocalizedPageKey, lang: Lang): Metadata {
+  const entry = getPageSeoEntry(path, lang);
+  return buildPageMetadata({
+    title: entry.title,
+    description: entry.description,
+    path,
+    keywords: entry.keywords,
+    lang,
+  });
+}
 
 /** Absolute URL for OG/Twitter images (relative paths → APP_URL). */
 export function absoluteImageUrl(image: string): string {
@@ -41,32 +70,43 @@ function defaultRobots(noIndex: boolean): Metadata["robots"] {
   };
 }
 
+function ogTitle(title: string, lang: Lang): string {
+  if (lang === "ar") return title;
+  return `${title} | ${BRAND_NAME}`;
+}
+
 function sharedOpenGraph(
   title: string,
   description: string,
   url: string,
   image: string,
+  lang: Lang,
   type: "website" | "article" = "website",
 ): NonNullable<Metadata["openGraph"]> {
   const absImage = absoluteImageUrl(image);
   return {
     type,
     url,
-    title: `${title} | ${BRAND_NAME}`,
+    title: ogTitle(title, lang),
     description,
     siteName: BRAND_NAME,
-    locale: OG_LOCALE,
-    alternateLocale: [OG_ALT_LOCALE],
+    locale: lang === "ar" ? OG_LOCALE_AR : OG_LOCALE_EN,
+    alternateLocale: lang === "ar" ? [OG_LOCALE_EN] : [OG_LOCALE_AR],
     images: [{ url: absImage, width: 1200, height: 630, alt: title }],
   };
 }
 
-function sharedTwitter(title: string, description: string, image: string): Metadata["twitter"] {
+function sharedTwitter(
+  title: string,
+  description: string,
+  image: string,
+  lang: Lang,
+): Metadata["twitter"] {
   return {
     card: "summary_large_image",
     site: TWITTER_SITE,
     creator: TWITTER_SITE,
-    title: `${title} | ${BRAND_NAME}`,
+    title: ogTitle(title, lang),
     description,
     images: [absoluteImageUrl(image)],
   };
@@ -80,6 +120,7 @@ export function buildPageMetadata({
   image = "/images/web-logo.png",
   noIndex = false,
   ogType = "website",
+  lang = "en",
 }: BuildMetadataInput): Metadata {
   const canonical = path.startsWith("/") ? path : `/${path}`;
   const url = `${APP_URL}${canonical}`;
@@ -90,14 +131,15 @@ export function buildPageMetadata({
     alternates: {
       canonical,
       languages: {
+        "ar-EG": url,
         en: url,
         ar: url,
         "x-default": url,
       },
     },
     robots: defaultRobots(noIndex),
-    openGraph: sharedOpenGraph(title, description, url, image, ogType),
-    twitter: sharedTwitter(title, description, image),
+    openGraph: sharedOpenGraph(title, description, url, image, lang, ogType),
+    twitter: sharedTwitter(title, description, image, lang),
   };
 }
 
@@ -179,11 +221,13 @@ export function buildProductMetadata(product: Product, slug: string): Metadata {
       `${product.description} Shop this Cookie Bite favorite in New Cairo.`,
       `${APP_URL}/shop/${slug}`,
       image,
+      "en",
     ),
     twitter: sharedTwitter(
       product.name,
       `${product.description} Order now from Cookie Bite.`,
       image,
+      "en",
     ),
   };
 }
@@ -221,14 +265,14 @@ export function buildArticleMetadata(post: ArticleMetadataInput): Metadata {
       title: `${seoTitle} | ${BRAND_NAME}`,
       description: post.description,
       siteName: BRAND_NAME,
-      locale: OG_LOCALE,
-      alternateLocale: [OG_ALT_LOCALE],
+      locale: OG_LOCALE_EN,
+      alternateLocale: [OG_LOCALE_AR],
       images: [{ url: absoluteImageUrl(image), width: 1200, height: 630, alt: seoTitle }],
       publishedTime: post.publishedAt,
       modifiedTime: post.publishedAt,
       authors: post.authorName ? [post.authorName] : [BRAND_NAME],
     },
-    twitter: sharedTwitter(seoTitle, post.description, image),
+    twitter: sharedTwitter(seoTitle, post.description, image, "en"),
   };
 }
 

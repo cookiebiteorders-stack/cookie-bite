@@ -1,22 +1,14 @@
+import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { ExploreCategories } from "@/components/sections/explore-categories";
 import { HomeStorySnippet } from "@/components/sections/home-story-snippet";
 import { TrustBar } from "@/components/sections/trust-bar";
-import { buildPageMetadata } from "@/lib/seo";
+import { buildLocalizedPageMetadata, getLangFromCookies } from "@/lib/seo";
 
-export const metadata = buildPageMetadata({
-  title: "Cookie Delivery & Gift Boxes in New Cairo",
-  description:
-    "Order handcrafted cookies and premium gift boxes in New Cairo. Explore bestselling flavors, seasonal treats, and same-day support from Cookie Bite.",
-  path: "/",
-  keywords: [
-    "cookie delivery new cairo",
-    "order cookies online egypt",
-    "cookie gift box cairo",
-    "fresh baked cookies",
-    "cookie bite cairo",
-  ],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getLangFromCookies();
+  return buildLocalizedPageMetadata("/", lang);
+}
 
 const HeroSection5 = dynamic(
   () =>

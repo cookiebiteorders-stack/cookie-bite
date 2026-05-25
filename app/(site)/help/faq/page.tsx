@@ -1,24 +1,22 @@
+import type { Metadata } from "next";
 import { FaqPageBody } from "@/components/pages/faq-page-body";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
-import { buildBreadcrumbJsonLd, buildFaqPageJsonLd, buildPageMetadata } from "@/lib/seo";
-import { getEnglishFaqItems } from "@/lib/seo/faq-server";
+import {
+  buildBreadcrumbJsonLd,
+  buildFaqPageJsonLd,
+  buildLocalizedPageMetadata,
+  getLangFromCookies,
+} from "@/lib/seo";
+import { getFaqItems } from "@/lib/seo/faq-server";
 
-export const metadata = buildPageMetadata({
-  title: "FAQ: Orders, Delivery, and Gifting",
-  description:
-    "Get quick answers about Cookie Bite delivery zones, freshness, gift notes, payments, allergens, and order tracking in New Cairo.",
-  path: "/help/faq",
-  keywords: [
-    "cookie bite faq",
-    "cookie delivery faq cairo",
-    "gift box questions",
-    "order tracking cookie bite",
-    "cookie allergens egypt",
-  ],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getLangFromCookies();
+  return buildLocalizedPageMetadata("/help/faq", lang);
+}
 
-export default function FaqPage() {
-  const faqItems = getEnglishFaqItems();
+export default async function FaqPage() {
+  const lang = await getLangFromCookies();
+  const faqItems = getFaqItems(lang);
   const faqJsonLd = buildFaqPageJsonLd(faqItems);
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: "Home", path: "/" },

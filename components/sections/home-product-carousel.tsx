@@ -1,8 +1,10 @@
 import { getHomepageFeaturedProducts } from "@/lib/storefront/homepage-featured";
 import { ProductCarousel } from "@/components/sections/product-carousel";
+import { getLangFromCookies } from "@/lib/seo";
 
 /** كاروسيل الرئيسية — منتجات مميزة من قاعدة البيانات */
 export async function HomeProductCarousel() {
-  const products = await getHomepageFeaturedProducts();
+  const lang = await getLangFromCookies();
+  const products = await getHomepageFeaturedProducts(12, lang);
   return <ProductCarousel products={products} />;
 }

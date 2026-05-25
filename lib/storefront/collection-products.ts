@@ -2,6 +2,7 @@ import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProductRow } from "@/lib/db/types";
 import type { Product } from "@/lib/data";
+import type { Lang } from "@/lib/i18n/translations";
 import { productRowToStorefrontProduct } from "@/lib/storefront/map-product-row";
 import type { CollectionSeoKey } from "@/lib/seo";
 
@@ -15,7 +16,10 @@ export const COLLECTION_CATEGORY_MAP: Record<CollectionSeoKey, string[]> = {
   gifts: ["Gifts", "Gift", "gifts", "Premium"],
 };
 
-export async function listProductsForCollection(slug: CollectionSeoKey): Promise<Product[]> {
+export async function listProductsForCollection(
+  slug: CollectionSeoKey,
+  lang: Lang = "en",
+): Promise<Product[]> {
   const categories = COLLECTION_CATEGORY_MAP[slug];
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return [];
@@ -36,11 +40,13 @@ export async function listProductsForCollection(slug: CollectionSeoKey): Promise
         .eq("is_active", true)
         .limit(12);
       return ((fallback as ProductRow[] | null) ?? []).map((r) =>
-        productRowToStorefrontProduct(r, FALLBACK_DESC),
+        productRowToStorefrontProduct(r, FALLBACK_DESC, lang),
       );
     }
 
-    return (data as ProductRow[]).map((r) => productRowToStorefrontProduct(r, FALLBACK_DESC));
+    return (data as ProductRow[]).map((r) =>
+      productRowToStorefrontProduct(r, FALLBACK_DESC, lang),
+    );
   } catch (e) {
     console.error("listProductsForCollection", e);
     return [];

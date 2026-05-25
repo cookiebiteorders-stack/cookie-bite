@@ -107,7 +107,7 @@ export async function getTrendingRecommendations(
       .order("updated_at", { ascending: false })
       .limit(limit);
     return (data ?? []).map((r) =>
-      productRowToStorefrontProduct(r as ProductRow, FALLBACK_DESC),
+      productRowToStorefrontProduct(r as ProductRow, FALLBACK_DESC, lang),
     );
   } catch {
     return [];

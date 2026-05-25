@@ -47,11 +47,20 @@ type ShopProduct = Product & {
   createdAt: string;
 };
 
-function normalizeProduct(p: ApiProduct, descFallback: string): ShopProduct {
+function normalizeProduct(
+  p: ApiProduct,
+  descFallback: string,
+  lang: "ar" | "en",
+): ShopProduct {
   const slug = p.slug?.trim() || "";
-  const title = p.title_en || p.title_ar || p.name;
+  const title =
+    lang === "ar"
+      ? p.title_ar || p.title_en || p.name
+      : p.title_en || p.title_ar || p.name;
   const description =
-    p.description_en || p.description_ar || p.description || descFallback;
+    lang === "ar"
+      ? p.description_ar || p.description_en || p.description || descFallback
+      : p.description_en || p.description_ar || p.description || descFallback;
   const mainImage =
     p.images?.find((img) => typeof img?.url === "string" && img.url)?.url ||
     p.image_url ||
@@ -111,7 +120,7 @@ type ShopClientProps = {
 };
 
 export function ShopClient({ initialTrending = [] }: ShopClientProps) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -198,7 +207,7 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
         const rows = await fetchAllProducts();
         if (!active) return;
         const normalized = rows.map((row) =>
-          normalizeProduct(row, t("product.fallbackDescription")),
+          normalizeProduct(row, t("product.fallbackDescription"), lang),
         );
         setCatalog(normalized);
         const minParam = Number(searchParams.get("min"));
@@ -224,7 +233,7 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
     return () => {
       active = false;
     };
-  }, [searchParams, t]);
+  }, [searchParams, t, lang]);
 
   const availableCategories = useMemo(
     () =>

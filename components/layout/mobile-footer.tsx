@@ -57,7 +57,7 @@ export function MobileFooter() {
         <span className="mobile-footer__heart-row">
           {t("footer.madeWith")}{" "}
           <Heart className="h-3 w-3 text-cb-terracotta-dark" aria-hidden />{" "}
-          {t("footer.inLocation", { location: "Cairo" })}
+          {t("footer.inLocation", { location: BRAND.location })}
         </span>
       </div>
     </footer>

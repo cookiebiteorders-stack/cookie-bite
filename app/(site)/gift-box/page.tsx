@@ -1,20 +1,12 @@
 import type { Metadata } from "next";
 import { GiftBoxClient } from "@/components/pages/gift-box-client";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
-import { buildPageMetadata, buildBreadcrumbJsonLd } from "@/lib/seo";
+import { buildBreadcrumbJsonLd, buildLocalizedPageMetadata, getLangFromCookies } from "@/lib/seo";
 
-export const metadata: Metadata = buildPageMetadata({
-  title: "Cookie Gift Boxes in New Cairo",
-  description:
-    "Explore premium Cookie Bite gift boxes for birthdays, corporate gifting, and celebrations in New Cairo.",
-  path: "/gift-box",
-  keywords: [
-    "cookie gift box cairo",
-    "birthday cookie gifts",
-    "corporate gift box egypt",
-    "premium dessert gifts",
-  ],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getLangFromCookies();
+  return buildLocalizedPageMetadata("/gift-box", lang);
+}
 
 export default function GiftBoxPage() {
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
