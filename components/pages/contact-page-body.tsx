@@ -6,8 +6,9 @@ import { useLanguage } from "@/components/providers/language-provider";
 import { BRAND } from "@/lib/brand";
 
 export function ContactPageBody() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const phoneHref = `+${BRAND.whatsappE164}`;
+  const location = lang === "ar" ? "التجمع الخامس، القاهرة الجديدة، مصر" : BRAND.location;
 
   return (
     <div className="bg-cb-cream pb-24 pt-12">
@@ -37,7 +38,7 @@ export function ContactPageBody() {
                 {BRAND.phoneDisplay}
               </a>
             </li>
-            <li>{BRAND.location}</li>
+            <li>{location}</li>
           </ul>
         </div>
         <ContactForm />

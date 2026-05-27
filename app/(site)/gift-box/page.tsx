@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { GiftBoxClient } from "@/components/pages/gift-box-client";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
+import { translations } from "@/lib/i18n/translations";
 import { buildBreadcrumbJsonLd, buildLocalizedPageMetadata, getLangFromCookies } from "@/lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -8,10 +9,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildLocalizedPageMetadata("/gift-box", lang);
 }
 
-export default function GiftBoxPage() {
+export default async function GiftBoxPage() {
+  const lang = await getLangFromCookies();
+  const dict = translations[lang];
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
-    { name: "Home", path: "/" },
-    { name: "Gift Boxes", path: "/gift-box" },
+    { name: (dict.tabs as { home: string }).home, path: "/" },
+    { name: (dict.userMenu as { giftBox: string }).giftBox, path: "/gift-box" },
   ]);
   return (
     <>

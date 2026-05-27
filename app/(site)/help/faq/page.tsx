@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { FaqPageBody } from "@/components/pages/faq-page-body";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
+import { translations } from "@/lib/i18n/translations";
 import {
   buildBreadcrumbJsonLd,
   buildFaqPageJsonLd,
@@ -16,12 +17,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function FaqPage() {
   const lang = await getLangFromCookies();
+  const dict = translations[lang];
   const faqItems = getFaqItems(lang);
   const faqJsonLd = buildFaqPageJsonLd(faqItems);
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
-    { name: "Home", path: "/" },
-    { name: "Help center", path: "/help" },
-    { name: "FAQ", path: "/help/faq" },
+    { name: (dict.tabs as { home: string }).home, path: "/" },
+    { name: (dict.nav as { helpCenter: string }).helpCenter, path: "/help" },
+    { name: (dict.nav as { faq: string }).faq, path: "/help/faq" },
   ]);
 
   return (

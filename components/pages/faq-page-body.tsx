@@ -7,12 +7,13 @@ import { FAQ_ITEM_KEYS } from "@/lib/seo/faq-keys";
 import { useLanguage } from "@/components/providers/language-provider";
 
 export function FaqPageBody() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const location = lang === "ar" ? "التجمع الخامس، القاهرة الجديدة" : BRAND.location;
 
   const faqs = FAQ_ITEM_KEYS.map((id) => ({
     q: t(`pages.faq.items.${id}.q`),
     a: t(`pages.faq.items.${id}.a`, {
-      location: BRAND.location,
+      location,
       threshold: BRAND.freeDeliveryThresholdEgp,
       phone: BRAND.phoneDisplay,
     }),

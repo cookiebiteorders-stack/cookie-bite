@@ -5,9 +5,11 @@ import { FAQ_ITEM_KEYS, type FaqItemKey } from "@/lib/seo/faq-keys";
 
 type FaqItem = { q: string; a: string };
 
-function interpolateFaq(template: string): string {
+function interpolateFaq(template: string, lang: Lang): string {
+  const localizedLocation =
+    lang === "ar" ? "التجمع الخامس، القاهرة الجديدة" : BRAND.location;
   return template
-    .replace(/\{location\}/g, BRAND.location)
+    .replace(/\{location\}/g, localizedLocation)
     .replace(/\{threshold\}/g, String(BRAND.freeDeliveryThresholdEgp))
     .replace(/\{phone\}/g, BRAND.phoneDisplay);
 }
@@ -22,7 +24,7 @@ function getFaqItemsForLang(lang: Lang): FaqItem[] {
     const row = faqItems[key];
     return {
       q: row?.q ?? "",
-      a: interpolateFaq(row?.a ?? ""),
+      a: interpolateFaq(row?.a ?? "", lang),
     };
   }).filter((x) => x.q && x.a);
 }
