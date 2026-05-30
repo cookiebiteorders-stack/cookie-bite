@@ -26,10 +26,14 @@ function warnMissingStandaloneAssets(standaloneDir) {
   if (!fs.existsSync(publicDir)) missing.push("public/");
   if (!fs.existsSync(staticDir)) missing.push(".next/static/");
   if (missing.length === 0) return;
-  console.warn(
+  const message =
     `[cookie-bite] Standalone asset folders missing (${missing.join(", ")}). ` +
-      "Run `npm run build` (postbuild copies assets) or 503/static errors may occur on Hostinger.",
-  );
+    "Run `npm run build` (postbuild copies assets) or CSS/static 404 → unstyled site on Hostinger.";
+  if (process.env.NODE_ENV === "production") {
+    console.error(message);
+    process.exit(1);
+  }
+  console.warn(message);
 }
 
 function warnProductionEnv() {

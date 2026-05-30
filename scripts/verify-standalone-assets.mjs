@@ -22,16 +22,35 @@ if (missing.length) {
   process.exit(1);
 }
 
-const staticCssDir = path.join(standaloneDir, ".next", "static", "css");
-const cssFiles = fs.existsSync(staticCssDir)
-  ? fs.readdirSync(staticCssDir).filter((f) => f.endsWith(".css"))
-  : [];
+function collectCssFiles(staticRoot) {
+  const files = [];
+  for (const sub of ["css", "chunks"]) {
+    const dir = path.join(staticRoot, sub);
+    if (!fs.existsSync(dir)) continue;
+    for (const name of fs.readdirSync(dir)) {
+      if (name.endsWith(".css")) files.push(path.join(sub, name));
+    }
+  }
+  return files;
+}
+
+const staticRoot = path.join(standaloneDir, ".next", "static");
+const cssFiles = collectCssFiles(staticRoot);
 
 if (cssFiles.length === 0) {
-  console.error("[verify-standalone-assets] No CSS files in .next/standalone/.next/static/css");
+  console.error(
+    "[verify-standalone-assets] No CSS in .next/standalone/.next/static/{css,chunks}/",
+  );
+  process.exit(1);
+}
+
+const buildVersionStandalone = path.join(standaloneDir, "public", "build-version.txt");
+const buildVersionRoot = path.join(root, "public", "build-version.txt");
+if (!fs.existsSync(buildVersionStandalone) || !fs.existsSync(buildVersionRoot)) {
+  console.error("[verify-standalone-assets] Missing public/build-version.txt (PWA CSS recovery needs it).");
   process.exit(1);
 }
 
 console.log(
-  `[verify-standalone-assets] OK — standalone has public/, static/, and ${cssFiles.length} CSS file(s).`,
+  `[verify-standalone-assets] OK — standalone has public/, static/, ${cssFiles.length} CSS file(s), build-version.txt.`,
 );

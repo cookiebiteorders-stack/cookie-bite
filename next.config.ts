@@ -18,6 +18,7 @@ const withPWA = (require("next-pwa") as (options: Record<string, unknown>) => Pw
   cleanupOutdatedCaches: true,
   /** App Router: never cache client navigations — stale HTML + new CSS = unstyled page. */
   cacheOnFrontEndNav: false,
+  cacheStartUrl: false,
   dynamicStartUrl: false,
   reloadOnOnline: true,
   disable: process.env.NODE_ENV === "development",
@@ -180,6 +181,15 @@ const nextConfig: NextConfig = {
         ? DEVELOPMENT_BASIC_HEADERS
         : PRODUCTION_SECURITY_HEADERS;
     return [
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
       {
         source: "/:path*\\.(jpg|jpeg|png|webp|avif|gif|svg|ico)$",
         headers: [

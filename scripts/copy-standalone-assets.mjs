@@ -27,9 +27,14 @@ const publicDest = path.join(standaloneDir, "public");
 const staticSrc = path.join(root, ".next", "static");
 const staticDest = path.join(standaloneDir, ".next", "static");
 
-const copied = [];
-if (copyDir(publicSrc, publicDest)) copied.push("public/");
-if (copyDir(staticSrc, staticDest)) copied.push(".next/static/");
+if (!copyDir(staticSrc, staticDest)) {
+  console.error("[copy-standalone-assets] Failed — .next/static missing after build");
+  process.exit(1);
+}
+if (!copyDir(publicSrc, publicDest)) {
+  console.error("[copy-standalone-assets] Failed — public/ missing");
+  process.exit(1);
+}
 
 const buildIdPath = path.join(root, ".next", "BUILD_ID");
 let buildVersion = String(Date.now());
@@ -42,9 +47,5 @@ for (const destRoot of [path.join(root, "public"), publicDest]) {
   fs.writeFileSync(path.join(destRoot, "build-version.txt"), `${buildVersion}\n`, "utf8");
 }
 
-if (copied.length) {
-  console.log(`[copy-standalone-assets] Copied into .next/standalone: ${copied.join(", ")}`);
-  console.log(`[copy-standalone-assets] build-version.txt → ${buildVersion}`);
-} else {
-  console.warn("[copy-standalone-assets] Nothing copied — check build output");
-}
+console.log(`[copy-standalone-assets] Copied into .next/standalone: public/, .next/static/`);
+console.log(`[copy-standalone-assets] build-version.txt → ${buildVersion}`);

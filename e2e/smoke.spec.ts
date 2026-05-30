@@ -6,6 +6,19 @@ test("homepage loads with brand identity", async ({ page }) => {
   await expect(page.getByRole("link", { name: /Shop/i }).first()).toBeVisible();
 });
 
+test("homepage loads Tailwind CSS bundle (not unstyled HTML)", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  const stylesheetCount = await page.locator('link[rel="stylesheet"][href*="/_next/static/"]').count();
+  expect(stylesheetCount).toBeGreaterThan(0);
+
+  const storefrontDisplay = await page.locator(".cb-storefront").first().evaluate((el) => {
+    return window.getComputedStyle(el).display;
+  });
+  expect(storefrontDisplay).toBe("flex");
+});
+
 test("products API returns successful response", async ({ request }) => {
   const res = await request.get("/api/products");
   const body = await res.json();
