@@ -31,8 +31,20 @@ const copied = [];
 if (copyDir(publicSrc, publicDest)) copied.push("public/");
 if (copyDir(staticSrc, staticDest)) copied.push(".next/static/");
 
+const buildIdPath = path.join(root, ".next", "BUILD_ID");
+let buildVersion = String(Date.now());
+if (fs.existsSync(buildIdPath)) {
+  buildVersion = fs.readFileSync(buildIdPath, "utf8").trim() || buildVersion;
+}
+
+for (const destRoot of [path.join(root, "public"), publicDest]) {
+  if (!fs.existsSync(destRoot)) fs.mkdirSync(destRoot, { recursive: true });
+  fs.writeFileSync(path.join(destRoot, "build-version.txt"), `${buildVersion}\n`, "utf8");
+}
+
 if (copied.length) {
   console.log(`[copy-standalone-assets] Copied into .next/standalone: ${copied.join(", ")}`);
+  console.log(`[copy-standalone-assets] build-version.txt → ${buildVersion}`);
 } else {
   console.warn("[copy-standalone-assets] Nothing copied — check build output");
 }

@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "postbuild": "node scripts/copy-standalone-assets.mjs",
+    "postbuild": "node scripts/copy-standalone-assets.mjs && node scripts/verify-standalone-assets.mjs",
     "start": "node server.mjs",
     "start:standalone": "node .next/standalone/server.js",
     "lint": "eslint",

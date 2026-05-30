@@ -14,17 +14,33 @@ const withPWA = (require("next-pwa") as (options: Record<string, unknown>) => Pw
   dest: "public",
   register: true,
   skipWaiting: true,
+  clientsClaim: true,
+  cleanupOutdatedCaches: true,
+  /** App Router: never cache client navigations — stale HTML + new CSS = unstyled page. */
+  cacheOnFrontEndNav: false,
+  dynamicStartUrl: false,
+  reloadOnOnline: true,
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
-    // Hashed files are immutable — CacheFirst avoids blank/broken pages when the network
-    // is slow and NetworkFirst would miss CSS after a deploy (symptom: giant LogoMark, no layout).
+    // HTML/RSC: always prefer network so deploys pick up new CSS hashes immediately.
+    {
+      urlPattern: ({ request }: { request: Request }) => request.mode === "navigate",
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "html-navigate",
+        networkTimeoutSeconds: 8,
+        expiration: { maxEntries: 16, maxAgeSeconds: 60 * 60 },
+        cacheableResponse: { statuses: [200] },
+      },
+    },
+    // Hashed static assets are immutable — CacheFirst is safe when filenames change each build.
     {
       urlPattern: /\/_next\/static\/.*/i,
       handler: "CacheFirst",
       options: {
         cacheName: "next-static-immutable",
         expiration: { maxEntries: 256, maxAgeSeconds: 365 * 24 * 60 * 60 },
-        cacheableResponse: { statuses: [0, 200] },
+        cacheableResponse: { statuses: [200] },
       },
     },
     {

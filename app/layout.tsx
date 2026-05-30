@@ -27,6 +27,8 @@ import { LANG_COOKIE } from "@/lib/preferences/client-cookies";
 import { cn } from "@/lib/utils";
 import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
 import { resolveClerkJsScriptUrl } from "@/lib/auth/clerk-js-fallback";
+import { CssRecoveryBootstrap } from "@/components/pwa/css-recovery-bootstrap";
+import { CRITICAL_SHELL_CSS } from "@/lib/pwa/critical-shell-css";
 import "./globals.css";
 
 const clerkJsScriptUrl = resolveClerkJsScriptUrl();
@@ -218,16 +220,7 @@ export default async function RootLayout({
     >
       <head>
         {/* Inline shell rules — survive main CSS load failures (PWA stale cache, static 503). */}
-        <style
-          id="cb-critical-shell"
-          dangerouslySetInnerHTML={{
-            __html: [
-              ".cb-logo-mark{width:2.5rem;height:2.5rem;max-width:min(100%,4rem);max-height:4rem;flex-shrink:0;display:block}",
-              "@media(max-width:767px){.desktop-header,.desktop-footer,.desktop-whatsapp-fab{display:none!important}.mobile-header{display:flex!important}.mobile-tab-bar{display:block!important}.mobile-footer{display:flex!important}}",
-              "@media(min-width:768px){.mobile-header,.mobile-tab-bar,.mobile-footer{display:none!important}}",
-            ].join(""),
-          }}
-        />
+        <style id="cb-critical-shell" dangerouslySetInnerHTML={{ __html: CRITICAL_SHELL_CSS }} />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -237,6 +230,7 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       </head>
       <body className="min-h-full bg-background font-sans text-foreground">
+        <CssRecoveryBootstrap />
         <LokiSvgFilters />
         <ClerkProvider
           {...(clerkJsScriptUrl
