@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SectionHeading } from "@/components/sections/section-heading";
-import { buttonClassName } from "@/components/ui/button";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
+import { SeoRelatedLinks } from "@/components/seo/seo-related-links";
+import { getBlogRelatedLinks } from "@/lib/content/blog-seo";
 import { getSanityClient } from "@/lib/sanity/client";
 import { BLOG_POST_BY_SLUG_QUERY } from "@/lib/sanity/queries";
 import { portableBlocksToPlain } from "@/lib/sanity/block-to-plain";
@@ -11,6 +11,7 @@ import {
   buildArticleMetadata,
   buildBreadcrumbJsonLd,
   buildBlogPostingJsonLd,
+  getLangFromCookies,
 } from "@/lib/seo";
 
 type BlogDoc = {
@@ -58,6 +59,7 @@ export async function generateMetadata({
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const lang = await getLangFromCookies();
   const client = getSanityClient();
   if (!client) notFound();
 
@@ -90,19 +92,24 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       <div className="mx-auto max-w-3xl px-4 lg:px-6">
         <JsonLdScript id={`blog-post-${slug}-jsonld`} json={jsonLd} />
         <JsonLdScript id={`blog-post-${slug}-breadcrumb`} json={breadcrumbJsonLd} />
-        <nav className="mb-6 text-sm text-cb-text-muted">
+        <nav className="mb-6 text-sm text-cb-text-muted" aria-label="Breadcrumb">
           <Link href="/blog" className="hover:text-cb-terracotta-dark">
-            Blog
+            {lang === "ar" ? "المدونة" : "Blog"}
           </Link>
-          <span className="mx-2">/</span>
-          <span className="text-cb-text">{slug}</span>
+          <span className="mx-2" aria-hidden>
+            /
+          </span>
+          <span className="text-cb-text">{doc.title_en}</span>
         </nav>
-        <SectionHeading title={doc.title_en} subtitle={doc.title_ar} />
+        <header>
+          <h1 className="font-serif text-3xl font-semibold text-cb-text-strong sm:text-4xl">{doc.title_en}</h1>
+          <p className="mt-2 text-lg text-cb-text-muted">{doc.title_ar}</p>
+        </header>
         {doc.coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- Sanity CDN URL dynamic
           <img
             src={doc.coverUrl}
-            alt={doc.title_en}
+            alt={`${doc.title_en} — Cookie Bite blog cover image`}
             className="mt-8 w-full rounded-2xl object-cover shadow-lg"
           />
         ) : null}
@@ -120,8 +127,22 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           </div>
         ) : null}
 
-        <Link href="/shop" className={buttonClassName("primary", "mt-12 inline-flex rounded-full px-8")}>
-          تسوّق الآن
+        <section className="mt-12 border-t border-cb-border pt-8">
+          <h2 className="font-serif text-lg font-semibold text-cb-text-strong">
+            {lang === "ar" ? "اطلب من كوكي بايت" : "Order from Cookie Bite"}
+          </h2>
+          <SeoRelatedLinks
+            className="mt-4"
+            ariaLabel={lang === "ar" ? "روابط الطلب" : "Order links"}
+            links={getBlogRelatedLinks(lang)}
+          />
+        </section>
+
+        <Link
+          href="/shop"
+          className="mt-8 inline-flex rounded-full bg-cb-terracotta px-8 py-3 text-sm font-semibold text-white hover:bg-cb-terracotta-dark"
+        >
+          {lang === "ar" ? "تسوّق الآن" : "Shop now"}
         </Link>
       </div>
     </article>

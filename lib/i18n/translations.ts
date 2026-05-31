@@ -409,6 +409,10 @@ export const translations: Record<Lang, Dictionary> = {
         catalogEyebrow: "Full catalog",
         catalogTitle: "All cookies",
         catalogSubtitle: "Filter, sort, and shop every flavor in stock.",
+        seoSectionTitle: "Order fresh cookies online in New Cairo",
+        seoSectionBody:
+          "Cookie Bite bakes in small batches in Fifth Settlement — classic chocolate chip, stuffed cookies, seasonal flavors, and gift-ready treats. Use filters above or explore collections and build a custom gift box.",
+        seoRelatedAria: "Explore more from Cookie Bite",
       },
       contact: {
         eyebrow: "Contact",
@@ -567,6 +571,20 @@ export const translations: Record<Lang, Dictionary> = {
           "This box fits {cap} items but you have {total}. Some items will be removed. Continue?",
         upsellConfirm:
           'Your box is full! Upgrade to "{name}" ({cap} items) for {price}?',
+      },
+      blog: {
+        title: "From the kitchen journal",
+        subtitle: "Guides on cookie gifting, seasonal flavors, and celebration ideas — updated from Sanity.",
+        subtitleEmpty:
+          "Seasonal drops, behind-the-scenes bakes, and gifting inspiration — posts appear here when Sanity is configured.",
+        seoSectionTitle: "Cookie tips, gifting ideas & New Cairo delivery",
+        seoSectionBody:
+          "Our blog helps you plan the perfect cookie gift, discover seasonal flavors, and order with confidence across New Cairo.",
+        relatedLinksAria: "Order cookies and gifts",
+        shopCta: "Shop cookies while you read",
+        sanityMissing:
+          "Sanity is not configured (NEXT_PUBLIC_SANITY_PROJECT_ID). Blog posts will appear when connected.",
+        noPosts: "No published posts in Sanity yet.",
       },
       giftBoxBuilderSeo: {
         title: "Build your own cookie gift box in New Cairo",
@@ -1298,6 +1316,10 @@ export const translations: Record<Lang, Dictionary> = {
         catalogEyebrow: "الكتالوج الكامل",
         catalogTitle: "كل الكوكيز",
         catalogSubtitle: "صفِّ، رتّب، واشتري كل النكهات المتوفرة.",
+        seoSectionTitle: "اطلب كوكيز طازجة أونلاين في القاهرة الجديدة",
+        seoSectionBody:
+          "كوكي بايت تخبز على دفعات صغيرة في التجمع الخامس — كلاسيكيات، محشية، نكهات موسمية، وهدايا جاهزة. استخدم الفلاتر أعلاه أو تصفّح المجموعات وصمّم صندوق هديتك.",
+        seoRelatedAria: "اكتشف المزيد من كوكي بايت",
       },
       contact: {
         eyebrow: "تواصل",
@@ -1455,6 +1477,19 @@ export const translations: Record<Lang, Dictionary> = {
           "هذا الصندوق يسع {cap} قطع ولديك {total}. ستُزال بعض القطع. متابعة؟",
         upsellConfirm:
           "الصندوق ممتلئ! ترقية إلى «{name}» ({cap} قطع) بـ {price}؟",
+      },
+      blog: {
+        title: "من مطبخنا — المدونة",
+        subtitle: "دلائل هدايا الكوكيز، نكهات موسمية، وأفكار للاحتفالات — محدّثة من Sanity.",
+        subtitleEmpty:
+          "إلهام موسمي ومقالات من المطبخ — تظهر هنا عند ربط Sanity.",
+        seoSectionTitle: "نصائح الكوكيز والهدايا والتوصيل في القاهرة الجديدة",
+        seoSectionBody:
+          "مدونتنا تساعدك على تخطيط هدية الكوكيز المثالية، اكتشاف النكهات الموسمية، والطلب بثقة في القاهرة الجديدة.",
+        relatedLinksAria: "اطلب الكوكيز والهدايا",
+        shopCta: "تسوّق الكوكيز",
+        sanityMissing: "Sanity غير مفعّل (NEXT_PUBLIC_SANITY_PROJECT_ID).",
+        noPosts: "لا توجد مقالات منشورة في Sanity بعد.",
       },
       giftBoxBuilderSeo: {
         title: "صمّم صندوق هدايا الكوكيز في القاهرة الجديدة",

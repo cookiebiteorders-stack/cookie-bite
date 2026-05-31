@@ -5,7 +5,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { ProductCard } from "@/components/product/product-card";
 import { SectionHeading } from "@/components/sections/section-heading";
+import { SeoRelatedLinks } from "@/components/seo/seo-related-links";
 import { useLanguage } from "@/components/providers/language-provider";
+import { getShopRelatedLinks } from "@/lib/content/shop-seo";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { buttonClassName } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -542,6 +544,20 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
             </button>
           </div>
         ) : null}
+        </section>
+
+        <section className="mt-16 border-t border-cb-border pt-10">
+          <h2 className="font-serif text-xl font-semibold text-cb-text-strong sm:text-2xl">
+            {t("pages.shop.seoSectionTitle")}
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cb-text sm:text-base">
+            {t("pages.shop.seoSectionBody")}
+          </p>
+          <SeoRelatedLinks
+            className="mt-5"
+            ariaLabel={t("pages.shop.seoRelatedAria")}
+            links={getShopRelatedLinks(lang)}
+          />
         </section>
       </div>
     </div>

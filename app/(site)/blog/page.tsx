@@ -1,25 +1,24 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { SectionHeading } from "@/components/sections/section-heading";
 import { buttonClassName } from "@/components/ui/button";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
+import { SeoRelatedLinks } from "@/components/seo/seo-related-links";
 import { ShareButtons } from "@/components/seo/share-buttons";
+import { getBlogPageFaq, getBlogRelatedLinks } from "@/lib/content/blog-seo";
 import { getSanityClient } from "@/lib/sanity/client";
 import { BLOG_POSTS_INDEX_QUERY } from "@/lib/sanity/queries";
-import { buildFaqPageJsonLd, buildPageMetadata } from "@/lib/seo";
+import { translations } from "@/lib/i18n/translations";
+import {
+  buildBreadcrumbJsonLd,
+  buildFaqPageJsonLd,
+  buildLocalizedPageMetadata,
+  getLangFromCookies,
+} from "@/lib/seo";
 
-export const metadata = buildPageMetadata({
-  title: "Cookie Blog: New Cairo Dessert Tips & Gift Ideas",
-  description:
-    "Read Cookie Bite blog guides on cookie gifting, dessert trends, and celebration ideas in New Cairo. Find practical tips and inspiration.",
-  path: "/blog",
-  keywords: [
-    "cookie blog cairo",
-    "dessert tips egypt",
-    "gift box ideas cairo",
-    "cookie delivery guide",
-    "new cairo bakery blog",
-  ],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getLangFromCookies();
+  return buildLocalizedPageMetadata("/blog", lang);
+}
 
 type BlogIndexRow = {
   slug: string;
@@ -30,15 +29,27 @@ type BlogIndexRow = {
 };
 
 export default async function BlogIndexPage() {
-  const faqJsonLd = buildFaqPageJsonLd([
-    {
-      q: "What does Cookie Bite blog cover?",
-      a: "We share cookie gifting ideas, seasonal flavor guides, dessert planning tips, and updates from our New Cairo kitchen.",
-    },
-    {
-      q: "How often are new posts published?",
-      a: "We publish updates regularly and refresh our most useful guides throughout the season.",
-    },
+  const lang = await getLangFromCookies();
+  const dict = translations[lang];
+  const pages = dict.pages as {
+    blog: {
+      title: string;
+      subtitle: string;
+      subtitleEmpty: string;
+      seoSectionTitle: string;
+      seoSectionBody: string;
+      relatedLinksAria: string;
+      shopCta: string;
+      sanityMissing: string;
+      noPosts: string;
+    };
+  };
+  const blogCopy = pages.blog;
+
+  const faqJsonLd = buildFaqPageJsonLd(getBlogPageFaq(lang));
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: (dict.tabs as { home: string }).home, path: "/" },
+    { name: lang === "ar" ? "المدونة" : "Blog", path: "/blog" },
   ]);
 
   const client = getSanityClient();
@@ -53,25 +64,25 @@ export default async function BlogIndexPage() {
 
   return (
     <div className="bg-cb-cream pb-24 pt-12">
-      <div className="mx-auto max-w-3xl px-4 text-center lg:px-6">
+      <div className="mx-auto max-w-3xl px-4 lg:px-6">
         <JsonLdScript id="blog-faq-jsonld" json={faqJsonLd} />
-        <SectionHeading
-          title="From the kitchen journal"
-          subtitle={
-            posts.length
-              ? "مقالات بالإنجليزية والعربية — محدّثة من Sanity."
-              : "Seasonal drops, behind-the-scenes bakes, and gifting inspiration — posts appear here when Sanity is configured."
-          }
-        />
-        {!client ? (
-          <p className="mt-8 text-cb-text">
-            ربط Sanity غير مفعّل (<code className="rounded bg-cb-surface-2 px-1">NEXT_PUBLIC_SANITY_PROJECT_ID</code>
-            ).
+        <JsonLdScript id="blog-breadcrumb-jsonld" json={breadcrumbJsonLd} />
+
+        <header className="mx-auto mb-8 max-w-3xl text-center">
+          <h1 className="font-serif text-[clamp(1.75rem,2.2vw+1rem,2.5rem)] font-semibold text-cb-text-strong">
+            {blogCopy.title}
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl text-cb-text-muted sm:text-lg">
+            {posts.length ? blogCopy.subtitle : blogCopy.subtitleEmpty}
           </p>
+        </header>
+
+        {!client ? (
+          <p className="mt-8 text-cb-text">{blogCopy.sanityMissing}</p>
         ) : null}
 
         {posts.length ? (
-          <ul className="mt-10 space-y-4 text-start">
+          <ul className="mt-10 space-y-4">
             {posts.map((p) => (
               <li
                 key={p.slug}
@@ -83,7 +94,7 @@ export default async function BlogIndexPage() {
                   {p.excerpt_en ? <p className="mt-2 text-sm text-cb-text">{p.excerpt_en}</p> : null}
                   {p._updatedAt ? (
                     <time className="mt-2 block text-xs text-cb-text-soft" dateTime={p._updatedAt}>
-                      Updated {p._updatedAt.slice(0, 10)}
+                      {lang === "ar" ? "تحديث" : "Updated"} {p._updatedAt.slice(0, 10)}
                     </time>
                   ) : null}
                 </Link>
@@ -91,14 +102,24 @@ export default async function BlogIndexPage() {
             ))}
           </ul>
         ) : client ? (
-          <p className="mt-8 text-cb-text">لا توجد مقالات منشورة بعد في Sanity.</p>
+          <p className="mt-8 text-cb-text">{blogCopy.noPosts}</p>
         ) : null}
 
+        <section className="mt-14 border-t border-cb-border pt-10">
+          <h2 className="font-serif text-xl font-semibold text-cb-text-strong">{blogCopy.seoSectionTitle}</h2>
+          <p className="mt-3 text-sm leading-relaxed text-cb-text">{blogCopy.seoSectionBody}</p>
+          <SeoRelatedLinks
+            className="mt-5"
+            ariaLabel={blogCopy.relatedLinksAria}
+            links={getBlogRelatedLinks(lang)}
+          />
+        </section>
+
         <div className="mt-6">
-          <ShareButtons title="Cookie Bite Blog: Dessert Tips & Gift Ideas" />
+          <ShareButtons title={blogCopy.title} />
         </div>
         <Link href="/shop" className={buttonClassName("primary", "mt-8 inline-flex rounded-full px-8")}>
-          Shop while you wait
+          {blogCopy.shopCta}
         </Link>
       </div>
     </div>

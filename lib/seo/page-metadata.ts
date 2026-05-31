@@ -11,6 +11,8 @@ export type LocalizedPageKey =
   | "/shop"
   | "/gift-box"
   | "/gift-box/build"
+  | "/delivery/new-cairo"
+  | "/blog"
   | "/our-story"
   | "/help/faq"
   | "/contact"
@@ -47,26 +49,28 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
   },
   "/shop": {
     en: {
-      title: "Shop Cookies in New Cairo",
+      title: "Shop Handcrafted Cookies Online — New Cairo",
       description:
-        "Browse Cookie Bite flavors, compare prices, and order fresh handcrafted cookies online in New Cairo.",
+        "Browse Cookie Bite flavors — classics, stuffed cookies, seasonal drops, and gift-ready treats. Filter by category, order fresh cookies online with delivery in New Cairo.",
       keywords: [
         "shop cookies cairo",
         "buy cookies online egypt",
-        "new cairo bakery shop",
+        "order cookies new cairo",
         "cookie bite flavors",
+        "handcrafted cookies fifth settlement",
+        "cookie delivery cairo online",
       ],
     },
     ar: {
-      title: "تسوّق الكوكيز | كوكي بايت — القاهرة الجديدة",
+      title: "تسوّق الكوكيز أونلاين — كوكي بايت | القاهرة الجديدة",
       description:
-        "اكتشف جميع نكهات كوكيز كوكي بايت في القاهرة الجديدة. اطلب كوكيزك المفضلة أونلاين بأسعار واضحة وتوصيل طازج.",
+        "تصفّح نكهات كوكي بايت: كلاسيكيات، محشية، موسمية، وهدايا. صفِّ حسب الفئة واطلب كوكيز طازجة مع توصيل في التجمع الخامس والقاهرة الجديدة.",
       keywords: [
         "تسوق كوكيز القاهرة الجديدة",
         "اشتري كوكيز اونلاين مصر",
-        "نكهات كوكيز كوكي بايت",
-        "مخبوزات القاهرة الجديدة",
-        "كوكيز طازجة بالتوصيل",
+        "طلب كوكيز التجمع الخامس",
+        "نكهات كوكي بايت",
+        "توصيل كوكيز القاهرة",
       ],
     },
   },
@@ -121,6 +125,56 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
         "بناء صندوق حلويات",
         "هدايا كوكيز التجمع الخامس",
         "تخصيص صندوق هدايا",
+      ],
+    },
+  },
+  "/delivery/new-cairo": {
+    en: {
+      title: "Cookie Delivery in New Cairo — Fifth Settlement",
+      description:
+        "Fresh Cookie Bite cookie and gift box delivery across New Cairo compounds. Free delivery over 500 EGP, small-batch baking, WhatsApp support from Fifth Settlement.",
+      keywords: [
+        "cookie delivery new cairo",
+        "cookie delivery fifth settlement",
+        "dessert delivery cairo egypt",
+        "cookie bite delivery zones",
+        "fresh cookies delivered new cairo",
+      ],
+    },
+    ar: {
+      title: "توصيل الكوكيز في القاهرة الجديدة | كوكي بايت",
+      description:
+        "توصيل كوكيز وصناديق هدايا كوكي بايت الطازجة في التجمع الخامس والكمبوندات. توصيل مجاني للطلبات المؤهلة، خبز على دفعات صغيرة، دعم واتساب.",
+      keywords: [
+        "توصيل كوكيز القاهرة الجديدة",
+        "توصيل حلويات التجمع الخامس",
+        "توصيل كوكي بايت",
+        "طلب كوكيز بالتوصيل القاهرة",
+      ],
+    },
+  },
+  "/blog": {
+    en: {
+      title: "Cookie Blog — Gifting Tips & New Cairo Dessert Guides",
+      description:
+        "Cookie Bite blog: cookie gifting ideas, seasonal flavor guides, celebration planning, and kitchen updates from New Cairo. Practical tips for ordering and gifting.",
+      keywords: [
+        "cookie blog cairo",
+        "cookie gift ideas egypt",
+        "dessert tips new cairo",
+        "cookie gifting guide",
+        "cookie bite blog",
+      ],
+    },
+    ar: {
+      title: "مدونة كوكي بايت — أفكار الهدايا ودلائل الكوكيز",
+      description:
+        "مدونة كوكي بايت: أفكار هدايا بالكوكيز، دلائل النكهات الموسمية، تخطيط الاحتفالات، وتحديثات من مطبخنا في القاهرة الجديدة.",
+      keywords: [
+        "مدونة كوكيز القاهرة",
+        "أفكار هدايا كوكيز",
+        "نصائح حلويات مصر",
+        "دليل هدايا الكوكيز",
       ],
     },
   },
