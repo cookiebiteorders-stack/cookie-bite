@@ -22,6 +22,31 @@ function isBadgeFilter(v: string): v is BadgeFilter {
   return v === "bestseller" || v === "new" || v === "trending";
 }
 
+function priceBoundsFromCatalog(catalog: ShopProduct[]) {
+  if (!catalog.length) return { min: 0, max: 0 };
+  let min = catalog[0].price;
+  let max = catalog[0].price;
+  for (const p of catalog) {
+    if (p.price < min) min = p.price;
+    if (p.price > max) max = p.price;
+  }
+  return { min, max };
+}
+
+function isMinPriceFilterActive(
+  minPrice: number | null,
+  bounds: { min: number; max: number },
+): boolean {
+  return minPrice != null && Number.isFinite(minPrice) && minPrice > bounds.min;
+}
+
+function isMaxPriceFilterActive(
+  maxPrice: number | null,
+  bounds: { min: number; max: number },
+): boolean {
+  return maxPrice != null && Number.isFinite(maxPrice) && maxPrice < bounds.max;
+}
+
 type ApiProduct = {
   id: string;
   slug: string;
@@ -210,10 +235,19 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
           normalizeProduct(row, t("product.fallbackDescription"), lang),
         );
         setCatalog(normalized);
+        const bounds = priceBoundsFromCatalog(normalized);
         const minParam = Number(searchParams.get("min"));
         const maxParam = Number(searchParams.get("max"));
-        if (Number.isFinite(minParam)) setMinPrice(minParam);
-        if (Number.isFinite(maxParam)) setMaxPrice(maxParam);
+        if (Number.isFinite(minParam) && minParam > bounds.min && minParam <= bounds.max) {
+          setMinPrice(minParam);
+        } else {
+          setMinPrice(null);
+        }
+        if (Number.isFinite(maxParam) && maxParam < bounds.max && maxParam >= bounds.min) {
+          setMaxPrice(maxParam);
+        } else {
+          setMaxPrice(null);
+        }
       } catch (e) {
         if (!active) return;
         const message =
@@ -243,16 +277,17 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
     [catalog],
   );
 
-  const priceBounds = useMemo(() => {
-    if (!catalog.length) return { min: 0, max: 0 };
-    let min = catalog[0].price;
-    let max = catalog[0].price;
-    for (const p of catalog) {
-      if (p.price < min) min = p.price;
-      if (p.price > max) max = p.price;
+  const priceBounds = useMemo(() => priceBoundsFromCatalog(catalog), [catalog]);
+
+  useEffect(() => {
+    if (!catalog.length) return;
+    if (minPrice != null && !isMinPriceFilterActive(minPrice, priceBounds)) {
+      setMinPrice(null);
     }
-    return { min, max };
-  }, [catalog]);
+    if (maxPrice != null && !isMaxPriceFilterActive(maxPrice, priceBounds)) {
+      setMaxPrice(null);
+    }
+  }, [catalog.length, priceBounds.min, priceBounds.max, minPrice, maxPrice]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -262,8 +297,8 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
     if (onlyBest) params.set("best", "1");
     if (inStockOnly) params.set("stock", "1");
     if (badgeFilter !== "all") params.set("badge", badgeFilter);
-    if (minPrice != null && minPrice > priceBounds.min) params.set("min", String(minPrice));
-    if (maxPrice != null && maxPrice < priceBounds.max) params.set("max", String(maxPrice));
+    if (isMinPriceFilterActive(minPrice, priceBounds)) params.set("min", String(minPrice));
+    if (isMaxPriceFilterActive(maxPrice, priceBounds)) params.set("max", String(maxPrice));
     router.replace(params.toString() ? `${pathname}?${params.toString()}` : pathname);
   }, [
     cat,
@@ -301,11 +336,11 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
     if (inStockOnly) {
       list = list.filter((p) => p.inStock);
     }
-    if (minPrice != null) {
-      list = list.filter((p) => p.price >= minPrice);
+    if (isMinPriceFilterActive(minPrice, priceBounds)) {
+      list = list.filter((p) => p.price >= minPrice!);
     }
-    if (maxPrice != null) {
-      list = list.filter((p) => p.price <= maxPrice);
+    if (isMaxPriceFilterActive(maxPrice, priceBounds)) {
+      list = list.filter((p) => p.price <= maxPrice!);
     }
     if (sort === "price_asc") {
       list = [...list].sort((a, b) => a.price - b.price);
@@ -316,7 +351,7 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
       list = [...list];
     }
     return list;
-  }, [catalog, cat, query, onlyBest, badgeFilter, inStockOnly, minPrice, maxPrice, sort]);
+  }, [catalog, cat, query, onlyBest, badgeFilter, inStockOnly, minPrice, maxPrice, sort, priceBounds]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -326,8 +361,8 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
     if (onlyBest) count += 1;
     if (inStockOnly) count += 1;
     if (badgeFilter !== "all") count += 1;
-    if (minPrice != null && minPrice > priceBounds.min) count += 1;
-    if (maxPrice != null && maxPrice < priceBounds.max) count += 1;
+    if (isMinPriceFilterActive(minPrice, priceBounds)) count += 1;
+    if (isMaxPriceFilterActive(maxPrice, priceBounds)) count += 1;
     return count;
   }, [cat, query, sort, onlyBest, inStockOnly, badgeFilter, minPrice, maxPrice, priceBounds.min, priceBounds.max]);
 
@@ -338,8 +373,8 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
     setOnlyBest(false);
     setInStockOnly(false);
     setBadgeFilter("all");
-    setMinPrice(priceBounds.min);
-    setMaxPrice(priceBounds.max);
+    setMinPrice(null);
+    setMaxPrice(null);
   };
 
   return (
@@ -424,21 +459,41 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
               <div className="flex items-center gap-2">
                 <input
                   type="number"
-                  min={priceBounds.min}
-                  max={priceBounds.max}
-                  value={minPrice ?? ""}
-                  onChange={(e) => setMinPrice(e.target.value ? Number(e.target.value) : null)}
+                  min={priceBounds.min || undefined}
+                  max={priceBounds.max || undefined}
+                  value={isMinPriceFilterActive(minPrice, priceBounds) ? minPrice! : ""}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    if (!raw) {
+                      setMinPrice(null);
+                      return;
+                    }
+                    const n = Number(raw);
+                    if (!Number.isFinite(n)) return;
+                    setMinPrice(n);
+                  }}
                   placeholder={t("pages.shop.minEgp")}
                   className="cb-pl-input min-h-10 w-full rounded-xl px-3 py-2 text-sm"
+                  aria-label={t("pages.shop.minEgp")}
                 />
                 <input
                   type="number"
-                  min={priceBounds.min}
-                  max={priceBounds.max}
-                  value={maxPrice ?? ""}
-                  onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : null)}
+                  min={priceBounds.min || undefined}
+                  max={priceBounds.max || undefined}
+                  value={isMaxPriceFilterActive(maxPrice, priceBounds) ? maxPrice! : ""}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    if (!raw) {
+                      setMaxPrice(null);
+                      return;
+                    }
+                    const n = Number(raw);
+                    if (!Number.isFinite(n)) return;
+                    setMaxPrice(n);
+                  }}
                   placeholder={t("pages.shop.maxEgp")}
                   className="cb-pl-input min-h-10 w-full rounded-xl px-3 py-2 text-sm"
+                  aria-label={t("pages.shop.maxEgp")}
                 />
               </div>
               <button
