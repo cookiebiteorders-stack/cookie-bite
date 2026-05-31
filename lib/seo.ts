@@ -307,6 +307,27 @@ export function buildFaqPageJsonLd(
   });
 }
 
+export function buildHowToJsonLd(input: {
+  name: string;
+  description: string;
+  path: string;
+  steps: Array<{ name: string; text: string }>;
+}): string {
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name: input.name,
+    description: input.description,
+    url: `${APP_URL}${input.path.startsWith("/") ? input.path : `/${input.path}`}`,
+    step: input.steps.map((step, index) => ({
+      "@type": "HowToStep",
+      position: index + 1,
+      name: step.name,
+      text: step.text,
+    })),
+  });
+}
+
 export function brandSameAsLinks(): string[] {
   return [
     BRAND.social.instagram,

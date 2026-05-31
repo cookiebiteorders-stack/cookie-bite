@@ -514,6 +514,13 @@ export const translations: Record<Lang, Dictionary> = {
           "Branded sleeves, scheduled delivery, and dedicated support for teams who want to say thank you deliciously.",
         contactCorporate: "Contact for corporate orders",
         stackedAlt: "Stacked Cookie Bite gift boxes",
+        seoSectionTitle: "Custom cookie gift boxes in New Cairo",
+        seoSectionBody:
+          "Whether you need a birthday surprise, Eid treat, or corporate thank-you, Cookie Bite makes gifting easy. Browse ready-made boxes or use our builder to pick every cookie, brownie, and ribbon — then add a handwritten-style message card.",
+        seoLinkBuilder: "Build your own gift box",
+        seoLinkCollection: "Shop the gifts collection",
+        seoLinkHelp: "Gifting help & FAQs",
+        seoLinkCorporate: "Corporate & bulk orders",
       },
       giftBoxBuilder: {
         tag: "✦ Build Your Gift Box",

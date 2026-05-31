@@ -1,24 +1,55 @@
-import type { Metadata } from "next";
 import { GiftBoxBuilder } from "@/components/gift-box-builder/gift-box-builder";
+import { GiftBoxBuilderSeoIntro } from "@/components/gift-box-builder/gift-box-builder-seo-intro";
+import { JsonLdScript } from "@/components/seo/json-ld-script";
+import {
+  getGiftBoxBuilderHowTo,
+  getGiftBoxPageFaq,
+} from "@/lib/content/gift-box-seo";
 import { translations } from "@/lib/i18n/translations";
-import { getLangFromCookies } from "@/lib/seo";
+import {
+  buildBreadcrumbJsonLd,
+  buildFaqPageJsonLd,
+  buildHowToJsonLd,
+  buildLocalizedPageMetadata,
+  getLangFromCookies,
+} from "@/lib/seo";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata() {
   const lang = await getLangFromCookies();
-  const isAr = lang === "ar";
-  return {
-    title: isAr
-      ? "صمّم صندوق هديتك | كوكي بايت"
-      : "Build Your Gift Box | Cookie Bite",
-    description: isAr
-      ? "اختر الصندوق، املأه بمخبوزاتك المفضلة، خصّص التغليف والرسالة، واطلب في خطوات بسيطة."
-      : "Choose a box, fill it with treats, personalize wrapping and message, and checkout in five easy steps.",
-    robots: { index: true, follow: true },
-  };
+  return buildLocalizedPageMetadata("/gift-box/build", lang);
 }
 
 export default async function GiftBoxBuildPage() {
   const lang = await getLangFromCookies();
-  void translations[lang];
-  return <GiftBoxBuilder />;
+  const dict = translations[lang];
+  const howTo = getGiftBoxBuilderHowTo(lang);
+  const faq = getGiftBoxPageFaq(lang);
+
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: (dict.tabs as { home: string }).home, path: "/" },
+    { name: (dict.userMenu as { giftBox: string }).giftBox, path: "/gift-box" },
+    {
+      name: lang === "ar" ? "صمّم صندوقك" : "Build your box",
+      path: "/gift-box/build",
+    },
+  ]);
+
+  const howToJsonLd = buildHowToJsonLd({
+    name: howTo.name,
+    description: howTo.description,
+    path: "/gift-box/build",
+    steps: howTo.steps,
+  });
+
+  const faqJsonLd = buildFaqPageJsonLd(faq);
+
+  return (
+    <>
+      <JsonLdScript id="gift-box-build-breadcrumb" json={breadcrumbJsonLd} />
+      <JsonLdScript id="gift-box-build-howto" json={howToJsonLd} />
+      <JsonLdScript id="gift-box-build-faq" json={faqJsonLd} />
+      <GiftBoxBuilderSeoIntro lang={lang} />
+      <GiftBoxBuilder />
+    </>
+  );
 }

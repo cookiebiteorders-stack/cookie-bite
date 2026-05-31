@@ -305,53 +305,13 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
           </p>
         </div>
       </header>
-      <div className="mx-auto max-w-7xl cb-gutter pt-10">
 
-        {initialTrending.length > 0 ? (
-          <section className="mb-10 border-b border-cb-border/60 pb-10" aria-labelledby="shop-trending-heading">
-            <SectionHeading
-              align="left"
-              className="mb-6 text-start"
-              eyebrow={t("pages.shop.trendingEyebrow")}
-              title={
-                <span id="shop-trending-heading">{t("pages.shop.trendingTitle")}</span>
-              }
-              subtitle={t("pages.shop.trendingSubtitle")}
-              variant="editorial"
-            />
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {initialTrending.map((p) => (
-                <ProductCard
-                  key={`trending-${p.id}`}
-                  product={p}
-                  layout="compact"
-                  wishlisted={p.productUuid ? wishlistUuids.has(p.productUuid) : false}
-                  onWishlistToggled={onWishlistToggled}
-                />
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        <section
-          id="shop-catalog"
-          className="scroll-mt-24"
-          aria-labelledby="shop-catalog-heading"
+      <div className="mx-auto max-w-7xl cb-gutter pt-6 md:pt-8">
+        <div
+          ref={filterAnchorRef}
+          id="shop-filters"
+          className="cb-pl-shop-filters sticky top-16 z-20 mb-8 md:mb-10"
         >
-          <SectionHeading
-            align="left"
-            className="mb-5 text-start"
-            eyebrow={t("pages.shop.catalogEyebrow")}
-            title={<span id="shop-catalog-heading">{t("pages.shop.catalogTitle")}</span>}
-            subtitle={t("pages.shop.catalogSubtitle")}
-            variant="editorial"
-          />
-
-          <div
-            ref={filterAnchorRef}
-            id="shop-filters"
-            className="cb-pl-shop-filters sticky top-16 z-20 mb-6"
-          >
             <div className="cb-pl-shop-filters__row--primary">
               <input
                 type="search"
@@ -513,7 +473,45 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
                 ))}
               </div>
             </div>
-          </div>
+        </div>
+
+        {initialTrending.length > 0 ? (
+          <section
+            className="mb-10 border-b border-cb-border/60 pb-10"
+            aria-labelledby="shop-trending-heading"
+          >
+            <SectionHeading
+              align="left"
+              className="mb-6 text-start"
+              eyebrow={t("pages.shop.trendingEyebrow")}
+              title={
+                <span id="shop-trending-heading">{t("pages.shop.trendingTitle")}</span>
+              }
+              subtitle={t("pages.shop.trendingSubtitle")}
+              variant="editorial"
+            />
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {initialTrending.map((p) => (
+                <ProductCard
+                  key={`trending-${p.id}`}
+                  product={p}
+                  layout="compact"
+                  wishlisted={p.productUuid ? wishlistUuids.has(p.productUuid) : false}
+                  onWishlistToggled={onWishlistToggled}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <section
+          id="shop-catalog"
+          className="scroll-mt-24"
+          aria-labelledby="shop-catalog-heading"
+        >
+          <h2 id="shop-catalog-heading" className="sr-only">
+            {t("pages.shop.catalogTitle")}
+          </h2>
 
         {loading ? (
           <div className="grid gap-6 py-8 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
@@ -545,7 +543,6 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
           </div>
         ) : null}
         </section>
-
       </div>
     </div>
   );

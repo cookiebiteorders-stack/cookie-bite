@@ -10,6 +10,7 @@ export type LocalizedPageKey =
   | "/"
   | "/shop"
   | "/gift-box"
+  | "/gift-box/build"
   | "/our-story"
   | "/help/faq"
   | "/contact"
@@ -71,25 +72,55 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
   },
   "/gift-box": {
     en: {
-      title: "Cookie Gift Boxes in New Cairo",
+      title: "Cookie Gift Boxes & Custom Builds in New Cairo",
       description:
-        "Explore premium Cookie Bite gift boxes for birthdays, corporate gifting, and celebrations in New Cairo.",
+        "Shop ready-made Cookie Bite gift boxes or build your own — pick treats, ribbon, wrap, and a message. Delivery in New Cairo for birthdays, Eid, and corporate gifting.",
       keywords: [
         "cookie gift box cairo",
-        "birthday cookie gifts",
+        "build your own gift box",
+        "custom cookie gift box egypt",
+        "birthday cookie gifts new cairo",
         "corporate gift box egypt",
-        "premium dessert gifts",
+        "eid cookie gifts cairo",
       ],
     },
     ar: {
-      title: "صناديق هدايا الكوكيز | كوكي بايت — القاهرة الجديدة",
+      title: "صناديق هدايا الكوكيز — صمّم صندوقك | كوكي بايت القاهرة الجديدة",
       description:
-        "صناديق هدايا كوكيز فاخرة لأعياد الميلاد والمناسبات وهدايا الشركات في القاهرة الجديدة. تغليف احترافي وبطاقة هدية بخط اليد.",
+        "صناديق هدايا جاهزة أو صمّم صندوقك بنفسك: اختر الكوكيز والتغليف والرسالة. توصيل في التجمع الخامس لأعياد الميلاد والعيد وهدايا الشركات.",
       keywords: [
         "صناديق هدايا كوكيز القاهرة",
+        "صمّم صندوق هدايا",
         "هدايا عيد ميلاد بالكوكيز",
         "هدايا شركات مصر",
-        "هدايا حلويات فاخرة القاهرة الجديدة",
+        "هدايا عيد كوكيز",
+        "كوكيز هدايا التجمع الخامس",
+      ],
+    },
+  },
+  "/gift-box/build": {
+    en: {
+      title: "Build Your Own Cookie Gift Box — New Cairo",
+      description:
+        "Design a custom Cookie Bite gift box in 5 steps: choose size, add cookies and treats, personalize ribbon and message, preview in 3D, and order for delivery in New Cairo.",
+      keywords: [
+        "build cookie gift box",
+        "custom dessert gift box cairo",
+        "personalized cookie box egypt",
+        "gift box builder cookie bite",
+        "curated cookie box new cairo",
+      ],
+    },
+    ar: {
+      title: "صمّم صندوق هدايا الكوكيز — كوكي بايت | القاهرة الجديدة",
+      description:
+        "صمّم صندوق هديتك في 5 خطوات: اختر الحجم، أضف الكوكيز والحلويات، خصّص الشريطة والرسالة، شاهد المعاينة ثلاثية الأبعاد، واطلب التوصيل في القاهرة الجديدة.",
+      keywords: [
+        "صمّم صندوق هدايا كوكيز",
+        "صندوق هدايا مخصص القاهرة",
+        "بناء صندوق حلويات",
+        "هدايا كوكيز التجمع الخامس",
+        "تخصيص صندوق هدايا",
       ],
     },
   },

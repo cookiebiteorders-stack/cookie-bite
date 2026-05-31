@@ -559,9 +559,10 @@ html[dir="rtl"] .cb-pl-body {
   gap: 0.75rem;
   border-radius: var(--radius-pl-lg);
   border: 1px solid var(--color-border-soft);
-  background: var(--color-white);
+  background: color-mix(in srgb, var(--color-white) 94%, transparent);
   padding: 1rem;
   box-shadow: var(--shadow-pl-nav);
+  backdrop-filter: blur(10px);
 }
 
 .cb-pl-shop-filters__row {
