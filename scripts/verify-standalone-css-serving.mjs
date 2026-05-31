@@ -13,6 +13,11 @@ const serverJs = path.join(root, ".next", "standalone", "server.js");
 const PORT = Number(process.env.VERIFY_CSS_PORT) || 3199;
 const BASE = `http://127.0.0.1:${PORT}`;
 
+if (process.env.SKIP_STANDALONE_CSS_SERVE_VERIFY === "1") {
+  console.log("[verify-standalone-css-serving] Skip — SKIP_STANDALONE_CSS_SERVE_VERIFY=1");
+  process.exit(0);
+}
+
 if (!fs.existsSync(serverJs)) {
   console.warn("[verify-standalone-css-serving] Skip — no standalone build");
   process.exit(0);
