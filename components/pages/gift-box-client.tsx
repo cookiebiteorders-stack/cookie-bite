@@ -37,8 +37,8 @@ export function GiftBoxClient() {
                 {t("pages.giftBox.exploreBoxes")}
               </Link>
               <Link
-                href="/shop"
-                className={buttonClassName("outline", "rounded-full px-8")}
+                href="/gift-box/build"
+                className={buttonClassName("primary", "rounded-full px-8")}
               >
                 {t("pages.giftBox.buildCustom")}
               </Link>
