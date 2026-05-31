@@ -38,7 +38,7 @@ export function GiftBoxClient() {
               </Link>
               <Link
                 href="/gift-box/build"
-                className={buttonClassName("primary", "rounded-full px-8")}
+                className={buttonClassName("outline", "rounded-full px-8")}
               >
                 {t("pages.giftBox.buildCustom")}
               </Link>
@@ -91,6 +91,37 @@ export function GiftBoxClient() {
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="bg-cb-surface py-14">
+        <div className="mx-auto max-w-3xl cb-gutter text-center sm:text-start">
+          <h2 className="font-serif text-2xl font-semibold text-cb-text-strong sm:text-3xl">
+            {t("pages.giftBox.seoSectionTitle")}
+          </h2>
+          <p className="mt-4 text-cb-text leading-relaxed">{t("pages.giftBox.seoSectionBody")}</p>
+          <ul className="mt-6 flex flex-wrap justify-center gap-4 text-sm font-semibold sm:justify-start">
+            <li>
+              <Link href="/gift-box/build" className="text-cb-terracotta-dark underline-offset-2 hover:underline">
+                {t("pages.giftBox.seoLinkBuilder")}
+              </Link>
+            </li>
+            <li>
+              <Link href="/collections/gifts" className="text-cb-terracotta-dark underline-offset-2 hover:underline">
+                {t("pages.giftBox.seoLinkCollection")}
+              </Link>
+            </li>
+            <li>
+              <Link href="/help/gifting" className="text-cb-terracotta-dark underline-offset-2 hover:underline">
+                {t("pages.giftBox.seoLinkHelp")}
+              </Link>
+            </li>
+            <li>
+              <Link href="/corporate-gifting" className="text-cb-terracotta-dark underline-offset-2 hover:underline">
+                {t("pages.giftBox.seoLinkCorporate")}
+              </Link>
+            </li>
+          </ul>
         </div>
       </section>
 

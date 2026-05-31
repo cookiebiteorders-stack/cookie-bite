@@ -37,10 +37,10 @@ export function HomeHero() {
           </p>
           <div className="flex flex-wrap gap-4">
             <Link
-              href="/gift-box"
+              href="/gift-box/build"
               className={buttonClassName("primary", "rounded-full px-8")}
             >
-              Build your box
+              Build your gift box
             </Link>
             <Link
               href="/our-story"

@@ -280,7 +280,7 @@ export function GiftBoxBuilder() {
         <main className="gb-main">
           {!showSuccess && state.currentStep === 1 && (
             <div className="gb-step-panel active">
-              <h1 className="gb-step-title">{t("pages.giftBoxBuilder.s1Title")}</h1>
+              <h2 className="gb-step-title">{t("pages.giftBoxBuilder.s1Title")}</h2>
               <p className="gb-step-sub">{t("pages.giftBoxBuilder.s1Sub")}</p>
               <div className="gb-box-grid">
                 {GIFT_BOX_BUILDER_DATA.boxes.map((b) => (
@@ -319,7 +319,7 @@ export function GiftBoxBuilder() {
 
           {!showSuccess && state.currentStep === 2 && (
             <div className="gb-step-panel active">
-              <h1 className="gb-step-title">{t("pages.giftBoxBuilder.s2Title")}</h1>
+              <h2 className="gb-step-title">{t("pages.giftBoxBuilder.s2Title")}</h2>
               <p className="gb-step-sub">{t("pages.giftBoxBuilder.s2Sub")}</p>
               <div className="gb-filter-row">
                 {GIFT_BOX_BUILDER_DATA.categories.map((c) => (
@@ -385,7 +385,7 @@ export function GiftBoxBuilder() {
 
           {!showSuccess && state.currentStep === 3 && (
             <div className="gb-step-panel active">
-              <h1 className="gb-step-title">{t("pages.giftBoxBuilder.s3Title")}</h1>
+              <h2 className="gb-step-title">{t("pages.giftBoxBuilder.s3Title")}</h2>
               <p className="gb-step-sub">{t("pages.giftBoxBuilder.s3Sub")}</p>
               <div className="gb-section-block">
                 <input
@@ -461,7 +461,7 @@ export function GiftBoxBuilder() {
 
           {!showSuccess && state.currentStep === 4 && (
             <div className="gb-step-panel active">
-              <h1 className="gb-step-title">{t("pages.giftBoxBuilder.s4Title")}</h1>
+              <h2 className="gb-step-title">{t("pages.giftBoxBuilder.s4Title")}</h2>
               <p className="gb-step-sub">{t("pages.giftBoxBuilder.s4Sub")}</p>
               <div
                 className="gb-scene"
@@ -510,7 +510,7 @@ export function GiftBoxBuilder() {
 
           {!showSuccess && state.currentStep === 5 && (
             <div className="gb-step-panel active">
-              <h1 className="gb-step-title">{t("pages.giftBoxBuilder.s5Title")}</h1>
+              <h2 className="gb-step-title">{t("pages.giftBoxBuilder.s5Title")}</h2>
               <p className="gb-step-sub">{t("pages.giftBoxBuilder.s5Sub")}</p>
               <ul style={{ listStyle: "none", marginBottom: 24 }}>
                 {Object.entries(state.items).map(([id, qty]) => {
@@ -566,7 +566,7 @@ export function GiftBoxBuilder() {
           {showSuccess && (
             <div className="gb-success-screen show">
               <div style={{ fontSize: 72 }}>🎊</div>
-              <h1 className="gb-step-title">{t("pages.giftBoxBuilder.successTitle")}</h1>
+              <h2 className="gb-step-title">{t("pages.giftBoxBuilder.successTitle")}</h2>
               <p className="gb-step-sub">{t("pages.giftBoxBuilder.successSub")}</p>
               <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
                 <button type="button" className="gb-btn-back" onClick={startOver}>

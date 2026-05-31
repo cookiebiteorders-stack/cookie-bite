@@ -107,7 +107,7 @@ export function MobileStoryView() {
         </p>
         <div className="flex gap-2.5 justify-center">
           <Link href="/shop" className="mobile-btn-primary mobile-btn-pill">Shop now</Link>
-          <Link href="/gift-box" className="mobile-btn-outline mobile-btn-pill">Build your box</Link>
+          <Link href="/gift-box/build" className="mobile-btn-outline mobile-btn-pill">Build your gift box</Link>
         </div>
       </div>
 

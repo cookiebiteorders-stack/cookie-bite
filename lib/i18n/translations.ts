@@ -568,6 +568,16 @@ export const translations: Record<Lang, Dictionary> = {
         upsellConfirm:
           'Your box is full! Upgrade to "{name}" ({cap} items) for {price}?',
       },
+      giftBoxBuilderSeo: {
+        title: "Build your own cookie gift box in New Cairo",
+        body:
+          "Choose a box size, fill it with fresh cookies and treats, personalize ribbon and message, preview your box, and order for delivery across Fifth Settlement and nearby areas.",
+        relatedLinksAria: "Related gifting pages",
+        linkGiftBoxes: "Browse gift boxes",
+        linkCorporate: "Corporate gifting",
+        linkGiftingHelp: "Gifting help",
+        linkDelivery: "New Cairo delivery",
+      },
       ourCookies: {
         eyebrow: "Our menu",
         title: "Discover our flavors",
@@ -1393,6 +1403,13 @@ export const translations: Record<Lang, Dictionary> = {
           "تغليف بشعار شركتك، توصيل في المواعيد المحددة، ودعم متخصص لكل طلب جماعي. اجعل «شكرًا» لحظةً لا ينسى الفريق مذاقها.",
         contactCorporate: "تواصل لطلب عرض سعر",
         stackedAlt: "صناديق هدايا Cookie Bite مكدسة",
+        seoSectionTitle: "صناديق هدايا كوكيز مخصصة في القاهرة الجديدة",
+        seoSectionBody:
+          "سواء كانت مناسبة عيد ميلاد أو عيد أو شكر لعميل — كوكي بايت يجعل الهدية أسهل. تصفّح الصناديق الجاهزة أو استخدم أداة البناء لاختيار كل قطعة وتغليف ورسالة.",
+        seoLinkBuilder: "صمّم صندوق هديتك",
+        seoLinkCollection: "مجموعة الهدايا",
+        seoLinkHelp: "مساعدة الهدايا والأسئلة",
+        seoLinkCorporate: "هدايا الشركات والكميات",
       },
       giftBoxBuilder: {
         tag: "✦ صمّم صندوق هديتك",
@@ -1438,6 +1455,16 @@ export const translations: Record<Lang, Dictionary> = {
           "هذا الصندوق يسع {cap} قطع ولديك {total}. ستُزال بعض القطع. متابعة؟",
         upsellConfirm:
           "الصندوق ممتلئ! ترقية إلى «{name}» ({cap} قطع) بـ {price}؟",
+      },
+      giftBoxBuilderSeo: {
+        title: "صمّم صندوق هدايا الكوكيز في القاهرة الجديدة",
+        body:
+          "اختر حجم الصندوق، املأه بكوكيز طازجة وحلويات، خصّص الشريطة والرسالة، شاهد المعاينة، واطلب التوصيل في التجمع الخامس والمناطق القريبة.",
+        relatedLinksAria: "صفحات الهدايا ذات الصلة",
+        linkGiftBoxes: "تصفّح صناديق الهدايا",
+        linkCorporate: "هدايا الشركات",
+        linkGiftingHelp: "مساعدة الهدايا",
+        linkDelivery: "التوصيل في القاهرة الجديدة",
       },
       ourCookies: {
         eyebrow: "قائمتنا",

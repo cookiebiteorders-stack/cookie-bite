@@ -1,13 +1,12 @@
 import Link from "next/link";
 import type { Lang } from "@/lib/i18n/translations";
-import { translations } from "@/lib/i18n/translations";
+import { getGiftBoxBuilderSeoCopy } from "@/lib/i18n/gift-box-builder-seo-copy";
 
 type Props = { lang: Lang };
 
 /** Crawlable intro for the gift box builder — visible to users and search engines. */
 export function GiftBoxBuilderSeoIntro({ lang }: Props) {
-  const dict = translations[lang];
-  const seo = dict.pages.giftBoxBuilderSeo;
+  const seo = getGiftBoxBuilderSeoCopy(lang);
 
   return (
     <section

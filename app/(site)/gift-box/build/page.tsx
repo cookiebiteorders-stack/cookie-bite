@@ -1,6 +1,7 @@
 import { GiftBoxBuilder } from "@/components/gift-box-builder/gift-box-builder";
 import { GiftBoxBuilderSeoIntro } from "@/components/gift-box-builder/gift-box-builder-seo-intro";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
+import { IMAGES } from "@/lib/data";
 import {
   getGiftBoxBuilderHowTo,
   getGiftBoxPageFaq,
@@ -10,13 +11,22 @@ import {
   buildBreadcrumbJsonLd,
   buildFaqPageJsonLd,
   buildHowToJsonLd,
-  buildLocalizedPageMetadata,
+  buildPageMetadata,
   getLangFromCookies,
+  getPageSeoEntry,
 } from "@/lib/seo";
 
 export async function generateMetadata() {
   const lang = await getLangFromCookies();
-  return buildLocalizedPageMetadata("/gift-box/build", lang);
+  const entry = getPageSeoEntry("/gift-box/build", lang);
+  return buildPageMetadata({
+    title: entry.title,
+    description: entry.description,
+    path: "/gift-box/build",
+    keywords: entry.keywords,
+    lang,
+    image: IMAGES.giftBox,
+  });
 }
 
 export default async function GiftBoxBuildPage() {
