@@ -49,7 +49,7 @@ export function ProductAiImagePicker({ open, busy, candidates, onClose, onConfir
       aria-labelledby="ai-image-picker-title"
       onClick={onClose}
     >
-      <motionlessPanel onClick={(e) => e.stopPropagation()}>
+      <MotionlessPanel onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h3 id="ai-image-picker-title" className="text-base font-bold text-cb-text-strong">
@@ -85,12 +85,12 @@ export function ProductAiImagePicker({ open, busy, candidates, onClose, onConfir
         )}
 
         <Footer busy={busy} disabled={picked.length === 0} onClose={onClose} onConfirm={() => onConfirm(picked)} />
-      </motionlessPanel>
+      </MotionlessPanel>
     </div>
   );
 }
 
-function motionlessPanel({
+function MotionlessPanel({
   children,
   onClick,
 }: {

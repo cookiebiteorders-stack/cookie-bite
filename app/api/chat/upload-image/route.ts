@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminAccess } from "@/lib/admin/require-admin";
-import { uploadChatImageFile } from "@/lib/chat/image-attachments";
+import { uploadChatImageFile } from "@/lib/chat/image-attachments.server";
 import { bilingualError } from "@/lib/validations";
 
 export const runtime = "nodejs";

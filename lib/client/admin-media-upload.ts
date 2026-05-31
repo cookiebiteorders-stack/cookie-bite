@@ -4,7 +4,7 @@ import {
   uploadFileToCloudinarySigned,
   type UploadProgress,
 } from "@/lib/client/cloudinary-signed-upload";
-import type { CloudinaryUploadKind } from "@/lib/cloudinary/admin-upload";
+import type { CloudinaryUploadKind } from "@/lib/cloudinary/upload-types";
 
 function networkErrorMessage(err: unknown): string {
   const msg = err instanceof Error ? err.message : "";

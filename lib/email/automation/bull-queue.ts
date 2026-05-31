@@ -1,3 +1,5 @@
+import "@/lib/server-only";
+
 const QUEUE_NAME = "cookie-bite-email";
 
 let queuePromise: Promise<import("bullmq").Queue<{ queueId: string }> | null> | null = null;

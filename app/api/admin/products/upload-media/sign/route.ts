@@ -4,7 +4,7 @@ import {
   requireWritePermission,
 } from "@/lib/admin/require-admin";
 import { createSignedCloudinaryUpload } from "@/lib/cloudinary/signed-upload-params";
-import type { CloudinaryUploadKind } from "@/lib/cloudinary/admin-upload";
+import type { CloudinaryUploadKind } from "@/lib/cloudinary/upload-types";
 import { bilingualError } from "@/lib/validations";
 
 /** توقيع رفع مباشر من المتصفح إلى Cloudinary (يتجاوز حد حجم جسم Route Handler). */

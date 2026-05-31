@@ -19,10 +19,8 @@ import {
   type FunctionCall,
 } from "@google/generative-ai";
 import { TOOL_DECLARATIONS, runTool, type CopilotToolActor, type CopilotToolCall } from "@/lib/admin/copilot/tools";
-import {
-  fetchImageInlineParts,
-  type ChatImageAttachment,
-} from "@/lib/chat/image-attachments";
+import { fetchImageInlineParts } from "@/lib/chat/image-attachments.server";
+import type { ChatImageAttachment } from "@/lib/chat/image-attachments";
 
 export type CopilotMessage = {
   role: "user" | "assistant";

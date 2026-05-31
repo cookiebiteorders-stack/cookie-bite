@@ -1,3 +1,4 @@
+import "@/lib/server-only";
 import sharp from "sharp";
 import {
   CLIENT_IMAGE_TARGET_BYTES,

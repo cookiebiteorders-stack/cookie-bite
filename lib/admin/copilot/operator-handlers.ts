@@ -27,7 +27,7 @@ import {
   removeMediaUrlFromProducts,
   replaceMediaUrlInProducts,
 } from "@/lib/admin/media-mutations";
-import type { CloudinaryUploadKind } from "@/lib/cloudinary/admin-upload";
+import type { CloudinaryUploadKind } from "@/lib/cloudinary/upload-types";
 import { destroyCloudinaryAsset } from "@/lib/cloudinary/manage-resource";
 import {
   buildEnhancedDeliveryUrl,

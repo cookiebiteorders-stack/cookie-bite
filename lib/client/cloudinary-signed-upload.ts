@@ -1,5 +1,5 @@
 import { fetchJson } from "@/lib/http/fetch-json";
-import type { CloudinaryUploadKind } from "@/lib/cloudinary/admin-upload";
+import type { CloudinaryUploadKind } from "@/lib/cloudinary/upload-types";
 
 export type SignedCloudinaryUpload = {
   apiKey: string;

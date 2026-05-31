@@ -6,7 +6,6 @@ import {
   writeEmailLog,
   writeFailedEmail,
 } from "@/lib/email/automation/db";
-import { addEmailBullJob } from "@/lib/email/automation/bull-queue";
 import { processEmailQueueRow } from "@/lib/email/automation/process-job";
 import { isSmartRetriesEnabled } from "@/lib/store/owner-flags";
 
@@ -29,6 +28,7 @@ export async function sendAutomatedEmail(
   }
 
   const queueId = await insertEmailQueue(payload);
+  const { addEmailBullJob } = await import("@/lib/email/automation/bull-queue");
   const bullOk = await addEmailBullJob(queueId);
   if (!bullOk && process.env.EMAIL_USE_DB_QUEUE === "true") {
     /* DB cron will pick up pending rows */

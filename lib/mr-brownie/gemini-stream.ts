@@ -1,8 +1,6 @@
 import { GoogleGenerativeAI, type Part } from "@google/generative-ai";
-import {
-  fetchImageInlineParts,
-  type ChatImageAttachment,
-} from "@/lib/chat/image-attachments";
+import { fetchImageInlineParts } from "@/lib/chat/image-attachments.server";
+import type { ChatImageAttachment } from "@/lib/chat/image-attachments";
 import type { MrBrownieChatMessage } from "@/lib/mr-brownie/gemini";
 import { encodeSseEvent } from "@/lib/ai-chat/stream-parser";
 
