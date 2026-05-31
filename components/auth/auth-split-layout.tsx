@@ -63,7 +63,6 @@ export function AuthSplitLayout({
         <div className="flex min-w-0 flex-1 flex-col items-center justify-center overflow-x-hidden cb-gutter py-8 sm:py-10">
           <div className="mb-6 w-full max-w-[23.5rem]">
             <SiteLogoLink
-              showTagline={false}
               className="justify-center md:justify-start"
             />
           </div>

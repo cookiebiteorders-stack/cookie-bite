@@ -158,7 +158,7 @@ export const createManualInvoiceSchema = z.object({
 export function defaultSeller() {
   return {
     name: "Cookie Bite",
-    logo_url: "/brand/cookie-bite-wordmark.png",
+    logo_url: "/brand/logo-mark.svg",
     address: BRAND.location,
     email: BRAND.email,
     phone: BRAND.phoneDisplay,

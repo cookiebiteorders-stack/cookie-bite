@@ -113,10 +113,7 @@ export function AuthLayout({
                 >
                   <ArrowLeft className="h-4 w-4" aria-hidden />
                 </Link>
-                <SiteLogoLink
-                  showTagline={false}
-                  className="flex-1 justify-center md:flex-none md:justify-start"
-                />
+                <SiteLogoLink className="flex-1 justify-center md:flex-none md:justify-start" />
                 <span className="w-10 md:hidden" aria-hidden />
               </div>
 

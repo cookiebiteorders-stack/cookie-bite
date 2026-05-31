@@ -2,7 +2,7 @@ import { BRAND } from "@/lib/brand";
 
 export const SITE = {
   name: "Cookie Bite",
-  tagline: "A bite of happiness — on every screen.",
+  tagline: "Small-batch cookies · New Cairo",
   handle: "@cookiebite8",
 };
 

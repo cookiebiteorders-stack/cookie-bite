@@ -1,34 +1,36 @@
-import Image from "next/image";
 import Link from "next/link";
+import { LogoMark } from "@/components/brand/logo-mark";
 import { SITE } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  /** @deprecated الشعار الفرعي مدمج في cookie-bite-wordmark.png */
-  showTagline?: boolean;
   className?: string;
 };
 
-/** شعار الترويسة — PNG أفقي (CB + COOKIE BITE + شريط on every screen). */
+/** شعار الترويسة — أيقونة CB + اسم العلامة (بدون شعار PNG القديم وشريط on every screen). */
 export function SiteLogoLink({ className }: Props) {
   return (
     <Link
       href="/"
       className={cn(
-        "group flex min-w-0 shrink-0 items-center",
+        "group flex min-w-0 shrink-0 items-center gap-2.5 sm:gap-3",
         "transition-[opacity,transform] duration-300 hover:opacity-90",
         className,
       )}
+      aria-label={SITE.name}
     >
-      <Image
-        src="/brand/cookie-bite-wordmark.png"
-        alt={`${SITE.name} — ${SITE.tagline}`}
-        width={360}
-        height={96}
-        priority
-        className="h-9 w-auto max-w-[min(260px,58vw)] object-contain object-left sm:h-10 sm:max-w-[280px]"
-        sizes="(max-width: 640px) 58vw, 280px"
+      <LogoMark
+        className="h-9 w-9 text-cb-brand-logo sm:h-10 sm:w-10"
+        aria-hidden
       />
+      <span
+        className={cn(
+          "truncate font-sans text-base font-bold uppercase leading-none tracking-[0.14em] text-cb-brand-logo",
+          "sm:text-lg sm:tracking-[0.16em]",
+        )}
+      >
+        {SITE.name}
+      </span>
     </Link>
   );
 }
