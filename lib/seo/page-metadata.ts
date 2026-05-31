@@ -179,6 +179,31 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
       ],
     },
   },
+  "/our-cookies": {
+    en: {
+      title: "Our Cookie Flavors & Collections — New Cairo",
+      description:
+        "Explore Cookie Bite flavor collections — classics, chocolate lovers, stuffed cookies, premium specials, and seasonal drops. Handcrafted in Fifth Settlement with delivery in New Cairo.",
+      keywords: [
+        "cookie flavors cairo",
+        "cookie menu egypt",
+        "artisan cookies new cairo",
+        "cookie bite collections",
+        "seasonal cookies fifth settlement",
+      ],
+    },
+    ar: {
+      title: "نكهاتنا ومجموعات الكوكيز | كوكي بايت — القاهرة الجديدة",
+      description:
+        "اكتشف مجموعات كوكي بايت — كلاسيكيات، عشاق الشوكولاتة، محشية، فاخرة، وموسمية. مخبوزة يدوياً في التجمع الخامس مع توصيل في القاهرة الجديدة.",
+      keywords: [
+        "نكهات كوكيز القاهرة",
+        "قائمة كوكيز مصر",
+        "كوكيز التجمع الخامس",
+        "مجموعات كوكي بايت",
+      ],
+    },
+  },
   "/our-story": {
     en: {
       title: "Our Story",
@@ -270,3 +295,6 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
         "هدايا فرق عمل القاهرة",
         "هدايا مناسبات شركات",
       ],
+    },
+  },
+};

@@ -4,11 +4,15 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Cookie, Heart, Leaf, Sparkles, Star } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
-import { SectionHeading } from "@/components/sections/section-heading";
+import { SeoRelatedLinks } from "@/components/seo/seo-related-links";
 import { ProductCard } from "@/components/product/product-card";
 import { buttonClassName } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/providers/language-provider";
+import {
+  getOurCookiesCollectionLinks,
+  getOurCookiesRelatedLinks,
+} from "@/lib/content/our-cookies-seo";
 import { fetchJson } from "@/lib/http/fetch-json";
 import type { Product } from "@/lib/data";
 import type { OurCookieSectionIcon } from "@/lib/data";
@@ -128,10 +132,22 @@ export function OurCookiesClient() {
   return (
     <div className="bg-cb-cream pb-24 pt-12">
       <div className="mx-auto max-w-7xl cb-gutter">
-        <SectionHeading
-          eyebrow={t("pages.ourCookies.eyebrow")}
-          title={t("pages.ourCookies.title")}
-          subtitle={t("pages.ourCookies.subtitle")}
+        <header className="mx-auto mb-8 max-w-3xl text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-cb-terracotta-dark">
+            {t("pages.ourCookies.eyebrow")}
+          </p>
+          <h1 className="font-serif text-[clamp(1.75rem,2.2vw+1rem,2.5rem)] font-semibold text-cb-text-strong">
+            {t("pages.ourCookies.title")}
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl text-cb-text-muted sm:text-lg">
+            {t("pages.ourCookies.subtitle")}
+          </p>
+        </header>
+
+        <SeoRelatedLinks
+          className="mb-8 flex justify-center"
+          ariaLabel={t("pages.ourCookies.collectionsNavAria")}
+          links={getOurCookiesCollectionLinks(lang)}
         />
 
         <p className="mb-8 text-center text-sm text-cb-text-muted">
@@ -272,6 +288,20 @@ export function OurCookiesClient() {
             </Link>
           </div>
         ) : null}
+
+        <section className="mt-16 border-t border-cb-border pt-10">
+          <h2 className="font-serif text-xl font-semibold text-cb-text-strong sm:text-2xl">
+            {t("pages.ourCookies.seoSectionTitle")}
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cb-text sm:text-base">
+            {t("pages.ourCookies.seoSectionBody")}
+          </p>
+          <SeoRelatedLinks
+            className="mt-5"
+            ariaLabel={t("pages.ourCookies.seoRelatedAria")}
+            links={getOurCookiesRelatedLinks(lang)}
+          />
+        </section>
       </div>
     </div>
   );

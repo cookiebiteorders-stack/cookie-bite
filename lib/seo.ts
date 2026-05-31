@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { BRAND } from "@/lib/brand";
 import type { Product } from "@/lib/data";
 import type { Lang } from "@/lib/i18n/translations";
+import { getCollectionPageContent } from "@/lib/content/collections-seo";
 import { LANG_COOKIE } from "@/lib/preferences/client-cookies";
 import {
   PAGE_METADATA,
@@ -145,43 +146,14 @@ export function buildPageMetadata({
 
 export type CollectionSeoKey = "classic" | "seasonal" | "stuffed" | "gifts";
 
-const COLLECTION_SEO: Record<
-  CollectionSeoKey,
-  { title: string; description: string; keywords: string[] }
-> = {
-  classic: {
-    title: "Classic Cookie Collection in New Cairo",
-    description:
-      "Shop timeless Cookie Bite classics — buttery dough, Belgian chocolate, and crowd favorites delivered in New Cairo.",
-    keywords: ["classic cookies cairo", "chocolate chip cookies egypt", "cookie bite classics"],
-  },
-  seasonal: {
-    title: "Seasonal Cookie Specials in New Cairo",
-    description:
-      "Limited-batch seasonal cookies from Cookie Bite — matcha, holiday flavors, and rotating drops in New Cairo.",
-    keywords: ["seasonal cookies cairo", "limited edition cookies egypt", "holiday cookies new cairo"],
-  },
-  stuffed: {
-    title: "Stuffed Cookies in New Cairo",
-    description:
-      "Gooey stuffed cookies with Nutella, caramel, and premium fillings — order from Cookie Bite in New Cairo.",
-    keywords: ["stuffed cookies cairo", "nutella cookies egypt", "filled cookies new cairo"],
-  },
-  gifts: {
-    title: "Cookie Gift Boxes & Occasions in New Cairo",
-    description:
-      "Premium cookie gift boxes for birthdays, celebrations, and corporate gifting — Cookie Bite New Cairo.",
-    keywords: ["cookie gift box cairo", "birthday cookie gifts", "corporate cookie gifts egypt"],
-  },
-};
-
-export function buildCollectionMetadata(slug: CollectionSeoKey): Metadata {
-  const meta = COLLECTION_SEO[slug];
+export function buildCollectionMetadata(slug: CollectionSeoKey, lang: Lang = "en"): Metadata {
+  const meta = getCollectionPageContent(slug, lang);
   return buildPageMetadata({
     title: meta.title,
     description: meta.description,
     path: `/collections/${slug}`,
     keywords: meta.keywords,
+    lang,
   });
 }
 

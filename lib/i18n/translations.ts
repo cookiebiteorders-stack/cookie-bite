@@ -638,6 +638,10 @@ export const translations: Record<Lang, Dictionary> = {
             description: "Rotating menu inspired by the season in New Cairo.",
           },
         },
+        seoSectionTitle: "Cookie collections & flavors in New Cairo",
+        seoSectionBody:
+          "Browse classics, chocolate lovers, stuffed cookies, premium specials, and seasonal drops — all baked in small batches in Fifth Settlement. Order online or build a custom gift box.",
+        seoRelatedAria: "Shop collections & order",
       },
       help: {
         eyebrow: "Help center",
@@ -1544,6 +1548,10 @@ export const translations: Record<Lang, Dictionary> = {
             description: "بتيجي وبتروح — لو في حاجة ضربت عينك، اطلبها دلوقتي.",
           },
         },
+        seoSectionTitle: "مجموعات ونكهات الكوكيز في القاهرة الجديدة",
+        seoSectionBody:
+          "تصفّح الكلاسيكيات وعشاق الشوكولاتة والمحشية والفاخرة والموسمية — كلها تُخبز على دفعات صغيرة في التجمع الخامس. اطلب أونلاين أو صمّم صندوق هديتك.",
+        seoRelatedAria: "تسوّق المجموعات واطلب",
       },
       help: {
         eyebrow: "مركز المساعدة",

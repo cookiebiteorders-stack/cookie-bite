@@ -1,30 +1,34 @@
 import type { Metadata } from "next";
 import { OurCookiesClient } from "@/components/pages/our-cookies-client";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
-import { buildPageMetadata, buildBreadcrumbJsonLd } from "@/lib/seo";
+import { getOurCookiesPageFaq } from "@/lib/content/our-cookies-seo";
+import { translations } from "@/lib/i18n/translations";
+import {
+  buildBreadcrumbJsonLd,
+  buildFaqPageJsonLd,
+  buildLocalizedPageMetadata,
+  getLangFromCookies,
+} from "@/lib/seo";
 
-export const metadata: Metadata = buildPageMetadata({
-  title: "Our Cookie Flavors",
-  description:
-    "Discover Cookie Bite flavor collections with handcrafted textures, premium ingredients, and seasonal specials in New Cairo.",
-  path: "/our-cookies",
-  keywords: [
-    "cookie flavors cairo",
-    "best cookie menu egypt",
-    "artisan cookies new cairo",
-    "seasonal cookies",
-  ],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getLangFromCookies();
+  return buildLocalizedPageMetadata("/our-cookies", lang);
+}
 
-export default function OurCookiesPage() {
+export default async function OurCookiesPage() {
+  const lang = await getLangFromCookies();
+  const dict = translations[lang];
+  const faqJsonLd = buildFaqPageJsonLd(getOurCookiesPageFaq(lang));
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
-    { name: "Home", path: "/" },
-    { name: "Our Cookies", path: "/our-cookies" },
+    { name: (dict.tabs as { home: string }).home, path: "/" },
+    { name: (dict.nav as { ourCookies: string }).ourCookies, path: "/our-cookies" },
   ]);
+
   return (
-    <div>
+    <>
       <JsonLdScript id="our-cookies-breadcrumb-jsonld" json={breadcrumbJsonLd} />
+      <JsonLdScript id="our-cookies-faq-jsonld" json={faqJsonLd} />
       <OurCookiesClient />
-    </div>
+    </>
   );
 }
