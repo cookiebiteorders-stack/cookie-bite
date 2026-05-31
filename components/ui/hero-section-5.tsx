@@ -116,12 +116,12 @@ export function HeroSection5() {
                 <ChevronRight className="cb-pl-chevron ms-0.5 h-5 w-5 shrink-0 rtl:rotate-180" aria-hidden />
               </Link>
               <Link
-                href="/gift-box"
+                href="/our-cookies"
                 className={cn(
                   "cb-pl-btn-ghost cb-touch-manipulation min-h-[3rem] w-full justify-center sm:w-auto",
                 )}
               >
-                <span className="text-center sm:text-nowrap">{t("hero.ctaGift")}</span>
+                <span className="text-center sm:text-nowrap">{t("hero.ctaDiscover")}</span>
               </Link>
             </motion.div>
 
