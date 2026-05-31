@@ -113,48 +113,19 @@ export const CATEGORY_CARDS = [
   },
 ];
 
-export const OUR_COOKIE_SECTIONS = [
-  {
-    id: "classic",
-    title: "Classic Collection",
-    /** يطابق `Product.category` ومرشح المتجر */
-    shopCategory: "Classic" as const,
-    description: "Soft, buttery bases with familiar flavors perfected over hundreds of test bakes.",
-    icon: "cookie" as const,
-    items: PRODUCTS.filter((p) => p.category === "Classic"),
-  },
-  {
-    id: "chocolate",
-    title: "Chocolate Lovers",
-    shopCategory: "Chocolate Lovers" as const,
-    description: "Deeper cocoa, molten chips, and bold contrast in every bite.",
-    icon: "heart" as const,
-    items: PRODUCTS.filter((p) => p.category === "Chocolate Lovers"),
-  },
-  {
-    id: "stuffed",
-    title: "Stuffed Cookies",
-    shopCategory: "Stuffed" as const,
-    description: "Crisp outside, molten centers — made to share (or not).",
-    icon: "sparkles" as const,
-    items: PRODUCTS.filter((p) => p.category === "Stuffed"),
-  },
-  {
-    id: "premium",
-    title: "Premium Specials",
-    shopCategory: "Premium" as const,
-    description: "Small-batch ingredients and pastry-chef finishes.",
-    icon: "star" as const,
-    items: PRODUCTS.filter((p) => p.category === "Premium"),
-  },
-  {
-    id: "seasonal",
-    title: "Seasonal Flavors",
-    shopCategory: "Seasonal" as const,
-    description: "Rotating menu inspired by the season in New Cairo.",
-    icon: "leaf" as const,
-    items: PRODUCTS.filter((p) => p.category === "Seasonal"),
-  },
+export type OurCookieSectionIcon = "cookie" | "heart" | "sparkles" | "star" | "leaf";
+
+/** ترتيب وعرض مجموعات صفحة Our Cookies — المنتجات تُحمَّل من `/api/products` مثل المتجر. */
+export const OUR_COOKIE_SECTION_DEFS: ReadonlyArray<{
+  id: string;
+  shopCategory: string;
+  icon: OurCookieSectionIcon;
+}> = [
+  { id: "classic", shopCategory: "Classic", icon: "cookie" },
+  { id: "chocolate", shopCategory: "Chocolate Lovers", icon: "heart" },
+  { id: "stuffed", shopCategory: "Stuffed", icon: "sparkles" },
+  { id: "premium", shopCategory: "Premium", icon: "star" },
+  { id: "seasonal", shopCategory: "Seasonal", icon: "leaf" },
 ] as const;
 
 export const TESTIMONIALS = [

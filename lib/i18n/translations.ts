@@ -525,6 +525,12 @@ export const translations: Record<Lang, Dictionary> = {
           "Products in this collection will appear here once they're added to the menu.",
         browseInShop: "Browse {section} in the shop →",
         shopVerb: "Shop",
+        shopAll: "View full shop",
+        loading: "Loading flavors…",
+        productCount: "{count} flavors in our menu",
+        dynamicDescription: "Handcrafted cookies from our {category} line.",
+        noProductsTitle: "Menu coming soon",
+        noProductsHint: "New flavors are on the way — browse the shop for gift boxes and more.",
         sections: {
           classic: {
             title: "Classic Collection",
@@ -1345,6 +1351,12 @@ export const translations: Record<Lang, Dictionary> = {
           "ستظهر منتجات هذه المجموعة هنا عند إضافتها إلى القائمة.",
         browseInShop: "تصفح {section} في المتجر ←",
         shopVerb: "تسوق",
+        shopAll: "عرض المتجر كاملاً",
+        loading: "جاري تحميل النكهات…",
+        productCount: "{count} نكهة في قائمتنا",
+        dynamicDescription: "كوكيز مصنوعة يدوياً من خط {category}.",
+        noProductsTitle: "القائمة قريباً",
+        noProductsHint: "نكهات جديدة في الطريق — تصفّح المتجر لصناديق الهدايا والمزيد.",
         sections: {
           classic: {
             title: "المجموعة الكلاسيكية",
