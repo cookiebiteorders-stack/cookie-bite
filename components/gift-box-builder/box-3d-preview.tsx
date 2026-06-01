@@ -20,18 +20,22 @@ type Box3DPreviewProps = {
   closingLabel?: string;
 };
 
-function collectProductEmojis(
+type BoxProductVisual = { emoji: string; imageUrl: string };
+
+function collectProductVisuals(
   items: Record<string, number>,
   products: BuilderProduct[],
   max: number,
-): string[] {
-  const emojis: string[] = [];
+): BoxProductVisual[] {
+  const visuals: BoxProductVisual[] = [];
   for (const [id, qty] of Object.entries(items)) {
     const p = products.find((x) => x.id === id);
     if (!p) continue;
-    for (let i = 0; i < qty; i++) emojis.push(p.emoji);
+    for (let i = 0; i < qty; i++) {
+      visuals.push({ emoji: p.emoji, imageUrl: p.imageUrl });
+    }
   }
-  return emojis.slice(0, max);
+  return visuals.slice(0, max);
 }
 
 export function Box3DPreview({
@@ -47,8 +51,8 @@ export function Box3DPreview({
   closingLabel = "Closing your Cookie Bite box…",
 }: Box3DPreviewProps) {
   const close = getBoxCloseProgress(totalItems, capacity);
-  const emojis = useMemo(
-    () => collectProductEmojis(items, products, 24),
+  const visuals = useMemo(
+    () => collectProductVisuals(items, products, 24),
     [items, products],
   );
 
@@ -107,12 +111,18 @@ export function Box3DPreview({
         {/* Interior + products (visible when open) */}
         <div className="cb-mailer__interior">
           <div className="cb-mailer__products">
-            {emojis.length === 0 ? (
+            {visuals.length === 0 ? (
               <span className="cb-mailer__empty-hint">{emptyLabel}</span>
             ) : (
-              emojis.map((e, i) => (
-                <span key={`${e}-${i}`} className="cb-mailer__prod-emoji">
-                  {e}
+              visuals.map((v, i) => (
+                <span key={`${v.imageUrl}-${i}`} className="cb-mailer__prod-emoji">
+                  <Image
+                    src={v.imageUrl}
+                    alt=""
+                    width={32}
+                    height={32}
+                    className="cb-mailer__prod-thumb"
+                  />
                 </span>
               ))
             )}

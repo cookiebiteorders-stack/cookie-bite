@@ -25,14 +25,15 @@ export function getItemsTotal(
   }, 0);
 }
 
+/** Box packaging is free — total = sum of treats + delivery. */
 export function getGrandTotal(state: GiftBoxBuilderState, products: BuilderProduct[]): number {
-  const box = GIFT_BOX_BUILDER_DATA.boxes.find((b) => b.id === state.box);
   const delivery = GIFT_BOX_BUILDER_DATA.deliveryOptions.find((d) => d.id === state.delivery);
-  return (
-    (box?.basePrice ?? 0) +
-    getItemsTotal(state.items, products) +
-    (delivery?.price ?? 0)
-  );
+  return getItemsTotal(state.items, products) + (delivery?.price ?? 0);
+}
+
+export function getDeliveryFee(state: GiftBoxBuilderState): number {
+  const delivery = GIFT_BOX_BUILDER_DATA.deliveryOptions.find((d) => d.id === state.delivery);
+  return delivery?.price ?? 0;
 }
 
 export function trimItemsToCapacity(

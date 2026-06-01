@@ -1,4 +1,9 @@
-import { GIFT_BOX_BUILDER_DATA, type BuilderProduct } from "@/lib/gift-box-builder/data";
+import type { BuilderProduct } from "@/lib/gift-box-builder/data";
+import type { Lang } from "@/lib/i18n/translations";
+import {
+  normalizeProductImages,
+  primaryImageFromProduct,
+} from "@/lib/products/media";
 
 const CATEGORY_EMOJI: Record<string, string> = {
   Cookies: "🍪",
@@ -10,54 +15,89 @@ const CATEGORY_EMOJI: Record<string, string> = {
   Gift: "🎁",
 };
 
-function normalizeCategory(raw: string | null): string {
+function displayCategory(raw: string | null | undefined): string {
   const c = (raw ?? "").trim();
-  if (GIFT_BOX_BUILDER_DATA.categories.includes(c as (typeof GIFT_BOX_BUILDER_DATA.categories)[number])) {
-    return c;
-  }
-  const lower = c.toLowerCase();
-  if (lower.includes("brown")) return "Brownies";
-  if (lower.includes("choc") || lower.includes("truffle")) return "Chocolates";
-  if (lower.includes("drink") || lower.includes("coffee") || lower.includes("tea")) return "Drinks";
-  if (lower.includes("gift") || lower.includes("addon") || lower.includes("add-on")) return "Add-ons";
+  if (c) return c;
   return "Cookies";
+}
+
+function emojiForCategory(category: string): string {
+  return CATEGORY_EMOJI[category] ?? "🍪";
 }
 
 type ApiProduct = {
   id: string;
+  slug?: string | null;
   title_en?: string | null;
+  title_ar?: string | null;
   name?: string | null;
   price_egp: number;
   category?: string | null;
   dietary?: string[] | null;
+  image_url?: string | null;
+  images?: unknown;
+  stock?: number | null;
+  is_active?: boolean;
 };
 
-/** Merge live catalog when available; otherwise use static builder catalog. */
-export async function loadBuilderProducts(): Promise<BuilderProduct[]> {
+function isAvailable(p: ApiProduct): boolean {
+  if (p.is_active === false) return false;
+  if (!p.slug?.trim()) return false;
+  if (p.stock != null && p.stock <= 0) return false;
+  return true;
+}
+
+function productName(p: ApiProduct, lang: Lang): string {
+  if (lang === "ar") {
+    return p.title_ar?.trim() || p.title_en?.trim() || p.name?.trim() || "منتج";
+  }
+  return p.title_en?.trim() || p.title_ar?.trim() || p.name?.trim() || "Product";
+}
+
+/** Active storefront catalog for the gift box builder (no static demo items). */
+export async function loadBuilderProducts(lang: Lang = "en"): Promise<BuilderProduct[]> {
   try {
-    const res = await fetch("/api/products?limit=48&sort=newest");
-    if (!res.ok) return [...GIFT_BOX_BUILDER_DATA.products];
+    const res = await fetch("/api/products?limit=48&sort=newest", {
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
     const json = (await res.json()) as { products?: ApiProduct[] };
     const rows = json.products ?? [];
-    if (rows.length === 0) return [...GIFT_BOX_BUILDER_DATA.products];
+    if (rows.length === 0) return [];
 
-    return rows.map((p) => {
-      const category = normalizeCategory(p.category ?? null);
-      const tags: string[] = [];
-      const dietary = p.dietary ?? [];
-      if (dietary.some((d) => d.toLowerCase().includes("vegan"))) tags.push("vegan");
-      if (dietary.some((d) => d.toLowerCase().includes("gluten"))) tags.push("gf");
-      return {
-        id: `live-${p.id}`,
-        productUuid: p.id,
-        name: p.title_en || p.name || "Treat",
-        price: Number(p.price_egp) || 0,
-        emoji: CATEGORY_EMOJI[category] ?? "🍪",
-        category,
-        tags,
-      } satisfies BuilderProduct;
-    });
+    return rows
+      .filter((p) => p.id && Number(p.price_egp) >= 0 && isAvailable(p))
+      .map((p) => {
+        const category = displayCategory(p.category ?? null);
+        const tags: string[] = [];
+        const dietary = p.dietary ?? [];
+        if (dietary.some((d) => d.toLowerCase().includes("vegan"))) tags.push("vegan");
+        if (dietary.some((d) => d.toLowerCase().includes("gluten"))) tags.push("gf");
+        const imagesNormalized = normalizeProductImages(p.images, p.image_url ?? null);
+        const imageUrl =
+          primaryImageFromProduct(imagesNormalized, p.image_url ?? null) ??
+          "/images/web-logo.png";
+
+        return {
+          id: `live-${p.id}`,
+          productUuid: p.id,
+          slug: p.slug!.trim(),
+          name: productName(p, lang),
+          price: Number(p.price_egp) || 0,
+          emoji: emojiForCategory(category),
+          category,
+          tags,
+          imageUrl,
+        } satisfies BuilderProduct;
+      });
   } catch {
-    return [...GIFT_BOX_BUILDER_DATA.products];
+    return [];
   }
+}
+
+export function builderFilterCategories(products: BuilderProduct[]): string[] {
+  const cats = [...new Set(products.map((p) => p.category).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+  return ["All", ...cats];
 }

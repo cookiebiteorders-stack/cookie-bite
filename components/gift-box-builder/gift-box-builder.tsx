@@ -1,16 +1,27 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { Box3DPreview } from "@/components/gift-box-builder/box-3d-preview";
 import "./gift-box-builder.css";
+import { builderProductToCartProduct } from "@/lib/gift-box-builder/cart-bridge";
 import {
   GIFT_BOX_BUILDER_DATA,
   boxIdToApiSize,
   type BuilderProduct,
 } from "@/lib/gift-box-builder/data";
-import { loadBuilderProducts } from "@/lib/gift-box-builder/load-products";
+import {
+  builderFilterCategories,
+  loadBuilderProducts,
+} from "@/lib/gift-box-builder/load-products";
+import {
+  loadStoredGiftBoxState,
+  persistGiftBoxState,
+  pruneItemsToCatalog,
+} from "@/lib/gift-box-builder/state";
 import {
   DEFAULT_GIFT_BOX_STATE,
   GIFT_BOX_STORAGE_KEY,
@@ -21,29 +32,21 @@ import {
   findNextLargerBox,
   formatBuilderPrice,
   getBoxCapacity,
+  getDeliveryFee,
   getGrandTotal,
   getItemsTotal,
   getTotalItems,
   trimItemsToCapacity,
 } from "@/lib/gift-box-builder/utils";
 
-function loadStoredState(): GiftBoxBuilderState {
-  if (typeof window === "undefined") return { ...DEFAULT_GIFT_BOX_STATE };
-  try {
-    const saved = localStorage.getItem(GIFT_BOX_STORAGE_KEY);
-    if (saved) return { ...DEFAULT_GIFT_BOX_STATE, ...JSON.parse(saved) };
-  } catch {
-    /* ignore */
-  }
-  return { ...DEFAULT_GIFT_BOX_STATE };
-}
-
 export function GiftBoxBuilder() {
-  const { t } = useLanguage();
-  const [state, setState] = useState<GiftBoxBuilderState>(loadStoredState);
-  const [products, setProducts] = useState<BuilderProduct[]>([
-    ...GIFT_BOX_BUILDER_DATA.products,
-  ]);
+  const { t, lang } = useLanguage();
+  const { addItem, openDrawer } = useCart();
+  const [state, setState] = useState<GiftBoxBuilderState>(loadStoredGiftBoxState);
+  const [products, setProducts] = useState<BuilderProduct[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [ordering, setOrdering] = useState(false);
   const [boxRotX, setBoxRotX] = useState(-20);
@@ -52,33 +55,96 @@ export function GiftBoxBuilder() {
   const lastPointer = useRef({ x: 0, y: 0 });
   const confettiRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    loadBuilderProducts().then(setProducts);
-  }, []);
-
-  const saveState = useCallback((next: GiftBoxBuilderState) => {
-    setState(next);
-    try {
-      localStorage.setItem(GIFT_BOX_STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      /* ignore */
+  const fetchProducts = useCallback(async () => {
+    setProductsLoading(true);
+    setProductsError(false);
+    const rows = await loadBuilderProducts(lang);
+    setProducts(rows);
+    setProductsLoading(false);
+    if (rows.length === 0) {
+      setProductsError(true);
+      return;
     }
-  }, []);
+    const valid = new Set(rows.map((p) => p.id));
+    setState((prev) => {
+      const items = pruneItemsToCatalog(prev.items, valid);
+      if (Object.keys(items).length === Object.keys(prev.items).length) return prev;
+      const next = { ...prev, items };
+      persistGiftBoxState(next);
+      return next;
+    });
+  }, [lang]);
+
+  useEffect(() => {
+    void fetchProducts();
+  }, [fetchProducts]);
+
+  const updateState = useCallback(
+    (updater: (prev: GiftBoxBuilderState) => GiftBoxBuilderState) => {
+      setState((prev) => {
+        const next = updater(prev);
+        persistGiftBoxState(next);
+        return next;
+      });
+    },
+    [],
+  );
 
   const patch = useCallback(
     (partial: Partial<GiftBoxBuilderState>) => {
-      saveState({ ...state, ...partial });
+      updateState((prev) => ({ ...prev, ...partial }));
     },
-    [state, saveState],
+    [updateState],
   );
+
+  useEffect(() => {
+    if (!dragging) return;
+    const onMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - lastPointer.current.x;
+      const dy = e.clientY - lastPointer.current.y;
+      setBoxRotY((y) => y + dx * 0.4);
+      setBoxRotX((x) => x - dy * 0.4);
+      lastPointer.current = { x: e.clientX, y: e.clientY };
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      const t0 = e.touches[0];
+      if (!t0) return;
+      const dx = t0.clientX - lastPointer.current.x;
+      const dy = t0.clientY - lastPointer.current.y;
+      setBoxRotY((y) => y + dx * 0.5);
+      setBoxRotX((x) => x - dy * 0.5);
+      lastPointer.current = { x: t0.clientX, y: t0.clientY };
+    };
+    const end = () => setDragging(false);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", end);
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", end);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", end);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", end);
+    };
+  }, [dragging]);
 
   const cap = getBoxCapacity(state.box);
   const totalItems = getTotalItems(state.items);
+  const itemsSubtotal = getItemsTotal(state.items, products);
+  const deliveryFee = getDeliveryFee(state);
   const grandTotal = getGrandTotal(state, products);
+  const filterCategories = useMemo(() => builderFilterCategories(products), [products]);
 
   const validateStep = (step: number) => {
     if (step === 1 && !state.box) {
       alert(t("pages.giftBoxBuilder.errBox"));
+      return false;
+    }
+    if (step === 2 && productsLoading) {
+      return false;
+    }
+    if (step === 2 && products.length === 0) {
+      alert(t("pages.giftBoxBuilder.productsEmpty"));
       return false;
     }
     if ((step === 2 || step === 5) && totalItems === 0) {
@@ -90,6 +156,7 @@ export function GiftBoxBuilder() {
 
   const goToStep = (n: number) => {
     if (n > state.currentStep + 1) return;
+    if (n > state.currentStep && !validateStep(state.currentStep)) return;
     patch({ currentStep: n });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -130,29 +197,38 @@ export function GiftBoxBuilder() {
   };
 
   const changeQty = (productId: string, delta: number) => {
-    const current = state.items[productId] || 0;
-    const total = getTotalItems(state.items);
-    if (delta > 0 && total >= cap) {
-      const bigger = findNextLargerBox(state.box);
-      if (
-        bigger &&
-        bigger.id !== state.box &&
-        confirm(
-          t("pages.giftBoxBuilder.upsellConfirm")
-            .replace("{name}", bigger.name)
-            .replace("{cap}", String(bigger.capacity))
-            .replace("{price}", formatBuilderPrice(bigger.basePrice)),
-        )
-      ) {
-        selectBox(bigger.id);
-      }
+    if (!state.box || cap <= 0) {
+      alert(t("pages.giftBoxBuilder.errBox"));
       return;
     }
-    const newQty = Math.max(0, current + delta);
-    const items = { ...state.items };
-    if (newQty === 0) delete items[productId];
-    else items[productId] = newQty;
-    patch({ items });
+    updateState((prev) => {
+      const current = prev.items[productId] || 0;
+      const total = getTotalItems(prev.items);
+      const boxCap = getBoxCapacity(prev.box);
+
+      if (delta > 0 && total >= boxCap) {
+        const bigger = findNextLargerBox(prev.box);
+        if (
+          bigger &&
+          bigger.id !== prev.box &&
+          confirm(
+            t("pages.giftBoxBuilder.upsellConfirm")
+              .replace("{name}", bigger.name)
+              .replace("{cap}", String(bigger.capacity)),
+          )
+        ) {
+          const items = { ...prev.items, [productId]: current + 1 };
+          return { ...prev, box: bigger.id, items };
+        }
+        return prev;
+      }
+
+      const newQty = Math.max(0, current + delta);
+      const items = { ...prev.items };
+      if (newQty === 0) delete items[productId];
+      else items[productId] = newQty;
+      return { ...prev, items };
+    });
   };
 
   const launchConfetti = () => {
@@ -171,8 +247,7 @@ export function GiftBoxBuilder() {
 
   const placeOrder = async () => {
     if (!validateStep(5)) return;
-    setOrdering(true);
-    launchConfetti();
+    setOrderError(null);
 
     const apiItems = Object.entries(state.items)
       .map(([id, quantity]) => {
@@ -182,51 +257,74 @@ export function GiftBoxBuilder() {
       })
       .filter(Boolean) as { product_id: string; quantity: number }[];
 
-    if (apiItems.length > 0 && state.box) {
-      try {
-        const res = await fetch("/api/gift-box", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            box_size: boxIdToApiSize(state.box),
-            items: apiItems,
-            gift_message: buildGiftMessagePayload(state),
-            ribbon_color: state.ribbonColor,
-            has_wrapping: state.wrapStyle !== "transparent",
-          }),
-        });
-        if (res.ok) {
-          const json = (await res.json()) as { gift_box?: { id: string } };
-          if (json.gift_box?.id) {
-            await fetch(`/api/gift-box/${json.gift_box.id}/add-to-cart`, {
-              method: "POST",
-            });
-          }
-        }
-      } catch {
-        /* demo success still shown */
-      }
+    const lineCount = Object.values(state.items).filter((q) => q > 0).length;
+    if (apiItems.length === 0 || apiItems.length !== lineCount) {
+      alert(t("pages.giftBoxBuilder.errCatalog"));
+      return;
     }
 
-    setTimeout(() => {
-      setOrdering(false);
+    setOrdering(true);
+    try {
+      const res = await fetch("/api/gift-box", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          box_size: boxIdToApiSize(state.box),
+          items: apiItems,
+          gift_message: buildGiftMessagePayload(state),
+          ribbon_color: state.ribbonColor,
+          has_wrapping: state.wrapStyle !== "transparent",
+        }),
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as {
+          error?: { en?: string; ar?: string };
+        } | null;
+        const msg =
+          lang === "ar"
+            ? body?.error?.ar ?? t("pages.giftBoxBuilder.errOrder")
+            : body?.error?.en ?? t("pages.giftBoxBuilder.errOrder");
+        setOrderError(msg);
+        alert(msg);
+        return;
+      }
+
+      for (const [id, quantity] of Object.entries(state.items)) {
+        const row = products.find((x) => x.id === id);
+        if (!row) continue;
+        const cartProduct = builderProductToCartProduct(row);
+        if (cartProduct) addItem(cartProduct, quantity);
+      }
+
+      launchConfetti();
       setShowSuccess(true);
       patch({ currentStep: 6 });
-    }, 800);
+      openDrawer();
+    } catch {
+      const msg = t("pages.giftBoxBuilder.errOrder");
+      setOrderError(msg);
+      alert(msg);
+    } finally {
+      setOrdering(false);
+    }
   };
 
   const startOver = () => {
     localStorage.removeItem(GIFT_BOX_STORAGE_KEY);
     setState({ ...DEFAULT_GIFT_BOX_STATE });
     setShowSuccess(false);
+    setOrderError(null);
     setBoxRotX(-20);
     setBoxRotY(30);
   };
 
   const filteredProducts = useMemo(() => {
-    if (state.activeFilter === "All") return products;
+    if (state.activeFilter === "All" || !filterCategories.includes(state.activeFilter)) {
+      return products;
+    }
     return products.filter((p) => p.category === state.activeFilter);
-  }, [products, state.activeFilter]);
+  }, [products, state.activeFilter, filterCategories]);
 
   const capPct = cap ? Math.min(100, (totalItems / cap) * 100) : 0;
 
@@ -292,7 +390,7 @@ export function GiftBoxBuilder() {
                   >
                     <div className="gb-box-icon">{b.icon}</div>
                     <div className="gb-box-name">{b.name}</div>
-                    <div className="gb-box-price">{formatBuilderPrice(b.basePrice)}</div>
+                    <div className="gb-box-free">{t("pages.giftBoxBuilder.boxFree")}</div>
                     <div style={{ fontSize: 12, color: "var(--gb-text-muted)" }}>
                       {t("pages.giftBoxBuilder.upTo").replace("{n}", String(b.capacity))}
                     </div>
@@ -321,18 +419,33 @@ export function GiftBoxBuilder() {
             <div className="gb-step-panel active">
               <h2 className="gb-step-title">{t("pages.giftBoxBuilder.s2Title")}</h2>
               <p className="gb-step-sub">{t("pages.giftBoxBuilder.s2SubBox")}</p>
-              <div className="gb-filter-row">
-                {GIFT_BOX_BUILDER_DATA.categories.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    className={`gb-filter-btn ${state.activeFilter === c ? "active" : ""}`}
-                    onClick={() => patch({ activeFilter: c })}
-                  >
-                    {c}
+              {productsLoading ? (
+                <div className="gb-product-grid gb-product-grid--loading" aria-busy>
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="gb-prod-card gb-prod-card--skeleton" />
+                  ))}
+                </div>
+              ) : products.length === 0 ? (
+                <div className="gb-catalog-empty">
+                  <p className="gb-catalog-hint">{t("pages.giftBoxBuilder.productsEmpty")}</p>
+                  <button type="button" className="gb-btn-back" onClick={() => void fetchProducts()}>
+                    {t("pages.giftBoxBuilder.retryCatalog")}
                   </button>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="gb-filter-row">
+                  {filterCategories.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      className={`gb-filter-btn ${state.activeFilter === c ? "active" : ""}`}
+                      onClick={() => patch({ activeFilter: c })}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="gb-capacity-bar-wrap">
                 <span>{t("pages.giftBoxBuilder.capacity")}</span>
                 <div className="gb-cap-track">
@@ -345,12 +458,24 @@ export function GiftBoxBuilder() {
                   {totalItems} / {cap}
                 </strong>
               </div>
+              {!productsLoading && products.length > 0 && (
               <div className="gb-product-grid">
-                {filteredProducts.map((p) => {
+                  {filteredProducts.map((p) => {
                   const qty = state.items[p.id] || 0;
+                  const atCapacity = totalItems >= cap;
+                  const canAdd = state.box && !atCapacity;
                   return (
                     <div key={p.id} className={`gb-prod-card ${qty > 0 ? "in-box" : ""}`}>
-                      <div className="gb-prod-img">{p.emoji}</div>
+                      <div className="gb-prod-img">
+                        <Image
+                          src={p.imageUrl}
+                          alt={p.name}
+                          width={160}
+                          height={100}
+                          className="gb-prod-img__photo"
+                          sizes="160px"
+                        />
+                      </div>
                       <div style={{ padding: "10px 12px" }}>
                         <div style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</div>
                         <div style={{ color: "var(--gb-gold)", fontWeight: 600, fontSize: 13 }}>
@@ -371,6 +496,7 @@ export function GiftBoxBuilder() {
                             className="gb-qty-btn"
                             onClick={() => changeQty(p.id, 1)}
                             aria-label="+"
+                            disabled={!canAdd && qty === 0}
                           >
                             +
                           </button>
@@ -380,6 +506,15 @@ export function GiftBoxBuilder() {
                   );
                 })}
               </div>
+              )}
+              {!productsLoading && products.length > 0 && (
+                <p className="gb-price-note">{t("pages.giftBoxBuilder.priceFromProducts")}</p>
+              )}
+              {!productsLoading && !state.box && products.length > 0 && (
+                <p className="gb-catalog-hint gb-catalog-hint--warn">
+                  {t("pages.giftBoxBuilder.pickBoxFirst")}
+                </p>
+              )}
             </div>
           )}
 
@@ -464,7 +599,7 @@ export function GiftBoxBuilder() {
               <h2 className="gb-step-title">{t("pages.giftBoxBuilder.s4Title")}</h2>
               <p className="gb-step-sub">{t("pages.giftBoxBuilder.s4Sub")}</p>
               <div
-                className="gb-scene"
+                className={`gb-scene${dragging ? " gb-scene--dragging" : ""}`}
                 onMouseDown={(e) => {
                   setDragging(true);
                   lastPointer.current = { x: e.clientX, y: e.clientY };
@@ -474,26 +609,6 @@ export function GiftBoxBuilder() {
                   const t0 = e.touches[0];
                   lastPointer.current = { x: t0.clientX, y: t0.clientY };
                 }}
-                onMouseMove={(e) => {
-                  if (!dragging) return;
-                  const dx = e.clientX - lastPointer.current.x;
-                  const dy = e.clientY - lastPointer.current.y;
-                  setBoxRotY((y) => y + dx * 0.4);
-                  setBoxRotX((x) => x - dy * 0.4);
-                  lastPointer.current = { x: e.clientX, y: e.clientY };
-                }}
-                onTouchMove={(e) => {
-                  if (!dragging) return;
-                  const t0 = e.touches[0];
-                  const dx = t0.clientX - lastPointer.current.x;
-                  const dy = t0.clientY - lastPointer.current.y;
-                  setBoxRotY((y) => y + dx * 0.5);
-                  setBoxRotX((x) => x - dy * 0.5);
-                  lastPointer.current = { x: t0.clientX, y: t0.clientY };
-                }}
-                onMouseUp={() => setDragging(false)}
-                onMouseLeave={() => setDragging(false)}
-                onTouchEnd={() => setDragging(false)}
               >
                 <Box3DPreview
                   size={240}
@@ -521,14 +636,15 @@ export function GiftBoxBuilder() {
                   return (
                     <li
                       key={id}
-                      style={{
-                        display: "flex",
-                        gap: 10,
-                        padding: "8px 0",
-                        borderBottom: "1px dashed var(--gb-cream-dark)",
-                      }}
+                      className="gb-review-line"
                     >
-                      <span>{p.emoji}</span>
+                      <Image
+                        src={p.imageUrl}
+                        alt=""
+                        width={40}
+                        height={40}
+                        className="gb-review-line__img"
+                      />
                       <span style={{ flex: 1 }}>{p.name}</span>
                       <span>×{qty}</span>
                       <strong style={{ color: "var(--gb-gold)" }}>
@@ -538,6 +654,11 @@ export function GiftBoxBuilder() {
                   );
                 })}
               </ul>
+              {orderError && (
+                <p className="gb-order-error" role="alert">
+                  {orderError}
+                </p>
+              )}
               {GIFT_BOX_BUILDER_DATA.deliveryOptions.map((d) => (
                 <button
                   key={d.id}
@@ -559,9 +680,26 @@ export function GiftBoxBuilder() {
                 {state.surprise ? "✓ " : ""}
                 {t("pages.giftBoxBuilder.surprise")}
               </button>
-              <p style={{ marginTop: 24, fontSize: 20, fontWeight: 700 }}>
-                {t("pages.giftBoxBuilder.grandTotal")}: {formatBuilderPrice(grandTotal)}
-              </p>
+              <div className="gb-checkout-totals">
+                <div className="gb-checkout-row">
+                  <span>{t("pages.giftBoxBuilder.treatsSubtotal")}</span>
+                  <strong>{formatBuilderPrice(itemsSubtotal)}</strong>
+                </div>
+                <div className="gb-checkout-row">
+                  <span>{t("pages.giftBoxBuilder.boxFree")}</span>
+                  <strong>{t("pages.giftBoxBuilder.included")}</strong>
+                </div>
+                {deliveryFee > 0 && (
+                  <div className="gb-checkout-row">
+                    <span>{t("pages.giftBoxBuilder.deliveryFee")}</span>
+                    <strong>+{formatBuilderPrice(deliveryFee)}</strong>
+                  </div>
+                )}
+                <div className="gb-checkout-row gb-checkout-row--grand">
+                  <span>{t("pages.giftBoxBuilder.grandTotal")}</span>
+                  <strong>{formatBuilderPrice(grandTotal)}</strong>
+                </div>
+              </div>
             </div>
           )}
 
@@ -574,7 +712,10 @@ export function GiftBoxBuilder() {
                 <button type="button" className="gb-btn-back" onClick={startOver}>
                   {t("pages.giftBoxBuilder.buildAnother")}
                 </button>
-                <Link href="/orders/track" className="gb-btn-next">
+                <Link href="/cart" className="gb-btn-next">
+                  {t("pages.giftBoxBuilder.goToCart")}
+                </Link>
+                <Link href="/orders/track" className="gb-btn-back">
                   {t("pages.giftBoxBuilder.track")}
                 </Link>
               </div>
@@ -609,8 +750,14 @@ export function GiftBoxBuilder() {
                   const p = products.find((x) => x.id === id);
                   if (!p) return null;
                   return (
-                    <div key={id} style={{ display: "flex", gap: 8, padding: "6px 0" }}>
-                      <span>{p.emoji}</span>
+                    <div key={id} className="gb-sidebar-line">
+                      <Image
+                        src={p.imageUrl}
+                        alt=""
+                        width={28}
+                        height={28}
+                        className="gb-sidebar-line__img"
+                      />
                       <span style={{ flex: 1 }}>{p.name}</span>
                       <span>×{qty}</span>
                     </div>
@@ -648,7 +795,7 @@ export function GiftBoxBuilder() {
           <button
             type="button"
             className="gb-btn-next"
-            disabled={ordering}
+            disabled={ordering || (state.currentStep === 2 && productsLoading)}
             onClick={nextStep}
           >
             {state.currentStep === 5

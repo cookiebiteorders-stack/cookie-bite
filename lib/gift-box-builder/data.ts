@@ -4,7 +4,6 @@ export type GiftBoxSize = {
   id: string;
   name: string;
   capacity: number;
-  basePrice: number;
   icon: string;
   description: string;
   badge: string | null;
@@ -17,8 +16,10 @@ export type BuilderProduct = {
   emoji: string;
   category: string;
   tags: string[];
-  /** Supabase product UUID when loaded from API */
-  productUuid?: string;
+  imageUrl: string;
+  /** Supabase product UUID — required for checkout */
+  productUuid: string;
+  slug?: string;
 };
 
 export const GIFT_BOX_BUILDER_DATA = {
@@ -27,7 +28,6 @@ export const GIFT_BOX_BUILDER_DATA = {
       id: "little-bite",
       name: "The Little Bite",
       capacity: 6,
-      basePrice: 450,
       icon: "🍪",
       description: "Perfect for a sweet gesture",
       badge: null,
@@ -36,7 +36,6 @@ export const GIFT_BOX_BUILDER_DATA = {
       id: "sweet-spot",
       name: "The Sweet Spot",
       capacity: 12,
-      basePrice: 850,
       icon: "🧁",
       description: "Most popular choice",
       badge: "⭐ Popular",
@@ -45,7 +44,6 @@ export const GIFT_BOX_BUILDER_DATA = {
       id: "big-hug",
       name: "The Big Hug",
       capacity: 20,
-      basePrice: 1450,
       icon: "🎂",
       description: "For family & big celebrations",
       badge: null,
@@ -54,7 +52,6 @@ export const GIFT_BOX_BUILDER_DATA = {
       id: "golden-bite",
       name: "The Golden Bite",
       capacity: 15,
-      basePrice: 2100,
       icon: "✨",
       description: "Luxury wooden box with ribbon",
       badge: "Luxury",
@@ -75,31 +72,6 @@ export const GIFT_BOX_BUILDER_DATA = {
     { id: "christmas", label: "🎄 Christmas" },
     { id: "justbecause", label: "🌸 Just Because" },
   ],
-
-  categories: ["All", "Cookies", "Brownies", "Chocolates", "Drinks", "Add-ons"] as const,
-
-  products: [
-    { id: "p01", name: "Classic Choco Chip", price: 175, emoji: "🍪", category: "Cookies", tags: [] },
-    { id: "p02", name: "Red Velvet Cookie", price: 200, emoji: "🍪", category: "Cookies", tags: ["vegan"] },
-    { id: "p03", name: "Pistachio Rose Cookie", price: 225, emoji: "🌹", category: "Cookies", tags: [] },
-    { id: "p04", name: "Lemon Zest Cookie", price: 175, emoji: "🍋", category: "Cookies", tags: ["vegan", "gf"] },
-    { id: "p05", name: "Salted Caramel Cookie", price: 200, emoji: "🍪", category: "Cookies", tags: [] },
-    { id: "p06", name: "Double Choco Brownie", price: 250, emoji: "🟫", category: "Brownies", tags: [] },
-    { id: "p07", name: "Nutella Swirl Brownie", price: 275, emoji: "🟤", category: "Brownies", tags: [] },
-    { id: "p08", name: "Blondie Brownie", price: 225, emoji: "🟨", category: "Brownies", tags: ["gf"] },
-    { id: "p09", name: "Dark Choco Truffle", price: 200, emoji: "🍫", category: "Chocolates", tags: ["vegan"] },
-    { id: "p10", name: "Milk Choco Truffle", price: 200, emoji: "🍫", category: "Chocolates", tags: [] },
-    { id: "p11", name: "White Choco Raspberry", price: 225, emoji: "🍓", category: "Chocolates", tags: [] },
-    { id: "p12", name: "Salted Choco Bar", price: 250, emoji: "🍫", category: "Chocolates", tags: [] },
-    { id: "p13", name: "Premium Coffee Sachet", price: 150, emoji: "☕", category: "Drinks", tags: [] },
-    { id: "p14", name: "Hot Choco Mix", price: 175, emoji: "🍵", category: "Drinks", tags: ["vegan"] },
-    { id: "p15", name: "Vanilla Chai Blend", price: 175, emoji: "🌿", category: "Drinks", tags: [] },
-    { id: "p16", name: "Mini Teddy Bear", price: 400, emoji: "🧸", category: "Add-ons", tags: [] },
-    { id: "p17", name: "Scented Candle", price: 500, emoji: "🕯️", category: "Add-ons", tags: [] },
-    { id: "p18", name: "Mini Bouquet", price: 600, emoji: "💐", category: "Add-ons", tags: [] },
-    { id: "p19", name: "Cute Mug", price: 450, emoji: "☕", category: "Add-ons", tags: [] },
-    { id: "p20", name: "Balloon", price: 150, emoji: "🎈", category: "Add-ons", tags: [] },
-  ] satisfies BuilderProduct[],
 
   cardDesigns: [
     { id: "birthday", label: "🎂 Birthday", color: "#FF6B8A" },
