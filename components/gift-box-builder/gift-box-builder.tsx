@@ -320,7 +320,7 @@ export function GiftBoxBuilder() {
           {!showSuccess && state.currentStep === 2 && (
             <div className="gb-step-panel active">
               <h2 className="gb-step-title">{t("pages.giftBoxBuilder.s2Title")}</h2>
-              <p className="gb-step-sub">{t("pages.giftBoxBuilder.s2Sub")}</p>
+              <p className="gb-step-sub">{t("pages.giftBoxBuilder.s2SubBox")}</p>
               <div className="gb-filter-row">
                 {GIFT_BOX_BUILDER_DATA.categories.map((c) => (
                   <button
@@ -497,12 +497,14 @@ export function GiftBoxBuilder() {
               >
                 <Box3DPreview
                   size={240}
-                  wrapStyleId={state.wrapStyle}
-                  ribbonColorId={state.ribbonColor}
                   items={state.items}
                   products={products}
+                  totalItems={totalItems}
+                  capacity={cap}
                   rotX={boxRotX}
                   rotY={boxRotY}
+                  emptyLabel={t("pages.giftBoxBuilder.boxAddProducts")}
+                  closingLabel={t("pages.giftBoxBuilder.boxClosing")}
                 />
               </div>
             </div>
@@ -588,11 +590,13 @@ export function GiftBoxBuilder() {
             <div className="gb-mini-scene">
               <Box3DPreview
                 size={130}
-                wrapStyleId={state.wrapStyle}
-                ribbonColorId={state.ribbonColor}
                 items={state.items}
                 products={products}
+                totalItems={totalItems}
+                capacity={cap}
                 className="gb-mini-box3d"
+                emptyLabel={t("pages.giftBoxBuilder.boxAddProducts")}
+                closingLabel={t("pages.giftBoxBuilder.boxClosing")}
               />
             </div>
             <div style={{ flex: 1, fontSize: 13, color: "rgba(255,255,255,0.8)" }}>

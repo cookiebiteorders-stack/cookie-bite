@@ -1,114 +1,162 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { GIFT_BOX_BUILDER_DATA } from "@/lib/gift-box-builder/data";
+import Image from "next/image";
+import { useMemo } from "react";
 import type { BuilderProduct } from "@/lib/gift-box-builder/data";
+import { getBoxCloseProgress } from "@/lib/gift-box-builder/box-close";
 
-function darken(hex: string, amt: number) {
-  const n = parseInt(hex.replace("#", ""), 16);
-  const r = Math.max(0, (n >> 16) - amt);
-  const g = Math.max(0, ((n >> 8) & 0xff) - amt);
-  const b = Math.max(0, (n & 0xff) - amt);
-  return `rgb(${r},${g},${b})`;
-}
+const LID_TEXTURE = "/brand/gift-box/box-closed-ref.png";
 
 type Box3DPreviewProps = {
   size: number;
-  wrapStyleId: string;
-  ribbonColorId: string;
   items: Record<string, number>;
   products: BuilderProduct[];
+  totalItems: number;
+  capacity: number;
   rotX?: number;
   rotY?: number;
   className?: string;
-  isLid?: boolean;
+  emptyLabel?: string;
+  closingLabel?: string;
 };
 
-export function buildBoxFacesHtml(
-  el: HTMLElement,
-  opts: Omit<Box3DPreviewProps, "className" | "rotX" | "rotY">,
-) {
-  const { size, wrapStyleId, ribbonColorId, items, products, isLid = false } = opts;
-  const S = size;
-  const H = isLid ? S * 0.25 : S;
-  const wrap = GIFT_BOX_BUILDER_DATA.wrapStyles.find((w) => w.id === wrapStyleId);
-  const ribbon = GIFT_BOX_BUILDER_DATA.ribbonColors.find((r) => r.id === ribbonColorId);
-  const col = wrap?.color ?? "#C8935A";
-  const rc = ribbon?.hex ?? "#C9972A";
-
+function collectProductEmojis(
+  items: Record<string, number>,
+  products: BuilderProduct[],
+  max: number,
+): string[] {
   const emojis: string[] = [];
   for (const [id, qty] of Object.entries(items)) {
     const p = products.find((x) => x.id === id);
-    if (p) for (let i = 0; i < qty; i++) emojis.push(p.emoji);
+    if (!p) continue;
+    for (let i = 0; i < qty; i++) emojis.push(p.emoji);
   }
-
-  const faces = [
-    { name: "front", w: S, h: H, t: `translateZ(${S / 2}px)`, bg: col },
-    { name: "back", w: S, h: H, t: `rotateY(180deg) translateZ(${S / 2}px)`, bg: darken(col, 20) },
-    { name: "left", w: S, h: H, t: `rotateY(-90deg) translateZ(${S / 2}px)`, bg: darken(col, 10) },
-    { name: "right", w: S, h: H, t: `rotateY(90deg) translateZ(${S / 2}px)`, bg: darken(col, 10) },
-    {
-      name: "top",
-      w: S,
-      h: S,
-      t: `rotateX(90deg) translateZ(${H / 2}px)`,
-      bg: isLid ? darken(col, 5) : darken(col, 30),
-    },
-    {
-      name: "bottom",
-      w: S,
-      h: S,
-      t: `rotateX(-90deg) translateZ(${isLid ? 0 : H / 2}px)`,
-      bg: darken(col, 30),
-    },
-  ];
-
-  el.innerHTML = faces
-    .map((f) => {
-      const isTop = f.name === "top";
-      const isFront = f.name === "front";
-      const inner =
-        isTop && !isLid && emojis.length
-          ? `<div style="position:absolute;inset:0;display:flex;flex-wrap:wrap;gap:4px;padding:8px;align-content:flex-start;font-size:${S > 200 ? 24 : 14}px">${emojis
-              .slice(0, 20)
-              .map((e) => `<span>${e}</span>`)
-              .join("")}</div>`
-          : isFront
-            ? `<div style="width:6px;height:100%;background:${rc};position:absolute;left:50%;transform:translateX(-50%)"></div>`
-            : "";
-      return `<div class="gb-face" style="width:${f.w}px;height:${f.h}px;background:${f.bg};transform:${f.t};left:${(S - f.w) / 2}px;top:${(H - f.h) / 2}px;position:absolute">${inner}</div>`;
-    })
-    .join("");
-
-  el.insertAdjacentHTML(
-    "beforeend",
-    `<div style="position:absolute;inset:0;pointer-events:none;z-index:11">
-      <div style="position:absolute;width:100%;height:6px;top:50%;transform:translateY(-50%);background:${rc}"></div>
-      <div style="position:absolute;width:6px;height:100%;left:50%;transform:translateX(-50%);background:${rc}"></div>
-    </div>`,
-  );
+  return emojis.slice(0, max);
 }
 
 export function Box3DPreview({
   size,
-  wrapStyleId,
-  ribbonColorId,
   items,
   products,
-  rotX = -20,
-  rotY = 30,
+  totalItems,
+  capacity,
+  rotX = -22,
+  rotY = 32,
   className = "gb-box3d",
+  emptyLabel = "Add treats inside",
+  closingLabel = "Closing your Cookie Bite box…",
 }: Box3DPreviewProps) {
-  const ref = useRef<HTMLDivElement>(null);
+  const close = getBoxCloseProgress(totalItems, capacity);
+  const emojis = useMemo(
+    () => collectProductEmojis(items, products, 24),
+    [items, products],
+  );
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.width = `${size}px`;
-    el.style.height = `${size}px`;
-    buildBoxFacesHtml(el, { size, wrapStyleId, ribbonColorId, items, products });
-    el.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
-  }, [size, wrapStyleId, ribbonColorId, items, products, rotX, rotY]);
+  const w = Math.round(size * 0.88);
+  const d = Math.round(size * 0.88);
+  const h = Math.round(size * 0.38);
+  const lidAngle = -92 + close * 92;
+  const frontFlapAngle = -72 + close * 72;
+  const earTuck = close * 1;
 
-  return <div ref={ref} className={className} style={{ transformStyle: "preserve-3d" }} />;
+  const style = {
+    "--cb-w": `${w}px`,
+    "--cb-d": `${d}px`,
+    "--cb-h": `${h}px`,
+    "--cb-lid": `${lidAngle}deg`,
+    "--cb-flap": `${frontFlapAngle}deg`,
+    "--cb-close": String(close),
+    "--cb-ear": String(earTuck),
+    width: `${w}px`,
+    height: `${h + w * 0.55}px`,
+    transform: `rotateX(${rotX}deg) rotateY(${rotY}deg)`,
+  } as React.CSSProperties;
+
+  const hasItems = totalItems > 0;
+  const isClosed = close >= 0.98;
+
+  return (
+    <div
+      className={`${className} cb-mailer-scene${isClosed ? " cb-mailer-scene--closed" : ""}${hasItems ? " cb-mailer-scene--has-items" : ""}`}
+      style={style}
+      aria-hidden
+    >
+      <div className="cb-mailer">
+        {/* Base walls */}
+        <div className="cb-mailer__wall cb-mailer__wall--bottom" />
+        <div className="cb-mailer__wall cb-mailer__wall--front">
+          <div className="cb-mailer__front-brand">
+            <span className="cb-mailer__mono">CB</span>
+            <span className="cb-mailer__word">Cookie Bite</span>
+          </div>
+          <div className="cb-mailer__qr cb-mailer__qr--ig" title="Instagram">
+            <span>IG</span>
+          </div>
+          <div className="cb-mailer__qr cb-mailer__qr--tt" title="TikTok">
+            <span>TT</span>
+          </div>
+        </div>
+        <div className="cb-mailer__wall cb-mailer__wall--back" />
+        <div className="cb-mailer__wall cb-mailer__wall--left">
+          <span className="cb-mailer__side-logo">CB</span>
+        </div>
+        <div className="cb-mailer__wall cb-mailer__wall--right">
+          <span className="cb-mailer__side-logo">CB</span>
+        </div>
+
+        {/* Interior + products (visible when open) */}
+        <div className="cb-mailer__interior">
+          <div className="cb-mailer__products">
+            {emojis.length === 0 ? (
+              <span className="cb-mailer__empty-hint">{emptyLabel}</span>
+            ) : (
+              emojis.map((e, i) => (
+                <span key={`${e}-${i}`} className="cb-mailer__prod-emoji">
+                  {e}
+                </span>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Hinged lid */}
+        <div className="cb-mailer__lid-wrap">
+          <div className="cb-mailer__lid">
+            <div className="cb-mailer__lid-top">
+              <Image
+                src={LID_TEXTURE}
+                alt=""
+                width={400}
+                height={400}
+                className="cb-mailer__lid-img"
+                draggable={false}
+                priority={size > 200}
+              />
+              <div className="cb-mailer__lid-overlay">
+                <span className="cb-mailer__lid-ar">هتعدّل مزاج يومك</span>
+                <span className="cb-mailer__lid-mono">CB</span>
+                <span className="cb-mailer__lid-word">Cookie Bite</span>
+              </div>
+            </div>
+            <div className="cb-mailer__lid-inner">
+              <span className="cb-mailer__lid-inner-tag">Bite into Happiness</span>
+              <span className="cb-mailer__lid-inner-bear">🧸</span>
+            </div>
+            <div className="cb-mailer__lid-ear cb-mailer__lid-ear--l" />
+            <div className="cb-mailer__lid-ear cb-mailer__lid-ear--r" />
+            <div className="cb-mailer__lid-flap" />
+          </div>
+        </div>
+      </div>
+
+      {close > 0.08 && close < 0.95 && (
+        <span className="cb-mailer__status">{closingLabel}</span>
+      )}
+    </div>
+  );
+}
+
+/** @deprecated — kept for any legacy imports */
+export function buildBoxFacesHtml() {
+  /* replaced by Cookie Bite mailer box */
 }

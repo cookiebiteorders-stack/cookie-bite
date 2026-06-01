@@ -572,6 +572,10 @@ export const translations: Record<Lang, Dictionary> = {
           "This box fits {cap} items but you have {total}. Some items will be removed. Continue?",
         upsellConfirm:
           'Your box is full! Upgrade to "{name}" ({cap} items) for {price}?',
+        boxAddProducts: "Add treats inside",
+        boxClosing: "Closing your Cookie Bite box…",
+        s2SubBox:
+          "Handpick every treat — the branded box closes as you fill it.",
       },
       blog: {
         title: "From the kitchen journal",
@@ -1485,6 +1489,10 @@ export const translations: Record<Lang, Dictionary> = {
           "هذا الصندوق يسع {cap} قطع ولديك {total}. ستُزال بعض القطع. متابعة؟",
         upsellConfirm:
           "الصندوق ممتلئ! ترقية إلى «{name}» ({cap} قطع) بـ {price}؟",
+        boxAddProducts: "أضف المنتجات هنا",
+        boxClosing: "صندوق Cookie Bite يُغلق…",
+        s2SubBox:
+          "اختر الحلويات — صندوق العلامة يُغلق تلقائياً كلما امتلأ.",
       },
       blog: {
         title: "من مطبخنا — المدونة",

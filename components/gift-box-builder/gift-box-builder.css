@@ -334,21 +334,346 @@
 }
 
 .gift-box-builder .gb-scene {
-  width: 320px;
-  height: 320px;
-  perspective: 900px;
+  width: 340px;
+  min-height: 340px;
+  perspective: 1100px;
+  perspective-origin: 50% 42%;
   cursor: grab;
   margin: 0 auto 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .gift-box-builder .gb-box3d {
-  width: 100%;
-  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.12s ease-out;
+}
+
+/* —— Cookie Bite mailer box (brand packaging) —— */
+.gift-box-builder .cb-mailer-scene {
   position: relative;
   transform-style: preserve-3d;
 }
-.gift-box-builder .gb-face {
+.gift-box-builder .cb-mailer {
   position: absolute;
-  border: 1.5px solid rgba(59, 31, 14, 0.3);
+  left: 50%;
+  top: 52%;
+  width: var(--cb-w);
+  height: var(--cb-h);
+  margin-left: calc(var(--cb-w) / -2);
+  margin-top: calc(var(--cb-h) / -2);
+  transform-style: preserve-3d;
+}
+.gift-box-builder .cb-mailer__wall {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-color: #3d2618;
+  background-image: url("/brand/gift-box/bear-pattern.svg");
+  background-size: 42px 42px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+  backface-visibility: hidden;
+}
+.gift-box-builder .cb-mailer__wall--bottom {
+  width: var(--cb-w);
+  height: var(--cb-d);
+  transform: rotateX(-90deg) translateZ(calc(var(--cb-h) / 2));
+  background-color: #2e1a10;
+}
+.gift-box-builder .cb-mailer__wall--front {
+  width: var(--cb-w);
+  height: var(--cb-h);
+  transform: translateZ(calc(var(--cb-d) / 2));
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8%;
+}
+.gift-box-builder .cb-mailer__wall--back {
+  width: var(--cb-w);
+  height: var(--cb-h);
+  transform: rotateY(180deg) translateZ(calc(var(--cb-d) / 2));
+  left: 0;
+  top: 0;
+}
+.gift-box-builder .cb-mailer__wall--left {
+  width: var(--cb-d);
+  height: var(--cb-h);
+  transform: rotateY(-90deg) translateZ(calc(var(--cb-w) / 2));
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gift-box-builder .cb-mailer__wall--right {
+  width: var(--cb-d);
+  height: var(--cb-h);
+  transform: rotateY(90deg) translateZ(calc(var(--cb-w) / 2));
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gift-box-builder .cb-mailer__front-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  opacity: calc(1 - var(--cb-close) * 0.85);
+  transition: opacity 0.35s ease;
+}
+.gift-box-builder .cb-mailer__mono {
+  font-family: var(--font-playfair, "Playfair Display", serif);
+  font-size: clamp(14px, 4vw, 22px);
+  font-weight: 700;
+  color: #8b6b4a;
+  letter-spacing: -1px;
+}
+.gift-box-builder .cb-mailer__word {
+  font-family: var(--font-playfair, "Playfair Display", serif);
+  font-size: clamp(8px, 2vw, 11px);
+  color: #7a5a3a;
+  letter-spacing: 0.5px;
+}
+.gift-box-builder .cb-mailer__side-logo {
+  font-family: var(--font-playfair, "Playfair Display", serif);
+  font-size: 28px;
+  font-weight: 700;
+  color: rgba(201, 151, 42, 0.35);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.gift-box-builder .cb-mailer__qr {
+  width: 22%;
+  max-width: 52px;
+  aspect-ratio: 1;
+  background: #fff;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #3d2618;
+  opacity: calc(1 - var(--cb-close) * 0.7);
+  transition: opacity 0.35s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.gift-box-builder .cb-mailer__qr--ig span {
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.gift-box-builder .cb-mailer__interior {
+  position: absolute;
+  width: calc(var(--cb-w) - 10px);
+  height: calc(var(--cb-d) - 10px);
+  left: 5px;
+  top: 5px;
+  transform: rotateX(-90deg) translateZ(calc(var(--cb-h) / 2 - 3px));
+  background: linear-gradient(160deg, #f0e4d0 0%, #e2d0b8 100%);
+  border-radius: 2px;
+  overflow: hidden;
+  opacity: calc(1 - var(--cb-close) * 0.95);
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  box-shadow: inset 0 2px 12px rgba(59, 31, 14, 0.12);
+}
+.gift-box-builder .cb-mailer__products {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px;
+  align-content: flex-start;
+  justify-content: center;
+  height: 100%;
+  font-size: clamp(12px, 3.5vw, 20px);
+}
+.gift-box-builder .cb-mailer__prod-emoji {
+  animation: cbProdPop 0.35s ease both;
+}
+@keyframes cbProdPop {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.gift-box-builder .cb-mailer__empty-hint {
+  font-size: 11px;
+  color: #9a7a5a;
+  opacity: 0.55;
+  width: 100%;
+  text-align: center;
+  margin-top: 30%;
+}
+.gift-box-builder .cb-mailer__lid-wrap {
+  position: absolute;
+  width: var(--cb-w);
+  height: var(--cb-d);
+  left: 0;
+  top: 0;
+  transform: rotateX(-90deg) translateZ(calc(var(--cb-h) / 2));
+  transform-style: preserve-3d;
+  transform-origin: 50% 100%;
+}
+.gift-box-builder .cb-mailer__lid {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--cb-lid));
+  transform-origin: 50% 100%;
+  transition: transform 0.55s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+.gift-box-builder .cb-mailer__lid-top {
+  position: absolute;
+  width: var(--cb-w);
+  height: var(--cb-d);
+  left: 0;
+  top: 0;
+  transform: rotateX(-90deg) translateZ(0);
+  transform-origin: 50% 100%;
+  overflow: hidden;
+  border-radius: 2px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+.gift-box-builder .cb-mailer__lid-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  object-position: center 38%;
+  opacity: calc(0.35 + var(--cb-close) * 0.65);
+  transition: opacity 0.45s ease;
+}
+.gift-box-builder .cb-mailer-scene--closed .cb-mailer__lid-img {
+  opacity: 1;
+}
+.gift-box-builder .cb-mailer__lid-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: linear-gradient(
+    145deg,
+    rgba(61, 38, 24, calc(0.55 - var(--cb-close) * 0.35)) 0%,
+    rgba(45, 28, 16, calc(0.75 - var(--cb-close) * 0.2)) 100%
+  );
+  pointer-events: none;
+  opacity: calc(1 - var(--cb-close) * 0.35);
+  transition: opacity 0.4s ease;
+}
+.gift-box-builder .cb-mailer-scene--closed .cb-mailer__lid-overlay {
+  opacity: 0.15;
+}
+.gift-box-builder .cb-mailer__lid-ar {
+  font-size: clamp(7px, 1.8vw, 10px);
+  color: #d4af37;
+  letter-spacing: 0.02em;
+}
+.gift-box-builder .cb-mailer__lid-mono {
+  font-family: var(--font-playfair, "Playfair Display", serif);
+  font-size: clamp(28px, 9vw, 48px);
+  font-weight: 700;
+  background: linear-gradient(135deg, #e8c56a 0%, #c9972a 40%, #f5e6a8 55%, #a67c00 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+.gift-box-builder .cb-mailer__lid-word {
+  font-family: var(--font-playfair, "Playfair Display", serif);
+  font-size: clamp(10px, 2.5vw, 14px);
+  color: #d4af37;
+  letter-spacing: 1px;
+}
+.gift-box-builder .cb-mailer__lid-inner {
+  position: absolute;
+  width: var(--cb-w);
+  height: var(--cb-d);
+  left: 0;
+  top: 0;
+  transform: rotateX(-90deg) translateZ(-2px) rotateX(180deg);
+  background: #e8dcc8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  opacity: calc(1 - var(--cb-close));
+  transition: opacity 0.4s ease;
+}
+.gift-box-builder .cb-mailer__lid-inner-tag {
+  font-family: var(--font-playfair, "Playfair Display", serif);
+  font-size: 12px;
+  color: #3d2618;
+  font-style: italic;
+}
+.gift-box-builder .cb-mailer__lid-ear {
+  position: absolute;
+  width: 18%;
+  height: 22%;
+  top: 100%;
+  background: #3d2618;
+  background-image: url("/brand/gift-box/bear-pattern.svg");
+  background-size: 28px 28px;
+  transform-origin: top center;
+  transition: transform 0.5s cubic-bezier(0.34, 1.1, 0.64, 1);
+}
+.gift-box-builder .cb-mailer__lid-ear--l {
+  left: 0;
+  transform: rotateX(calc(90deg * var(--cb-ear)));
+}
+.gift-box-builder .cb-mailer__lid-ear--r {
+  right: 0;
+  transform: rotateX(calc(90deg * var(--cb-ear)));
+}
+.gift-box-builder .cb-mailer__lid-flap {
+  position: absolute;
+  width: 88%;
+  height: 18%;
+  left: 6%;
+  top: 100%;
+  background: #3d2618;
+  background-image: url("/brand/gift-box/bear-pattern.svg");
+  background-size: 32px 32px;
+  transform-origin: top center;
+  transform: rotateX(var(--cb-flap));
+  transition: transform 0.5s cubic-bezier(0.34, 1.1, 0.64, 1);
+  border-radius: 0 0 3px 3px;
+}
+.gift-box-builder .cb-mailer__status {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--gb-text-muted);
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.gift-box-builder .gb-mini-scene .cb-mailer-scene {
+  transform: scale(0.85);
+}
+.gift-box-builder .gb-mini-scene .gb-mini-box3d {
+  animation: none;
+  transform: rotateX(-18deg) rotateY(28deg);
 }
 
 .gift-box-builder .gb-sidebar {
@@ -362,12 +687,15 @@
   flex-direction: column;
 }
 .gift-box-builder .gb-mini-scene {
-  height: 200px;
-  perspective: 600px;
+  height: 220px;
+  min-height: 220px;
+  perspective: 700px;
+  perspective-origin: 50% 45%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 20px;
+  overflow: visible;
 }
 .gift-box-builder .gb-mini-box3d {
   width: 160px;
