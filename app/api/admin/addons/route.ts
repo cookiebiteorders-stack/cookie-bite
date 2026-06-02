@@ -9,7 +9,7 @@ const updateSchema = addonSchema.extend({ id: z.string().uuid() });
 const deleteSchema = z.object({ id: z.string().uuid() });
 
 export async function GET() {
-  await requireAdminAccess("products");
+  await requireAdminAccess("addons");
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("addons")
@@ -22,7 +22,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const actor = await requireAdminAccess("products");
+  const actor = await requireAdminAccess("addons");
   requireWritePermission(actor);
   const parsed = addonSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const actor = await requireAdminAccess("products");
+  const actor = await requireAdminAccess("addons");
   requireWritePermission(actor);
   const parsed = updateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
@@ -59,7 +59,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const actor = await requireAdminAccess("products");
+  const actor = await requireAdminAccess("addons");
   requireWritePermission(actor);
   const parsed = deleteSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
