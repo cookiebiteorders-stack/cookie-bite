@@ -92,6 +92,7 @@ curl -X POST "https://YOUR_DOMAIN/api/cron/email-health" \
 | GET/PATCH | `/api/admin/email/settings` |
 | POST | `/api/admin/email/test` `{ to, runHealth? }` |
 | GET/POST | `/api/admin/email/templates` |
+| POST | `/api/admin/email/templates/sync-library` |
 | GET/POST | `/api/admin/email/event-mappings` |
 | POST | `/api/email/events/trigger` |
 
@@ -118,6 +119,11 @@ curl -X POST "https://YOUR_DOMAIN/api/cron/email-health" \
 - لا يغير قيم موجودة من النظام.
 - لا يضيف مفاتيح جديدة خارج قائمة متغيرات القالب.
 - المخرجات تمر بتنظيف نصي + حد أقصى للطول لكل متغير.
+
+## Sync All Existing Email Templates
+
+- شغّل `POST /api/admin/email/templates/sync-library` لمزامنة كل قوالب `lib/notification-library` إلى جدول `email_templates`.
+- المزامنة تعمل للغتين `en` و `ar` وتحدّث القالب إذا كان موجودًا (`upsert` على `key,language`).
 
 ## Fallback
 
