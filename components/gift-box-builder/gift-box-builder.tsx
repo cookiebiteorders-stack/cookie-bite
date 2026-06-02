@@ -235,7 +235,7 @@ export function GiftBoxBuilder() {
 
   const capPct = cap ? Math.min(100, (totalItems / cap) * 100) : 0;
   const activePreviewMode = previewMode === "video" && allowVideoPreview && !videoFailed ? "video" : "design";
-  const previewVideo = useMemo(() => {
+  const previewVideoBase = useMemo(() => {
     const boxCode = (state.box || "").toLowerCase();
     if (boxCode.includes("large") || boxCode.includes("xl") || boxCode.includes("big")) {
       return "/media/gift-box-preview-large.mp4";
@@ -245,6 +245,7 @@ export function GiftBoxBuilder() {
     }
     return "/media/gift-box-preview.mp4";
   }, [state.box]);
+  const previewVideo = `${previewVideoBase}#t=1.8`;
 
   return (
     <div className="gift-box-builder">
