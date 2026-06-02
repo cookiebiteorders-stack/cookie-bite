@@ -29,10 +29,10 @@ export function getResend() {
 const BRAND_MAILBOX = "cookie-bite@cookie-bite.com";
 
 export const EMAIL_CONFIG = {
-  from: process.env.RESEND_FROM_EMAIL ?? `Cookie Bite <${BRAND_MAILBOX}>`,
-  replyTo: process.env.RESEND_REPLY_TO ?? BRAND_MAILBOX,
+  from: `Cookie Bite <${BRAND_MAILBOX}>`,
+  replyTo: BRAND_MAILBOX,
   /** Inbox that receives internal notifications (contact form, alerts, …). */
-  inbox: process.env.CONTACT_INBOX ?? BRAND_MAILBOX,
+  inbox: BRAND_MAILBOX,
   domain: process.env.RESEND_DOMAIN ?? "cookie-bite.com",
   brandMailbox: BRAND_MAILBOX,
 } as const;
