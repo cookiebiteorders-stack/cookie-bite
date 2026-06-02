@@ -3,6 +3,7 @@ import { z } from "zod";
 import { insertCheckoutOrder } from "@/lib/db/orders";
 import { getUserByClerkId } from "@/lib/db/users";
 import { resolveCheckoutLineItems } from "@/lib/checkout/resolve-line-items";
+import { onOrderCreated } from "@/lib/email/automation/triggers";
 import { scheduleOrderConfirmed } from "@/lib/notifications/schedule";
 import {
   buildPaymobBillingData,
@@ -180,6 +181,21 @@ export async function POST(req: Request) {
       scheduleOrderConfirmed(inserted.id);
     }
 
+    if (inserted && shippingEmail) {
+      try {
+        await onOrderCreated({
+          email: shippingEmail,
+          userId: dbUserId,
+          userName: shipping.name,
+          orderId: String(inserted.orderNumber),
+          orderItems: resolved.map((line) => `${line.name} x${line.quantity}`).join(", "),
+          totalPrice: total.toFixed(2),
+        });
+      } catch (eventError) {
+        console.error("order_created email trigger failed", eventError);
+      }
+    }
+
     return Response.json({
       ok: true,
       configured: false,
@@ -274,6 +290,21 @@ export async function POST(req: Request) {
 
     if (inserted?.id) {
       scheduleOrderConfirmed(inserted.id);
+    }
+
+    if (inserted && shippingEmail) {
+      try {
+        await onOrderCreated({
+          email: shippingEmail,
+          userId: dbUserId,
+          userName: shipping.name,
+          orderId: String(inserted.orderNumber),
+          orderItems: resolved.map((line) => `${line.name} x${line.quantity}`).join(", "),
+          totalPrice: total.toFixed(2),
+        });
+      } catch (eventError) {
+        console.error("order_created email trigger failed", eventError);
+      }
     }
 
     const billing = buildPaymobBillingData({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getUserByClerkId } from "@/lib/db/users";
+import { onOrderCreated } from "@/lib/email/automation/triggers";
 import { checkoutSchema, bilingualError } from "@/lib/validations";
 import type { Addon } from "@/lib/addons/types";
 
@@ -267,9 +268,13 @@ export async function POST(req: NextRequest) {
   // 5) المستخدم
   const { userId } = await auth();
   let user_id: string | null = null;
+  let user_email: string | null = null;
+  let user_name: string | null = null;
   if (userId) {
     const profile = await getUserByClerkId(userId);
     user_id = profile?.id ?? null;
+    user_email = profile?.email ?? null;
+    user_name = profile?.full_name ?? null;
   }
 
   // 6) إنشاء الطلب
@@ -393,6 +398,30 @@ export async function POST(req: NextRequest) {
       .from("promo_codes")
       .update({ used_count: (await getPromoUsedCount(supabase, promoIdToIncrement)) + 1 })
       .eq("id", promoIdToIncrement);
+  }
+
+  const recipientEmail = user_email ?? data.guest_email ?? null;
+  if (recipientEmail) {
+    const orderItemsText = data.cart_items
+      .map((item) => {
+        const product = products.find((p) => p.id === item.product_id);
+        const label = product?.title_en ?? product?.name ?? item.product_id;
+        return `${label} x${item.quantity}`;
+      })
+      .join(", ");
+
+    try {
+      await onOrderCreated({
+        email: recipientEmail,
+        userId: user_id,
+        userName: user_name ?? undefined,
+        orderId: order.order_code ?? String(order.order_number),
+        orderItems: orderItemsText,
+        totalPrice: total.toFixed(2),
+      });
+    } catch (eventError) {
+      console.error("order_created email trigger failed", eventError);
+    }
   }
 
   return NextResponse.json({

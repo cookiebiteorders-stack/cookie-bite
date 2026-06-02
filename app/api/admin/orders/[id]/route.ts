@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-admin";
 import { sendOrderStatusEmail } from "@/lib/email/send";
+import { onOrderShipped } from "@/lib/email/automation/triggers";
 import { bilingualError } from "@/lib/validations";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { ORDER_STATUS_VALUES, PAYMENT_STATUS_VALUES } from "@/lib/domain/order-enums";
@@ -95,14 +96,26 @@ export async function PATCH(
     to = user?.email ?? to;
   }
   if (to && parsed.data.status) {
-    await sendOrderStatusEmail({
-      to,
-      payload: {
-        orderId: order.order_code ?? String(order.order_number),
-        status: parsed.data.status,
-        message: parsed.data.note ?? "Your order status has been updated.",
-      },
-    });
+    if (parsed.data.status === "shipped") {
+      try {
+        await onOrderShipped({
+          email: to,
+          userId: order.user_id ?? null,
+          orderId: order.order_code ?? String(order.order_number),
+        });
+      } catch (eventError) {
+        console.error("order_shipped email trigger failed", eventError);
+      }
+    } else {
+      await sendOrderStatusEmail({
+        to,
+        payload: {
+          orderId: order.order_code ?? String(order.order_number),
+          status: parsed.data.status,
+          message: parsed.data.note ?? "Your order status has been updated.",
+        },
+      });
+    }
   }
 
   await writeAuditLog({

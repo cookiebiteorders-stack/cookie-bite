@@ -1,4 +1,4 @@
-import { sendWelcomeEmail } from "@/lib/email/send";
+import { onUserRegistered } from "@/lib/email/automation/triggers";
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const WELCOME_RETRY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -45,11 +45,14 @@ export async function trySendWelcomeEmailOnce(
   if (!claimed) return { sent: false, reason: "already_sent" };
 
   try {
-    await sendWelcomeEmail({
-      to: opts.to,
-      name: opts.name,
-      credentials: opts.credentials,
+    const result = await onUserRegistered({
+      email: opts.to,
+      userId: opts.userId,
+      userName: opts.name,
     });
+    if (!result.ok && !result.skipped) {
+      throw new Error(result.reason ?? "welcome_automation_failed");
+    }
     return { sent: true };
   } catch (err) {
     await supabase
