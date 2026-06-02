@@ -24,6 +24,12 @@ import { checkoutDeliverySchema } from "@/lib/checkout/delivery-scheduling";
 import { resolveDeliveryForCheckout } from "@/lib/checkout/resolve-delivery-persist";
 import { checkGiftBoxSnapshotAvailability } from "@/lib/gift-box/check-availability";
 import { giftBoxOrderSnapshotSchema } from "@/lib/gift-box/order-snapshot";
+import { markAbandonedCartRecovered } from "@/lib/cart/abandoned";
+import {
+  fetchRecoveryDiscountByCode,
+  markRecoveryDiscountUsed,
+  validateRecoveryDiscountForCart,
+} from "@/lib/cart/recovery-discount";
 
 const GIFT_WRAP_FEE_EGP = 30;
 
@@ -148,16 +154,24 @@ export async function POST(req: Request) {
   let discountAmount = 0;
   let appliedPromoCode: string | null = null;
   let appliedPromoId: string | null = null;
+  let isRecoveryPromo = false;
 
   if (promoCodeRaw?.trim()) {
     try {
       const supabase = createSupabaseAdminClient();
       const promo = await fetchActivePromoByCode(supabase, promoCodeRaw.trim());
-      const validation = validatePromoForCart(promo, subtotal);
+      let validation = validatePromoForCart(promo, subtotal);
+      if (!validation.valid) {
+        const recovery = await fetchRecoveryDiscountByCode(supabase, promoCodeRaw.trim());
+        validation = validateRecoveryDiscountForCart(recovery, subtotal);
+        if (validation.valid) {
+          isRecoveryPromo = true;
+        }
+      }
       if (validation.valid) {
         discountAmount = validation.discount_amount;
         appliedPromoCode = validation.promo.code;
-        appliedPromoId = validation.promo.id;
+        appliedPromoId = isRecoveryPromo ? null : validation.promo.id;
       } else {
         return Response.json(
           { ok: false, error: validation.error_en, error_ar: validation.error_ar },
@@ -267,6 +281,21 @@ export async function POST(req: Request) {
       scheduleOrderConfirmed(inserted.id);
     }
 
+    if (inserted) {
+      try {
+        await markAbandonedCartRecovered({
+          userId: dbUserId,
+          email: shippingEmail ?? null,
+        });
+        if (isRecoveryPromo && appliedPromoCode) {
+          const supabase = createSupabaseAdminClient();
+          await markRecoveryDiscountUsed(supabase, appliedPromoCode);
+        }
+      } catch (recoveryErr) {
+        console.error("abandoned cart recovery cleanup failed", recoveryErr);
+      }
+    }
+
     if (inserted && shippingEmail) {
       try {
         await onOrderCreated({
@@ -374,6 +403,21 @@ export async function POST(req: Request) {
 
     if (inserted?.id) {
       scheduleOrderConfirmed(inserted.id);
+    }
+
+    if (inserted) {
+      try {
+        await markAbandonedCartRecovered({
+          userId: dbUserId,
+          email: shippingEmail ?? null,
+        });
+        if (isRecoveryPromo && appliedPromoCode) {
+          const supabase = createSupabaseAdminClient();
+          await markRecoveryDiscountUsed(supabase, appliedPromoCode);
+        }
+      } catch (recoveryErr) {
+        console.error("abandoned cart recovery cleanup failed", recoveryErr);
+      }
     }
 
     if (inserted && shippingEmail) {

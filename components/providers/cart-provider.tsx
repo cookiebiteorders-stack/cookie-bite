@@ -21,6 +21,7 @@ import {
 import { persistGiftBoxState } from "@/lib/gift-box-builder/state";
 import { builderStateFromSnapshot, type GiftBoxOrderSnapshot } from "@/lib/gift-box/order-snapshot";
 
+import { AbandonedCartTracker } from "@/components/cart/abandoned-cart-tracker";
 import type { AppliedPromo } from "@/components/checkout/promo-code-field";
 
 const STORAGE_KEY = "cb-cart-v1";
@@ -55,6 +56,7 @@ type CartContextValue = {
     builder?: Record<string, unknown>;
   }) => void;
   restoreGiftBox: (snapshot: GiftBoxOrderSnapshot) => void;
+  restoreCart: (lines: CartLine[], discountCode?: string | null) => Promise<void>;
   setQuantity: (lineId: string, quantity: number) => void;
   removeItem: (lineId: string) => void;
   clearCart: () => void;
@@ -260,6 +262,41 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setPromo(null);
   }, []);
 
+  const restoreCart = useCallback(async (lines: CartLine[], discountCode?: string | null) => {
+    setLines(lines);
+    if (!discountCode) {
+      setPromo(null);
+      return;
+    }
+    const subtotal = cartSubtotal(lines);
+    try {
+      const res = await fetch("/api/promo/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: discountCode, cart_total: subtotal }),
+      });
+      const data = (await res.json()) as {
+        valid?: boolean;
+        discount_amount?: number;
+        type?: "percent" | "fixed";
+        value?: number;
+        code?: string;
+      };
+      if (data.valid) {
+        setPromo({
+          code: data.code ?? discountCode.toUpperCase(),
+          discount_amount: data.discount_amount ?? 0,
+          type: data.type ?? "percent",
+          value: data.value ?? 0,
+        });
+      } else {
+        setPromo(null);
+      }
+    } catch {
+      setPromo(null);
+    }
+  }, []);
+
   const removeItem = useCallback((lineId: string) => {
     setLines((prev) => prev.filter((l) => l.id !== lineId));
   }, []);
@@ -291,6 +328,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       addItem,
       addGiftBoxItem,
       restoreGiftBox,
+      restoreCart,
       setQuantity,
       removeItem,
       clearCart,
@@ -310,6 +348,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       addItem,
       addGiftBoxItem,
       restoreGiftBox,
+      restoreCart,
       setQuantity,
       removeItem,
       clearCart,
@@ -322,7 +361,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     ],
   );
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return (
+    <CartContext.Provider value={value}>
+      <AbandonedCartTracker />
+      {children}
+    </CartContext.Provider>
+  );
 }
 
 export function useCart() {

@@ -6,6 +6,10 @@ import {
   fetchActivePromoByCode,
   validatePromoForCart,
 } from "@/lib/promo/validate-promo";
+import {
+  fetchRecoveryDiscountByCode,
+  validateRecoveryDiscountForCart,
+} from "@/lib/cart/recovery-discount";
 
 export async function POST(req: NextRequest) {
   let json: unknown;
@@ -47,7 +51,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const result = validatePromoForCart(promo, cart_total);
+  let result = validatePromoForCart(promo, cart_total);
+  if (!result.valid) {
+    try {
+      const recovery = await fetchRecoveryDiscountByCode(supabase, code);
+      result = validateRecoveryDiscountForCart(recovery, cart_total);
+    } catch (error) {
+      logStructuredError("/api/promo/validate recovery", error, { code: code.toUpperCase() });
+    }
+  }
   if (!result.valid) {
     return NextResponse.json({
       valid: false,

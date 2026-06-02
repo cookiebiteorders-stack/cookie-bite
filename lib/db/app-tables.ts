@@ -28,6 +28,8 @@ export const APP_DATABASE_TABLES = [
   "push_subscriptions",
   "reviews",
   "schema_migrations",
+  "abandoned_carts",
+  "recovery_discount_codes",
 ] as const;
 
 export type AppDatabaseTable = (typeof APP_DATABASE_TABLES)[number];
