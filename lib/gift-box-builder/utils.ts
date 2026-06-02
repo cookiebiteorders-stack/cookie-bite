@@ -1,18 +1,13 @@
 import { BRAND } from "@/lib/brand";
 import { GIFT_BOX_BUILDER_DATA, type BuilderProduct } from "@/lib/gift-box-builder/data";
-import type { GiftBoxSizeConfig } from "@/lib/gift-box-builder/sizes";
 import type { GiftBoxBuilderState } from "@/lib/gift-box-builder/types";
 
 export function formatBuilderPrice(amount: number): string {
   return `${Math.round(amount).toLocaleString()} ${BRAND.currency}`;
 }
 
-export function getBoxCapacity(boxCode: string | null, sizes?: GiftBoxSizeConfig[]): number {
-  if (sizes && sizes.length > 0) {
-    const box = sizes.find((b) => b.code === boxCode);
-    return box?.max_items ?? 0;
-  }
-  const box = GIFT_BOX_BUILDER_DATA.boxes.find((b) => b.id === boxCode);
+export function getBoxCapacity(boxId: string | null): number {
+  const box = GIFT_BOX_BUILDER_DATA.boxes.find((b) => b.id === boxId);
   return box?.capacity ?? 0;
 }
 
