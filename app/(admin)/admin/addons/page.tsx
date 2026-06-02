@@ -107,6 +107,16 @@ export default function AdminAddonsPage() {
     });
   }
 
+  async function unlinkAddonFromProduct(addonId: string, productId: string) {
+    const product = products.find((p) => p.id === productId);
+    const existing = Array.isArray(product?.linked_addon_ids) ? product!.linked_addon_ids! : [];
+    const next = existing.filter((id) => id !== addonId);
+    await fetchJson("/api/admin/products", {
+      method: "PATCH",
+      jsonBody: { ids: [productId], patch: { linked_addon_ids: next } },
+    });
+  }
+
   async function createAndLinkToProduct() {
     if (!selectedProductId) {
       setError("Please select a product first.");
@@ -460,6 +470,22 @@ export default function AdminAddonsPage() {
                 }}
               >
                 Link to selected product
+              </button>
+              <button
+                type="button"
+                className="rounded border border-cb-border px-3 py-1 text-xs disabled:opacity-50"
+                disabled={!selectedProductId}
+                onClick={async () => {
+                  setError(null);
+                  try {
+                    await unlinkAddonFromProduct(addon.id, selectedProductId);
+                    await loadProducts();
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : "Failed to unlink add-on");
+                  }
+                }}
+              >
+                Unlink from selected product
               </button>
               <button
                 type="button"
