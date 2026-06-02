@@ -23,7 +23,10 @@ const emptyAddon: Addon = {
 };
 
 export default function AdminAddonsPage() {
+  type ProductLite = { id: string; name?: string | null; title_en?: string | null; linked_addon_ids?: string[] };
   const [addons, setAddons] = useState<Addon[]>([]);
+  const [products, setProducts] = useState<ProductLite[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState("");
   const [form, setForm] = useState<Addon>(emptyAddon);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [defaultPrice, setDefaultPrice] = useState<number>(0);
@@ -37,8 +40,16 @@ export default function AdminAddonsPage() {
     setAddons(res.addons ?? []);
   }
 
+  async function loadProducts() {
+    const res = await fetchJson<{ products: ProductLite[] }>("/api/admin/products?page=1&limit=200", {
+      cache: "no-store",
+    });
+    setProducts(res.products ?? []);
+  }
+
   useEffect(() => {
     void load();
+    void loadProducts();
   }, []);
 
   async function save() {
@@ -64,6 +75,50 @@ export default function AdminAddonsPage() {
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save add-on");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function linkAddonToProduct(addonId: string, productId: string) {
+    const product = products.find((p) => p.id === productId);
+    const existing = Array.isArray(product?.linked_addon_ids) ? product!.linked_addon_ids! : [];
+    const merged = Array.from(new Set([...existing, addonId]));
+    await fetchJson("/api/admin/products", {
+      method: "PATCH",
+      jsonBody: { ids: [productId], patch: { linked_addon_ids: merged } },
+    });
+  }
+
+  async function createAndLinkToProduct() {
+    if (!selectedProductId) {
+      setError("Please select a product first.");
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        options: form.options.map((o) => ({
+          ...o,
+          id: o.id || crypto.randomUUID(),
+        })),
+      };
+      const res = await fetchJson<{ addon: Addon }>("/api/admin/addons", {
+        method: "POST",
+        jsonBody: payload,
+      });
+      if (!res.addon?.id) {
+        throw new Error("Add-on was created without a valid id.");
+      }
+      await linkAddonToProduct(res.addon.id, selectedProductId);
+      setForm(emptyAddon);
+      setDefaultPrice(0);
+      setEditingId(null);
+      await Promise.all([load(), loadProducts()]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to create and link add-on");
     } finally {
       setSaving(false);
     }
@@ -177,6 +232,18 @@ export default function AdminAddonsPage() {
             value={defaultPrice}
             onChange={(e) => setDefaultPrice(Math.max(0, Number(e.target.value) || 0))}
           />
+          <select
+            className="rounded-lg border border-cb-border px-3 py-2"
+            value={selectedProductId}
+            onChange={(e) => setSelectedProductId(e.target.value)}
+          >
+            <option value="">Select product to link (optional)</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title_en ?? p.name ?? p.id}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="mt-2">
           <button
@@ -293,6 +360,16 @@ export default function AdminAddonsPage() {
           <button type="button" className="rounded bg-cb-terracotta-dark px-4 py-2 text-white disabled:opacity-50" disabled={saving} onClick={() => void save()}>
             {editingId ? "Update Add-on" : "Create Add-on"}
           </button>
+          {!editingId ? (
+            <button
+              type="button"
+              className="rounded border border-cb-border px-4 py-2 disabled:opacity-50"
+              disabled={saving || !selectedProductId}
+              onClick={() => void createAndLinkToProduct()}
+            >
+              Create & Link to Product
+            </button>
+          ) : null}
           {editingId ? (
             <button
               type="button"
@@ -337,6 +414,22 @@ export default function AdminAddonsPage() {
                 setDefaultPrice(Number(addon.options[0]?.price ?? 0));
               }}>
                 Edit
+              </button>
+              <button
+                type="button"
+                className="rounded border border-cb-border px-3 py-1 text-xs"
+                disabled={!selectedProductId}
+                onClick={async () => {
+                  setError(null);
+                  try {
+                    await linkAddonToProduct(addon.id, selectedProductId);
+                    await loadProducts();
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : "Failed to link add-on");
+                  }
+                }}
+              >
+                Link to selected product
               </button>
               <button
                 type="button"
