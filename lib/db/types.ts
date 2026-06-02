@@ -87,6 +87,15 @@ export type OrderRow = {
   total_egp: number;
   promo_code: string | null;
   delivery_slot: string | null;
+  delivery_slot_id?: string | null;
+  scheduled_delivery_date?: string | null;
+  scheduled_delivery_time?: string | null;
+  recipient_name?: string | null;
+  recipient_phone?: string | null;
+  recipient_address?: Record<string, unknown> | null;
+  hide_price?: boolean;
+  anonymous_sender?: boolean;
+  sender_name?: string | null;
   gift_message: string | null;
   is_gift: boolean;
   whatsapp_confirmed: boolean;

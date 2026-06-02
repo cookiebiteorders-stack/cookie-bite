@@ -7,13 +7,24 @@ import { useCart } from "@/components/providers/cart-provider";
 import { FreeDeliveryBar } from "@/components/cart/free-delivery-bar";
 import { PromoCodeField } from "@/components/checkout/promo-code-field";
 import { buttonClassName } from "@/components/ui/button";
+import { DeliveryScheduler } from "@/components/checkout/delivery-scheduler";
 import { stashPendingPurchaseEvents } from "@/components/checkout/purchase-events-tracker";
+import { useLanguage } from "@/components/providers/language-provider";
+import {
+  emptyDeliveryScheduling,
+  stateToPayload,
+  validateDeliverySchedulingClient,
+  type DeliverySchedulingState,
+} from "@/lib/checkout/delivery-scheduling";
 import { siteConfig } from "@/lib/site-config";
+
+const GIFT_WRAP_FEE_EGP = 30;
 
 type Step = 1 | 2 | 3;
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { lang } = useLanguage();
   const { lines, subtotalEgp, discountEgp, itemCount, clearCart, promo, applyPromo, clearPromo } =
     useCart();
   const [step, setStep] = useState<Step>(1);
@@ -27,6 +38,7 @@ export default function CheckoutPage() {
   const [city, setCity] = useState("New Cairo");
   const [notes, setNotes] = useState("");
   const [payment, setPayment] = useState<"card" | "wallet" | "cod">("cod");
+  const [delivery, setDelivery] = useState<DeliverySchedulingState>(emptyDeliveryScheduling);
   const hasGiftBoxLine = lines.some((l) => Boolean(l.giftBox));
 
   useEffect(() => {
@@ -56,6 +68,7 @@ export default function CheckoutPage() {
           shipping: { name, email, phone, address, city, notes },
           paymentMethod: payment,
           promo_code: promo?.code,
+          delivery: stateToPayload(delivery),
         }),
       });
       const data = await res.json();
@@ -115,7 +128,8 @@ export default function CheckoutPage() {
     subtotalEgp >= siteConfig.freeDeliveryThresholdEgp
       ? 0
       : siteConfig.standardDeliveryFeeEgp;
-  const total = Math.max(0, subtotalEgp - discountEgp + deliveryFee);
+  const giftWrapFee = delivery.isGift ? GIFT_WRAP_FEE_EGP : 0;
+  const total = Math.max(0, subtotalEgp - discountEgp + deliveryFee + giftWrapFee);
 
   return (
     <div className="bg-cb-cream pb-24 pt-10">
@@ -150,6 +164,14 @@ export default function CheckoutPage() {
             className="mt-8 space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
+              const deliveryErr = validateDeliverySchedulingClient(delivery, lang);
+              if (deliveryErr) {
+                setErrorMsg(deliveryErr);
+                setStatus("error");
+                return;
+              }
+              setErrorMsg(null);
+              setStatus("idle");
               setStep(2);
             }}
           >
@@ -225,6 +247,12 @@ export default function CheckoutPage() {
                 className="w-full rounded-2xl border-2 border-cb-border bg-cb-surface px-4 py-3 text-sm outline-none focus-visible:border-cb-terracotta-dark focus-visible:ring-2 focus-visible:ring-cb-focus"
               />
             </div>
+            <DeliveryScheduler value={delivery} onChange={setDelivery} className="mt-2" />
+            {errorMsg && step === 1 ? (
+              <p className="text-sm font-semibold text-red-700" role="alert">
+                {errorMsg}
+              </p>
+            ) : null}
             <button type="submit" className={buttonClassName("primary", "w-full rounded-full py-4")}>
               Continue to payment
             </button>
@@ -306,6 +334,20 @@ export default function CheckoutPage() {
                   <span>Delivery</span>
                   <span>{deliveryFee === 0 ? "Free" : `${deliveryFee} EGP`}</span>
                 </li>
+                {giftWrapFee > 0 ? (
+                  <li className="flex justify-between">
+                    <span>{lang === "ar" ? "تغليف هدية" : "Gift wrapping"}</span>
+                    <span>{giftWrapFee} EGP</span>
+                  </li>
+                ) : null}
+                {delivery.deliveryDate && delivery.slotLabel ? (
+                  <li className="flex justify-between text-xs text-cb-text-muted">
+                    <span>{lang === "ar" ? "موعد التوصيل" : "Scheduled"}</span>
+                    <span>
+                      {delivery.deliveryDate} · {delivery.slotLabel}
+                    </span>
+                  </li>
+                ) : null}
                 <li className="flex justify-between font-serif text-lg font-bold text-cb-terracotta-dark">
                   <span>Total</span>
                   <span>{total.toFixed(0)} EGP</span>

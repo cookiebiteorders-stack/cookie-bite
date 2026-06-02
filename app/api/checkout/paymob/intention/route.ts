@@ -20,6 +20,10 @@ import {
   validatePromoForCart,
 } from "@/lib/promo/validate-promo";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { checkoutDeliverySchema } from "@/lib/checkout/delivery-scheduling";
+import { resolveDeliveryForCheckout } from "@/lib/checkout/resolve-delivery-persist";
+
+const GIFT_WRAP_FEE_EGP = 30;
 
 const BodySchema = z.object({
   items: z.array(
@@ -52,6 +56,7 @@ const BodySchema = z.object({
   }),
   paymentMethod: z.enum(["card", "wallet", "cod"]),
   promo_code: z.string().min(3).max(20).optional(),
+  delivery: checkoutDeliverySchema,
 });
 
 async function resolveSupabaseUserId(): Promise<string | null> {
@@ -85,7 +90,16 @@ export async function POST(req: Request) {
     );
   }
 
-  const { items, shipping, paymentMethod, promo_code: promoCodeRaw } = parsed.data;
+  const { items, shipping, paymentMethod, promo_code: promoCodeRaw, delivery } = parsed.data;
+
+  const deliveryResolved = await resolveDeliveryForCheckout(delivery);
+  if (!deliveryResolved.ok) {
+    return Response.json(
+      { ok: false, error: deliveryResolved.error_en, error_ar: deliveryResolved.error_ar },
+      { status: deliveryResolved.status },
+    );
+  }
+  const deliveryPersist = deliveryResolved.persist;
   const shippingEmail =
     shipping.email && shipping.email.length > 0 ? shipping.email : undefined;
 
@@ -126,7 +140,8 @@ export async function POST(req: Request) {
     }
   }
 
-  const total = Math.max(0, subtotal - discountAmount + deliveryFee);
+  const giftWrappingFee = deliveryPersist.isGift ? GIFT_WRAP_FEE_EGP : 0;
+  const total = Math.max(0, subtotal - discountAmount + deliveryFee + giftWrappingFee);
 
   const apiKey = process.env.PAYMOB_API_KEY?.trim() ?? "";
   const hmacSecret = resolvePaymobHmacSecret();
@@ -173,6 +188,8 @@ export async function POST(req: Request) {
       shippingAddress,
       notes: `Web checkout · ${guestRef}`,
       guestEmail: shippingEmail ?? null,
+      giftWrappingFeeEgp: giftWrappingFee,
+      deliveryScheduling: deliveryPersist,
     });
 
     const orderId = inserted ? String(inserted.orderNumber) : guestRef;
@@ -253,6 +270,14 @@ export async function POST(req: Request) {
     deliveryFee,
     discountAmount,
   );
+  if (giftWrappingFee > 0) {
+    paymobItems.push({
+      name: "Gift wrapping",
+      amount_cents: Math.round(giftWrappingFee * 100),
+      description: "gift_wrap",
+      quantity: "1",
+    });
+  }
   const itemsSum = paymobItems.reduce((s, i) => s + i.amount_cents, 0);
   if (itemsSum !== amountCents) {
     console.error("Paymob line items sum mismatch", { itemsSum, amountCents });
@@ -286,6 +311,8 @@ export async function POST(req: Request) {
       notes: `Paymob checkout · ${guestRef}`,
       paymobAcceptOrderId: paymobOrderId,
       guestEmail: shippingEmail ?? null,
+      giftWrappingFeeEgp: giftWrappingFee,
+      deliveryScheduling: deliveryPersist,
     });
 
     if (inserted?.id) {

@@ -2,7 +2,9 @@ import {
   createSupabaseAdminClient,
   tryCreateSupabaseAdminClient,
 } from "@/lib/supabase/admin";
+import type { DeliverySchedulingPersist } from "@/lib/checkout/delivery-scheduling";
 import type { OrderItemRow, OrderRow } from "@/lib/db/types";
+import { assertSlotAvailable, bookDeliverySlot } from "@/lib/delivery/slots";
 import { recordPromoUse } from "@/lib/promo/validate-promo";
 
 export type InsertCheckoutOrderInput = {
@@ -28,6 +30,8 @@ export type InsertCheckoutOrderInput = {
   notes: string | null;
   paymobAcceptOrderId?: number | null;
   guestEmail?: string | null;
+  giftWrappingFeeEgp?: number;
+  deliveryScheduling?: DeliverySchedulingPersist | null;
 };
 
 /** حفظ طلب + البنود؛ يعيد null إذا لم يُضبط Supabase أو فشل الإدراج. */
@@ -63,6 +67,39 @@ export async function insertCheckoutOrder(
   }
   if (params.paymobAcceptOrderId != null) {
     insertRow.paymob_accept_order_id = params.paymobAcceptOrderId;
+  }
+  if (params.giftWrappingFeeEgp != null && params.giftWrappingFeeEgp > 0) {
+    insertRow.gift_wrapping_fee_egp = params.giftWrappingFeeEgp;
+  }
+
+  const sched = params.deliveryScheduling;
+  if (sched) {
+    insertRow.scheduled_delivery_date = sched.scheduledDeliveryDate;
+    insertRow.scheduled_delivery_time = sched.scheduledDeliveryTime;
+    insertRow.delivery_slot_id = sched.deliverySlotId.startsWith("fallback-")
+      ? null
+      : sched.deliverySlotId;
+    insertRow.delivery_slot = sched.deliverySlotLabel;
+    insertRow.is_gift = sched.isGift;
+    insertRow.hide_price = sched.hidePrice;
+    insertRow.anonymous_sender = sched.anonymousSender;
+    insertRow.sender_name = sched.senderName;
+    insertRow.gift_message = sched.giftMessage;
+    insertRow.recipient_name = sched.recipientName;
+    insertRow.recipient_phone = sched.recipientPhone;
+    insertRow.recipient_address = sched.recipientAddress;
+  }
+
+  if (sched?.deliverySlotId && !sched.deliverySlotId.startsWith("fallback-")) {
+    try {
+      await assertSlotAvailable(sched.deliverySlotId, sched.scheduledDeliveryDate);
+    } catch (e) {
+      const code = e instanceof Error ? e.message : "";
+      if (code === "SLOT_FULL") {
+        console.error("insertCheckoutOrder: slot full", sched.deliverySlotId);
+        return null;
+      }
+    }
   }
 
   const { data: orderRow, error: orderErr } = await supabase
@@ -129,6 +166,18 @@ export async function insertCheckoutOrder(
       });
     } catch (promoErr) {
       console.error("insertCheckoutOrder promo use error (non-fatal)", promoErr);
+    }
+  }
+
+  if (sched?.deliverySlotId && !sched.deliverySlotId.startsWith("fallback-")) {
+    try {
+      await bookDeliverySlot({
+        orderId,
+        slotId: sched.deliverySlotId,
+        deliveryDate: sched.scheduledDeliveryDate,
+      });
+    } catch (bookErr) {
+      console.error("insertCheckoutOrder slot booking failed (non-fatal)", bookErr);
     }
   }
 
