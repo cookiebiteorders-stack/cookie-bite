@@ -51,7 +51,7 @@ const adminContextBadgeClass =
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const { itemCount, openDrawer } = useCart();
+  const { itemCount, toggleDrawer } = useCart();
   const { t, lang } = useLanguage();
   const { items: staffAdminNavItems } = useStaffAdminNav();
   const admin = useOptionalAdminConsole();
@@ -268,7 +268,7 @@ export function SiteHeader() {
 
               <button
                 type="button"
-                onClick={openDrawer}
+                onClick={toggleDrawer}
                 className={cn(iconBtn, "relative")}
                 aria-label={
                   itemCount

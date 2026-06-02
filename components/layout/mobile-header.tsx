@@ -47,7 +47,7 @@ const isRootTab = (path: string) =>
 
 export function MobileHeader() {
   const pathname = usePathname();
-  const { itemCount, openDrawer } = useCart();
+  const { itemCount, toggleDrawer } = useCart();
   const { t, lang } = useLanguage();
   const admin = useOptionalAdminConsole();
   const currentAdminPage = admin
@@ -225,7 +225,7 @@ export function MobileHeader() {
             </Link>
             <button
               type="button"
-              onClick={openDrawer}
+              onClick={toggleDrawer}
               className="mobile-header__icon-btn mobile-header__cart-btn"
               aria-label={
                 itemCount
