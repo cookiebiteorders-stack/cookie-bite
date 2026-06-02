@@ -765,6 +765,53 @@
   justify-content: center;
   margin-bottom: 20px;
   overflow: visible;
+  position: relative;
+  border-radius: 14px;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.08), rgba(59, 31, 14, 0.35));
+}
+.gift-box-builder .gb-preview-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.gift-box-builder .gb-preview-toggle {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.88);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--gb-transition), border-color var(--gb-transition), opacity var(--gb-transition);
+}
+.gift-box-builder .gb-preview-toggle.active {
+  border-color: var(--gb-gold-light);
+  background: rgba(232, 197, 106, 0.2);
+}
+.gift-box-builder .gb-preview-toggle:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.gift-box-builder .gb-preview-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 280ms ease-in-out;
+}
+.gift-box-builder .gb-preview-layer.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.gift-box-builder .gb-preview-video {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  object-fit: cover;
+  object-position: center center;
 }
 .gift-box-builder .gb-mini-box3d {
   width: 100%;
@@ -772,6 +819,11 @@
   position: relative;
   transform-style: preserve-3d;
   animation: none;
+}
+.gift-box-builder .gb-preview-note {
+  margin: -8px 0 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
 }
 
 .gift-box-builder .gb-bottom-nav {
@@ -821,5 +873,8 @@
   }
   .gift-box-builder .gb-step-panel {
     animation: none;
+  }
+  .gift-box-builder .gb-preview-layer {
+    transition: none;
   }
 }

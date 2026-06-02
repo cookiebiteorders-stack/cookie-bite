@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { Box3DPreview } from "@/components/gift-box-builder/box-3d-preview";
@@ -23,6 +23,11 @@ export function GiftBoxBuilder() {
   const [productsError, setProductsError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [boxSizes, setBoxSizes] = useState<GiftBoxSizeConfig[]>(DEFAULT_GIFT_BOX_SIZES);
+  const [previewMode, setPreviewMode] = useState<"design" | "video">("design");
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const [allowVideoPreview, setAllowVideoPreview] = useState(true);
+  const previewRef = useRef<HTMLDivElement | null>(null);
 
   const updateState = useCallback((updater: (prev: GiftBoxBuilderState) => GiftBoxBuilderState) => {
     setState((prev) => {
@@ -72,6 +77,38 @@ export function GiftBoxBuilder() {
         setBoxSizes(DEFAULT_GIFT_BOX_SIZES);
       });
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    const updatePreference = () => {
+      const reducedMotion = mediaQuery.matches;
+      const saveData = Boolean(connection?.saveData);
+      setAllowVideoPreview(!(reducedMotion || saveData));
+    };
+    updatePreference();
+    mediaQuery.addEventListener("change", updatePreference);
+    return () => {
+      mediaQuery.removeEventListener("change", updatePreference);
+    };
+  }, []);
+
+  useEffect(() => {
+    const node = previewRef.current;
+    if (!node || shouldLoadVideo) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoadVideo(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "160px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [shouldLoadVideo]);
 
   const cap = getBoxCapacity(state.box, boxSizes);
   const totalItems = getTotalItems(state.items);
@@ -197,6 +234,17 @@ export function GiftBoxBuilder() {
   ];
 
   const capPct = cap ? Math.min(100, (totalItems / cap) * 100) : 0;
+  const activePreviewMode = previewMode === "video" && allowVideoPreview && !videoFailed ? "video" : "design";
+  const previewVideo = useMemo(() => {
+    const boxCode = (state.box || "").toLowerCase();
+    if (boxCode.includes("large") || boxCode.includes("xl") || boxCode.includes("big")) {
+      return "/media/gift-box-preview-large.mp4";
+    }
+    if (boxCode.includes("small") || boxCode.includes("mini")) {
+      return "/media/gift-box-preview-small.mp4";
+    }
+    return "/media/gift-box-preview.mp4";
+  }, [state.box]);
 
   return (
     <div className="gift-box-builder">
@@ -342,9 +390,52 @@ export function GiftBoxBuilder() {
 
         <aside className="gb-sidebar">
           <h2 style={{ color: "var(--gb-gold-light)", fontFamily: "var(--font-playfair)" }}>{lang === "ar" ? "الصندوق الحالي" : "Current Box"}</h2>
-          <div className="gb-mini-scene">
-            <Box3DPreview size={130} items={state.items} products={products} totalItems={totalItems} capacity={cap} className="gb-mini-box3d" emptyLabel={lang === "ar" ? "أضف منتجات" : "Add products"} closingLabel={lang === "ar" ? "جاري الإغلاق" : "Closing"} />
+          <div className="gb-preview-controls" role="tablist" aria-label={lang === "ar" ? "وضع المعاينة" : "Preview mode"}>
+            <button
+              type="button"
+              className={`gb-preview-toggle ${activePreviewMode === "design" ? "active" : ""}`}
+              onClick={() => setPreviewMode("design")}
+              role="tab"
+              aria-selected={activePreviewMode === "design"}
+            >
+              {lang === "ar" ? "معاينة التصميم" : "Preview Design"}
+            </button>
+            <button
+              type="button"
+              className={`gb-preview-toggle ${activePreviewMode === "video" ? "active" : ""}`}
+              onClick={() => setPreviewMode("video")}
+              role="tab"
+              aria-selected={activePreviewMode === "video"}
+              disabled={!allowVideoPreview || videoFailed}
+              title={!allowVideoPreview ? (lang === "ar" ? "تم إيقاف الفيديو لتوفير الأداء" : "Video disabled for performance") : undefined}
+            >
+              {lang === "ar" ? "معاينة الفيديو" : "Preview Video"}
+            </button>
           </div>
+          <div className="gb-mini-scene" ref={previewRef}>
+            <div className={`gb-preview-layer ${activePreviewMode === "video" ? "is-visible" : ""}`} aria-hidden={activePreviewMode !== "video"}>
+              {shouldLoadVideo && allowVideoPreview && !videoFailed ? (
+                <video
+                  className="gb-preview-video"
+                  src={previewVideo}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="none"
+                  controls={false}
+                  onError={() => {
+                    setVideoFailed(true);
+                    setPreviewMode("design");
+                  }}
+                />
+              ) : null}
+            </div>
+            <div className={`gb-preview-layer ${activePreviewMode === "design" ? "is-visible" : ""}`} aria-hidden={activePreviewMode !== "design"}>
+              <Box3DPreview size={130} items={state.items} products={products} totalItems={totalItems} capacity={cap} className="gb-mini-box3d" emptyLabel={lang === "ar" ? "أضف منتجات" : "Add products"} closingLabel={lang === "ar" ? "جاري الإغلاق" : "Closing"} />
+            </div>
+          </div>
+          {videoFailed ? <p className="gb-preview-note">{lang === "ar" ? "تعذر تحميل الفيديو، تم عرض معاينة التصميم تلقائيًا." : "Video failed to load, switched to design preview."}</p> : null}
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", color: "rgba(255,255,255,0.6)" }}>
               <span>{lang === "ar" ? "الإجمالي" : "Total"}</span>
