@@ -68,6 +68,10 @@ export default function AdminAddonsPage() {
     const row = products.find((p) => p.id === selectedProductId);
     return row ? row.title_en ?? row.name ?? row.id : "";
   }, [products, selectedProductId]);
+  const selectedProductLinkedAddonIds = useMemo(() => {
+    const row = products.find((p) => p.id === selectedProductId);
+    return new Set(Array.isArray(row?.linked_addon_ids) ? row!.linked_addon_ids : []);
+  }, [products, selectedProductId]);
 
   async function save() {
     setError(null);
@@ -431,7 +435,20 @@ export default function AdminAddonsPage() {
         {addons.map((addon) => (
           <div key={addon.id} className="flex items-center justify-between rounded-xl border border-cb-border bg-cb-surface p-3">
             <div>
-              <p className="font-semibold">{addon.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-semibold">{addon.name}</p>
+                {selectedProductId ? (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      selectedProductLinkedAddonIds.has(addon.id)
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-stone-200 text-stone-700"
+                    }`}
+                  >
+                    {selectedProductLinkedAddonIds.has(addon.id) ? "Linked" : "Not linked"}
+                  </span>
+                ) : null}
+              </div>
               <p className="text-xs text-cb-text-muted">{addon.type} · {addon.required ? "required" : "optional"}</p>
               <p className="text-xs text-cb-text-muted">
                 Price:{" "}
