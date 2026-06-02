@@ -6,6 +6,7 @@ import {
   AdminBilingualSection,
 } from "@/components/admin/admin-bilingual-label";
 import { fetchJson } from "@/lib/http/fetch-json";
+import { buildAddonSubmitPayload, validateAddonForm } from "@/lib/addons/submit-payload";
 import type { Addon } from "@/lib/addons/types";
 
 const L = {
@@ -37,6 +38,7 @@ const L = {
   searchProductPh: { en: "Type product name…", ar: "اكتب اسم المنتج…" },
   selectProduct: { en: "Select product", ar: "اختر المنتج" },
   selectProductPh: { en: "Select product to link (optional)", ar: "اختر منتجاً للربط (اختياري)" },
+  productCount: { en: "products shown", ar: "منتج معروض" },
   selectedProduct: { en: "Selected product", ar: "المنتج المحدد" },
   applyDefaultPrice: { en: "Apply default price to all options", ar: "تطبيق السعر الافتراضي على كل الخيارات" },
   optionsSection: { en: "Options", ar: "الخيارات" },
@@ -101,7 +103,13 @@ function Field({
 }
 
 export default function AdminAddonsPage() {
-  type ProductLite = { id: string; name?: string | null; title_en?: string | null; linked_addon_ids?: string[] };
+  type ProductLite = {
+    id: string;
+    name?: string | null;
+    title_en?: string | null;
+    title_ar?: string | null;
+    linked_addon_ids?: string[];
+  };
   const [addons, setAddons] = useState<Addon[]>([]);
   const [products, setProducts] = useState<ProductLite[]>([]);
   const [selectedProductId, setSelectedProductId] = useState("");
@@ -120,10 +128,21 @@ export default function AdminAddonsPage() {
   }
 
   async function loadProducts() {
-    const res = await fetchJson<{ products: ProductLite[] }>("/api/admin/products?page=1&limit=200", {
-      cache: "no-store",
-    });
-    setProducts(res.products ?? []);
+    const all: ProductLite[] = [];
+    const limit = 100;
+    let page = 1;
+    let total = 0;
+    do {
+      const res = await fetchJson<{ products: ProductLite[]; total: number }>(
+        `/api/admin/products?page=${page}&limit=${limit}`,
+        { cache: "no-store" },
+      );
+      all.push(...(res.products ?? []));
+      total = res.total ?? all.length;
+      if ((res.products?.length ?? 0) < limit) break;
+      page += 1;
+    } while (all.length < total && page <= 50);
+    setProducts(all);
   }
 
   useEffect(() => {
@@ -133,13 +152,17 @@ export default function AdminAddonsPage() {
 
   const productOptions = useMemo(() => {
     const q = productSearch.trim().toLowerCase();
-    if (!q) return products.slice(0, 50);
-    return products
-      .filter((p) => {
-        const title = (p.title_en ?? p.name ?? "").toLowerCase();
-        return title.includes(q);
-      })
-      .slice(0, 50);
+    const sorted = [...products].sort((a, b) =>
+      (a.title_en ?? a.name ?? a.id).localeCompare(b.title_en ?? b.name ?? b.id, undefined, {
+        sensitivity: "base",
+      }),
+    );
+    if (!q) return sorted;
+    return sorted.filter((p) => {
+      const title = (p.title_en ?? p.name ?? "").toLowerCase();
+      const ar = p.title_ar?.toLowerCase() ?? "";
+      return title.includes(q) || ar.includes(q) || p.id.toLowerCase().includes(q);
+    });
   }, [products, productSearch]);
 
   const selectedProductName = useMemo(() => {
@@ -152,19 +175,17 @@ export default function AdminAddonsPage() {
   }, [products, selectedProductId]);
 
   async function save() {
+    const validationError = validateAddonForm(form);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     setError(null);
     setSaving(true);
-    const payload = {
-      ...form,
-      id: editingId ?? undefined,
-      options: form.options.map((o) => ({
-        ...o,
-        id: o.id || crypto.randomUUID(),
-      })),
-    };
+    const payload = buildAddonSubmitPayload(form, editingId);
     try {
       if (editingId) {
-        await fetchJson("/api/admin/addons", { method: "PATCH", jsonBody: { ...payload, id: editingId } });
+        await fetchJson("/api/admin/addons", { method: "PATCH", jsonBody: payload });
       } else {
         await fetchJson("/api/admin/addons", { method: "POST", jsonBody: payload });
       }
@@ -204,16 +225,15 @@ export default function AdminAddonsPage() {
       setError("Please select a product first. / الرجاء اختيار منتج أولاً.");
       return;
     }
+    const validationError = validateAddonForm(form);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     setError(null);
     setSaving(true);
     try {
-      const payload = {
-        ...form,
-        options: form.options.map((o) => ({
-          ...o,
-          id: o.id || crypto.randomUUID(),
-        })),
-      };
+      const payload = buildAddonSubmitPayload(form, null);
       const res = await fetchJson<{ addon: Addon }>("/api/admin/addons", {
         method: "POST",
         jsonBody: payload,
@@ -362,14 +382,20 @@ export default function AdminAddonsPage() {
         </div>
 
         <AdminBilingualSection en={L.productSection.en} ar={L.productSection.ar} className="mb-3 mt-5" />
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="space-y-3">
           <Field label={L.searchProduct}>
             <input
               className="w-full rounded-lg border border-cb-border px-3 py-2"
               placeholder={`${L.searchProductPh.en} / ${L.searchProductPh.ar}`}
               value={productSearch}
               onChange={(e) => setProductSearch(e.target.value)}
+              list="addon-product-suggestions"
             />
+            <datalist id="addon-product-suggestions">
+              {productOptions.map((p) => (
+                <option key={p.id} value={p.title_en ?? p.name ?? p.id} />
+              ))}
+            </datalist>
           </Field>
           <Field label={L.selectProduct}>
             <select
@@ -384,6 +410,12 @@ export default function AdminAddonsPage() {
                 </option>
               ))}
             </select>
+            <p className="text-[11px] text-cb-text-muted">
+              {productOptions.length} {L.productCount.en} / {productOptions.length} {L.productCount.ar}
+              {products.length !== productOptions.length
+                ? ` (${products.length} ${L.productCount.en} total)`
+                : null}
+            </p>
           </Field>
         </div>
         {selectedProductName ? (

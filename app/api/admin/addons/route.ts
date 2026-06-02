@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { normalizeAddonInput } from "@/lib/addons/submit-payload";
 import { addonSchema } from "@/lib/addons/validation";
 import { bilingualError } from "@/lib/validations";
 import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-admin";
 
+const createAddonSchema = addonSchema.omit({ id: true });
 const updateSchema = addonSchema.extend({ id: z.string().uuid() });
 const deleteSchema = z.object({ id: z.string().uuid() });
 
@@ -24,7 +26,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const actor = await requireAdminAccess("addons");
   requireWritePermission(actor);
-  const parsed = addonSchema.safeParse(await req.json().catch(() => null));
+  const body = normalizeAddonInput(await req.json().catch(() => null));
+  const parsed = createAddonSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { ...bilingualError("Invalid payload", "بيانات غير صالحة"), details: parsed.error.flatten() },
@@ -32,9 +35,26 @@ export async function POST(req: NextRequest) {
     );
   }
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase.from("addons").insert(parsed.data).select("*").single();
+  const { data, error } = await supabase
+    .from("addons")
+    .insert({
+      name: parsed.data.name,
+      description: parsed.data.description ?? null,
+      type: parsed.data.type,
+      required: parsed.data.required,
+      options: parsed.data.options,
+    })
+    .select("*")
+    .single();
   if (error) {
-    return NextResponse.json(bilingualError("Failed to create add-on", "فشل إنشاء الإضافة"), { status: 500 });
+    console.error("addons POST insert", error);
+    return NextResponse.json(
+      {
+        ...bilingualError("Failed to create add-on", "فشل إنشاء الإضافة"),
+        debug: { message: error.message, code: error.code },
+      },
+      { status: 500 },
+    );
   }
   return NextResponse.json({ ok: true, addon: data }, { status: 201 });
 }
@@ -42,7 +62,7 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const actor = await requireAdminAccess("addons");
   requireWritePermission(actor);
-  const parsed = updateSchema.safeParse(await req.json().catch(() => null));
+  const parsed = updateSchema.safeParse(normalizeAddonInput(await req.json().catch(() => null)));
   if (!parsed.success) {
     return NextResponse.json(
       { ...bilingualError("Invalid payload", "بيانات غير صالحة"), details: parsed.error.flatten() },
