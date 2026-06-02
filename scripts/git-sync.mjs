@@ -51,6 +51,34 @@ function sh(cmd) {
   return execSync(cmd, { encoding: "utf8", cwd, shell: true }).trim();
 }
 
+function enforceGiftPreviewVideoSafeStart() {
+  const builderFile = path.join(cwd, "components/gift-box-builder/gift-box-builder.tsx");
+  if (!fs.existsSync(builderFile)) return;
+
+  const source = fs.readFileSync(builderFile, "utf8");
+  const hasSafeStartFragment = /const\s+previewVideo\s*=\s*`[^`]*#t=\d+(\.\d+)?`;/m.test(source);
+  if (hasSafeStartFragment) return;
+
+  const next = source.replace(
+    /const\s+previewVideo\s*=\s*`?\$\{previewVideoBase\}`?;/m,
+    "const previewVideo = `${previewVideoBase}#t=1.8`;",
+  );
+
+  if (next !== source) {
+    fs.writeFileSync(builderFile, next, "utf8");
+    console.log("git-sync: تم تطبيق حماية بداية الفيديو (#t=1.8) تلقائياً قبل النشر.");
+    dlog("H-VIDEO", "git-sync.mjs:enforceGiftPreviewVideoSafeStart", "auto-applied safe video start fragment", {
+      file: "components/gift-box-builder/gift-box-builder.tsx",
+      fragment: "#t=1.8",
+    });
+  } else {
+    console.warn("git-sync: تحذير — لم أتمكن من التحقق تلقائياً من إزاحة بداية فيديو المعاينة.");
+    dlog("H-VIDEO", "git-sync.mjs:enforceGiftPreviewVideoSafeStart", "safe video start check could not match target pattern", {
+      file: "components/gift-box-builder/gift-box-builder.tsx",
+    });
+  }
+}
+
 function hasStagedChangesAfterAdd() {
   try {
     execSync("git diff --cached --quiet", { cwd });
@@ -90,6 +118,8 @@ dlog("H-A,H-B,H-C,H-D", "git-sync.mjs:entry", "git-sync script started", {
   remoteUrl: safeSh("git config --get remote.origin.url"),
 });
 // #endregion
+
+enforceGiftPreviewVideoSafeStart();
 
 run("git add -A");
 
