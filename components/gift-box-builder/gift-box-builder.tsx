@@ -26,8 +26,10 @@ export function GiftBoxBuilder() {
   const [previewMode, setPreviewMode] = useState<"design" | "video">("design");
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
   const [allowVideoPreview, setAllowVideoPreview] = useState(true);
   const previewRef = useRef<HTMLDivElement | null>(null);
+  const previewVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const updateState = useCallback((updater: (prev: GiftBoxBuilderState) => GiftBoxBuilderState) => {
     setState((prev) => {
@@ -247,6 +249,33 @@ export function GiftBoxBuilder() {
   }, [state.box]);
   const previewVideo = `${previewVideoBase}#t=1.8`;
 
+  useEffect(() => {
+    setVideoReady(false);
+  }, [previewVideoBase]);
+
+  const handleVideoMeta = () => {
+    const node = previewVideoRef.current;
+    if (!node) return;
+    const { videoWidth, videoHeight, duration } = node;
+    if (!videoWidth || !videoHeight) {
+      setVideoFailed(true);
+      setPreviewMode("design");
+      return;
+    }
+    const ratio = videoWidth / videoHeight;
+    const hasValidRatio = ratio >= 0.8 && ratio <= 1.7;
+    const hasValidDuration = Number.isFinite(duration) && duration >= 2;
+    if (!hasValidRatio || !hasValidDuration) {
+      setVideoFailed(true);
+      setPreviewMode("design");
+      return;
+    }
+    if (duration > 2.2) {
+      node.currentTime = 1.8;
+    }
+    setVideoReady(true);
+  };
+
   return (
     <div className="gift-box-builder">
       <header className="gb-header">
@@ -404,7 +433,10 @@ export function GiftBoxBuilder() {
             <button
               type="button"
               className={`gb-preview-toggle ${activePreviewMode === "video" ? "active" : ""}`}
-              onClick={() => setPreviewMode("video")}
+              onClick={() => {
+                setVideoReady(false);
+                setPreviewMode("video");
+              }}
               role="tab"
               aria-selected={activePreviewMode === "video"}
               disabled={!allowVideoPreview || videoFailed}
@@ -417,6 +449,7 @@ export function GiftBoxBuilder() {
             <div className={`gb-preview-layer ${activePreviewMode === "video" ? "is-visible" : ""}`} aria-hidden={activePreviewMode !== "video"}>
               {shouldLoadVideo && allowVideoPreview && !videoFailed ? (
                 <video
+                  ref={previewVideoRef}
                   className="gb-preview-video"
                   src={previewVideo}
                   autoPlay
@@ -425,6 +458,7 @@ export function GiftBoxBuilder() {
                   playsInline
                   preload="none"
                   controls={false}
+                  onLoadedMetadata={handleVideoMeta}
                   onError={() => {
                     setVideoFailed(true);
                     setPreviewMode("design");
@@ -432,7 +466,10 @@ export function GiftBoxBuilder() {
                 />
               ) : null}
             </div>
-            <div className={`gb-preview-layer ${activePreviewMode === "design" ? "is-visible" : ""}`} aria-hidden={activePreviewMode !== "design"}>
+            <div
+              className={`gb-preview-layer ${activePreviewMode === "design" || (activePreviewMode === "video" && !videoReady) ? "is-visible" : ""}`}
+              aria-hidden={activePreviewMode === "video" && videoReady}
+            >
               <Box3DPreview size={130} items={state.items} products={products} totalItems={totalItems} capacity={cap} className="gb-mini-box3d" emptyLabel={lang === "ar" ? "أضف منتجات" : "Add products"} closingLabel={lang === "ar" ? "جاري الإغلاق" : "Closing"} />
             </div>
           </div>
