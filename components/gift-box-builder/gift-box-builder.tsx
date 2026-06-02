@@ -7,11 +7,12 @@ import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { Box3DPreview } from "@/components/gift-box-builder/box-3d-preview";
 import "./gift-box-builder.css";
-import { GIFT_BOX_BUILDER_DATA, type BuilderProduct } from "@/lib/gift-box-builder/data";
+import type { BuilderProduct } from "@/lib/gift-box-builder/data";
 import { builderFilterCategories, loadBuilderProducts } from "@/lib/gift-box-builder/load-products";
 import { loadStoredGiftBoxState, persistGiftBoxState, pruneItemsToCatalog } from "@/lib/gift-box-builder/state";
 import { DEFAULT_GIFT_BOX_STATE, GIFT_BOX_STORAGE_KEY, type GiftBoxBuilderState } from "@/lib/gift-box-builder/types";
 import { formatBuilderPrice, getBoxCapacity, getItemsTotal, getTotalItems, trimItemsToCapacity } from "@/lib/gift-box-builder/utils";
+import { DEFAULT_GIFT_BOX_SIZES, type GiftBoxSizeConfig } from "@/lib/gift-box-builder/sizes";
 
 export function GiftBoxBuilder() {
   const { lang } = useLanguage();
@@ -21,6 +22,7 @@ export function GiftBoxBuilder() {
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [boxSizes, setBoxSizes] = useState<GiftBoxSizeConfig[]>(DEFAULT_GIFT_BOX_SIZES);
 
   const updateState = useCallback((updater: (prev: GiftBoxBuilderState) => GiftBoxBuilderState) => {
     setState((prev) => {
@@ -58,7 +60,20 @@ export function GiftBoxBuilder() {
     void fetchProducts();
   }, [fetchProducts]);
 
-  const cap = getBoxCapacity(state.box);
+  useEffect(() => {
+    void fetch("/api/gift-box/sizes", { cache: "no-store" })
+      .then(async (r) => (await r.json()) as { sizes?: GiftBoxSizeConfig[] })
+      .then((res) => {
+        if (Array.isArray(res.sizes) && res.sizes.length > 0) {
+          setBoxSizes(res.sizes);
+        }
+      })
+      .catch(() => {
+        setBoxSizes(DEFAULT_GIFT_BOX_SIZES);
+      });
+  }, []);
+
+  const cap = getBoxCapacity(state.box, boxSizes);
   const totalItems = getTotalItems(state.items);
   const itemsSubtotal = getItemsTotal(state.items, products);
   const filterCategories = useMemo(() => builderFilterCategories(products), [products]);
@@ -88,11 +103,11 @@ export function GiftBoxBuilder() {
   };
 
   const selectBox = (id: string) => {
-    const box = GIFT_BOX_BUILDER_DATA.boxes.find((b) => b.id === id);
+    const box = boxSizes.find((b) => b.code === id);
     if (!box) return;
     const total = getTotalItems(state.items);
-    if (total > box.capacity) {
-      patch({ box: id, items: trimItemsToCapacity(state.items, box.capacity) });
+    if (total > box.max_items) {
+      patch({ box: id, items: trimItemsToCapacity(state.items, box.max_items) });
       return;
     }
     patch({ box: id });
@@ -106,7 +121,7 @@ export function GiftBoxBuilder() {
     updateState((prev) => {
       const current = prev.items[productId] || 0;
       const total = getTotalItems(prev.items);
-      const boxCap = getBoxCapacity(prev.box);
+      const boxCap = getBoxCapacity(prev.box, boxSizes);
       const product = products.find((p) => p.id === productId);
       const stock = product?.availableQuantity ?? null;
 
@@ -210,12 +225,12 @@ export function GiftBoxBuilder() {
               <h2 className="gb-step-title">{lang === "ar" ? "اختر حجم الصندوق" : "Choose Box Size"}</h2>
               <p className="gb-step-sub">{lang === "ar" ? "لا يوجد سعر ثابت للصندوق، السعر = محتوى الصندوق فقط." : "Box has no fixed price. Total = contents only."}</p>
               <div className="gb-box-grid">
-                {GIFT_BOX_BUILDER_DATA.boxes.map((b) => (
-                  <button key={b.id} type="button" className={`gb-box-card ${state.box === b.id ? "selected" : ""}`} onClick={() => selectBox(b.id)}>
-                    <div className="gb-box-icon">{b.icon}</div>
+                {boxSizes.map((b) => (
+                  <button key={b.id} type="button" className={`gb-box-card ${state.box === b.code ? "selected" : ""}`} onClick={() => selectBox(b.code)}>
+                    <div className="gb-box-icon">🎁</div>
                     <div className="gb-box-name">{b.name}</div>
                     <div className="gb-box-free">{lang === "ar" ? "بدون سعر ثابت" : "No fixed price"}</div>
-                    <div style={{ fontSize: 12, color: "var(--gb-text-muted)" }}>{lang === "ar" ? `حد أقصى ${b.capacity} عناصر` : `Max ${b.capacity} items`}</div>
+                    <div style={{ fontSize: 12, color: "var(--gb-text-muted)" }}>{lang === "ar" ? `حد أقصى ${b.max_items} عناصر` : `Max ${b.max_items} items`}</div>
                   </button>
                 ))}
               </div>
