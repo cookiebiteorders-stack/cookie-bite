@@ -39,7 +39,7 @@ export function AiChatApp({
     if (!t) return;
     setInput("");
     void send(t);
-  }, [input, send]);
+  }, [input, send, setInput]);
 
   return (
     <div

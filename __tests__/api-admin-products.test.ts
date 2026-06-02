@@ -18,6 +18,8 @@ const queryChain = {
   range: jest.fn(),
   in: jest.fn().mockReturnThis(),
   update: jest.fn().mockReturnThis(),
+  delete: jest.fn().mockReturnThis(),
+  insert: jest.fn().mockReturnThis(),
 };
 
 const supabaseMock = {

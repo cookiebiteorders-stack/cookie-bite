@@ -10,7 +10,7 @@ export interface IngestContext {
   receivedAt: Date;
 }
 
-interface InternalEvent extends ParsedTrackEvent {}
+type InternalEvent = ParsedTrackEvent;
 
 const REALTIME_KEY = "tracking:realtime:visitors";
 const REALTIME_TTL_SECONDS = 5 * 60;
