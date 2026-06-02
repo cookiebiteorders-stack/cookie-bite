@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { hasAnyActiveTemplateByKey } from "@/lib/email/automation/template-repository";
 
 const mappingSchema = z.object({
   id: z.string().uuid().optional(),
@@ -27,6 +28,17 @@ export async function POST(req: NextRequest) {
   const parsed = mappingSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ ok: false, error: "invalid_payload" }, { status: 400 });
+  }
+  const templateExists = await hasAnyActiveTemplateByKey(parsed.data.template_key);
+  if (!templateExists) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "template_not_found_or_inactive",
+        message: "Template key must exist and be active in email_templates.",
+      },
+      { status: 400 },
+    );
   }
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase

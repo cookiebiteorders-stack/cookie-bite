@@ -25,6 +25,8 @@ export async function getActiveTemplateByKey(templateKey: string): Promise<Email
     .select("id,key,name,subject,html_body,variables,is_active")
     .eq("key", templateKey)
     .eq("is_active", true)
+    .order("updated_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
@@ -45,6 +47,20 @@ export async function getActiveTemplateByKey(templateKey: string): Promise<Email
     variables: merged,
     is_active: Boolean(data.is_active),
   };
+}
+
+export async function hasAnyActiveTemplateByKey(templateKey: string): Promise<boolean> {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("email_templates")
+    .select("id")
+    .eq("key", templateKey)
+    .eq("is_active", true)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return Boolean(data?.id);
 }
 
 export async function getActiveTemplateForEvent(
