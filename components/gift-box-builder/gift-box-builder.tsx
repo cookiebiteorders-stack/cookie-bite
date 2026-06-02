@@ -237,21 +237,8 @@ export function GiftBoxBuilder() {
 
   const capPct = cap ? Math.min(100, (totalItems / cap) * 100) : 0;
   const activePreviewMode = previewMode === "video" && allowVideoPreview && !videoFailed ? "video" : "design";
-  const previewVideoBase = useMemo(() => {
-    const boxCode = (state.box || "").toLowerCase();
-    if (boxCode.includes("large") || boxCode.includes("xl") || boxCode.includes("big")) {
-      return "/media/gift-box-preview-large.mp4";
-    }
-    if (boxCode.includes("small") || boxCode.includes("mini")) {
-      return "/media/gift-box-preview-small.mp4";
-    }
-    return "/media/gift-box-preview.mp4";
-  }, [state.box]);
+  const previewVideoBase = "/media/gift-box-preview.mp4";
   const previewVideo = `${previewVideoBase}#t=1.8`;
-
-  useEffect(() => {
-    setVideoReady(false);
-  }, [previewVideoBase]);
 
   const handleVideoMeta = () => {
     const node = previewVideoRef.current;

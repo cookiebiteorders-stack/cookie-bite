@@ -199,6 +199,15 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: "/:path*\\.(mp4|webm)$",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=2592000, stale-while-revalidate=86400",
+          },
+        ],
+      },
       { source: "/(.*)", headers },
     ];
   },

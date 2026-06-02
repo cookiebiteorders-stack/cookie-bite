@@ -79,6 +79,26 @@ function enforceGiftPreviewVideoSafeStart() {
   }
 }
 
+function enforceGiftPreviewMediaBudget() {
+  const mediaPath = path.join(cwd, "public/media/gift-box-preview.mp4");
+  if (!fs.existsSync(mediaPath)) return;
+
+  const sizeBytes = fs.statSync(mediaPath).size;
+  const maxBytes = 4 * 1024 * 1024; // 4MB budget for fast sidebar preview
+  if (sizeBytes > maxBytes) {
+    const sizeMb = (sizeBytes / (1024 * 1024)).toFixed(2);
+    const maxMb = (maxBytes / (1024 * 1024)).toFixed(2);
+    throw new Error(
+      `gift-box preview video is too large (${sizeMb}MB). Max allowed before deploy is ${maxMb}MB.`,
+    );
+  }
+  dlog("H-VIDEO", "git-sync.mjs:enforceGiftPreviewMediaBudget", "preview video size within budget", {
+    file: "public/media/gift-box-preview.mp4",
+    sizeBytes,
+    maxBytes,
+  });
+}
+
 function hasStagedChangesAfterAdd() {
   try {
     execSync("git diff --cached --quiet", { cwd });
@@ -120,6 +140,7 @@ dlog("H-A,H-B,H-C,H-D", "git-sync.mjs:entry", "git-sync script started", {
 // #endregion
 
 enforceGiftPreviewVideoSafeStart();
+enforceGiftPreviewMediaBudget();
 
 run("git add -A");
 
