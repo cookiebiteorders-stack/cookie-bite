@@ -68,7 +68,8 @@ export function GiftBoxBuilder() {
   }, [fetchProducts]);
 
   useEffect(() => {
-    void fetch("/api/gift-box/sizes", { cache: "no-store" })
+    const controller = new AbortController();
+    void fetch("/api/gift-box/sizes", { signal: controller.signal })
       .then(async (r) => (await r.json()) as { sizes?: GiftBoxSizeConfig[] })
       .then((res) => {
         if (Array.isArray(res.sizes) && res.sizes.length > 0) {
@@ -78,6 +79,7 @@ export function GiftBoxBuilder() {
       .catch(() => {
         setBoxSizes(DEFAULT_GIFT_BOX_SIZES);
       });
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
