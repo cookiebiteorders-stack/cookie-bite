@@ -93,6 +93,7 @@ curl -X POST "https://YOUR_DOMAIN/api/cron/email-health" \
 | POST | `/api/admin/email/test` `{ to, runHealth? }` |
 | GET/POST | `/api/admin/email/templates` |
 | POST | `/api/admin/email/templates/sync-library` |
+| POST | `/api/admin/email/templates/sync-and-map` |
 | GET/POST | `/api/admin/email/event-mappings` |
 | POST | `/api/email/events/trigger` |
 
@@ -124,6 +125,11 @@ curl -X POST "https://YOUR_DOMAIN/api/cron/email-health" \
 
 - شغّل `POST /api/admin/email/templates/sync-library` لمزامنة كل قوالب `lib/notification-library` إلى جدول `email_templates`.
 - المزامنة تعمل للغتين `en` و `ar` وتحدّث القالب إذا كان موجودًا (`upsert` على `key,language`).
+- شغّل `POST /api/admin/email/templates/sync-and-map` لعمل sync + ربط تلقائي للأحداث الأساسية:
+  - `user_registered -> welcome`
+  - `order_created -> order-confirmed`
+  - `order_shipped -> order-shipped`
+  - `password_reset -> password-reset`
 
 ## Fallback
 
