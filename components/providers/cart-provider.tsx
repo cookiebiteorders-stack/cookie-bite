@@ -14,6 +14,7 @@ import {
   cartItemCount,
   cartSubtotal,
   buildCartLineId,
+  giftBoxLine,
   lineFromProduct,
   type CartLine,
 } from "@/lib/cart/types";
@@ -35,6 +36,15 @@ type CartContextValue = {
     addons?: CartSelectedAddon[],
     addonsTotalEgp?: number,
   ) => void;
+  addGiftBoxItem: (input: {
+    id: string;
+    name: string;
+    image: string;
+    boxSize: string;
+    selectedProducts: { product_id: string; quantity: number; price_snapshot: number }[];
+    message?: string | null;
+    totalPrice: number;
+  }) => void;
   setQuantity: (lineId: string, quantity: number) => void;
   removeItem: (lineId: string) => void;
   clearCart: () => void;
@@ -206,6 +216,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const addGiftBoxItem = useCallback(
+    (input: {
+      id: string;
+      name: string;
+      image: string;
+      boxSize: string;
+      selectedProducts: { product_id: string; quantity: number; price_snapshot: number }[];
+      message?: string | null;
+      totalPrice: number;
+    }) => {
+      setLines((prev) => {
+        const nextLine = giftBoxLine(input);
+        return [...prev, nextLine];
+      });
+      setDrawerOpen(true);
+    },
+    [],
+  );
+
   const removeItem = useCallback((lineId: string) => {
     setLines((prev) => prev.filter((l) => l.id !== lineId));
   }, []);
@@ -235,6 +264,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       closeDrawer,
       toggleDrawer,
       addItem,
+      addGiftBoxItem,
       setQuantity,
       removeItem,
       clearCart,
@@ -252,6 +282,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       closeDrawer,
       toggleDrawer,
       addItem,
+      addGiftBoxItem,
       setQuantity,
       removeItem,
       clearCart,

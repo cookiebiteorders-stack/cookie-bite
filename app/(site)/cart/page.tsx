@@ -78,6 +78,11 @@ export default function CartPage() {
                         {item.name}
                       </Link>
                       <p className="text-xs text-cb-text-muted">Cookie Bite</p>
+                      {item.giftBox ? (
+                        <p className="text-xs font-semibold text-cb-terracotta-dark">
+                          Gift Box · {item.giftBox.box_size}
+                        </p>
+                      ) : null}
                       <p className="text-sm font-bold text-cb-terracotta-dark">
                         {fmt(item.finalUnitPriceEgp)} {t("pages.cart.each")}
                       </p>
@@ -91,15 +96,15 @@ export default function CartPage() {
                         </ul>
                       ) : null}
                       <div className="mt-3 flex items-center gap-2">
-                        <QuantitySelector
-                          quantity={item.quantity}
-                          onDecrease={() =>
-                        setQuantity(item.id, item.quantity - 1)
-                          }
-                          onIncrease={() =>
-                        setQuantity(item.id, item.quantity + 1)
-                          }
-                        />
+                        {item.giftBox ? (
+                          <span className="text-xs text-cb-text-muted">Quantity fixed to 1</span>
+                        ) : (
+                          <QuantitySelector
+                            quantity={item.quantity}
+                            onDecrease={() => setQuantity(item.id, item.quantity - 1)}
+                            onIncrease={() => setQuantity(item.id, item.quantity + 1)}
+                          />
+                        )}
                         <button
                           type="button"
                           className="ms-auto text-red-700 hover:underline"

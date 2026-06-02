@@ -27,6 +27,7 @@ export default function CheckoutPage() {
   const [city, setCity] = useState("New Cairo");
   const [notes, setNotes] = useState("");
   const [payment, setPayment] = useState<"card" | "wallet" | "cod">("cod");
+  const hasGiftBoxLine = lines.some((l) => Boolean(l.giftBox));
 
   useEffect(() => {
     if (itemCount === 0) {
@@ -35,6 +36,11 @@ export default function CheckoutPage() {
   }, [itemCount, router]);
 
   async function onPaymobPrepare() {
+    if (hasGiftBoxLine) {
+      setErrorMsg("Gift box checkout is not enabled in this flow yet. Remove gift box or place order from Gifts flow.");
+      setStatus("error");
+      return;
+    }
     setStatus("loading");
     setErrorMsg(null);
     try {
@@ -320,6 +326,11 @@ export default function CheckoutPage() {
             {errorMsg ? (
               <p className="text-sm font-semibold text-red-700" role="alert">
                 {errorMsg}
+              </p>
+            ) : null}
+            {hasGiftBoxLine ? (
+              <p className="text-sm font-semibold text-red-700">
+                Gift box line exists in cart. Standard checkout currently supports regular products only.
               </p>
             ) : null}
             <div className="flex flex-col gap-3 sm:flex-row">

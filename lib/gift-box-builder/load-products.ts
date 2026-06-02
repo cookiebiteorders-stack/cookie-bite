@@ -79,7 +79,7 @@ export async function loadBuilderProducts(lang: Lang = "en"): Promise<BuilderPro
           "/images/web-logo.png";
 
         return {
-          id: `live-${p.id}`,
+          id: p.id,
           productUuid: p.id,
           slug: p.slug!.trim(),
           name: productName(p, lang),
@@ -88,6 +88,7 @@ export async function loadBuilderProducts(lang: Lang = "en"): Promise<BuilderPro
           category,
           tags,
           imageUrl,
+          availableQuantity: p.stock ?? null,
         } satisfies BuilderProduct;
       });
   } catch {

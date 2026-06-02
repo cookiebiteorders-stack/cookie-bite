@@ -14,6 +14,12 @@ export type CartLine = {
   addons: CartSelectedAddon[];
   addonsTotalEgp: number;
   finalUnitPriceEgp: number;
+  giftBox?: {
+    box_size: string;
+    selected_products: { product_id: string; quantity: number; price_snapshot: number }[];
+    message?: string | null;
+    total_price: number;
+  };
 };
 
 export function lineFromProduct(
@@ -35,6 +41,34 @@ export function lineFromProduct(
     addons,
     addonsTotalEgp,
     finalUnitPriceEgp: basePrice + addonsTotalEgp,
+  };
+}
+
+export function giftBoxLine(input: {
+  id: string;
+  name: string;
+  image: string;
+  boxSize: string;
+  selectedProducts: { product_id: string; quantity: number; price_snapshot: number }[];
+  message?: string | null;
+  totalPrice: number;
+}): CartLine {
+  return {
+    id: `gift-box:${input.id}`,
+    productId: `gift-box:${input.id}`,
+    name: input.name,
+    image: input.image,
+    priceEgp: input.totalPrice,
+    quantity: 1,
+    addons: [],
+    addonsTotalEgp: 0,
+    finalUnitPriceEgp: input.totalPrice,
+    giftBox: {
+      box_size: input.boxSize,
+      selected_products: input.selectedProducts,
+      message: input.message ?? null,
+      total_price: input.totalPrice,
+    },
   };
 }
 

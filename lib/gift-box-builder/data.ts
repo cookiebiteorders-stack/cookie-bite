@@ -20,6 +20,7 @@ export type BuilderProduct = {
   /** Supabase product UUID — required for checkout */
   productUuid: string;
   slug?: string;
+  availableQuantity?: number | null;
 };
 
 export const GIFT_BOX_BUILDER_DATA = {
