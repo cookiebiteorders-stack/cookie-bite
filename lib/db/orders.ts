@@ -17,6 +17,8 @@ export type InsertCheckoutOrderInput = {
     selectedAddons?: Record<string, unknown>[];
     addonsTotalUnitPrice?: number;
     finalUnitPrice?: number;
+    productSnapshot?: Record<string, unknown> | null;
+    skipProductLookup?: boolean;
   }[];
   subtotalEgp: number;
   deliveryFeeEgp: number;
@@ -32,6 +34,8 @@ export type InsertCheckoutOrderInput = {
   guestEmail?: string | null;
   giftWrappingFeeEgp?: number;
   deliveryScheduling?: DeliverySchedulingPersist | null;
+  orderType?: "standard" | "gift_box";
+  giftBoxSnapshot?: Record<string, unknown> | null;
 };
 
 /** حفظ طلب + البنود؛ يعيد null إذا لم يُضبط Supabase أو فشل الإدراج. */
@@ -70,6 +74,12 @@ export async function insertCheckoutOrder(
   }
   if (params.giftWrappingFeeEgp != null && params.giftWrappingFeeEgp > 0) {
     insertRow.gift_wrapping_fee_egp = params.giftWrappingFeeEgp;
+  }
+  if (params.orderType) {
+    insertRow.order_type = params.orderType;
+  }
+  if (params.giftBoxSnapshot) {
+    insertRow.gift_box_snapshot = params.giftBoxSnapshot;
   }
 
   const sched = params.deliveryScheduling;
@@ -129,15 +139,17 @@ export async function insertCheckoutOrder(
 
   for (const line of params.lines) {
     let productUuid: string | null = null;
-    const { data: prod } = await supabase
-      .from("products")
-      .select("id")
-      .eq("slug", line.slug)
-      .maybeSingle();
-    if (prod && typeof (prod as { id?: string }).id === "string") {
-      productUuid = (prod as { id: string }).id;
+    if (!line.skipProductLookup) {
+      const { data: prod } = await supabase
+        .from("products")
+        .select("id")
+        .eq("slug", line.slug)
+        .maybeSingle();
+      if (prod && typeof (prod as { id?: string }).id === "string") {
+        productUuid = (prod as { id: string }).id;
+      }
     }
-    itemRows.push({
+    const row: Record<string, unknown> = {
       order_id: orderId,
       product_id: productUuid,
       product_name: line.name,
@@ -146,7 +158,11 @@ export async function insertCheckoutOrder(
       addons_total_egp: Number(line.addonsTotalUnitPrice ?? 0) * line.quantity,
       final_total_egp: Number(line.finalUnitPrice ?? line.unitPrice) * line.quantity,
       quantity: line.quantity,
-    });
+    };
+    if (line.productSnapshot) {
+      row.product_snapshot = line.productSnapshot;
+    }
+    itemRows.push(row as (typeof itemRows)[number]);
   }
 
   const { error: itemsErr } = await supabase.from("order_items").insert(itemRows);

@@ -16,9 +16,16 @@ export type CartLine = {
   finalUnitPriceEgp: number;
   giftBox?: {
     box_size: string;
-    selected_products: { product_id: string; quantity: number; price_snapshot: number }[];
+    selected_products: {
+      product_id: string;
+      quantity: number;
+      price_snapshot: number;
+      name?: string;
+      image?: string;
+    }[];
     message?: string | null;
     total_price: number;
+    builder?: Record<string, unknown>;
   };
 };
 
@@ -49,9 +56,16 @@ export function giftBoxLine(input: {
   name: string;
   image: string;
   boxSize: string;
-  selectedProducts: { product_id: string; quantity: number; price_snapshot: number }[];
+  selectedProducts: {
+    product_id: string;
+    quantity: number;
+    price_snapshot: number;
+    name?: string;
+    image?: string;
+  }[];
   message?: string | null;
   totalPrice: number;
+  builder?: Record<string, unknown>;
 }): CartLine {
   return {
     id: `gift-box:${input.id}`,
@@ -68,6 +82,7 @@ export function giftBoxLine(input: {
       selected_products: input.selectedProducts,
       message: input.message ?? null,
       total_price: input.totalPrice,
+      builder: input.builder,
     },
   };
 }

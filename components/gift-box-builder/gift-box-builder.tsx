@@ -193,7 +193,13 @@ export function GiftBoxBuilder() {
       .map(([id, quantity]) => {
         const p = products.find((x) => x.id === id);
         if (!p || quantity < 1) return null;
-        return { product_id: p.productUuid, quantity, price_snapshot: p.price };
+        return {
+          product_id: p.productUuid,
+          quantity,
+          price_snapshot: p.price,
+          name: p.name,
+          image: p.imageUrl,
+        };
       })
       .filter(Boolean) as { product_id: string; quantity: number; price_snapshot: number }[];
 
@@ -205,6 +211,19 @@ export function GiftBoxBuilder() {
       selectedProducts,
       message: state.msgText.trim() || null,
       totalPrice: itemsSubtotal,
+      builder: {
+        box: state.box,
+        occasion: state.occasion,
+        items: { ...state.items },
+        msgTo: state.msgTo,
+        msgFrom: state.msgFrom,
+        msgText: state.msgText,
+        cardDesign: state.cardDesign,
+        ribbonColor: state.ribbonColor,
+        wrapStyle: state.wrapStyle,
+        delivery: state.delivery,
+        surprise: state.surprise,
+      },
     });
     localStorage.removeItem(GIFT_BOX_STORAGE_KEY);
     setState({ ...DEFAULT_GIFT_BOX_STATE });

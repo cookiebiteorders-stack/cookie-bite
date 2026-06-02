@@ -105,6 +105,8 @@ export type OrderRow = {
   paymob_accept_order_id?: number | null;
   paymob_transaction_id?: string | null;
   checkout_idempotency_key?: string | null;
+  order_type?: "standard" | "gift_box";
+  gift_box_snapshot?: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 };

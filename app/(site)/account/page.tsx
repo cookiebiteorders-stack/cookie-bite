@@ -7,7 +7,6 @@ import { SignOutButton } from "@clerk/nextjs";
 import {
   Bell,
   CreditCard,
-  FileText,
   Heart,
   HelpCircle,
   LayoutDashboard,
@@ -19,6 +18,7 @@ import {
   User,
 } from "lucide-react";
 
+import { AccountOrdersList } from "@/components/account/account-orders-list";
 import { AccountTestimonialForm } from "@/components/account/account-testimonial-form";
 import { RedeemPointsCard } from "@/components/account/redeem-points-card";
 import { buttonClassName } from "@/components/ui/button";
@@ -76,15 +76,6 @@ function resolveAccountRole(
   }
   return resolveStaffRole({ email, clerkUserId });
 }
-
-const STATUS_BADGE: Record<string, string> = {
-  delivered: "bg-emerald-100 text-emerald-800",
-  shipped: "bg-amber-100 text-amber-800",
-  processing: "bg-cb-peach text-cb-text-strong",
-  pending: "bg-cb-peach text-cb-text-strong",
-  cancelled: "bg-red-100 text-red-800",
-  refunded: "bg-slate-200 text-slate-800",
-};
 
 type ProductImageItem = { url?: string | null };
 type WishlistProduct = {
@@ -501,63 +492,17 @@ export default async function AccountPage() {
                 </Link>
               </div>
 
-              {orders.length ? (
-                <ul className="space-y-3">
-                  {orders.map((o) => {
-                    const invoiceNumber = `INV-${String(o.order_number).padStart(8, "0")}`;
-                    return (
-                      <li
-                        key={o.id}
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cb-border px-4 py-3"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-cb-text-strong">
-                            Order #{o.order_number}
-                          </p>
-                          <p className="mt-1 text-xs text-cb-text-muted">
-                            {Number(o.total_egp).toFixed(0)} EGP · {o.payment_status}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/invoices/${invoiceNumber}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-full border border-cb-border bg-cb-surface px-3 py-1 text-[11px] font-semibold text-cb-text-strong transition hover:bg-cb-peach/40"
-                            title="View styled invoice"
-                          >
-                            <FileText className="h-3.5 w-3.5" />
-                            Invoice
-                          </Link>
-                          <span
-                            className={cn(
-                              "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
-                              STATUS_BADGE[o.status] ?? "bg-slate-100 text-slate-800",
-                            )}
-                          >
-                            {o.status}
-                          </span>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <div className="rounded-2xl bg-cb-cream p-6 text-center">
-                  <p className="text-sm font-semibold text-cb-text-strong">
-                    No orders yet
-                  </p>
-                  <p className="mt-1 text-xs text-cb-text-muted">
-                    Explore the shop and your first box will appear here.
-                  </p>
-                  <Link
-                    href="/shop"
-                    className={buttonClassName("primary", "mt-4 inline-flex")}
-                  >
-                    Start shopping
-                  </Link>
-                </div>
-              )}
+              <AccountOrdersList
+                orders={orders.map((o) => ({
+                  id: o.id,
+                  order_number: o.order_number,
+                  total_egp: o.total_egp,
+                  payment_status: o.payment_status,
+                  status: o.status,
+                  order_type: o.order_type,
+                  gift_box_snapshot: o.gift_box_snapshot,
+                }))}
+              />
             </section>
 
             <section

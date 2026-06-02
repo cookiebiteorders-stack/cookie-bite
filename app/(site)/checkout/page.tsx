@@ -17,6 +17,10 @@ import {
   type DeliverySchedulingState,
 } from "@/lib/checkout/delivery-scheduling";
 import { siteConfig } from "@/lib/site-config";
+import {
+  buildSnapshotFromCartLine,
+  type GiftBoxCartBuilderPayload,
+} from "@/lib/gift-box/order-snapshot";
 
 const GIFT_WRAP_FEE_EGP = 30;
 
@@ -39,7 +43,8 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState("");
   const [payment, setPayment] = useState<"card" | "wallet" | "cod">("cod");
   const [delivery, setDelivery] = useState<DeliverySchedulingState>(emptyDeliveryScheduling);
-  const hasGiftBoxLine = lines.some((l) => Boolean(l.giftBox));
+  const giftBoxLine = lines.find((l) => Boolean(l.giftBox));
+  const regularLines = lines.filter((l) => !l.giftBox);
 
   useEffect(() => {
     if (itemCount === 0) {
@@ -48,8 +53,18 @@ export default function CheckoutPage() {
   }, [itemCount, router]);
 
   async function onPaymobPrepare() {
-    if (hasGiftBoxLine) {
-      setErrorMsg("Gift box checkout is not enabled in this flow yet. Remove gift box or place order from Gifts flow.");
+    const giftBoxSnapshot = giftBoxLine
+      ? buildSnapshotFromCartLine(
+          giftBoxLine,
+          giftBoxLine.giftBox?.builder as GiftBoxCartBuilderPayload | undefined,
+        )
+      : null;
+    if (giftBoxLine && !giftBoxSnapshot) {
+      setErrorMsg(
+        lang === "ar"
+          ? "تعذّر تجهيز صندوق الهدايا للدفع. أعد بناء الصندوق من السلة."
+          : "Could not prepare gift box for checkout. Rebuild the box from your cart.",
+      );
       setStatus("error");
       return;
     }
@@ -60,11 +75,12 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: lines.map((l) => ({
+          items: regularLines.map((l) => ({
             id: l.productId,
             quantity: l.quantity,
             addons: l.addons,
           })),
+          ...(giftBoxSnapshot ? { gift_box: giftBoxSnapshot } : {}),
           shipping: { name, email, phone, address, city, notes },
           paymentMethod: payment,
           promo_code: promo?.code,
@@ -128,7 +144,7 @@ export default function CheckoutPage() {
     subtotalEgp >= siteConfig.freeDeliveryThresholdEgp
       ? 0
       : siteConfig.standardDeliveryFeeEgp;
-  const giftWrapFee = delivery.isGift ? GIFT_WRAP_FEE_EGP : 0;
+  const giftWrapFee = delivery.isGift || giftBoxLine ? GIFT_WRAP_FEE_EGP : 0;
   const total = Math.max(0, subtotalEgp - discountEgp + deliveryFee + giftWrapFee);
 
   return (
@@ -370,11 +386,6 @@ export default function CheckoutPage() {
                 {errorMsg}
               </p>
             ) : null}
-            {hasGiftBoxLine ? (
-              <p className="text-sm font-semibold text-red-700">
-                Gift box line exists in cart. Standard checkout currently supports regular products only.
-              </p>
-            ) : null}
             <div className="flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
@@ -385,7 +396,7 @@ export default function CheckoutPage() {
               </button>
               <button
                 type="button"
-                disabled={status === "loading"}
+                disabled={status === "loading" || itemCount === 0}
                 onClick={onPaymobPrepare}
                 className={buttonClassName("primary", "flex-1 rounded-full py-3")}
               >

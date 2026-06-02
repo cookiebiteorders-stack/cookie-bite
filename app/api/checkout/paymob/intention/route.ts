@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
 import { insertCheckoutOrder } from "@/lib/db/orders";
 import { getUserByClerkId } from "@/lib/db/users";
-import { resolveCheckoutLineItems } from "@/lib/checkout/resolve-line-items";
+import { resolveCheckoutLineItems, type ResolvedCheckoutLine } from "@/lib/checkout/resolve-line-items";
 import { onOrderCreated } from "@/lib/email/automation/triggers";
 import { scheduleOrderConfirmed } from "@/lib/notifications/schedule";
 import {
@@ -22,10 +22,13 @@ import {
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { checkoutDeliverySchema } from "@/lib/checkout/delivery-scheduling";
 import { resolveDeliveryForCheckout } from "@/lib/checkout/resolve-delivery-persist";
+import { checkGiftBoxSnapshotAvailability } from "@/lib/gift-box/check-availability";
+import { giftBoxOrderSnapshotSchema } from "@/lib/gift-box/order-snapshot";
 
 const GIFT_WRAP_FEE_EGP = 30;
 
-const BodySchema = z.object({
+const BodySchema = z
+  .object({
   items: z.array(
     z.object({
       id: z.string().min(1),
@@ -57,7 +60,11 @@ const BodySchema = z.object({
   paymentMethod: z.enum(["card", "wallet", "cod"]),
   promo_code: z.string().min(3).max(20).optional(),
   delivery: checkoutDeliverySchema,
-});
+  gift_box: giftBoxOrderSnapshotSchema.optional(),
+})
+  .refine((d) => d.items.length > 0 || d.gift_box, {
+    message: "Cart must include products or a gift box",
+  });
 
 async function resolveSupabaseUserId(): Promise<string | null> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
@@ -90,7 +97,8 @@ export async function POST(req: Request) {
     );
   }
 
-  const { items, shipping, paymentMethod, promo_code: promoCodeRaw, delivery } = parsed.data;
+  const { items, shipping, paymentMethod, promo_code: promoCodeRaw, delivery, gift_box: giftBox } =
+    parsed.data;
 
   const deliveryResolved = await resolveDeliveryForCheckout(delivery);
   if (!deliveryResolved.ok) {
@@ -103,14 +111,36 @@ export async function POST(req: Request) {
   const shippingEmail =
     shipping.email && shipping.email.length > 0 ? shipping.email : undefined;
 
-  const pricing = await resolveCheckoutLineItems(items);
-  if (!pricing.ok) {
-    return Response.json(
-      { ok: false, error: pricing.error },
-      { status: pricing.status },
-    );
+  let resolved: ResolvedCheckoutLine[] = [];
+  let subtotal = 0;
+
+  if (giftBox) {
+    const availability = await checkGiftBoxSnapshotAvailability(giftBox);
+    if (!availability.canReorder) {
+      return Response.json(
+        {
+          ok: false,
+          error: "Some gift box items are unavailable",
+          error_ar: "بعض منتجات صندوق الهدايا غير متوفرة",
+          unavailable: availability.unavailableItems,
+        },
+        { status: 400 },
+      );
+    }
+    subtotal += giftBox.totalPrice;
   }
-  const { lines: resolved, subtotal } = pricing;
+
+  if (items.length > 0) {
+    const pricing = await resolveCheckoutLineItems(items);
+    if (!pricing.ok) {
+      return Response.json(
+        { ok: false, error: pricing.error },
+        { status: pricing.status },
+      );
+    }
+    resolved = pricing.lines;
+    subtotal += pricing.subtotal;
+  }
 
   const threshold = siteConfig.freeDeliveryThresholdEgp;
   const deliveryFee = subtotal >= threshold ? 0 : siteConfig.standardDeliveryFeeEgp;
@@ -140,7 +170,52 @@ export async function POST(req: Request) {
     }
   }
 
-  const giftWrappingFee = deliveryPersist.isGift ? GIFT_WRAP_FEE_EGP : 0;
+  const giftWrappingFee =
+    deliveryPersist.isGift || giftBox ? GIFT_WRAP_FEE_EGP : 0;
+
+  const orderLines = [
+    ...resolved.map((l) => ({
+      slug: l.id,
+      name: l.name,
+      unitPrice: l.baseUnitPrice,
+      quantity: l.quantity,
+      selectedAddons: l.selectedAddons,
+      addonsTotalUnitPrice: l.addonsTotalUnitPrice,
+      finalUnitPrice: l.finalUnitPrice,
+    })),
+    ...(giftBox
+      ? [
+          {
+            slug: "gift-box:custom",
+            name: "Custom Gift Box",
+            unitPrice: giftBox.totalPrice,
+            quantity: 1,
+            skipProductLookup: true,
+            productSnapshot: { type: "gift_box", snapshot: giftBox },
+            finalUnitPrice: giftBox.totalPrice,
+          },
+        ]
+      : []),
+  ];
+
+  const paymobProductLines = [
+    ...resolved.map((line) => ({
+      id: line.id,
+      name: line.name,
+      unitPrice: line.finalUnitPrice,
+      quantity: line.quantity,
+    })),
+    ...(giftBox
+      ? [
+          {
+            id: "gift-box",
+            name: "Custom Gift Box",
+            unitPrice: giftBox.totalPrice,
+            quantity: 1,
+          },
+        ]
+      : []),
+  ];
   const total = Math.max(0, subtotal - discountAmount + deliveryFee + giftWrappingFee);
 
   const apiKey = process.env.PAYMOB_API_KEY?.trim() ?? "";
@@ -168,15 +243,7 @@ export async function POST(req: Request) {
   if (paymentMethod === "cod") {
     const inserted = await insertCheckoutOrder({
       userId: dbUserId,
-      lines: resolved.map((l) => ({
-        slug: l.id,
-        name: l.name,
-        unitPrice: l.baseUnitPrice,
-        quantity: l.quantity,
-        selectedAddons: l.selectedAddons,
-        addonsTotalUnitPrice: l.addonsTotalUnitPrice,
-        finalUnitPrice: l.finalUnitPrice,
-      })),
+      lines: orderLines,
       subtotalEgp: subtotal,
       deliveryFeeEgp: deliveryFee,
       discountAmountEgp: discountAmount,
@@ -190,6 +257,8 @@ export async function POST(req: Request) {
       guestEmail: shippingEmail ?? null,
       giftWrappingFeeEgp: giftWrappingFee,
       deliveryScheduling: deliveryPersist,
+      orderType: giftBox ? "gift_box" : "standard",
+      giftBoxSnapshot: giftBox ?? null,
     });
 
     const orderId = inserted ? String(inserted.orderNumber) : guestRef;
@@ -205,7 +274,10 @@ export async function POST(req: Request) {
           userId: dbUserId,
           userName: shipping.name,
           orderId: String(inserted.orderNumber),
-          orderItems: resolved.map((line) => `${line.name} x${line.quantity}`).join(", "),
+          orderItems: [
+            ...resolved.map((line) => `${line.name} x${line.quantity}`),
+            ...(giftBox ? [`Custom Gift Box (${giftBox.totalItems} items)`] : []),
+          ].join(", "),
           totalPrice: total.toFixed(2),
         });
       } catch (eventError) {
@@ -260,16 +332,7 @@ export async function POST(req: Request) {
   }
 
   const amountCents = Math.round(total * 100);
-  const paymobItems = buildPaymobLineItems(
-    resolved.map((line) => ({
-      id: line.id,
-      name: line.name,
-      unitPrice: line.finalUnitPrice,
-      quantity: line.quantity,
-    })),
-    deliveryFee,
-    discountAmount,
-  );
+  const paymobItems = buildPaymobLineItems(paymobProductLines, deliveryFee, discountAmount);
   if (giftWrappingFee > 0) {
     paymobItems.push({
       name: "Gift wrapping",
@@ -290,15 +353,7 @@ export async function POST(req: Request) {
 
     const inserted = await insertCheckoutOrder({
       userId: dbUserId,
-      lines: resolved.map((l) => ({
-        slug: l.id,
-        name: l.name,
-        unitPrice: l.baseUnitPrice,
-        quantity: l.quantity,
-        selectedAddons: l.selectedAddons,
-        addonsTotalUnitPrice: l.addonsTotalUnitPrice,
-        finalUnitPrice: l.finalUnitPrice,
-      })),
+      lines: orderLines,
       subtotalEgp: subtotal,
       deliveryFeeEgp: deliveryFee,
       discountAmountEgp: discountAmount,
@@ -313,6 +368,8 @@ export async function POST(req: Request) {
       guestEmail: shippingEmail ?? null,
       giftWrappingFeeEgp: giftWrappingFee,
       deliveryScheduling: deliveryPersist,
+      orderType: giftBox ? "gift_box" : "standard",
+      giftBoxSnapshot: giftBox ?? null,
     });
 
     if (inserted?.id) {
@@ -326,7 +383,10 @@ export async function POST(req: Request) {
           userId: dbUserId,
           userName: shipping.name,
           orderId: String(inserted.orderNumber),
-          orderItems: resolved.map((line) => `${line.name} x${line.quantity}`).join(", "),
+          orderItems: [
+            ...resolved.map((line) => `${line.name} x${line.quantity}`),
+            ...(giftBox ? [`Custom Gift Box (${giftBox.totalItems} items)`] : []),
+          ].join(", "),
           totalPrice: total.toFixed(2),
         });
       } catch (eventError) {

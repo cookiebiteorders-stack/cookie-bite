@@ -8,7 +8,7 @@
 | # | الميزة | الحالة | ملاحظات |
 |---|--------|--------|---------|
 | 1 | جدولة التوصيل + مستلم منفصل | 🟢 منفّذ | migration `0038` + `/api/delivery-slots` + `DeliveryScheduler` في `/checkout` + حفظ على الطلب عبر Paymob/COD |
-| 2 | إعادة طلب صندوق الهدايا | 🔴 غير منفذ | لا `gift_box_snapshot` ولا `/api/orders/[id]/reorder` |
+| 2 | إعادة طلب صندوق الهدايا | 🟢 منفّذ | migration `0039` + snapshot عند الدفع + `POST /api/orders/[id]/reorder` + زر «أعد نفس الصندوق» في الحساب |
 | 3 | ربط Add-ons من المنتج (أدمن) | 🟢 أساسي | `linked_addon_ids` في `product-form-drawer` — يمكن تحسين البحث/المعاينة |
 | 4 | سلة مهجورة | 🔴 غير منفذ | لا جدول `abandoned_carts` ولا Cron/Resend مخصص |
 

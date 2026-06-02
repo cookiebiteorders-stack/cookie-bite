@@ -18,6 +18,8 @@ import {
   lineFromProduct,
   type CartLine,
 } from "@/lib/cart/types";
+import { persistGiftBoxState } from "@/lib/gift-box-builder/state";
+import { builderStateFromSnapshot, type GiftBoxOrderSnapshot } from "@/lib/gift-box/order-snapshot";
 
 import type { AppliedPromo } from "@/components/checkout/promo-code-field";
 
@@ -41,10 +43,18 @@ type CartContextValue = {
     name: string;
     image: string;
     boxSize: string;
-    selectedProducts: { product_id: string; quantity: number; price_snapshot: number }[];
+    selectedProducts: {
+      product_id: string;
+      quantity: number;
+      price_snapshot: number;
+      name?: string;
+      image?: string;
+    }[];
     message?: string | null;
     totalPrice: number;
+    builder?: Record<string, unknown>;
   }) => void;
+  restoreGiftBox: (snapshot: GiftBoxOrderSnapshot) => void;
   setQuantity: (lineId: string, quantity: number) => void;
   removeItem: (lineId: string) => void;
   clearCart: () => void;
@@ -89,6 +99,7 @@ function loadLines(): CartLine[] {
         addons,
         addonsTotalEgp,
         finalUnitPriceEgp: Number(line.finalUnitPriceEgp ?? Number(line.priceEgp ?? 0) + addonsTotalEgp),
+        giftBox: line.giftBox,
       };
     });
   } catch {
@@ -222,9 +233,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       name: string;
       image: string;
       boxSize: string;
-      selectedProducts: { product_id: string; quantity: number; price_snapshot: number }[];
+      selectedProducts: {
+        product_id: string;
+        quantity: number;
+        price_snapshot: number;
+        name?: string;
+        image?: string;
+      }[];
       message?: string | null;
       totalPrice: number;
+      builder?: Record<string, unknown>;
     }) => {
       setLines((prev) => {
         const nextLine = giftBoxLine(input);
@@ -234,6 +252,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     },
     [],
   );
+
+  const restoreGiftBox = useCallback((snapshot: GiftBoxOrderSnapshot) => {
+    const state = builderStateFromSnapshot(snapshot);
+    persistGiftBoxState(state);
+    setLines([]);
+    setPromo(null);
+  }, []);
 
   const removeItem = useCallback((lineId: string) => {
     setLines((prev) => prev.filter((l) => l.id !== lineId));
@@ -265,6 +290,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       toggleDrawer,
       addItem,
       addGiftBoxItem,
+      restoreGiftBox,
       setQuantity,
       removeItem,
       clearCart,
@@ -283,6 +309,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       toggleDrawer,
       addItem,
       addGiftBoxItem,
+      restoreGiftBox,
       setQuantity,
       removeItem,
       clearCart,
