@@ -108,6 +108,14 @@ export default async function ProductPage({ params }: Props) {
             ) : null}
 
             <div className="mt-8">
+              {linkedAddons.length > 0 ? (
+                <a
+                  href="#pdp-addons"
+                  className={buttonClassName("outline", "mb-3 inline-flex rounded-full px-5 py-2 text-sm")}
+                >
+                  View Add-ons
+                </a>
+              ) : null}
               <PdpActions product={product} linkedAddons={linkedAddons} />
             </div>
             <div className="mt-4">

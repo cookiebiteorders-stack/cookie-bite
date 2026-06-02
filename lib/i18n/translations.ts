@@ -140,6 +140,7 @@ export const translations: Record<Lang, Dictionary> = {
     adminNav: {
       dashboard: "Dashboard",
       products: "Products",
+      addons: "Add-ons",
       orders: "Orders",
       customers: "Customers",
       discounts: "Discounts",
@@ -1069,6 +1070,7 @@ export const translations: Record<Lang, Dictionary> = {
     adminNav: {
       dashboard: "لوحة التحكم",
       products: "المنتجات",
+      addons: "الإضافات",
       orders: "الطلبات",
       customers: "العملاء",
       discounts: "الخصومات",

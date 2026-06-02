@@ -105,7 +105,7 @@ export function PdpActions({ product, linkedAddons = [] }: Props) {
   return (
     <div className="space-y-4">
       {linkedAddons.length > 0 ? (
-        <div className="space-y-4 rounded-2xl border border-cb-border bg-cb-surface p-4">
+        <div id="pdp-addons" className="space-y-4 rounded-2xl border border-cb-border bg-cb-surface p-4">
           <p className="text-sm font-bold text-cb-text-strong">Add-ons</p>
           {linkedAddons.map((addon) => {
             const map = selected[addon.id] ?? {};

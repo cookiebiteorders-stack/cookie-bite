@@ -8,6 +8,7 @@ import {
 const MODULE_LABEL_AR: Record<ModuleKey, string> = {
   dashboard: "لوحة التحكم",
   products: "المنتجات",
+  addons: "الإضافات",
   orders: "الطلبات",
   customers: "العملاء",
   discounts: "الخصومات",

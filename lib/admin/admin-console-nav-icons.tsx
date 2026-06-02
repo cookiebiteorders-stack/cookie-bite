@@ -25,6 +25,7 @@ const iconByHref: Record<string, LucideIcon> = {
   "/admin": LayoutDashboard,
   "/admin/copilot": Cookie,
   "/admin/products": Boxes,
+  "/admin/addons": Boxes,
   "/admin/orders": ShoppingCart,
   "/admin/customers": Users,
   "/admin/discounts": BadgePercent,

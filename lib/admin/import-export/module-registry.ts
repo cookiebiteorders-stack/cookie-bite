@@ -47,6 +47,16 @@ export const MODULE_IMPORT_EXPORT_REGISTRY: Record<ModuleKey, ModuleImportExport
       "updated_at",
     ],
   }),
+  addons: base({
+    module: "addons",
+    label: "Add-ons",
+    table: "addons",
+    importEnabled: false,
+    exportEnabled: true,
+    maxImportRows: 0,
+    templateColumns: [],
+    exportColumns: ["id", "name", "type", "required", "is_active", "created_at", "updated_at"],
+  }),
   orders: base({
     module: "orders",
     label: "Orders",

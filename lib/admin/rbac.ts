@@ -5,6 +5,7 @@ export type PermissionLevel = "full" | "limited" | "view" | "none";
 export type ModuleKey =
   | "dashboard"
   | "products"
+  | "addons"
   | "orders"
   | "customers"
   | "discounts"
@@ -24,6 +25,7 @@ export const roleMatrix: Record<UserRole, Record<ModuleKey, PermissionLevel>> = 
   owner: {
     dashboard: "full",
     products: "full",
+    addons: "full",
     orders: "full",
     customers: "full",
     discounts: "full",
@@ -42,6 +44,7 @@ export const roleMatrix: Record<UserRole, Record<ModuleKey, PermissionLevel>> = 
   admin: {
     dashboard: "full",
     products: "full",
+    addons: "full",
     orders: "full",
     customers: "full",
     discounts: "full",
@@ -60,6 +63,7 @@ export const roleMatrix: Record<UserRole, Record<ModuleKey, PermissionLevel>> = 
   staff: {
     dashboard: "limited",
     products: "view",
+    addons: "view",
     orders: "limited",
     customers: "view",
     discounts: "none",
@@ -78,6 +82,7 @@ export const roleMatrix: Record<UserRole, Record<ModuleKey, PermissionLevel>> = 
   customer: {
     dashboard: "none",
     products: "none",
+    addons: "none",
     orders: "view",
     customers: "none",
     discounts: "none",
@@ -126,6 +131,7 @@ export const adminRouteModuleMap: Record<string, ModuleKey> = {
   "/admin": "dashboard",
   "/admin/copilot": "dashboard",
   "/admin/products": "products",
+  "/admin/addons": "addons",
   "/admin/orders": "orders",
   "/admin/customers": "customers",
   "/admin/discounts": "discounts",

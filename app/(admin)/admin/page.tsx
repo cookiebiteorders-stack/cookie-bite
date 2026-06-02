@@ -13,6 +13,7 @@ const quickActions = [
 const moduleOrder: ModuleKey[] = [
   "dashboard",
   "products",
+  "addons",
   "orders",
   "customers",
   "discounts",
@@ -32,6 +33,7 @@ const moduleOrder: ModuleKey[] = [
 const moduleName: Record<ModuleKey, string> = {
   dashboard: "Dashboard Overview",
   products: "Product Management",
+  addons: "Add-ons Management",
   orders: "Order Management",
   customers: "Customer Management",
   discounts: "Discounts & Promotions",
