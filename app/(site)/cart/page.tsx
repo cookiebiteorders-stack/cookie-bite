@@ -54,7 +54,7 @@ export default function CartPage() {
               <ul className="mt-10 space-y-4">
                 {lines.map((item) => (
                   <li
-                    key={item.productId}
+                    key={item.id}
                     className="flex gap-4 rounded-3xl border border-cb-border bg-cb-surface p-4"
                   >
                     <Link
@@ -79,29 +79,38 @@ export default function CartPage() {
                       </Link>
                       <p className="text-xs text-cb-text-muted">Cookie Bite</p>
                       <p className="text-sm font-bold text-cb-terracotta-dark">
-                        {fmt(item.priceEgp)} {t("pages.cart.each")}
+                        {fmt(item.finalUnitPriceEgp)} {t("pages.cart.each")}
                       </p>
+                      {item.addons.length > 0 ? (
+                        <ul className="mt-1 space-y-1 text-xs text-cb-text-muted">
+                          {item.addons.map((addon) => (
+                            <li key={addon.addon_id}>
+                              {addon.options.map((opt) => `${opt.option_id} × ${opt.quantity}`).join(", ")}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
                       <div className="mt-3 flex items-center gap-2">
                         <QuantitySelector
                           quantity={item.quantity}
                           onDecrease={() =>
-                            setQuantity(item.productId, item.quantity - 1)
+                        setQuantity(item.id, item.quantity - 1)
                           }
                           onIncrease={() =>
-                            setQuantity(item.productId, item.quantity + 1)
+                        setQuantity(item.id, item.quantity + 1)
                           }
                         />
                         <button
                           type="button"
                           className="ms-auto text-red-700 hover:underline"
-                          onClick={() => removeItem(item.productId)}
+                          onClick={() => removeItem(item.id)}
                         >
                           <Trash2 className="h-4 w-4" aria-hidden />
                         </button>
                       </div>
                     </div>
                     <p className="shrink-0 font-bold text-cb-text-strong">
-                      {fmt(item.priceEgp * item.quantity)}
+                        {fmt(item.finalUnitPriceEgp * item.quantity)}
                     </p>
                   </li>
                 ))}

@@ -42,7 +42,11 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: lines.map((l) => ({ id: l.productId, quantity: l.quantity })),
+          items: lines.map((l) => ({
+            id: l.productId,
+            quantity: l.quantity,
+            addons: l.addons,
+          })),
           shipping: { name, email, phone, address, city, notes },
           paymentMethod: payment,
           promo_code: promo?.code,
@@ -277,12 +281,12 @@ export default function CheckoutPage() {
               <h2 className="font-serif text-lg font-semibold text-cb-text-strong">Summary</h2>
               <ul className="mt-4 space-y-2 text-sm text-cb-text">
                 {lines.map((l) => (
-                  <li key={l.productId} className="flex justify-between">
+                  <li key={l.id} className="flex justify-between">
                     <span>
                       {l.name} × {l.quantity}
                     </span>
                     <span className="font-semibold">
-                      {(l.priceEgp * l.quantity).toFixed(0)} EGP
+                      {(l.finalUnitPriceEgp * l.quantity).toFixed(0)} EGP
                     </span>
                   </li>
                 ))}

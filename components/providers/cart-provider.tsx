@@ -9,9 +9,11 @@ import {
   useState,
 } from "react";
 import type { Product } from "@/lib/data";
+import type { CartSelectedAddon } from "@/lib/addons/types";
 import {
   cartItemCount,
   cartSubtotal,
+  buildCartLineId,
   lineFromProduct,
   type CartLine,
 } from "@/lib/cart/types";
@@ -27,9 +29,14 @@ type CartContextValue = {
   openDrawer: () => void;
   closeDrawer: () => void;
   toggleDrawer: () => void;
-  addItem: (product: Product, quantity?: number) => void;
-  setQuantity: (productId: string, quantity: number) => void;
-  removeItem: (productId: string) => void;
+  addItem: (
+    product: Product,
+    quantity?: number,
+    addons?: CartSelectedAddon[],
+    addonsTotalEgp?: number,
+  ) => void;
+  setQuantity: (lineId: string, quantity: number) => void;
+  removeItem: (lineId: string) => void;
   clearCart: () => void;
   itemCount: number;
   subtotalEgp: number;
@@ -48,8 +55,9 @@ function loadLines(): CartLine[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (x): x is CartLine =>
+    const list = parsed.filter(
+      (x): x is Partial<CartLine> &
+        Pick<CartLine, "productId" | "quantity" | "name" | "priceEgp" | "image"> =>
         typeof x === "object" &&
         x !== null &&
         "productId" in x &&
@@ -57,6 +65,22 @@ function loadLines(): CartLine[] {
         typeof (x as CartLine).productId === "string" &&
         typeof (x as CartLine).quantity === "number",
     );
+    return list.map((line) => {
+      const addons = Array.isArray(line.addons) ? line.addons : [];
+      const addonsTotalEgp = Number(line.addonsTotalEgp ?? 0);
+      return {
+        id: line.id || buildCartLineId(line.productId, addons),
+        productId: line.productId,
+        productUuid: line.productUuid,
+        name: line.name,
+        priceEgp: Number(line.priceEgp ?? 0),
+        image: line.image,
+        quantity: line.quantity,
+        addons,
+        addonsTotalEgp,
+        finalUnitPriceEgp: Number(line.finalUnitPriceEgp ?? Number(line.priceEgp ?? 0) + addonsTotalEgp),
+      };
+    });
   } catch {
     return [];
   }
@@ -81,11 +105,15 @@ function tryMigrateLegacyZustandCart(): CartLine[] | null {
     const items = parsed?.state?.items;
     if (!Array.isArray(items) || items.length === 0) return null;
     return items.map((i) => ({
+      id: i.id,
       productId: i.id,
       name: i.name,
       priceEgp: i.price,
       image: i.image,
       quantity: Math.min(99, Math.max(1, Number(i.quantity) || 1)),
+      addons: [],
+      addonsTotalEgp: 0,
+      finalUnitPriceEgp: i.price,
     }));
   } catch {
     return null;
@@ -150,11 +178,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const toggleDrawer = useCallback(() => setDrawerOpen((v) => !v), []);
 
-  const addItem = useCallback((product: Product, quantity = 1) => {
+  const addItem = useCallback(
+    (product: Product, quantity = 1, addons: CartSelectedAddon[] = [], addonsTotalEgp = 0) => {
     setLines((prev) => {
-      const idx = prev.findIndex((l) => l.productId === product.id);
+      const nextLine = lineFromProduct(product, quantity, addons, addonsTotalEgp);
+      const idx = prev.findIndex((l) => l.id === nextLine.id);
       if (idx === -1) {
-        return [...prev, lineFromProduct(product, quantity)];
+        return [...prev, nextLine];
       }
       const next = [...prev];
       const q = Math.min(99, next[idx].quantity + quantity);
@@ -162,20 +192,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return next;
     });
     setDrawerOpen(true);
-  }, []);
+    },
+    [],
+  );
 
-  const setQuantity = useCallback((productId: string, quantity: number) => {
+  const setQuantity = useCallback((lineId: string, quantity: number) => {
     const q = Math.min(99, Math.max(0, quantity));
     setLines((prev) => {
-      if (q === 0) return prev.filter((l) => l.productId !== productId);
+      if (q === 0) return prev.filter((l) => l.id !== lineId);
       return prev.map((l) =>
-        l.productId === productId ? { ...l, quantity: q } : l,
+        l.id === lineId ? { ...l, quantity: q } : l,
       );
     });
   }, []);
 
-  const removeItem = useCallback((productId: string) => {
-    setLines((prev) => prev.filter((l) => l.productId !== productId));
+  const removeItem = useCallback((lineId: string) => {
+    setLines((prev) => prev.filter((l) => l.id !== lineId));
   }, []);
 
   const clearCart = useCallback(() => {

@@ -32,6 +32,7 @@ export type AdminProductRow = {
   weight_grams?: number | null;
   pieces_count?: number | null;
   updated_at?: string | null;
+  linked_addon_ids?: string[];
 };
 
 export type CatalogStats = {
@@ -91,6 +92,7 @@ export type ProductFormState = {
   is_active: boolean;
   /** يضيف شارة featured وتعرض المنتج في كاروسيل الصفحة الرئيسية */
   show_on_homepage: boolean;
+  linked_addon_ids: string[];
   meta_title: string;
   meta_description: string;
 };
@@ -124,6 +126,7 @@ export const EMPTY_PRODUCT_FORM: ProductFormState = {
   video_url: "",
   is_active: true,
   show_on_homepage: false,
+  linked_addon_ids: [],
   meta_title: "",
   meta_description: "",
 };
@@ -206,6 +209,7 @@ export function rowToProductForm(item: AdminProductRow): ProductFormState {
     video_url: item.video_url ?? "",
     is_active: item.is_active,
     show_on_homepage: (item.badges ?? []).includes("featured"),
+    linked_addon_ids: item.linked_addon_ids ?? [],
     meta_title: (item.title_en ?? item.name ?? "").slice(0, 70),
     meta_description: (item.description_en ?? "").slice(0, 160),
   };
@@ -274,5 +278,6 @@ export function formToApiPayload(form: ProductFormState) {
     images,
     video_url: form.video_url.trim() || null,
     is_active: form.is_active,
+    linked_addon_ids: form.linked_addon_ids,
   };
 }

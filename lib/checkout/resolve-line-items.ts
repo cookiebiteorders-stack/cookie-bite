@@ -1,13 +1,19 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { CartSelectedAddon } from "@/lib/addons/types";
+import type { Addon } from "@/lib/addons/types";
 
 export type ResolvedCheckoutLine = {
   id: string;
   name: string;
-  unitPrice: number;
+  baseUnitPrice: number;
+  addonsTotalUnitPrice: number;
+  finalUnitPrice: number;
   quantity: number;
+  selectedAddons: CartSelectedAddon[];
 };
 
 type DbRow = {
+  id: string;
   slug: string;
   name: string;
   title_en: string | null;
@@ -21,7 +27,7 @@ type DbRow = {
  * `items[].id` يجب أن يكون **slug المنتج** كما في السلة الموحّدة.
  */
 export async function resolveCheckoutLineItems(
-  items: { id: string; quantity: number }[],
+  items: { id: string; quantity: number; addons?: CartSelectedAddon[] }[],
 ): Promise<
   | { ok: true; lines: ResolvedCheckoutLine[]; subtotal: number }
   | { ok: false; error: string; status: number }
@@ -39,7 +45,7 @@ export async function resolveCheckoutLineItems(
 
   const { data, error } = await supabase
     .from("products")
-    .select("slug, name, title_en, price_egp, stock, is_active")
+    .select("id, slug, name, title_en, price_egp, stock, is_active")
     .in("slug", slugs);
 
   if (error) {
@@ -68,14 +74,52 @@ export async function resolveCheckoutLineItems(
       };
     }
     const name = (p.title_en?.trim() || p.name || p.slug).trim();
-    const unitPrice = Number(p.price_egp);
+    const baseUnitPrice = Number(p.price_egp);
+    const selectedAddons = item.addons ?? [];
+    let addonsTotalUnitPrice = 0;
+    if (selectedAddons.length > 0) {
+      const { data: links } = await supabase
+        .from("product_addons")
+        .select("addons(*)")
+        .eq("product_id", p.id)
+        .returns<Array<{ addons?: Addon | Addon[] | null }>>();
+      const linkedAddons = (links ?? [])
+        .map((r) => (Array.isArray(r.addons) ? r.addons[0] : r.addons))
+        .filter(Boolean) as Addon[];
+      const linkedMap = new Map(linkedAddons.map((a) => [a.id, a]));
+      for (const addonSel of selectedAddons) {
+        const linked = linkedMap.get(addonSel.addon_id);
+        if (!linked) {
+          return { ok: false, error: "Invalid add-on selection", status: 400 };
+        }
+        for (const optSel of addonSel.options) {
+          const option = linked.options.find((o) => o.id === optSel.option_id);
+          if (!option) return { ok: false, error: "Invalid add-on option", status: 400 };
+          if (option.quantity_limit != null && optSel.quantity > option.quantity_limit) {
+            return { ok: false, error: "Add-on quantity limit exceeded", status: 400 };
+          }
+          addonsTotalUnitPrice += Number(option.price) * optSel.quantity;
+        }
+      }
+      for (const linked of linkedAddons) {
+        if (!linked.required) continue;
+        const picked = selectedAddons.find((s) => s.addon_id === linked.id);
+        if (!picked || picked.options.length === 0) {
+          return { ok: false, error: `Required add-on missing: ${linked.name}`, status: 400 };
+        }
+      }
+    }
+    const finalUnitPrice = baseUnitPrice + addonsTotalUnitPrice;
     lines.push({
       id: p.slug,
       name,
-      unitPrice,
+      baseUnitPrice,
+      addonsTotalUnitPrice,
+      finalUnitPrice,
       quantity: item.quantity,
+      selectedAddons,
     });
-    subtotal += unitPrice * item.quantity;
+    subtotal += finalUnitPrice * item.quantity;
   }
 
   return { ok: true, lines, subtotal };

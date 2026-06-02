@@ -47,6 +47,20 @@ export type AddressInput = z.infer<typeof addressSchema>;
 export const cartItemSchema = z.object({
   product_id: z.string().min(1),
   quantity: z.number().int().min(1).max(99),
+  addons: z
+    .array(
+      z.object({
+        addon_id: z.string().uuid(),
+        options: z.array(
+          z.object({
+            option_id: z.string().min(1),
+            quantity: z.number().int().min(1).max(99),
+            price_snapshot: z.number().nonnegative(),
+          }),
+        ),
+      }),
+    )
+    .optional(),
 });
 export type CartItemInput = z.infer<typeof cartItemSchema>;
 

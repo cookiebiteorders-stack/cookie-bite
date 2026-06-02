@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getUserByClerkId } from "@/lib/db/users";
 import { checkoutSchema, bilingualError } from "@/lib/validations";
+import type { Addon } from "@/lib/addons/types";
 
 type ProductForCheckout = {
   id: string;
@@ -139,17 +140,71 @@ export async function POST(req: NextRequest) {
   const orderLines = data.cart_items.map((item) => {
     const product = products.find((p) => p.id === item.product_id)!;
     const unit_price = Number(product.price_egp);
-    const total_price = unit_price * item.quantity;
+    const addons_total_unit = (item.addons ?? []).reduce(
+      (sum, addon) =>
+        sum +
+        addon.options.reduce(
+          (inner, opt) => inner + Number(opt.price_snapshot) * opt.quantity,
+          0,
+        ),
+      0,
+    );
+    const final_unit_price = unit_price + addons_total_unit;
+    const total_price = final_unit_price * item.quantity;
     subtotal += total_price;
     return {
       product_id: product.id,
       product_snapshot: product,
       quantity: item.quantity,
       unit_price_egp: unit_price,
+      addons_total_egp: addons_total_unit * item.quantity,
+      final_total_egp: total_price,
       total_price_egp: total_price,
       product_name: product.title_en ?? product.name,
     };
   });
+
+  for (const item of data.cart_items) {
+    if (!item.addons || item.addons.length === 0) continue;
+    const product = products.find((p) => p.id === item.product_id)!;
+    const { data: links } = await supabase
+      .from("product_addons")
+      .select("addons(*)")
+      .eq("product_id", product.id)
+      .returns<Array<{ addons?: Addon | Addon[] | null }>>();
+    const linkedAddons = (links ?? [])
+      .map((r) => (Array.isArray(r.addons) ? r.addons[0] : r.addons))
+      .filter(Boolean) as Addon[];
+    const linkedMap = new Map(linkedAddons.map((a) => [a.id, a]));
+    for (const addonSel of item.addons) {
+      const linked = linkedMap.get(addonSel.addon_id);
+      if (!linked) {
+        return NextResponse.json(bilingualError("Invalid add-on", "إضافة غير صالحة"), { status: 400 });
+      }
+      for (const optSel of addonSel.options) {
+        const option = linked.options.find((o) => o.id === optSel.option_id);
+        if (!option) {
+          return NextResponse.json(bilingualError("Invalid add-on option", "خيار إضافة غير صالح"), { status: 400 });
+        }
+        if (option.quantity_limit != null && optSel.quantity > option.quantity_limit) {
+          return NextResponse.json(
+            bilingualError("Add-on quantity limit exceeded", "تجاوزت حد كمية الإضافة"),
+            { status: 400 },
+          );
+        }
+      }
+    }
+    for (const linked of linkedAddons) {
+      if (!linked.required) continue;
+      const selectedAddon = item.addons.find((a) => a.addon_id === linked.id);
+      if (!selectedAddon || selectedAddon.options.length === 0) {
+        return NextResponse.json(
+          bilingualError("Missing required add-on", "إضافة مطلوبة غير محددة"),
+          { status: 400 },
+        );
+      }
+    }
+  }
 
   // 3) Promo
   let discount_amount = 0;
@@ -296,6 +351,10 @@ export async function POST(req: NextRequest) {
     product_snapshot: l.product_snapshot,
     unit_price_egp: l.unit_price_egp,
     total_price_egp: l.total_price_egp,
+    selected_addons:
+      data.cart_items.find((ci) => ci.product_id === l.product_id)?.addons ?? [],
+    addons_total_egp: l.addons_total_egp,
+    final_total_egp: l.final_total_egp,
     quantity: l.quantity,
   }));
 

@@ -25,6 +25,20 @@ const BodySchema = z.object({
     z.object({
       id: z.string().min(1),
       quantity: z.number().int().min(1).max(99),
+      addons: z
+        .array(
+          z.object({
+            addon_id: z.string().uuid(),
+            options: z.array(
+              z.object({
+                option_id: z.string().min(1),
+                quantity: z.number().int().min(1).max(99),
+                price_snapshot: z.number().nonnegative(),
+              }),
+            ),
+          }),
+        )
+        .optional(),
     }),
   ),
   shipping: z.object({
@@ -141,8 +155,11 @@ export async function POST(req: Request) {
       lines: resolved.map((l) => ({
         slug: l.id,
         name: l.name,
-        unitPrice: l.unitPrice,
+        unitPrice: l.baseUnitPrice,
         quantity: l.quantity,
+        selectedAddons: l.selectedAddons,
+        addonsTotalUnitPrice: l.addonsTotalUnitPrice,
+        finalUnitPrice: l.finalUnitPrice,
       })),
       subtotalEgp: subtotal,
       deliveryFeeEgp: deliveryFee,
@@ -210,7 +227,16 @@ export async function POST(req: Request) {
   }
 
   const amountCents = Math.round(total * 100);
-  const paymobItems = buildPaymobLineItems(resolved, deliveryFee, discountAmount);
+  const paymobItems = buildPaymobLineItems(
+    resolved.map((line) => ({
+      id: line.id,
+      name: line.name,
+      unitPrice: line.finalUnitPrice,
+      quantity: line.quantity,
+    })),
+    deliveryFee,
+    discountAmount,
+  );
   const itemsSum = paymobItems.reduce((s, i) => s + i.amount_cents, 0);
   if (itemsSum !== amountCents) {
     console.error("Paymob line items sum mismatch", { itemsSum, amountCents });
@@ -226,8 +252,11 @@ export async function POST(req: Request) {
       lines: resolved.map((l) => ({
         slug: l.id,
         name: l.name,
-        unitPrice: l.unitPrice,
+        unitPrice: l.baseUnitPrice,
         quantity: l.quantity,
+        selectedAddons: l.selectedAddons,
+        addonsTotalUnitPrice: l.addonsTotalUnitPrice,
+        finalUnitPrice: l.finalUnitPrice,
       })),
       subtotalEgp: subtotal,
       deliveryFeeEgp: deliveryFee,

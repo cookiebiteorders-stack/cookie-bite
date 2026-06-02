@@ -63,6 +63,7 @@ import {
 } from "@/lib/products/catalog-options";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
 import { cn } from "@/lib/utils";
+import type { Addon } from "@/lib/addons/types";
 
 type FormErrors = Partial<Record<keyof ProductFormState, string>>;
 
@@ -109,6 +110,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
   const [aiImageBusy, setAiImageBusy] = useState(false);
   const [aiImagePickerOpen, setAiImagePickerOpen] = useState(false);
   const [aiImageCandidates, setAiImageCandidates] = useState<ProductImageCandidate[]>([]);
+  const [addonsCatalog, setAddonsCatalog] = useState<Addon[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -153,6 +155,13 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       setComparePriceManual(false);
     }
   }, [open, editingId, editing, pushToast]);
+
+  useEffect(() => {
+    if (!open) return;
+    void fetchJson<{ addons: Addon[] }>("/api/admin/addons", { cache: "no-store" })
+      .then((res) => setAddonsCatalog(res.addons ?? []))
+      .catch(() => setAddonsCatalog([]));
+  }, [open]);
 
   const handlePriceChange = useCallback(
     (value: string) => {
@@ -853,6 +862,40 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     labelFor={labelForBadge}
                     disabled={!canWrite}
                   />
+                </div>
+                <div className={cn("space-y-2", formStep !== 1 && "hidden")}>
+                  <span className={labelClass}>Linked Add-ons</span>
+                  <div className="max-h-44 space-y-2 overflow-auto rounded-xl border border-cb-border/70 bg-white p-3">
+                    {addonsCatalog.length === 0 ? (
+                      <p className="text-xs text-cb-text-muted">
+                        لا يوجد Add-ons بعد. أنشئها من صفحة `/admin/addons`.
+                      </p>
+                    ) : (
+                      addonsCatalog.map((addon) => {
+                        const checked = form.linked_addon_ids.includes(addon.id);
+                        return (
+                          <label
+                            key={addon.id}
+                            className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-cb-border/60 px-3 py-2 text-xs"
+                          >
+                            <span className="font-semibold text-cb-text-strong">{addon.name}</span>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) =>
+                                setForm((f) => ({
+                                  ...f,
+                                  linked_addon_ids: e.target.checked
+                                    ? [...f.linked_addon_ids, addon.id]
+                                    : f.linked_addon_ids.filter((id) => id !== addon.id),
+                                }))
+                              }
+                            />
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
                 <div className={cn(formStep !== 1 && "hidden")}>
                   <CatalogMultiSelect

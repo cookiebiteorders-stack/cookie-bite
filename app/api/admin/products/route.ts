@@ -24,6 +24,8 @@ import {
 import { deriveProductSlug } from "@/lib/products/slug";
 import { insertProductWithSlugRetry } from "@/lib/products/insert-product";
 import { zodPayloadError } from "@/lib/validations/zod-errors";
+import { linkedAddonIdsSchema } from "@/lib/addons/validation";
+import { listLinkedAddonIdsByProductIds, replaceProductAddonLinks } from "@/lib/db/addons";
 
 const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -64,6 +66,7 @@ const bulkPatchSchema = z.object({
       pieces_count: z.number().int().positive().nullable().optional(),
       dietary: z.array(z.string().max(120)).optional(),
       compare_price_egp: z.number().positive().nullable().optional(),
+      linked_addon_ids: linkedAddonIdsSchema.optional(),
     })
     .refine((v) => Object.keys(v).length > 0, {
       message: "patch is required",
@@ -91,6 +94,7 @@ const createProductSchema = z.object({
   pieces_count: z.number().int().positive().nullable().optional(),
   dietary: z.array(z.string().max(120)).optional(),
   compare_price_egp: z.number().positive().nullable().optional(),
+  linked_addon_ids: linkedAddonIdsSchema.optional(),
 });
 
 function resolveProductMedia(input: {
@@ -225,8 +229,15 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  const products = (data ?? []) as Array<{ id: string } & Record<string, unknown>>;
+  const linkedByProduct = await listLinkedAddonIdsByProductIds(products.map((p) => p.id));
+  const withLinked = products.map((p) => ({
+    ...p,
+    linked_addon_ids: linkedByProduct.get(p.id) ?? [],
+  }));
+
   return NextResponse.json({
-    products: data ?? [],
+    products: withLinked,
     total: count ?? 0,
     page,
     limit,
@@ -307,6 +318,7 @@ export async function POST(req: NextRequest) {
   }
 
   const data = inserted.data;
+  await replaceProductAddonLinks(String(data.id), payload.linked_addon_ids ?? []);
 
   await writeAuditLog({
     actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
@@ -339,6 +351,10 @@ export async function PATCH(req: NextRequest) {
   }
 
   const { ids, patch } = parsed.data;
+  const linkedAddonIds = patch.linked_addon_ids;
+  if ("linked_addon_ids" in patch) {
+    delete (patch as Record<string, unknown>).linked_addon_ids;
+  }
   const dbPatch = applyPatchMedia(patch);
   const supabase = createSupabaseAdminClient();
   const { data: before } = await supabase.from("products").select("*").in("id", ids);
@@ -353,6 +369,12 @@ export async function PATCH(req: NextRequest) {
       bilingualError("Failed to update products", "فشل تحديث المنتجات"),
       { status: 500 },
     );
+  }
+
+  if (linkedAddonIds && ids.length > 0) {
+    for (const productId of ids) {
+      await replaceProductAddonLinks(productId, linkedAddonIds);
+    }
   }
 
   await writeAuditLog({

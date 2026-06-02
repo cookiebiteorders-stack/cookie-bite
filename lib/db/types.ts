@@ -107,6 +107,9 @@ export type OrderItemRow = {
   product_name: string;
   product_snapshot: Record<string, unknown> | null;
   unit_price_egp: number;
+  selected_addons: Record<string, unknown>[];
+  addons_total_egp: number;
+  final_total_egp: number | null;
   total_price_egp: number | null;
   quantity: number;
   created_at: string;

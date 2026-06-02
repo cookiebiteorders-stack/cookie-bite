@@ -12,6 +12,7 @@ import { ShareButtons } from "@/components/seo/share-buttons";
 import { PdpViewTracker } from "@/components/shop/pdp-view-tracker";
 import { getCartBasedRecommendations } from "@/lib/recommendations/fetch-recommendations";
 import { getActivePdpProduct, listAllActiveSlugs } from "@/lib/storefront/pdp-data";
+import { listLinkedAddonsForProduct } from "@/lib/db/addons";
 import {
   buildBreadcrumbJsonLd,
   buildProductJsonLd,
@@ -47,6 +48,9 @@ export default async function ProductPage({ params }: Props) {
     product.id,
     3,
   );
+  const linkedAddons = product.productUuid
+    ? await listLinkedAddonsForProduct(product.productUuid)
+    : [];
 
   const productJsonLd = buildProductJsonLd(product, slug);
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
@@ -104,7 +108,7 @@ export default async function ProductPage({ params }: Props) {
             ) : null}
 
             <div className="mt-8">
-              <PdpActions product={product} />
+              <PdpActions product={product} linkedAddons={linkedAddons} />
             </div>
             <div className="mt-4">
               <ShareButtons title={`${product.name} | Cookie Bite`} />

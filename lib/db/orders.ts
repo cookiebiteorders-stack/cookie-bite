@@ -7,7 +7,15 @@ import { recordPromoUse } from "@/lib/promo/validate-promo";
 
 export type InsertCheckoutOrderInput = {
   userId: string | null;
-  lines: { slug: string; name: string; unitPrice: number; quantity: number }[];
+  lines: {
+    slug: string;
+    name: string;
+    unitPrice: number;
+    quantity: number;
+    selectedAddons?: Record<string, unknown>[];
+    addonsTotalUnitPrice?: number;
+    finalUnitPrice?: number;
+  }[];
   subtotalEgp: number;
   deliveryFeeEgp: number;
   discountAmountEgp?: number;
@@ -76,6 +84,9 @@ export async function insertCheckoutOrder(
     product_id: string | null;
     product_name: string;
     unit_price_egp: number;
+    selected_addons: Record<string, unknown>[];
+    addons_total_egp: number;
+    final_total_egp: number;
     quantity: number;
   }[] = [];
 
@@ -94,6 +105,9 @@ export async function insertCheckoutOrder(
       product_id: productUuid,
       product_name: line.name,
       unit_price_egp: line.unitPrice,
+      selected_addons: line.selectedAddons ?? [],
+      addons_total_egp: Number(line.addonsTotalUnitPrice ?? 0) * line.quantity,
+      final_total_egp: Number(line.finalUnitPrice ?? line.unitPrice) * line.quantity,
       quantity: line.quantity,
     });
   }
