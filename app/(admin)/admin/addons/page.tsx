@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchJson } from "@/lib/http/fetch-json";
 import type { Addon } from "@/lib/addons/types";
 
@@ -27,6 +27,7 @@ export default function AdminAddonsPage() {
   const [addons, setAddons] = useState<Addon[]>([]);
   const [products, setProducts] = useState<ProductLite[]>([]);
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [productSearch, setProductSearch] = useState("");
   const [form, setForm] = useState<Addon>(emptyAddon);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [defaultPrice, setDefaultPrice] = useState<number>(0);
@@ -51,6 +52,22 @@ export default function AdminAddonsPage() {
     void load();
     void loadProducts();
   }, []);
+
+  const productOptions = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    if (!q) return products.slice(0, 50);
+    return products
+      .filter((p) => {
+        const title = (p.title_en ?? p.name ?? "").toLowerCase();
+        return title.includes(q);
+      })
+      .slice(0, 50);
+  }, [products, productSearch]);
+
+  const selectedProductName = useMemo(() => {
+    const row = products.find((p) => p.id === selectedProductId);
+    return row ? row.title_en ?? row.name ?? row.id : "";
+  }, [products, selectedProductId]);
 
   async function save() {
     setError(null);
@@ -232,18 +249,31 @@ export default function AdminAddonsPage() {
             value={defaultPrice}
             onChange={(e) => setDefaultPrice(Math.max(0, Number(e.target.value) || 0))}
           />
-          <select
-            className="rounded-lg border border-cb-border px-3 py-2"
-            value={selectedProductId}
-            onChange={(e) => setSelectedProductId(e.target.value)}
-          >
-            <option value="">Select product to link (optional)</option>
-            {products.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.title_en ?? p.name ?? p.id}
-              </option>
-            ))}
-          </select>
+          <div className="space-y-2">
+            <input
+              className="rounded-lg border border-cb-border px-3 py-2"
+              placeholder="Search product by name..."
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+            />
+            <select
+              className="w-full rounded-lg border border-cb-border px-3 py-2"
+              value={selectedProductId}
+              onChange={(e) => setSelectedProductId(e.target.value)}
+            >
+              <option value="">Select product to link (optional)</option>
+              {productOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title_en ?? p.name ?? p.id}
+                </option>
+              ))}
+            </select>
+            {selectedProductName ? (
+              <p className="text-xs font-semibold text-cb-text-muted">
+                Selected: <span className="text-cb-text-strong">{selectedProductName}</span>
+              </p>
+            ) : null}
+          </div>
         </div>
         <div className="mt-2">
           <button
