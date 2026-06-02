@@ -52,6 +52,7 @@ export async function writeEmailLog(params: {
   subject: string;
   emailType: string;
   templateKey?: string | null;
+  userId?: string | null;
   provider: string;
   providerMessageId?: string | null;
   status: "sent" | "delivered" | "bounced" | "complained" | "failed";
@@ -65,6 +66,7 @@ export async function writeEmailLog(params: {
     subject: params.subject,
     email_type: params.emailType,
     template_key: params.templateKey ?? null,
+    user_id: params.userId ?? null,
     provider: params.provider,
     provider_message_id: params.providerMessageId ?? null,
     status: params.status,
@@ -149,6 +151,22 @@ export async function fetchRetryableFailed(limit = 20) {
     .order("next_retry_at", { ascending: true })
     .limit(limit);
   return data ?? [];
+}
+
+export async function getEmailLogIdByQueueId(queueId: string): Promise<string | null> {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("email_logs")
+    .select("id")
+    .eq("queue_id", queueId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error("[email-automation] could not fetch email log by queue id", queueId, error.message);
+    return null;
+  }
+  return (data?.id as string | undefined) ?? null;
 }
 
 export async function switchActiveProvider(provider: EmailProviderId) {

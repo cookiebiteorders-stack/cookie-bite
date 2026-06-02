@@ -91,6 +91,33 @@ curl -X POST "https://YOUR_DOMAIN/api/cron/email-health" \
 | GET | `/api/admin/email/queue` |
 | GET/PATCH | `/api/admin/email/settings` |
 | POST | `/api/admin/email/test` `{ to, runHealth? }` |
+| GET/POST | `/api/admin/email/templates` |
+| GET/POST | `/api/admin/email/event-mappings` |
+| POST | `/api/email/events/trigger` |
+
+## Event + Template Automation (DB-only)
+
+- مصدر الرسالة دائمًا من `email_templates` (subject + html_body).
+- ربط الحدث بالقالب من جدول `email_event_template_mappings`.
+- الأحداث المدعومة افتراضيًا: `user_registered`, `order_created`, `order_shipped`, `password_reset`.
+- السجل التفصيلي في `email_event_logs` (يشمل `ai_used`, `ai_variables`, ونسخة HTML نهائية).
+
+### التدفق
+
+1. حدث يصل للنظام.
+2. جلب mapping (event -> template_key).
+3. التحقق أن القالب نشط.
+4. حقن `provided_data`.
+5. المتغيرات الناقصة فقط -> AI filler (اختياري).
+6. Render نهائي.
+7. إرسال عبر Resend ضمن pipeline الموحد.
+
+### AI Filler Rules
+
+- الـ AI لا ينشئ بريد كامل، فقط يملأ متغيرات ناقصة.
+- لا يغير قيم موجودة من النظام.
+- لا يضيف مفاتيح جديدة خارج قائمة متغيرات القالب.
+- المخرجات تمر بتنظيف نصي + حد أقصى للطول لكل متغير.
 
 ## Fallback
 
