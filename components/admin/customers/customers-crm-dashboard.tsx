@@ -18,6 +18,7 @@ import {
 import type { AdminCustomerRow } from "@/lib/admin/crm-types";
 import { useCustomersCrmStore } from "@/stores/customers-crm-store";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/components/providers/language-provider";
 import { parseCsv } from "@/lib/csv/parse-csv";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { CrmHeroStats } from "@/components/admin/customers/crm-hero-stats";
@@ -56,6 +57,7 @@ function exportCustomersCsv(rows: AdminCustomerRow[]) {
 
 export function CustomersCrmDashboard() {
   const reduceMotion = useReducedMotion();
+  const { t } = useLanguage();
   const searchRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const loadCustomers = useCustomersCrmStore((s) => s.loadCustomers);
@@ -182,17 +184,12 @@ export function CustomersCrmDashboard() {
         <div className="admin-panel-scrim" aria-hidden />
         <div className="relative z-[1] flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-800">CRM</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-800">{t("adminHero.customers.eyebrow")}</p>
           <h1 id="crm-dashboard-title" className="mt-1 font-serif text-xl font-bold text-stone-950 sm:text-2xl">
-            Customer Management &amp; CRM
+            {t("adminHero.customers.title")}
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-stone-700">
-            إدارة ملفات العملاء، الولاء، التجزئة، تحليلات الاحتفاظ، التفاعل، وأتمتة دورة حياة العميل —{" "}
-            <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] text-stone-800">⌘K</kbd> أو{" "}
-            <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] text-stone-800">Ctrl+K</kbd> للأوامر،{" "}
-            <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] text-stone-800">/</kbd> للبحث،{" "}
-            <kbd className="rounded border border-cb-border bg-white/80 px-1 font-mono text-[10px] text-stone-800">N</kbd> لإضافة عميل. تحديث
-            تلقائي كل 90 ثانية.
+            {t("adminHero.customers.subtitle")}
           </p>
           </div>
           <div
@@ -204,7 +201,7 @@ export function CustomersCrmDashboard() {
             )}
           >
             <span className={cn("h-2 w-2 rounded-full", online ? "animate-pulse bg-emerald-500" : "bg-amber-500")} />
-            {online ? "مزامنة البيانات" : "تحقق من الاتصال"}
+            {online ? t("adminStatus.dataSync") : t("adminStatus.offline")}
           </div>
         </div>
         <div className="relative z-[1] w-full overflow-x-auto">

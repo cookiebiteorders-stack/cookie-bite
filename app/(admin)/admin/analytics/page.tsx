@@ -5,6 +5,7 @@ import type { Range } from "@/lib/tracking-server/queries";
 import { KpiCard } from "@/components/admin/tracking/KpiCard";
 import { TimelineChart } from "@/components/admin/tracking/TimelineChart";
 import { DeviceDonut } from "@/components/admin/tracking/DeviceDonut";
+import { AdminPageIntro } from "@/components/admin/admin-page-intro";
 
 const RANGE_LABELS: Record<Range, string> = {
   "24h": "Last 24 hours",
@@ -45,14 +46,12 @@ export default async function AdminAnalyticsOverviewPage({
     <div className="space-y-6">
       <section className="admin-panel-surface rounded-2xl p-5 shadow-[var(--shadow-card)] cb-shadow-editorial">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="font-serif text-3xl font-bold text-cb-text-strong">
-              Analytics overview
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm text-cb-text-muted">
-              First-party tracking dashboard: visitors, sessions, conversions, devices, sources, and
-              session timelines, served straight from your own database.
-            </p>
+          <div className="min-w-0 flex-1">
+            <AdminPageIntro
+              titleKey="adminPages.analyticsOverview.title"
+              subtitleKey="adminPages.analyticsOverview.subtitle"
+              className="rounded-none p-0 shadow-none"
+            />
           </div>
           <div className="flex flex-wrap gap-2">
             {(Object.keys(RANGE_LABELS) as Range[]).map((r) => (

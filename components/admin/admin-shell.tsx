@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { LogoMark } from "@/components/brand/logo-mark";
-import { type UserRole, getRoleLabel } from "@/lib/admin/rbac";
+import { type UserRole } from "@/lib/admin/rbac";
 import { getAccessibleAdminConsoleNav } from "@/lib/admin/admin-console-nav";
 import { AdminConsoleNavLinks } from "@/components/admin/admin-console-nav-links";
 import { AdminConsoleNavbar } from "@/components/admin/admin-console-navbar";
@@ -63,10 +63,10 @@ export function AdminShell({ role, children }: AdminShellProps) {
                   </p>
                 </div>
                 <p className="mt-2 text-xs font-semibold tracking-[0.16em] text-cb-text">
-                  ADMIN CONSOLE
+                  {t("adminShell.consoleEyebrow")}
                 </p>
                 <span className="mt-3 inline-flex rounded-full border border-cb-border-strong bg-cb-peach/50 px-3 py-1 text-xs font-bold text-cb-text-strong">
-                  {getRoleLabel(role)}
+                  {t(`adminRoles.${role}`)}
                 </span>
               </div>
 

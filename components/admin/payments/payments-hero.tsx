@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import { CreditCard, Radio } from "lucide-react";
+import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 
 type PaymentsHeroProps = {
@@ -18,6 +19,7 @@ export function PaymentsHero({
   onToggleLive,
 }: PaymentsHeroProps) {
   const reduceMotion = useReducedMotion();
+  const { t } = useLanguage();
 
   return (
     <motion.header
@@ -37,15 +39,16 @@ export function PaymentsHero({
           </div>
           <div>
             <h1 className="font-serif text-2xl font-bold tracking-tight text-cb-text-strong sm:text-3xl">
-              Payments Console
+              {t("adminHero.payments.title")}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cb-text sm:text-base">
-              Gateway transaction health, status distribution, and captured value — with safe
-              error handling and live refresh.
+              {t("adminHero.payments.subtitle")}
             </p>
             {lastFetchedAt && (
               <p className="mt-2 text-xs text-cb-text-muted">
-                Last sync: {new Date(lastFetchedAt).toLocaleString()}
+                {t("adminHero.payments.lastSync", {
+                  time: new Date(lastFetchedAt).toLocaleString(),
+                })}
               </p>
             )}
           </div>
@@ -63,7 +66,7 @@ export function PaymentsHero({
             )}
           >
             <Radio className="h-3.5 w-3.5" aria-hidden />
-            {liveMode ? "Live view" : "Test mode (UI)"}
+            {liveMode ? t("adminHero.payments.liveView") : t("adminHero.payments.testMode")}
           </button>
           <div
             className={cn(
@@ -79,7 +82,7 @@ export function PaymentsHero({
                 operational ? "animate-pulse bg-emerald-500" : "bg-red-500",
               )}
             />
-            {operational ? "All systems operational" : "Issues detected"}
+            {operational ? t("adminHero.payments.allOperational") : t("adminHero.payments.issuesDetected")}
           </div>
         </div>
       </div>

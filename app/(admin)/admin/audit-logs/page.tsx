@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { cn } from "@/lib/utils";
+import { useAdminT } from "@/lib/admin/use-admin-t";
 
 type AuditLog = {
   id: string;
@@ -81,6 +82,7 @@ function moduleIcon(module: string) {
 }
 
 export default function AdminAuditLogsPage() {
+  const { adminT, apiErr } = useAdminT();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -93,7 +95,7 @@ export default function AdminAuditLogsPage() {
   const [query, setQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState<"all" | Severity>("all");
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
-  const [savedPreset, setSavedPreset] = useState("All Events");
+  const [savedPreset, setSavedPreset] = useState("all");
   const [timelineFocus, setTimelineFocus] = useState("last24h");
 
   const totalPages = useMemo(
@@ -115,19 +117,15 @@ export default function AdminAuditLogsPage() {
       const res = await fetch(`/api/admin/audit-logs?${params.toString()}`, {
         cache: "no-store",
       });
-      const data = (await res.json()) as AuditResponse | { error?: { en?: string } };
+      const data = (await res.json()) as AuditResponse | { error?: { en?: string; ar?: string } };
       if (!res.ok) {
-        const message =
-          "error" in data && data.error?.en
-            ? data.error.en
-            : "Failed to load audit logs";
-        throw new Error(message);
+        throw new Error(apiErr("error" in data ? data.error : undefined, adminT("audit.errors.loadFailed")));
       }
       const typed = data as AuditResponse;
       setLogs(typed.logs ?? []);
       setTotal(typed.total ?? 0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : adminT("audit.errors.unknown"));
       setLogs([]);
       setTotal(0);
     } finally {
@@ -158,16 +156,16 @@ export default function AdminAuditLogsPage() {
           risk,
           aiSummary:
             risk > 75
-              ? "Suspicious behavior pattern requires owner review."
+              ? adminT("audit.aiSummary.high")
               : risk > 50
-                ? "Moderate risk activity, monitor related events."
-                : "Normal operational event.",
-          location: risk > 75 ? "Unknown / Flagged" : "Cairo, EG",
+                ? adminT("audit.aiSummary.medium")
+                : adminT("audit.aiSummary.low"),
+          location: risk > 75 ? adminT("audit.location.flagged") : adminT("audit.location.cairo"),
           sessionId: `sess_${log.id.slice(0, 8)}`,
-          device: risk > 75 ? "Unrecognized Device" : "MacOS / Chrome",
+          device: risk > 75 ? adminT("audit.device.unrecognized") : adminT("audit.device.default"),
         };
       }),
-    [logs],
+    [logs, adminT],
   );
 
   const filteredLogs = useMemo(
@@ -198,21 +196,64 @@ export default function AdminAuditLogsPage() {
   const failedAttempts = filteredLogs.filter((l) => l.action.toLowerCase().includes("failed")).length;
   const activeAdmins = new Set(filteredLogs.map((l) => l.actor_email ?? "system")).size;
 
-  const aiInsights = [
-    criticalEvents > 0
-      ? `Critical signal: ${criticalEvents} high/critical events found in current slice.`
-      : "No critical events detected in the current log window.",
-    failedAttempts > 0
-      ? `Authentication anomaly: ${failedAttempts} failed action(s) detected.`
-      : "Failed access attempts remain within normal limits.",
-    securityHealth < 70
-      ? "System risk trend is elevated. Review role and auth activities."
-      : "Security posture is stable with low anomaly pressure.",
-    "AI Recommendation: create saved filter for suspicious IPs in last 24 hours.",
-  ];
+  const aiInsights = useMemo(
+    () => [
+      criticalEvents > 0
+        ? adminT("audit.aiInsights.critical", { count: criticalEvents })
+        : adminT("audit.aiInsights.noCritical"),
+      failedAttempts > 0
+        ? adminT("audit.aiInsights.authAnomaly", { count: failedAttempts })
+        : adminT("audit.aiInsights.authNormal"),
+      securityHealth < 70
+        ? adminT("audit.aiInsights.riskElevated")
+        : adminT("audit.aiInsights.riskStable"),
+      adminT("audit.aiInsights.recommendation"),
+    ],
+    [adminT, criticalEvents, failedAttempts, securityHealth],
+  );
+
+  const auditPresets = useMemo(
+    () =>
+      [
+        { id: "all", label: adminT("audit.presets.all") },
+        { id: "failedLogins", label: adminT("audit.presets.failedLogins") },
+        { id: "criticalShipping", label: adminT("audit.presets.criticalShipping") },
+        { id: "suspiciousIps", label: adminT("audit.presets.suspiciousIps") },
+      ] as const,
+    [adminT],
+  );
+
+  const complianceActions = useMemo(
+    () =>
+      [
+        adminT("audit.compliance.gdpr"),
+        adminT("audit.compliance.csv"),
+        adminT("audit.compliance.pdf"),
+        adminT("audit.compliance.legal"),
+      ] as const,
+    [adminT],
+  );
 
   const streamItems = filteredLogs.slice(0, 8);
   const timelineItems = filteredLogs.slice(0, 10);
+
+  const auditStats = useMemo(
+    () => [
+      { label: adminT("audit.stats.securityHealth"), value: `${securityHealth}%`, icon: Shield },
+      { label: adminT("audit.stats.failedAttempts"), value: String(failedAttempts), icon: ShieldAlert },
+      { label: adminT("audit.stats.activeSessions"), value: String(activeAdmins * 2), icon: Wifi },
+      { label: adminT("audit.stats.apiRequests"), value: `${Math.max(420, total * 5)}`, icon: Activity },
+      { label: adminT("audit.stats.adminActivity"), value: String(activeAdmins), icon: UserCog },
+      { label: adminT("audit.stats.riskScore"), value: `${100 - securityHealth}`, icon: AlertTriangle },
+      {
+        label: adminT("audit.stats.systemIntegrity"),
+        value: criticalEvents > 2 ? adminT("audit.stats.integrityAtRisk") : adminT("audit.stats.integrityStable"),
+        icon: Fingerprint,
+      },
+      { label: adminT("audit.stats.criticalEvents"), value: String(criticalEvents), icon: XCircle },
+    ],
+    [adminT, securityHealth, failedAttempts, activeAdmins, total, criticalEvents],
+  );
 
   return (
     <section className="space-y-6 pb-10">
@@ -223,32 +264,23 @@ export default function AdminAuditLogsPage() {
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-amber-200/80 bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-900 dark:border-amber-800 dark:bg-stone-900/70 dark:text-amber-200">
               <Shield className="h-3.5 w-3.5" />
-              Security Intelligence
+              {adminT("audit.eyebrow")}
             </p>
             <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-stone-950 sm:text-4xl">
-              Audit Logs Mission Control
+              {adminT("audit.title")}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-700">
-              مراقبة لحظية، تحليل مخاطر ذكي، واستكشاف متقدم للأحداث الحساسة عبر النظام بالكامل.
+              {adminT("audit.subtitle")}
             </p>
           </div>
           <div className="inline-flex items-center gap-2 self-start rounded-2xl border border-cb-border bg-white/85 px-4 py-2 text-sm font-bold text-stone-900 shadow-sm dark:bg-stone-900/80 dark:text-stone-100">
             <Bot className="h-4 w-4" />
-            AI Monitor Active
+            {adminT("audit.aiMonitor")}
           </div>
         </div>
 
         <div className="relative mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
-          {[
-            { label: "Security Health", value: `${securityHealth}%`, icon: Shield },
-            { label: "Failed Attempts", value: String(failedAttempts), icon: ShieldAlert },
-            { label: "Active Sessions", value: String(activeAdmins * 2), icon: Wifi },
-            { label: "API Requests", value: `${Math.max(420, total * 5)}`, icon: Activity },
-            { label: "Admin Activity", value: String(activeAdmins), icon: UserCog },
-            { label: "Risk Score", value: `${100 - securityHealth}`, icon: AlertTriangle },
-            { label: "System Integrity", value: criticalEvents > 2 ? "At Risk" : "Stable", icon: Fingerprint },
-            { label: "Critical Events", value: String(criticalEvents), icon: XCircle },
-          ].map((m) => (
+          {auditStats.map((m) => (
             <article key={m.label} className="rounded-2xl border border-cb-border/70 bg-white/90 p-4 shadow-sm">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-stone-700">{m.label}</p>
@@ -264,7 +296,7 @@ export default function AdminAuditLogsPage() {
         <section className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
           <h2 className="inline-flex items-center gap-2 font-serif text-2xl font-bold text-stone-900">
             <Radar className="h-5 w-5 text-amber-700" />
-            Real-Time Threat Overview
+            {adminT("audit.threatTitle")}
           </h2>
           <div className="mt-4 space-y-2">
             {streamItems.map((item) => {
@@ -278,12 +310,12 @@ export default function AdminAuditLogsPage() {
                         {item.action}
                       </p>
                       <p className="text-xs text-stone-700">
-                        {item.actor_email ?? "System"} · {new Date(item.created_at).toLocaleString()}
+                        {item.actor_email ?? adminT("audit.system")} · {new Date(item.created_at).toLocaleString()}
                       </p>
                     </div>
                   </div>
                   <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", severityClass(item.severity))}>
-                    {item.severity}
+                    {adminT(`audit.severity.${item.severity}`)}
                   </span>
                 </div>
               );
@@ -294,7 +326,7 @@ export default function AdminAuditLogsPage() {
         <section className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
           <h2 className="inline-flex items-center gap-2 font-serif text-2xl font-bold text-stone-900">
             <Bot className="h-5 w-5 text-amber-700" />
-            AI Activity Insights
+            {adminT("audit.aiInsightsTitle")}
           </h2>
           <div className="mt-4 space-y-2">
             {aiInsights.map((msg) => (
@@ -309,8 +341,8 @@ export default function AdminAuditLogsPage() {
       <section className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-serif text-2xl font-bold text-stone-900">Advanced Log Explorer</h2>
-            <p className="text-sm text-stone-700">Explore audit events with smart filters, severity scoring, and AI summaries.</p>
+            <h2 className="font-serif text-2xl font-bold text-stone-900">{adminT("audit.explorerTitle")}</h2>
+            <p className="text-sm text-stone-700">{adminT("audit.explorerSub")}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <label className="inline-flex items-center gap-2 rounded-2xl border border-cb-border bg-white px-3 py-2">
@@ -318,7 +350,7 @@ export default function AdminAuditLogsPage() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder='Try: "failed admin logins"'
+                placeholder={adminT("audit.searchPlaceholder")}
                 className="w-48 bg-transparent text-sm outline-none"
               />
             </label>
@@ -327,22 +359,23 @@ export default function AdminAuditLogsPage() {
               onChange={(e) => setSeverityFilter(e.target.value as typeof severityFilter)}
               className="rounded-xl border border-cb-border bg-white px-3 py-2 text-sm"
             >
-              <option value="all">All severity</option>
-              <option value="info">Info</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="critical">Critical</option>
+              <option value="all">{adminT("audit.severityAll")}</option>
+              <option value="info">{adminT("audit.severity.info")}</option>
+              <option value="low">{adminT("audit.severity.low")}</option>
+              <option value="medium">{adminT("audit.severity.medium")}</option>
+              <option value="high">{adminT("audit.severity.high")}</option>
+              <option value="critical">{adminT("audit.severity.critical")}</option>
             </select>
             <select
               value={savedPreset}
               onChange={(e) => setSavedPreset(e.target.value)}
               className="rounded-xl border border-cb-border bg-white px-3 py-2 text-sm"
             >
-              <option>All Events</option>
-              <option>Failed Admin Logins</option>
-              <option>Critical Shipping Events</option>
-              <option>Suspicious IPs (24h)</option>
+              {auditPresets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -352,19 +385,19 @@ export default function AdminAuditLogsPage() {
             <input
               value={moduleFilter}
               onChange={(e) => setModuleFilter(e.target.value)}
-              placeholder="Module (orders, products...)"
+              placeholder={adminT("audit.modulePlaceholder")}
               className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm outline-none placeholder:text-stone-500 focus:border-cb-border-strong"
             />
             <input
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
-              placeholder="Action (order.update...)"
+              placeholder={adminT("audit.actionPlaceholder")}
               className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm outline-none placeholder:text-stone-500 focus:border-cb-border-strong"
             />
             <input
               value={entityFilter}
               onChange={(e) => setEntityFilter(e.target.value)}
-              placeholder="Entity ID"
+              placeholder={adminT("audit.entityPlaceholder")}
               className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm outline-none placeholder:text-stone-500 focus:border-cb-border-strong"
             />
             <button
@@ -372,7 +405,7 @@ export default function AdminAuditLogsPage() {
               onClick={handleApplyFilters}
               className="rounded-xl border border-cb-border-strong bg-cb-terracotta-dark px-4 py-2 text-sm font-semibold text-cb-cream-2 hover:opacity-90"
             >
-              Apply Filters
+              {adminT("audit.applyFilters")}
             </button>
           </div>
         </div>
@@ -382,26 +415,26 @@ export default function AdminAuditLogsPage() {
             <table className="min-w-[1450px] w-full divide-y divide-cb-border text-sm">
               <thead className="sticky top-0 bg-cb-surface-2/95">
                 <tr className="text-left text-xs font-semibold uppercase tracking-wide text-stone-700">
-                  <th className="px-4 py-3">Timestamp</th>
-                  <th className="px-4 py-3">User</th>
-                  <th className="px-4 py-3">Role</th>
-                  <th className="px-4 py-3">Action</th>
-                  <th className="px-4 py-3">Module</th>
-                  <th className="px-4 py-3">Severity</th>
-                  <th className="px-4 py-3">Entity</th>
-                  <th className="px-4 py-3">IP Address</th>
-                  <th className="px-4 py-3">Device</th>
-                  <th className="px-4 py-3">Location</th>
-                  <th className="px-4 py-3">Session ID</th>
-                  <th className="px-4 py-3">Risk</th>
-                  <th className="px-4 py-3">AI Summary</th>
+                  <th className="px-4 py-3">{adminT("audit.cols.timestamp")}</th>
+                  <th className="px-4 py-3">{adminT("audit.cols.user")}</th>
+                  <th className="px-4 py-3">{adminT("audit.cols.role")}</th>
+                  <th className="px-4 py-3">{adminT("audit.cols.action")}</th>
+                  <th className="px-4 py-3">{adminT("audit.cols.module")}</th>
+                  <th className="px-4 py-3">{adminT("audit.cols.severity")}</th>
+                  <th className="px-4 py-3">{adminT("audit.cols.entity")}</th>
+                  <th className="px-4 py-3">{adminT("audit.cols.ip")}</th>
+                  <th className="px-4 py-3">{adminT("audit.cols.device")}</th>
+                  <th className="px-4 py-3">{adminT("audit.cols.location")}</th>
+                  <th className="px-4 py-3">{adminT("audit.cols.session")}</th>
+                  <th className="px-4 py-3">{adminT("audit.cols.risk")}</th>
+                  <th className="px-4 py-3">{adminT("audit.cols.aiSummary")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-cb-border">
                 {loading ? (
                   <tr>
                     <td className="px-4 py-6 text-stone-700" colSpan={13}>
-                      Loading live intelligence stream...
+                      {adminT("audit.loading")}
                     </td>
                   </tr>
                 ) : error ? (
@@ -413,7 +446,7 @@ export default function AdminAuditLogsPage() {
                 ) : filteredLogs.length === 0 ? (
                   <tr>
                     <td className="px-4 py-6 text-stone-700" colSpan={13}>
-                      No logs found for the selected filters.
+                      {adminT("audit.noLogs")}
                     </td>
                   </tr>
                 ) : (
@@ -427,12 +460,12 @@ export default function AdminAuditLogsPage() {
                       onClick={() => setSelectedLog(log)}
                     >
                       <td className="whitespace-nowrap px-4 py-3">{new Date(log.created_at).toLocaleString()}</td>
-                      <td className="px-4 py-3">{log.actor_email ?? "System"}</td>
+                      <td className="px-4 py-3">{log.actor_email ?? adminT("audit.system")}</td>
                       <td className="px-4 py-3">{log.actor_role ?? "-"}</td>
                       <td className="px-4 py-3 font-semibold text-stone-900">{log.action}</td>
                       <td className="px-4 py-3">{log.module}</td>
                       <td className="px-4 py-3">
-                        <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", severityClass(log.severity))}>{log.severity}</span>
+                        <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", severityClass(log.severity))}>{adminT(`audit.severity.${log.severity}`)}</span>
                       </td>
                       <td className="px-4 py-3">{log.entity_id ?? "-"}</td>
                       <td className="px-4 py-3">{log.ip ?? "-"}</td>
@@ -451,7 +484,7 @@ export default function AdminAuditLogsPage() {
 
         <div className="mt-4 flex items-center justify-between rounded-2xl border border-cb-border bg-white/90 px-4 py-3 text-sm">
           <p className="text-stone-700">
-            Page {page} / {totalPages} - Total logs: {total}
+            {adminT("audit.pagination.page", { page, total: totalPages, count: total })}
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -460,7 +493,7 @@ export default function AdminAuditLogsPage() {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               className="rounded-lg border border-cb-border px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Prev
+              {adminT("audit.pagination.prev")}
             </button>
             <button
               type="button"
@@ -468,7 +501,7 @@ export default function AdminAuditLogsPage() {
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               className="rounded-lg border border-cb-border px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Next
+              {adminT("audit.pagination.next")}
             </button>
           </div>
         </div>
@@ -479,16 +512,16 @@ export default function AdminAuditLogsPage() {
           <div className="flex items-center justify-between gap-2">
             <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900">
               <Clock3 className="h-5 w-5 text-amber-700" />
-              User Activity Timeline
+              {adminT("audit.timeline.title")}
             </h3>
             <select
               value={timelineFocus}
               onChange={(e) => setTimelineFocus(e.target.value)}
               className="rounded-xl border border-cb-border bg-white px-3 py-1.5 text-xs"
             >
-              <option value="last24h">Last 24h</option>
-              <option value="last7d">Last 7d</option>
-              <option value="last30d">Last 30d</option>
+              <option value="last24h">{adminT("audit.timeline.last24h")}</option>
+              <option value="last7d">{adminT("audit.timeline.last7d")}</option>
+              <option value="last30d">{adminT("audit.timeline.last30d")}</option>
             </select>
           </div>
           <div className="mt-4 space-y-3">
@@ -497,7 +530,7 @@ export default function AdminAuditLogsPage() {
                 <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
                 <div className="flex-1 rounded-2xl border border-cb-border bg-white/90 p-3">
                   <p className="text-sm font-bold text-stone-900">{item.action}</p>
-                  <p className="text-xs text-stone-700">{item.module} · {item.actor_email ?? "System"} · {new Date(item.created_at).toLocaleString()}</p>
+                  <p className="text-xs text-stone-700">{item.module} · {item.actor_email ?? adminT("audit.system")} · {new Date(item.created_at).toLocaleString()}</p>
                 </div>
               </div>
             ))}
@@ -508,17 +541,17 @@ export default function AdminAuditLogsPage() {
           <article className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
             <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900">
               <CalendarClock className="h-5 w-5 text-amber-700" />
-              Session Monitoring
+              {adminT("audit.session.title")}
             </h3>
             <div className="mt-3 space-y-2 text-xs">
               <p className="rounded-xl bg-emerald-100 px-3 py-2 font-bold text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200">
-                Active sessions: {activeAdmins * 2}
+                {adminT("audit.session.active", { n: activeAdmins * 2 })}
               </p>
               <p className="rounded-xl bg-amber-100 px-3 py-2 font-bold text-amber-900 dark:bg-amber-950/60 dark:text-amber-200">
-                Concurrent access anomalies: {Math.max(0, criticalEvents - 1)}
+                {adminT("audit.session.anomalies", { n: Math.max(0, criticalEvents - 1) })}
               </p>
               <p className="rounded-xl bg-blue-100 px-3 py-2 font-bold text-blue-900 dark:bg-blue-950/60 dark:text-blue-200">
-                Remote logout suggestions: {failedAttempts > 2 ? 2 : 0}
+                {adminT("audit.session.logoutSuggestions", { n: failedAttempts > 2 ? 2 : 0 })}
               </p>
             </div>
           </article>
@@ -526,10 +559,10 @@ export default function AdminAuditLogsPage() {
           <article className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
             <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900">
               <CheckCircle2 className="h-5 w-5 text-amber-700" />
-              Compliance & Export Center
+              {adminT("audit.compliance.title")}
             </h3>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {["GDPR Export", "CSV Snapshot", "PDF Report", "Legal Archive"].map((item) => (
+              {complianceActions.map((item) => (
                 <button
                   key={item}
                   type="button"
@@ -546,30 +579,30 @@ export default function AdminAuditLogsPage() {
       {selectedLog ? (
         <section className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="font-serif text-xl font-bold text-stone-900">Event Detail Drawer</h3>
+            <h3 className="font-serif text-xl font-bold text-stone-900">{adminT("audit.drawer.title")}</h3>
             <button
               type="button"
               onClick={() => setSelectedLog(null)}
               className="rounded-xl border border-cb-border bg-white px-3 py-1.5 text-xs font-bold text-stone-700"
             >
-              Close
+              {adminT("audit.drawer.close")}
             </button>
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-2xl border border-cb-border bg-white/90 p-3 text-xs">
-              <p className="font-bold">Action</p>
+              <p className="font-bold">{adminT("audit.drawer.action")}</p>
               <p className="mt-1">{selectedLog.action}</p>
             </div>
             <div className="rounded-2xl border border-cb-border bg-white/90 p-3 text-xs">
-              <p className="font-bold">Actor</p>
-              <p className="mt-1">{selectedLog.actor_email ?? "System"}</p>
+              <p className="font-bold">{adminT("audit.drawer.actor")}</p>
+              <p className="mt-1">{selectedLog.actor_email ?? adminT("audit.system")}</p>
             </div>
             <div className="rounded-2xl border border-cb-border bg-white/90 p-3 text-xs">
-              <p className="font-bold">Entity</p>
+              <p className="font-bold">{adminT("audit.drawer.entity")}</p>
               <p className="mt-1">{selectedLog.entity_id ?? "-"}</p>
             </div>
             <div className="rounded-2xl border border-cb-border bg-white/90 p-3 text-xs">
-              <p className="font-bold">IP</p>
+              <p className="font-bold">{adminT("audit.drawer.ip")}</p>
               <p className="mt-1">{selectedLog.ip ?? "-"}</p>
             </div>
           </div>

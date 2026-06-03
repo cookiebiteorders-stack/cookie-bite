@@ -5,6 +5,7 @@ import { Minus, Plus, ShoppingBag } from "lucide-react";
 import type { Product } from "@/lib/data";
 import { trackProductEvent } from "@/lib/analytics/track-event";
 import { useCart } from "@/components/providers/cart-provider";
+import { useLanguage } from "@/components/providers/language-provider";
 import { buttonClassName } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Addon, CartSelectedAddon } from "@/lib/addons/types";
@@ -17,6 +18,7 @@ type Props = {
 type SelectedMap = Record<string, Record<string, number>>;
 
 export function PdpActions({ product, linkedAddons = [] }: Props) {
+  const { t, formatPrice } = useLanguage();
   const [qty, setQty] = useState(1);
   const [selected, setSelected] = useState<SelectedMap>({});
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +108,7 @@ export function PdpActions({ product, linkedAddons = [] }: Props) {
     <div className="space-y-4">
       {linkedAddons.length > 0 ? (
         <div id="pdp-addons" className="space-y-4 rounded-2xl border border-cb-border bg-cb-surface p-4">
-          <p className="text-sm font-bold text-cb-text-strong">Add-ons</p>
+          <p className="text-sm font-bold text-cb-text-strong">{t("product.addonsLabel")}</p>
           {linkedAddons.map((addon) => {
             const map = selected[addon.id] ?? {};
             return (
@@ -121,7 +123,7 @@ export function PdpActions({ product, linkedAddons = [] }: Props) {
                     <div key={opt.id} className="rounded-lg border border-cb-border/70 p-2 text-sm">
                       <label className="flex items-center justify-between gap-2">
                         <span>
-                          {opt.name} {opt.size ? `(${opt.size})` : ""} - {Number(opt.price).toFixed(0)} EGP
+                          {opt.name} {opt.size ? `(${opt.size})` : ""} - {formatPrice(Number(opt.price))}
                         </span>
                         {addon.type === "single_choice" ? (
                           <input
@@ -152,7 +154,7 @@ export function PdpActions({ product, linkedAddons = [] }: Props) {
             );
           })}
           <p className="text-xs font-semibold text-cb-terracotta-dark">
-            Add-ons total: {addonsTotal.toFixed(0)} EGP
+            {t("product.addonsTotal", { price: formatPrice(addonsTotal) })}
           </p>
         </div>
       ) : null}
@@ -161,7 +163,7 @@ export function PdpActions({ product, linkedAddons = [] }: Props) {
         <button
           type="button"
           className="rounded-full p-2 text-cb-text hover:bg-cb-peach disabled:opacity-40"
-          aria-label="Decrease quantity"
+          aria-label={t("pages.cart.decreaseQty")}
           disabled={outOfStock}
           onClick={() => setQty((q) => Math.max(1, q - 1))}
         >
@@ -173,7 +175,7 @@ export function PdpActions({ product, linkedAddons = [] }: Props) {
         <button
           type="button"
           className="rounded-full p-2 text-cb-text hover:bg-cb-peach disabled:opacity-40"
-          aria-label="Increase quantity"
+          aria-label={t("pages.cart.increaseQty")}
           disabled={outOfStock}
           onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
         >
@@ -214,8 +216,10 @@ export function PdpActions({ product, linkedAddons = [] }: Props) {
       >
         <ShoppingBag className="h-5 w-5" aria-hidden />
         {outOfStock
-          ? "Out of stock"
-          : `Add to cart — ${((product.price + addonsTotal) * qty).toFixed(0)} EGP`}
+          ? t("product.outOfStock")
+          : t("product.addToCartWithPrice", {
+              price: formatPrice((product.price + addonsTotal) * qty),
+            })}
       </button>
       </div>
       {error ? <p className="text-sm font-semibold text-red-700">{error}</p> : null}

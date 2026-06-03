@@ -10,6 +10,7 @@ import {
   ImageIcon,
   LayoutDashboard,
   LayoutTemplate,
+  Mail,
   Newspaper,
   Receipt,
   Settings,
@@ -40,6 +41,7 @@ const iconByHref: Record<string, LucideIcon> = {
   "/admin/media": ImageIcon,
   "/admin/cms": Newspaper,
   "/admin/template-library": LayoutTemplate,
+  "/admin/email": Mail,
   "/admin/settings": Settings,
 };
 

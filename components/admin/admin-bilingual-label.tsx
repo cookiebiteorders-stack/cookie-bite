@@ -1,4 +1,9 @@
-/** Bilingual admin label: English title + Arabic subtitle (shown together). */
+"use client";
+
+import { useLanguage } from "@/components/providers/language-provider";
+import { pickAdminLabel, type BilingualPair } from "@/lib/admin/admin-label";
+
+/** Admin label — shows active language (Arabic or English). */
 export function AdminBilingualLabel({
   en,
   ar,
@@ -10,11 +15,11 @@ export function AdminBilingualLabel({
   htmlFor?: string;
   className?: string;
 }) {
+  const { lang } = useLanguage();
   const Tag = htmlFor ? "label" : "div";
   return (
-    <Tag htmlFor={htmlFor} className={`block space-y-0.5 ${className}`.trim()}>
-      <span className="text-xs font-bold text-cb-text-strong">{en}</span>
-      <span className="block text-[11px] font-medium text-cb-text-muted">{ar}</span>
+    <Tag htmlFor={htmlFor} className={`block ${className}`.trim()}>
+      <span className="text-xs font-bold text-cb-text-strong">{pickAdminLabel({ en, ar }, lang)}</span>
     </Tag>
   );
 }
@@ -28,10 +33,15 @@ export function AdminBilingualSection({
   ar: string;
   className?: string;
 }) {
+  const { lang } = useLanguage();
   return (
     <div className={`border-b border-cb-border pb-2 ${className}`.trim()}>
-      <h2 className="text-sm font-bold text-cb-text-strong">{en}</h2>
-      <p className="text-xs font-medium text-cb-text-muted">{ar}</p>
+      <h2 className="text-sm font-bold text-cb-text-strong">{pickAdminLabel({ en, ar }, lang)}</h2>
     </div>
   );
+}
+
+export function useAdminBilingual() {
+  const { lang } = useLanguage();
+  return (pair: BilingualPair) => pickAdminLabel(pair, lang);
 }

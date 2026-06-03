@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import { BarChart3, RefreshCw } from "lucide-react";
 import type { FinancialPreset } from "@/lib/financial/types";
+import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -36,6 +37,7 @@ export function FinancialHero({
   onCompare,
 }: Props) {
   const reduceMotion = useReducedMotion();
+  const { t } = useLanguage();
 
   return (
     <motion.header
@@ -57,13 +59,15 @@ export function FinancialHero({
             <BarChart3 className="h-7 w-7" aria-hidden />
           </div>
           <div>
-            <h1 className="font-serif text-2xl font-bold text-cb-text-strong sm:text-3xl">Financial Reports</h1>
+            <h1 className="font-serif text-2xl font-bold text-cb-text-strong sm:text-3xl">
+              {t("adminHero.financial.title")}
+            </h1>
             <p className="mt-2 max-w-2xl text-sm text-cb-text sm:text-base">
-              Revenue, expenses, and net performance insights — with charts, ledger, and comparison mode.
+              {t("adminHero.financial.subtitle")}
             </p>
             <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-100">
               <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-              Live data
+              {t("adminStatus.live")}
             </div>
           </div>
         </div>

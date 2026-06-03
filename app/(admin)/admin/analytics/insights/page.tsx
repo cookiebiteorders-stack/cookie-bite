@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { generateInsights } from "@/lib/tracking-server/insights";
 import type { Range } from "@/lib/tracking-server/queries";
+import { AdminPageIntro } from "@/components/admin/admin-page-intro";
 
 const RANGES: Range[] = ["24h", "7d", "30d", "90d"];
 const RANGE_LABELS: Record<Range, string> = {
@@ -23,13 +24,12 @@ export default async function AdminInsightsPage({
 
   return (
     <div className="space-y-5">
+      <AdminPageIntro
+        titleKey="adminPages.analyticsInsights.title"
+        subtitleKey="adminPages.analyticsInsights.subtitle"
+      />
       <header className="admin-panel-surface rounded-2xl p-5 shadow-[var(--shadow-card)] cb-shadow-editorial">
-        <h1 className="font-serif text-3xl font-bold text-cb-text-strong">AI insights</h1>
-        <p className="mt-2 max-w-3xl text-sm text-cb-text-muted">
-          A narrative summary of the analytics window, generated using your existing AI
-          provider (Gemini first, OpenAI fallback, deterministic rules if both fail).
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-semibold">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
           {RANGES.map((r) => (
             <Link
               key={r}

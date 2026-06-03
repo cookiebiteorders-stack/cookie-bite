@@ -88,6 +88,23 @@ html[data-high-contrast="true"] a:not([class]) {
 }
 html[dir="rtl"] body {
   font-family: var(--font-ar);
+  line-height: 1.75;
+  letter-spacing: 0;
+}
+
+html[dir="rtl"] :where(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-ar-display);
+  line-height: 1.45;
+  letter-spacing: 0;
+  font-weight: 700;
+}
+
+html[dir="rtl"] :where(p, li, label, button, input, textarea, select) {
+  line-height: 1.7;
+}
+
+html[dir="rtl"] .font-serif {
+  font-family: var(--font-ar-display);
 }
 
 html[dir="rtl"] .cb-skip-link {

@@ -19,6 +19,7 @@ import { MessageBubble } from "@/components/ai-chat/message-bubble";
 import {
   BUBBLE_AUTO_HIDE_MS,
   buildAmbientMessages,
+  DRAG_HOLD_MS,
   loadRoamingPosition,
   ROAM_INTERVAL_MS,
   ROAM_POST_UI_MS,
@@ -182,6 +183,8 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
   const pointerMoved = useRef(false);
   const dragFlushRafRef = useRef<number | null>(null);
   const pendingDragRef = useRef<{ left: number; top: number } | null>(null);
+  /** بعد السحب اليدوي: تبقى الأيقونة مكانها حتى هذا الوقت (epoch ms) قبل استئناف التجوّل */
+  const dragHoldUntilRef = useRef(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -340,6 +343,8 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
     if (embedded || reduceMotion) return;
     const tick = () => {
       if (openRef.current || dragSession.current || dragPx) return;
+      /** لو المستخدم سحبها مؤخراً نتركها مكانها 10 دقائق */
+      if (Date.now() < dragHoldUntilRef.current) return;
       const p = pickRoamingTargetCb();
       setRoamPx(p);
       saveRoamingPosition(p);
@@ -739,6 +744,7 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
         window.innerWidth,
         window.innerHeight,
       );
+      dragHoldUntilRef.current = Date.now() + DRAG_HOLD_MS;
       setDragPx(null);
       setRoamPx(p);
       saveRoamingPosition(p);

@@ -3,6 +3,7 @@ import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { computeFunnel, listFunnels } from "@/lib/tracking-server/funnels";
 import type { Range } from "@/lib/tracking-server/queries";
 import { FunnelChart } from "@/components/admin/tracking/FunnelChart";
+import { AdminPageIntro } from "@/components/admin/admin-page-intro";
 
 const RANGE_LABELS: Record<Range, string> = {
   "24h": "24h",
@@ -30,13 +31,12 @@ export default async function AdminFunnelsPage({
 
   return (
     <div className="space-y-5">
+      <AdminPageIntro
+        titleKey="adminPages.analyticsFunnels.title"
+        subtitleKey="adminPages.analyticsFunnels.subtitle"
+      />
       <header className="admin-panel-surface rounded-2xl p-5 shadow-[var(--shadow-card)] cb-shadow-editorial">
-        <h1 className="font-serif text-3xl font-bold text-cb-text-strong">Funnels</h1>
-        <p className="mt-2 max-w-3xl text-sm text-cb-text-muted">
-          Track conversion funnels end-to-end. Add new funnels to the <code>tracking_funnels</code>{" "}
-          table — each funnel is a JSON list of steps with optional path/property matchers.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+        <div className="flex flex-wrap gap-2 text-xs font-semibold">
           {(Object.keys(RANGE_LABELS) as Range[]).map((r) => (
             <Link
               key={r}

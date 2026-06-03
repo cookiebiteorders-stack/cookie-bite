@@ -1,7 +1,7 @@
 ﻿"use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { Store, X } from "lucide-react";
 import { useEffect } from "react";
 import { AdminConsoleNavLinks } from "@/components/admin/admin-console-nav-links";
@@ -11,15 +11,11 @@ import { cn } from "@/lib/utils";
 
 /**
  * لوحة الإدارة — قائمة الجوال المنزلقة فقط (تُفتح من شريط الموقع الموحّد).
- * شريط «Admin console · ROLE» أصبح داخل SiteHeader / MobileHeader.
  */
 export function AdminConsoleNavbar() {
   const pathname = usePathname();
   const ctx = useOptionalAdminConsole();
-  const { lang } = useLanguage();
-
-  const storeLabel = lang === "ar" ? "المتجر" : "Store";
-  const consoleLabel = lang === "ar" ? "لوحة الإدارة" : "Admin console";
+  const { t } = useLanguage();
 
   const adminNavOpen = ctx?.adminNavOpen ?? false;
   const setAdminNavOpen = ctx?.setAdminNavOpen;
@@ -51,7 +47,7 @@ export function AdminConsoleNavbar() {
           "absolute inset-0 bg-black/40 transition-opacity",
           adminNavOpen ? "opacity-100" : "opacity-0",
         )}
-        aria-label="Close admin menu"
+        aria-label={t("adminShell.closeAdminMenu")}
         onClick={() => setAdminNavOpen?.(false)}
       />
       <aside
@@ -64,7 +60,7 @@ export function AdminConsoleNavbar() {
           <div>
             <p className="font-playful text-xl text-cb-brand-logo">Cookie Bite</p>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cb-text-muted">
-              {consoleLabel}
+              {t("adminShell.consoleEyebrow")}
             </p>
           </div>
           <button
@@ -73,7 +69,7 @@ export function AdminConsoleNavbar() {
             onClick={() => setAdminNavOpen?.(false)}
           >
             <X className="h-4 w-4" aria-hidden />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">{t("adminShell.close")}</span>
           </button>
         </div>
         <div className="admin-sidebar-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain pe-1 [scrollbar-gutter:stable]">
@@ -89,7 +85,7 @@ export function AdminConsoleNavbar() {
           onClick={() => setAdminNavOpen?.(false)}
         >
           <Store className="h-4 w-4" aria-hidden />
-          {storeLabel}
+          {t("adminShell.backToStore")}
         </Link>
       </aside>
     </div>

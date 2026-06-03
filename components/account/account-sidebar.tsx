@@ -131,7 +131,7 @@ export function AccountSidebar({
               {staffAdminNavItems.map((navItem) => {
                 const AdminIcon = getAdminNavIcon({
                   href: navItem.href,
-                  label: t(`adminNav.${navItem.module}`),
+                  navKey: navItem.module,
                   module: navItem.module,
                 });
                 return (

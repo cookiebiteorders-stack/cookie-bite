@@ -23,6 +23,7 @@ import { fetchJson } from "@/lib/http/fetch-json";
 import { renderTemplateString } from "@/lib/notifications/template-vars";
 import { WHATSAPP_TEMPLATE_CATALOG } from "@/lib/notifications/whatsapp-template-catalog";
 import { cn } from "@/lib/utils";
+import { useAdminT } from "@/lib/admin/use-admin-t";
 import {
   AdminBadge,
   AdminBadgeButton,
@@ -63,12 +64,12 @@ type HealthResponse = {
 
 /** بطاقات العرض ← مفتاح `integrations` من الـ API (أزمن ثابتة توضيحية). */
 const HEALTH_CARD_DEFS = [
-  { name: "API Gateway", key: "internal_api" as const, latencyOk: "38 ms", latencyIssue: "82 ms" },
-  { name: "PostgreSQL / Supabase", key: "supabase" as const, latencyOk: "24 ms", latencyIssue: "68 ms" },
-  { name: "Queue Worker", key: "paymob" as const, latencyOk: "51 ms", latencyIssue: "66 ms" },
-  { name: "CDN Edge", key: "app_urls" as const, latencyOk: "18 ms", latencyIssue: "31 ms" },
-  { name: "Email Service", key: "resend" as const, latencyOk: "44 ms", latencyIssue: "170 ms" },
-  { name: "Webhook Delivery", key: "clerk" as const, latencyOk: "62 ms", latencyIssue: "95 ms" },
+  { labelKey: "healthCards.apiGateway", key: "internal_api" as const, latencyOk: "38 ms", latencyIssue: "82 ms" },
+  { labelKey: "healthCards.postgres", key: "supabase" as const, latencyOk: "24 ms", latencyIssue: "68 ms" },
+  { labelKey: "healthCards.queueWorker", key: "paymob" as const, latencyOk: "51 ms", latencyIssue: "66 ms" },
+  { labelKey: "healthCards.cdnEdge", key: "app_urls" as const, latencyOk: "18 ms", latencyIssue: "31 ms" },
+  { labelKey: "healthCards.emailService", key: "resend" as const, latencyOk: "44 ms", latencyIssue: "170 ms" },
+  { labelKey: "healthCards.webhookDelivery", key: "clerk" as const, latencyOk: "62 ms", latencyIssue: "95 ms" },
 ];
 
 type Template = {
@@ -87,6 +88,7 @@ type TemplatesResponse = {
 };
 
 export default function AdminSettingsPage() {
+  const { adminT, apiErr } = useAdminT();
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,7 +147,9 @@ export default function AdminSettingsPage() {
     } else {
       setHealth(null);
       setError(
-        hRes.err instanceof Error ? hRes.err.message : "Failed to load health",
+        hRes.err instanceof Error
+          ? hRes.err.message
+          : adminT("settings.loadHealthFailed"),
       );
     }
 
@@ -157,7 +161,7 @@ export default function AdminSettingsPage() {
       setTemplatesError(
         tRes.err instanceof Error
           ? tRes.err.message
-          : "Failed to load notification templates",
+          : adminT("settings.loadTemplatesFailed"),
       );
     }
 
@@ -173,7 +177,7 @@ export default function AdminSettingsPage() {
 
   async function upsertTemplate() {
     if (!tplBody.trim() || tplKey.trim().length < 2) {
-      setTplSaveStatus("أدخل مفتاحاً ونص القالب");
+      setTplSaveStatus(adminT("settings.tplValidation"));
       return;
     }
     setTplBusy(true);
@@ -194,11 +198,11 @@ export default function AdminSettingsPage() {
           is_active: true,
         },
       });
-      setTplSaveStatus("تم الحفظ");
+      setTplSaveStatus(adminT("settings.tplSaved"));
       await load();
     } catch (err) {
       setTplSaveStatus(
-        err instanceof Error ? err.message : "Failed to save template",
+        err instanceof Error ? err.message : adminT("settings.tplSaveFailed"),
       );
     } finally {
       setTplBusy(false);
@@ -216,10 +220,10 @@ export default function AdminSettingsPage() {
           jsonBody: { channel: "whatsapp", languages: ["ar", "en"] },
         },
       );
-      setTplSaveStatus(`تم استيراد ${res.seeded} قالب واتساب`);
+      setTplSaveStatus(adminT("settings.tplSeedDone", { n: res.seeded }));
       await load();
     } catch (err) {
-      setTplSaveStatus(err instanceof Error ? err.message : "فشل الاستيراد");
+      setTplSaveStatus(err instanceof Error ? err.message : adminT("settings.tplSeedFailed"));
     } finally {
       setTplBusy(false);
     }
@@ -281,20 +285,22 @@ export default function AdminSettingsPage() {
 
   const activeTemplates = templates.filter((t) => t.is_active).length;
   const isOwner = health?.actor?.role === "owner";
-  const serviceHealth = health?.env.ok ? "Healthy" : "Degraded";
+  const serviceHealth = health?.env.ok
+    ? adminT("settings.stats.healthy")
+    : adminT("settings.stats.degraded");
   const warningCount = health?.env.warnings.length ?? 0;
   const missingCount = health?.env.missing.length ?? 0;
   const automationHealth = Math.max(68, 96 - warningCount * 7 - missingCount * 10);
   const errorRate = Math.min(12, Math.max(1, warningCount + missingCount));
   const activeStaff = 6 + (templates.length % 5);
 
-  const statusRows = HEALTH_CARD_DEFS.map(({ name, key, latencyOk, latencyIssue }) => {
+  const statusRows = HEALTH_CARD_DEFS.map(({ labelKey, key, latencyOk, latencyIssue }) => {
     let ok = health ? health.integrations[key] : false;
     if (key === "supabase" && health?.database) {
       ok = ok && health.database.ok;
     }
     return {
-      name,
+      name: adminT(`settings.${labelKey}`),
       key,
       ok,
       latency: ok ? latencyOk : latencyIssue,
@@ -319,51 +325,89 @@ export default function AdminSettingsPage() {
     ],
   };
 
-  const aiMessages = [
-    warningCount > 0
-      ? `Email delivery risk detected: ${warningCount} warning(s) in environment checks.`
-      : "Operational signal is stable: no environment warnings detected.",
-    missingCount > 0
-      ? `Configuration gap: ${missingCount} critical variable(s) missing.`
-      : "Core configuration coverage is complete.",
-    templates.length < 3
-      ? "Template coverage is low. Add multilingual templates for critical order events."
-      : "Template library coverage looks good for primary customer journeys.",
-    activeLocale === "ar"
-      ? "RTL experience active: check English fallback completeness."
-      : "English primary locale active: verify Arabic coverage for order updates.",
-  ];
+  const aiMessages = useMemo(
+    () => [
+      warningCount > 0
+        ? adminT("settings.aiMsg.warningDetected", { count: warningCount })
+        : adminT("settings.aiMsg.stable"),
+      missingCount > 0
+        ? adminT("settings.aiMsg.configGap", { count: missingCount })
+        : adminT("settings.aiMsg.configComplete"),
+      templates.length < 3
+        ? adminT("settings.aiMsg.lowTemplates")
+        : adminT("settings.aiMsg.goodTemplates"),
+      activeLocale === "ar"
+        ? adminT("settings.aiMsg.rtlActive")
+        : adminT("settings.aiMsg.enActive"),
+    ],
+    [adminT, warningCount, missingCount, templates.length, activeLocale],
+  );
 
-  const integrations = [
-    { name: "Stripe", status: "Connected", latency: "84 ms", usage: "1.9k requests/day" },
-    { name: "Cloudinary", status: "Connected", latency: "71 ms", usage: "980 assets/day" },
-    { name: "Resend", status: templates.length > 0 ? "Connected" : "Needs setup", latency: "126 ms", usage: "430 sends/day" },
-    { name: "Shipping API", status: warningCount > 1 ? "Degraded" : "Connected", latency: `${120 + warningCount * 18} ms`, usage: "760 lookups/day" },
-  ];
+  const integrations = useMemo(
+    () => [
+      {
+        name: "Stripe",
+        status: adminT("settings.integrationConnected"),
+        latency: "84 ms",
+        usage: "1.9k requests/day",
+      },
+      {
+        name: "Cloudinary",
+        status: adminT("settings.integrationConnected"),
+        latency: "71 ms",
+        usage: "980 assets/day",
+      },
+      {
+        name: "Resend",
+        status:
+          templates.length > 0
+            ? adminT("settings.integrationConnected")
+            : adminT("settings.integrationNeedsSetup"),
+        latency: "126 ms",
+        usage: "430 sends/day",
+      },
+      {
+        name: "Shipping API",
+        status:
+          warningCount > 1
+            ? adminT("settings.integrationDegraded")
+            : adminT("settings.integrationConnected"),
+        latency: `${120 + warningCount * 18} ms`,
+        usage: "760 lookups/day",
+      },
+    ],
+    [adminT, templates.length, warningCount],
+  );
 
-  const automations = [
-    "Send VIP coupon after 3 completed orders",
-    "Notify owner when revenue dips > 15% week-over-week",
-    "Pause campaign when stock threshold is low",
-    "Trigger WhatsApp notification for failed payment",
-  ];
+  const automations = useMemo(
+    () => [
+      adminT("settings.automations.vipCoupon"),
+      adminT("settings.automations.revenueDip"),
+      adminT("settings.automations.pauseCampaign"),
+      adminT("settings.automations.failedPayment"),
+    ],
+    [adminT],
+  );
 
-  const logEvents = [
-    "Owner updated canonical host",
-    "Template order_confirmed saved",
-    "Owner feature flag toggled",
-    "Role matrix reviewed by owner",
-  ];
+  const logEvents = useMemo(
+    () => [
+      adminT("settings.logEvents.canonicalHost"),
+      adminT("settings.logEvents.templateSaved"),
+      adminT("settings.logEvents.featureFlag"),
+      adminT("settings.logEvents.roleMatrix"),
+    ],
+    [adminT],
+  );
 
   const headerStats = [
-    { label: "Store Health", value: serviceHealth, icon: Activity },
-    { label: "Active Services", value: `${statusRows.filter((r) => r.ok).length}/${statusRows.length}`, icon: CheckCircle2 },
-    { label: "Notification Deliverability", value: `${Math.max(76, 97 - warningCount * 4)}%`, icon: BellRing },
-    { label: "API Uptime", value: `${(99.1 - missingCount * 0.4).toFixed(2)}%`, icon: Globe },
-    { label: "Automation Health", value: `${automationHealth}%`, icon: Workflow },
-    { label: "Error Rate", value: `${errorRate}%`, icon: XCircle },
-    { label: "Active Staff", value: String(activeStaff), icon: UserCog },
-    { label: "AI Confidence", value: `${Math.max(72, 96 - warningCount * 5)}%`, icon: Brain },
+    { label: adminT("settings.stats.storeHealth"), value: serviceHealth, icon: Activity },
+    { label: adminT("settings.stats.activeServices"), value: `${statusRows.filter((r) => r.ok).length}/${statusRows.length}`, icon: CheckCircle2 },
+    { label: adminT("settings.stats.deliverability"), value: `${Math.max(76, 97 - warningCount * 4)}%`, icon: BellRing },
+    { label: adminT("settings.stats.apiUptime"), value: `${(99.1 - missingCount * 0.4).toFixed(2)}%`, icon: Globe },
+    { label: adminT("settings.stats.automationHealth"), value: `${automationHealth}%`, icon: Workflow },
+    { label: adminT("settings.stats.errorRate"), value: `${errorRate}%`, icon: XCircle },
+    { label: adminT("settings.stats.activeStaff"), value: String(activeStaff), icon: UserCog },
+    { label: adminT("settings.stats.aiConfidence"), value: `${Math.max(72, 96 - warningCount * 5)}%`, icon: Brain },
   ];
 
   return (
@@ -375,18 +419,18 @@ export default function AdminSettingsPage() {
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-amber-200/80 bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-900 dark:border-amber-800 dark:bg-stone-900/70 dark:text-amber-200">
               <Sparkles className="h-3.5 w-3.5" />
-              Owner Mission Control
+              {adminT("settings.eyebrow")}
             </p>
             <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-stone-950 sm:text-4xl">
-              System Settings Intelligence Center
+              {adminT("settings.title")}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-700 sm:text-base">
-              مركز تحكم ذكي لإدارة الصحة التشغيلية، القوالب، الأمان، التكاملات، والأتمتة بتجربة فاخرة عالية الوضوح.
+              {adminT("settings.subtitle")}
             </p>
           </div>
           <div className="inline-flex items-center gap-2 self-start rounded-2xl border border-cb-border bg-white/85 px-4 py-2 text-sm font-bold text-stone-900 shadow-sm dark:bg-stone-900/80 dark:text-stone-100">
             <Bot className="h-4 w-4" />
-            AI Ops Assistant Active
+            {adminT("settings.aiOpsActive")}
           </div>
         </div>
         <div className="relative mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
@@ -404,7 +448,7 @@ export default function AdminSettingsPage() {
 
       {loading ? (
         <div className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-6 text-sm text-stone-700 dark:text-stone-300">
-          Loading settings...
+          {adminT("settings.loading")}
         </div>
       ) : (
         <>
@@ -419,21 +463,21 @@ export default function AdminSettingsPage() {
 
           {error ? (
             <div className="admin-alert admin-alert--danger rounded-2xl border p-5 text-sm">
-              <p className="font-semibold">Environment check failed</p>
+              <p className="font-semibold">{adminT("settings.envCheckFailed")}</p>
               <p className="mt-1">{error}</p>
               <button
                 type="button"
                 onClick={() => void load()}
                 className="mt-3 rounded-xl border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-900"
               >
-                Retry / إعادة المحاولة
+                {adminT("settings.retry")}
               </button>
             </div>
           ) : null}
 
           {templatesError ? (
             <div className="admin-alert admin-alert--warning rounded-2xl border p-5 text-sm">
-              <p className="font-semibold">Notification templates</p>
+              <p className="font-semibold">{adminT("settings.templatesErrorTitle")}</p>
               <p className="mt-1">{templatesError}</p>
               <p className="mt-2 text-xs text-cb-text-muted">
                 تأكد من تشغيل هجرات Supabase (مثلاً `0005_phase_cde_foundations.sql`) وأن
@@ -444,7 +488,7 @@ export default function AdminSettingsPage() {
                 onClick={() => void load()}
                 className="mt-3 rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100"
               >
-                Retry templates / إعادة تحميل القوالب
+                {adminT("settings.retryTemplates")}
               </button>
             </div>
           ) : null}
@@ -454,18 +498,17 @@ export default function AdminSettingsPage() {
               <section className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm sm:p-6">
                 <h2 className="inline-flex items-center gap-2 font-serif text-2xl font-bold text-stone-900 dark:text-stone-100">
                   <Activity className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                  Live System Health Center
+                  {adminT("settings.healthTitle")}
                 </h2>
                 <p className="mt-1 text-sm text-stone-700 dark:text-stone-300">
-                  Real-time operational status for core services.
+                  {adminT("settings.healthSub")}
                 </p>
                 <p className="mt-2 text-xs text-cb-text-muted" dir="rtl">
-                  الحالة تُشتق من مجموعات متغيرات الإنتاج (ليست pings). الأزمن المعروضة ثابتة وتوضيحية وليست
-                  قياسات شبكة حية.
+                  {adminT("settings.healthNote")}
                 </p>
                 {health.env.missing.length > 0 ? (
                   <div className="admin-alert admin-alert--danger mt-4 rounded-2xl border p-4 text-sm">
-                    <p className="font-bold">Missing on server (hPanel → Environment variables)</p>
+                    <p className="font-bold">{adminT("settings.missingEnv")}</p>
                     <p className="mt-1 text-xs opacity-90" dir="rtl">
                       متغيرات ناقصة — أضفها ثم Redeploy. محلياً:{" "}
                       <code className="rounded bg-black/10 px-1">npm run hostinger:env-audit</code>
@@ -479,15 +522,15 @@ export default function AdminSettingsPage() {
                 ) : null}
                 {health.database && !health.database.ok ? (
                   <div className="admin-alert admin-alert--warning mt-4 rounded-2xl border p-4 text-sm">
-                    <p className="font-bold">Database schema needs attention</p>
+                    <p className="font-bold">{adminT("settings.dbAttention")}</p>
                     {health.database.missing_tables.length > 0 ? (
                       <p className="mt-1 text-xs">
-                        Missing tables: {health.database.missing_tables.join(", ")}
+                        {adminT("settings.missingTables", { list: health.database.missing_tables.join(", ") })}
                       </p>
                     ) : null}
                     {health.database.failed_tables.length > 0 ? (
                       <p className="mt-1 text-xs">
-                        Failed probes: {health.database.failed_tables.join(", ")}
+                        {adminT("settings.failedProbes", { list: health.database.failed_tables.join(", ") })}
                       </p>
                     ) : null}
                     <p className="mt-2 text-xs" dir="rtl">
@@ -511,13 +554,13 @@ export default function AdminSettingsPage() {
                             <span
                               className={cn("h-1.5 w-1.5 rounded-full", row.ok ? "bg-emerald-600" : "bg-rose-600")}
                             />
-                            {row.ok ? "Healthy" : "Issue"}
+                            {row.ok ? adminT("settings.healthy") : adminT("settings.issue")}
                           </AdminBadge>
                         </div>
-                        <p className="mt-2 text-xs text-stone-700 dark:text-stone-300">Latency: {row.latency}</p>
+                        <p className="mt-2 text-xs text-stone-700 dark:text-stone-300">{adminT("settings.latency", { value: row.latency })}</p>
                         {!row.ok && missingForCard.length > 0 ? (
                           <p className="mt-2 font-mono text-[10px] leading-relaxed text-rose-800 dark:text-rose-200">
-                            Set: {missingForCard.join(", ")}
+                            {adminT("settings.setVars", { list: missingForCard.join(", ") })}
                           </p>
                         ) : null}
                       </article>
@@ -530,7 +573,7 @@ export default function AdminSettingsPage() {
                 <article className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
                   <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
                     <Brain className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                    AI Insights Panel
+                    {adminT("settings.aiInsights")}
                   </h3>
                   <div className="mt-3 space-y-2">
                     {aiMessages.map((msg) => (
@@ -544,15 +587,16 @@ export default function AdminSettingsPage() {
                 <article className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
                   <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
                     <Globe className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                    Domain Management
+                    {adminT("settings.domainTitle")}
                   </h3>
                   <p className="mt-2 text-sm text-stone-800 dark:text-stone-300">
-                    Canonical host: <span className="font-bold">{health.canonical_host}</span>
+                    {adminT("settings.canonicalHost")}{" "}
+                    <span className="font-bold">{health.canonical_host}</span>
                   </p>
                   <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
-                    <AdminBadge tone="success">SSL: Valid</AdminBadge>
-                    <AdminBadge tone="info">DNS: Verified</AdminBadge>
-                    <AdminBadge tone="warning">SEO Check: 92%</AdminBadge>
+                    <AdminBadge tone="success">{adminT("settings.sslValid")}</AdminBadge>
+                    <AdminBadge tone="info">{adminT("settings.dnsVerified")}</AdminBadge>
+                    <AdminBadge tone="warning">{adminT("settings.seoCheck")}</AdminBadge>
                     <AdminBadge tone="neutral">ENV: {health.node_env}</AdminBadge>
                   </div>
                 </article>
@@ -564,7 +608,7 @@ export default function AdminSettingsPage() {
             <aside className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
               <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
                 <BellRing className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                Template Channels
+                {adminT("settings.templateChannels")}
               </h3>
               <div className="mt-4 space-y-2">
                 {(["email", "sms", "whatsapp", "push", "in-app"] as const).map((tab) => (
@@ -574,14 +618,18 @@ export default function AdminSettingsPage() {
                     onClick={() => selectTemplateTab(tab)}
                     className={cn(adminTabClass(templateTab === tab), "capitalize")}
                   >
-                    {tab}
+                    {tab === "in-app"
+                      ? adminT("settings.channels.inApp")
+                      : adminT(`settings.channels.${tab}` as "settings.channels.email")}
                   </button>
                 ))}
               </div>
               <div className="mt-4 rounded-2xl border border-cb-border bg-white/90 p-3 text-xs text-stone-700 dark:bg-stone-900/80 dark:text-stone-300">
-                نشطة: <span className="font-bold">{filteredTemplates.filter((t) => t.is_active).length}</span>
+                {adminT("settings.tplActive", {
+                  n: filteredTemplates.filter((t) => t.is_active).length,
+                })}
                 <span className="mx-1">·</span>
-                الكل: <span className="font-bold">{activeTemplates}</span>
+                {adminT("settings.tplTotal", { n: activeTemplates })}
               </div>
               {templateTab === "whatsapp" ? (
                 <button
@@ -593,7 +641,7 @@ export default function AdminSettingsPage() {
                     "mt-3 border-emerald-300 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 disabled:opacity-60",
                   )}
                 >
-                  استيراد قوالب واتساب الافتراضية
+                  {adminT("settings.seedWa")}
                 </button>
               ) : null}
             </aside>
@@ -601,12 +649,12 @@ export default function AdminSettingsPage() {
             <article className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
               <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
                 <Wrench className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                استوديو القوالب النصية
+                {adminT("settings.templateStudio")}
               </h3>
               {templateTab === "whatsapp" ? (
                 <div className="mt-3">
                   <label className="text-xs font-bold text-stone-600 dark:text-stone-400">
-                    قالب واتساب جاهز
+                    {adminT("settings.waPreset")}
                   </label>
                   <select
                     value={waPresetKey}
@@ -636,7 +684,7 @@ export default function AdminSettingsPage() {
                 <input
                   value={tplKey}
                   onChange={(e) => setTplKey(e.target.value)}
-                  placeholder="template key"
+                  placeholder={adminT("settings.tplKeyPlaceholder")}
                   aria-label="مفتاح القالب"
                   className={cn(tplStudioFieldClass, "min-w-[10rem] flex-[1.2_1_10rem]")}
                 />
@@ -659,7 +707,7 @@ export default function AdminSettingsPage() {
                 <input
                   value={tplSubject}
                   onChange={(e) => setTplSubject(e.target.value)}
-                  placeholder="subject"
+                  placeholder={adminT("settings.tplSubjectPlaceholder")}
                   aria-label="موضوع البريد"
                   className={cn(tplStudioFieldClass, "min-w-[9rem] flex-[1_1_9rem]")}
                 />
@@ -669,7 +717,7 @@ export default function AdminSettingsPage() {
                   onClick={() => void upsertTemplate()}
                   className="shrink-0 self-stretch rounded-xl bg-[#E67E22] px-5 py-2 text-sm font-bold text-white shadow-[0_8px_24px_-14px_rgba(230,126,34,0.6)] hover:bg-[#d56c12] disabled:opacity-60 sm:min-w-[5.5rem]"
                 >
-                  {tplBusy ? "…" : "حفظ"}
+                  {tplBusy ? adminT("settings.tplSaving") : adminT("settings.tplSave")}
                 </button>
               </div>
               {tplSaveStatus ? (
@@ -678,7 +726,7 @@ export default function AdminSettingsPage() {
               <textarea
                 value={tplBody}
                 onChange={(e) => setTplBody(e.target.value)}
-                placeholder="استخدم متغيرات مثل {{name}} و {{orderNumber}} — *نص عريض* في واتساب"
+                placeholder={adminT("settings.tplBodyPlaceholder")}
                 className="mt-3 w-full rounded-xl border border-cb-border bg-white px-3 py-2 font-mono text-sm dark:bg-stone-900"
                 rows={8}
                 dir={tplLanguage === "ar" ? "rtl" : "ltr"}
@@ -702,12 +750,17 @@ export default function AdminSettingsPage() {
                 </button>
                 <AdminBadge tone="info" className="gap-1 rounded-full">
                   <Languages className="h-3 w-3 shrink-0" />
-                  Locale completeness: {templates.length > 2 ? "Good" : "Needs expansion"}
+                  {adminT("settings.localeCompleteness", {
+                    value:
+                      templates.length > 2
+                        ? adminT("settings.localeGood")
+                        : adminT("settings.localeNeeds"),
+                  })}
                 </AdminBadge>
               </div>
               <div className="mt-4 max-h-64 space-y-2 overflow-y-auto">
                 {filteredTemplates.length === 0 ? (
-                  <p className="text-xs text-stone-600 dark:text-stone-400">لا توجد قوالب لهذه القناة.</p>
+                  <p className="text-xs text-stone-600 dark:text-stone-400">{adminT("settings.tplNoChannel")}</p>
                 ) : (
                   filteredTemplates.map((t) => (
                     <button
@@ -730,7 +783,7 @@ export default function AdminSettingsPage() {
               <article className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
                 <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
                   <Clock3 className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                  Live Preview
+                  {adminT("settings.livePreview")}
                 </h3>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {(["desktop", "mobile", "rtl"] as const).map((mode) => (
@@ -745,7 +798,7 @@ export default function AdminSettingsPage() {
                           : "border border-cb-border bg-white text-stone-700 dark:bg-stone-900 dark:text-stone-300",
                       )}
                     >
-                      {mode}
+                      {adminT(`settings.previewModes.${mode}`)}
                     </button>
                   ))}
                 </div>
@@ -759,7 +812,7 @@ export default function AdminSettingsPage() {
                   <p className="mt-1 whitespace-pre-wrap text-xs opacity-90">
                     {tplChannel === "whatsapp"
                       ? waPreviewBody
-                      : tplBody || "Hello {{customer_name}}, your order {{order_id}} is in progress."}
+                      : tplBody || adminT("settings.sampleBody")}
                   </p>
                 </div>
               </article>
@@ -767,17 +820,17 @@ export default function AdminSettingsPage() {
               <article className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
                 <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
                   <Shield className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                  Security Center
+                  {adminT("settings.securityCenter")}
                 </h3>
                 <div className="mt-3 space-y-2 text-xs">
                   <AdminBadge as="p" tone="success" className="w-full rounded-xl px-3 py-2">
-                    Session tracking active
+                    {adminT("settings.security.sessionTracking")}
                   </AdminBadge>
                   <AdminBadge as="p" tone="info" className="w-full rounded-xl px-3 py-2">
-                    2FA prompts enabled for owner actions
+                    {adminT("settings.security.twoFa")}
                   </AdminBadge>
                   <AdminBadge as="p" tone="warning" className="w-full rounded-xl px-3 py-2">
-                    Suspicious IP watchlist: 0 alerts
+                    {adminT("settings.security.ipWatchlist")}
                   </AdminBadge>
                 </div>
               </article>
@@ -788,15 +841,15 @@ export default function AdminSettingsPage() {
             <article className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
               <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
                 <Link2 className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                Integrations Hub
+                {adminT("settings.integrationsHub")}
               </h3>
               <div className="mt-3 space-y-2">
                 {integrations.map((item) => (
                   <div key={item.name} className="rounded-2xl border border-cb-border bg-white/90 p-3 text-xs dark:bg-stone-900/70">
                     <p className="font-bold text-stone-900 dark:text-stone-100">{item.name}</p>
-                    <p className="text-stone-700 dark:text-stone-300">Status: {item.status}</p>
-                    <p className="text-stone-700 dark:text-stone-300">Latency: {item.latency}</p>
-                    <p className="text-stone-700 dark:text-stone-300">Usage: {item.usage}</p>
+                    <p className="text-stone-700 dark:text-stone-300">{adminT("settings.integrationStatus", { value: item.status })}</p>
+                    <p className="text-stone-700 dark:text-stone-300">{adminT("settings.integrationLatency", { value: item.latency })}</p>
+                    <p className="text-stone-700 dark:text-stone-300">{adminT("settings.integrationUsage", { value: item.usage })}</p>
                   </div>
                 ))}
               </div>
@@ -805,7 +858,7 @@ export default function AdminSettingsPage() {
             <article className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
               <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
                 <Workflow className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                Automation Engine
+                {adminT("settings.automationEngine")}
               </h3>
               <div className="mt-3 space-y-2">
                 {automations.map((flow) => (
@@ -822,7 +875,7 @@ export default function AdminSettingsPage() {
           <section className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
             <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
               <Clock3 className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-              Logs & Diagnostics
+              {adminT("settings.logsDiagnostics")}
             </h3>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {logEvents.map((event) => (

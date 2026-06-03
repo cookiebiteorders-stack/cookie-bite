@@ -58,8 +58,8 @@ export function SiteHeader() {
   const currentAdminPage = admin
     ? resolveCurrentAdminConsolePage(pathname, admin.navItems)
     : undefined;
-  const consoleLabel = lang === "ar" ? "لوحة الإدارة" : "Admin console";
-  const storeLabel = lang === "ar" ? "المتجر" : "Store";
+  const consoleLabel = t("adminShell.consoleEyebrow");
+  const storeLabel = t("adminShell.backToStore");
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuToggleRef = useRef<HTMLButtonElement>(null);
   const { scrollY } = useScroll();
@@ -191,7 +191,7 @@ export function SiteHeader() {
                       title={consoleLabel}
                     >
                       <p className="truncate text-xs font-bold leading-tight text-cb-text-strong">
-                        {currentAdminPage?.label ?? "Dashboard"}
+                        {currentAdminPage ? t(`adminNav.${currentAdminPage.navKey}`) : t("adminNav.dashboard")}
                       </p>
                       <p className="truncate text-[9px] font-semibold uppercase leading-tight tracking-[0.14em] text-cb-terracotta-dark">
                         {getRoleLabel(admin.role)}

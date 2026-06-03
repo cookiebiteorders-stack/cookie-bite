@@ -201,9 +201,8 @@ dlog("H-D,H-F", "git-sync.mjs:afterPush", "git push result", {
   upToDate: /Everything up-to-date/i.test(pushStdout + pushStderr),
   pushOutputTail: (pushStdout + pushStderr).slice(-600),
 });
-dlog("H-F", "git-sync.mjs:end", "script done — note: Hostinger and Firebase are NOT invoked by this script", {
+dlog("H-F", "git-sync.mjs:end", "script done — note: Hostinger is NOT invoked by this script", {
   hostingerInvoked: false,
-  firebaseInvoked: false,
 });
 // #endregion
 

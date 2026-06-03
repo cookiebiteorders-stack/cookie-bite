@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { cn } from "@/lib/utils";
+import { useAdminT } from "@/lib/admin/use-admin-t";
+import { useLanguage } from "@/components/providers/language-provider";
 
 type Discount = {
   id: string;
@@ -44,46 +46,72 @@ type BuilderType =
   | "seasonal"
   | "loyalty";
 
-const typeOptions: Array<{
+const typeOptionIds: Array<{
   id: BuilderType;
-  label: string;
-  hint: string;
   icon: typeof Percent;
+  labelKey: string;
+  hintKey: string;
 }> = [
-  { id: "percent", label: "Percentage", hint: "خصم نسبي", icon: Percent },
-  { id: "fixed", label: "Fixed Amount", hint: "قيمة ثابتة", icon: CircleDollarSign },
-  { id: "shipping", label: "Free Shipping", hint: "شحن مجاني", icon: Truck },
-  { id: "bogo", label: "Buy X Get Y", hint: "اشتر واحصل", icon: Gift },
-  { id: "bundle", label: "Bundle Offer", hint: "حزمة منتجات", icon: Ticket },
-  { id: "vip", label: "VIP Discount", hint: "عملاء VIP", icon: ShieldCheck },
-  { id: "first-order", label: "First Order", hint: "الطلب الأول", icon: Sparkles },
-  { id: "seasonal", label: "Seasonal", hint: "حملة موسمية", icon: CalendarClock },
-  { id: "loyalty", label: "Loyalty Reward", hint: "نقاط الولاء", icon: Users },
+  { id: "percent", labelKey: "types.percent.label", hintKey: "types.percent.hint", icon: Percent },
+  { id: "fixed", labelKey: "types.fixed.label", hintKey: "types.fixed.hint", icon: CircleDollarSign },
+  { id: "shipping", labelKey: "types.shipping.label", hintKey: "types.shipping.hint", icon: Truck },
+  { id: "bogo", labelKey: "types.bogo.label", hintKey: "types.bogo.hint", icon: Gift },
+  { id: "bundle", labelKey: "types.bundle.label", hintKey: "types.bundle.hint", icon: Ticket },
+  { id: "vip", labelKey: "types.vip.label", hintKey: "types.vip.hint", icon: ShieldCheck },
+  { id: "first-order", labelKey: "types.firstOrder.label", hintKey: "types.firstOrder.hint", icon: Sparkles },
+  { id: "seasonal", labelKey: "types.seasonal.label", hintKey: "types.seasonal.hint", icon: CalendarClock },
+  { id: "loyalty", labelKey: "types.loyalty.label", hintKey: "types.loyalty.hint", icon: Users },
 ];
 
-function typeLabel(type: Discount["type"]) {
-  return type === "percent" ? "Percentage" : "Fixed";
-}
+type StatusKey = "paused" | "active" | "expired" | "expiringSoon";
 
-function statusLabel(d: Discount) {
-  if (!d.is_active) return "Paused";
-  if (!d.valid_until) return "Active";
-  const now = Date.now();
+function statusKey(d: Pick<Discount, "is_active" | "valid_until">): StatusKey {
+  if (!d.is_active) return "paused";
+  if (!d.valid_until) return "active";
   const end = new Date(d.valid_until).getTime();
-  if (Number.isNaN(end)) return "Active";
-  if (end < now) return "Expired";
-  if (end - now < 1000 * 60 * 60 * 24 * 3) return "Expiring Soon";
-  return "Active";
+  const now = Date.now();
+  if (Number.isNaN(end)) return "active";
+  if (end < now) return "expired";
+  if (end - now < 1000 * 60 * 60 * 24 * 3) return "expiringSoon";
+  return "active";
 }
 
-function statusClass(status: string) {
-  if (status === "Active") return "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200";
-  if (status === "Expiring Soon") return "bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200";
-  if (status === "Expired") return "bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-200";
+function statusClass(key: StatusKey) {
+  if (key === "active") return "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200";
+  if (key === "expiringSoon") return "bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200";
+  if (key === "expired") return "bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-200";
   return "bg-stone-200 text-stone-800";
 }
 
 export default function AdminDiscountsPage() {
+  const { adminT, apiErr } = useAdminT();
+  const { lang } = useLanguage();
+
+  const typeOptions = useMemo(
+    () =>
+      typeOptionIds.map((opt) => ({
+        ...opt,
+        label: adminT(`discounts.${opt.labelKey}`),
+        hint: adminT(`discounts.${opt.hintKey}`),
+      })),
+    [adminT],
+  );
+
+  const typeLabel = (type: Discount["type"]) =>
+    type === "percent" ? adminT("discounts.typePercent") : adminT("discounts.typeFixed");
+
+  const statusLabel = (d: Discount) => adminT(`discounts.status.${statusKey(d)}`);
+
+  const ruleOptions = useMemo(
+    () => [
+      adminT("discounts.rules.cartTotal"),
+      adminT("discounts.rules.cookiesOnly"),
+      adminT("discounts.rules.firstTime"),
+      adminT("discounts.rules.vipOnly"),
+    ],
+    [adminT],
+  );
+
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +125,7 @@ export default function AdminDiscountsPage() {
   const [minOrder, setMinOrder] = useState("0");
   const [campaignTag, setCampaignTag] = useState("Seasonal");
   const [ruleMode, setRuleMode] = useState<"AND" | "OR">("AND");
-  const [selectedRules, setSelectedRules] = useState<string[]>(["Cart total > EGP 250"]);
+  const [selectedRules, setSelectedRules] = useState<string[]>([]);
 
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused" | "expired">("all");
@@ -111,10 +139,10 @@ export default function AdminDiscountsPage() {
     try {
       const res = await fetch("/api/admin/discounts", { cache: "no-store" });
       const data = (await res.json()) as { discounts?: Discount[]; error?: { en?: string } };
-      if (!res.ok) throw new Error(data.error?.en ?? "Failed to load discounts");
+      if (!res.ok) throw new Error(apiErr(data.error, adminT("discounts.errors.loadFailed")));
       setDiscounts(data.discounts ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : adminT("discounts.errors.unknown"));
     } finally {
       setLoading(false);
     }
@@ -132,13 +160,16 @@ export default function AdminDiscountsPage() {
     const overlap = discounts.find((d) => d.code.toLowerCase() === code.trim().toLowerCase());
     const hasHigh = discounts.some((d) => d.type === "percent" && d.value >= 20 && d.is_active);
     const conversion = numValue <= 10 ? 7 : numValue <= 15 ? 11 : 15;
+    const pct = numValue >= 15 ? "15%" : "10%";
     return [
-      `AI Insight: ${numValue >= 15 ? "15%" : "10%"} often lifts conversion by ~${conversion}%`,
-      overlap ? `Warning: code ${overlap.code} already exists` : "No duplicate code detected",
-      hasHigh ? "Margin risk: active high-discount campaigns detected" : "Margin looks healthy for current stack",
-      "Best launch window suggestion: Friday 8 PM",
+      adminT("discounts.aiHints.conversion", { pct, lift: conversion }),
+      overlap
+        ? adminT("discounts.aiHints.duplicate", { code: overlap.code })
+        : adminT("discounts.aiHints.noDuplicate"),
+      hasHigh ? adminT("discounts.aiHints.marginRisk") : adminT("discounts.aiHints.marginOk"),
+      adminT("discounts.aiHints.launchWindow"),
     ];
-  }, [code, discounts, value]);
+  }, [adminT, code, discounts, value]);
 
   async function createDiscount(e: FormEvent) {
     e.preventDefault();
@@ -152,9 +183,7 @@ export default function AdminDiscountsPage() {
       "loyalty",
     ];
     if (unsupported.includes(builderType)) {
-      setError(
-        "This campaign type is not stored in the database yet. Choose Percentage or Fixed amount, or Shipping/Seasonal (saved as percentage).",
-      );
+      setError(adminT("discounts.errors.unsupportedType"));
       return;
     }
 
@@ -162,7 +191,7 @@ export default function AdminDiscountsPage() {
     if (expiry?.trim()) {
       const d = new Date(expiry);
       if (Number.isNaN(d.getTime())) {
-        setError("Invalid expiry date");
+        setError(adminT("discounts.errors.invalidExpiry"));
         return;
       }
       expiresAtIso = d.toISOString();
@@ -171,11 +200,11 @@ export default function AdminDiscountsPage() {
     const apiType = builderType === "fixed" ? "fixed" : "percent";
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue) || numericValue <= 0) {
-      setError("Enter a valid positive value");
+      setError(adminT("discounts.errors.invalidValue"));
       return;
     }
     if (apiType === "percent" && numericValue > 100) {
-      setError("Percentage cannot exceed 100");
+      setError(adminT("discounts.errors.percentMax"));
       return;
     }
 
@@ -200,7 +229,7 @@ export default function AdminDiscountsPage() {
 
     if (!res.ok) {
       const d = (await res.json().catch(() => null)) as { error?: { en?: string } } | null;
-      setError(d?.error?.en ?? "Failed to create discount");
+      setError(apiErr(d?.error, adminT("discounts.errors.createFailed")));
       return;
     }
 
@@ -222,19 +251,19 @@ export default function AdminDiscountsPage() {
     });
     if (!res.ok) {
       const data = (await res.json().catch(() => null)) as { error?: { en?: string } } | null;
-      setError(data?.error?.en ?? "Failed to update discount");
+      setError(apiErr(data?.error, adminT("discounts.errors.updateFailed")));
       return;
     }
     await load();
   }
 
   async function deleteDiscount(d: Discount) {
-    if (!window.confirm(`Delete coupon ${d.code}? This cannot be undone.`)) return;
+    if (!window.confirm(adminT("discounts.confirmDelete", { code: d.code }))) return;
     setError(null);
     const res = await fetch(`/api/admin/discounts/${d.id}`, { method: "DELETE" });
     if (!res.ok) {
-      const data = (await res.json().catch(() => null)) as { error?: { en?: string } } | null;
-      setError(data?.error?.en ?? "Failed to delete discount");
+      const data = (await res.json().catch(() => null)) as { error?: { en?: string; ar?: string } } | null;
+      setError(apiErr(data?.error, adminT("discounts.errors.deleteFailed")));
       return;
     }
     await load();
@@ -242,20 +271,21 @@ export default function AdminDiscountsPage() {
 
   const metrics = useMemo(() => {
     const active = discounts.filter((d) => d.is_active).length;
-    const expiringSoon = discounts.filter((d) => statusLabel(d) === "Expiring Soon").length;
+    const expiringSoon = discounts.filter((d) => statusKey(d) === "expiringSoon").length;
     const totalUses = discounts.reduce((acc, d) => acc + (d.used_count ?? 0), 0);
-    const mostUsed = [...discounts].sort((a, b) => (b.used_count ?? 0) - (a.used_count ?? 0))[0]?.code ?? "N/A";
+    const mostUsed = [...discounts].sort((a, b) => (b.used_count ?? 0) - (a.used_count ?? 0))[0]?.code ?? adminT("discounts.na");
     return {
       active,
       expiringSoon,
       totalUses,
       mostUsed,
     };
-  }, [discounts]);
+  }, [discounts, adminT]);
 
   const rows = useMemo(() => {
     const enriched = discounts.map((d) => {
-      const status = statusLabel(d);
+      const key = statusKey(d);
+      const status = adminT(`discounts.status.${key}`);
       const used = d.used_count ?? 0;
       const usage =
         d.max_uses != null && d.max_uses > 0
@@ -264,7 +294,7 @@ export default function AdminDiscountsPage() {
             ? 100
             : 0;
       const remaining = d.max_uses != null ? Math.max(0, d.max_uses - used) : null;
-      return { ...d, status, usage, remaining, used };
+      return { ...d, status, statusKey: key, usage, remaining, used };
     });
 
     const filtered = enriched.filter((d) => {
@@ -273,9 +303,9 @@ export default function AdminDiscountsPage() {
         typeLabel(d.type).toLowerCase().includes(query.toLowerCase());
       if (!matchesQuery) return false;
       if (statusFilter === "all") return true;
-      if (statusFilter === "active") return d.status === "Active" || d.status === "Expiring Soon";
-      if (statusFilter === "paused") return d.status === "Paused";
-      return d.status === "Expired";
+      if (statusFilter === "active") return d.statusKey === "active" || d.statusKey === "expiringSoon";
+      if (statusFilter === "paused") return d.statusKey === "paused";
+      return d.statusKey === "expired";
     });
 
     filtered.sort((a, b) => {
@@ -286,14 +316,23 @@ export default function AdminDiscountsPage() {
     });
 
     return filtered;
-  }, [discounts, query, sortBy, statusFilter]);
+  }, [discounts, query, sortBy, statusFilter, adminT, typeLabel]);
 
   const pages = Math.max(1, Math.ceil(rows.length / pageSize));
   const activePage = Math.min(page, pages);
   const pagedRows = rows.slice((activePage - 1) * pageSize, activePage * pageSize);
 
-  const previewValue = builderType === "fixed" ? `EGP ${Number(value || 0).toFixed(0)}` : `${Number(value || 0)}%`;
-  const previewExpiry = expiry ? new Date(expiry).toLocaleDateString() : "No end date";
+  const previewValue =
+    builderType === "fixed"
+      ? lang === "ar"
+        ? `${Number(value || 0).toFixed(0)} جنيه`
+        : `EGP ${Number(value || 0).toFixed(0)}`
+      : `${Number(value || 0)}%`;
+  const previewMin =
+    lang === "ar"
+      ? `${Number(minOrder || 0)} جنيه`
+      : `EGP ${Number(minOrder || 0)}`;
+  const previewExpiry = expiry ? new Date(expiry).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-GB") : adminT("discounts.noEndDate");
 
   return (
     <section className="space-y-6 pb-10">
@@ -304,13 +343,13 @@ export default function AdminDiscountsPage() {
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-amber-200/80 bg-white/75 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-900">
               <WandSparkles className="h-3.5 w-3.5" />
-              AI Discount Engine
+              {adminT("discounts.eyebrow")}
             </p>
             <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-stone-950 sm:text-4xl">
-              Discount Orchestration Center
+              {adminT("discounts.title")}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-700 sm:text-base">
-              لوحة خصومات متقدمة تجمع الإنشاء الذكي، التحليلات الفورية، وإدارة الحملات في تجربة SaaS فاخرة تناسب هوية Cookie Bite.
+              {adminT("discounts.subtitle")}
             </p>
           </div>
           <button
@@ -318,16 +357,16 @@ export default function AdminDiscountsPage() {
             className="inline-flex items-center gap-2 self-start rounded-2xl border border-cb-border bg-white/85 px-4 py-2 text-sm font-bold text-stone-900 shadow-sm transition hover:-translate-y-0.5 hover:bg-white"
           >
             <Brain className="h-4 w-4" />
-            AI Quick Actions
+            {adminT("discounts.aiQuickActions")}
           </button>
         </div>
 
         <div className="relative mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {[
-            { k: "Active Discounts", v: metrics.active },
-            { k: "Total Redemptions", v: metrics.totalUses },
-            { k: "Expiring Soon", v: metrics.expiringSoon },
-            { k: "Most Used Code", v: metrics.mostUsed },
+            { k: adminT("discounts.metrics.active"), v: metrics.active },
+            { k: adminT("discounts.metrics.redemptions"), v: metrics.totalUses },
+            { k: adminT("discounts.metrics.expiring"), v: metrics.expiringSoon },
+            { k: adminT("discounts.metrics.mostUsed"), v: metrics.mostUsed },
           ].map((item) => (
             <article key={item.k} className="rounded-2xl border border-cb-border/70 bg-white/90 p-4 shadow-sm">
               <p className="text-[11px] font-bold uppercase tracking-wide text-stone-600">{item.k}</p>
@@ -352,14 +391,14 @@ export default function AdminDiscountsPage() {
                     : "border border-cb-border bg-white text-stone-700",
                 )}
               >
-                Step {s}
+                {adminT("discounts.step", { n: s })}
               </button>
             ))}
           </div>
 
           {step === 1 && (
             <div className="space-y-4">
-              <h2 className="font-serif text-xl font-bold text-stone-900">Step 1 — Discount Type</h2>
+              <h2 className="font-serif text-xl font-bold text-stone-900">{adminT("discounts.step1Title")}</h2>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {typeOptions.map((opt) => (
                   <button
@@ -384,10 +423,10 @@ export default function AdminDiscountsPage() {
 
           {step === 2 && (
             <div className="space-y-4">
-              <h2 className="font-serif text-xl font-bold text-stone-900">Step 2 — Discount Details</h2>
+              <h2 className="font-serif text-xl font-bold text-stone-900">{adminT("discounts.step2Title")}</h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-xs font-bold uppercase tracking-wide text-stone-700">
-                  Discount Code
+                  {adminT("discounts.fields.code")}
                   <input
                     value={code}
                     onChange={(e) => setCode(e.target.value.toUpperCase())}
@@ -397,7 +436,7 @@ export default function AdminDiscountsPage() {
                   />
                 </label>
                 <label className="text-xs font-bold uppercase tracking-wide text-stone-700">
-                  Value
+                  {adminT("discounts.fields.value")}
                   <input
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
@@ -409,7 +448,7 @@ export default function AdminDiscountsPage() {
                   />
                 </label>
                 <label className="text-xs font-bold uppercase tracking-wide text-stone-700">
-                  Max Uses
+                  {adminT("discounts.fields.maxUses")}
                   <input
                     value={maxUses}
                     onChange={(e) => setMaxUses(e.target.value)}
@@ -420,7 +459,7 @@ export default function AdminDiscountsPage() {
                   />
                 </label>
                 <label className="text-xs font-bold uppercase tracking-wide text-stone-700">
-                  Expiration Date
+                  {adminT("discounts.fields.expiry")}
                   <input
                     value={expiry}
                     onChange={(e) => setExpiry(e.target.value)}
@@ -429,7 +468,7 @@ export default function AdminDiscountsPage() {
                   />
                 </label>
                 <label className="text-xs font-bold uppercase tracking-wide text-stone-700">
-                  Minimum Order (EGP)
+                  {adminT("discounts.fields.minOrder")}
                   <input
                     value={minOrder}
                     onChange={(e) => setMinOrder(e.target.value)}
@@ -439,7 +478,7 @@ export default function AdminDiscountsPage() {
                   />
                 </label>
                 <label className="text-xs font-bold uppercase tracking-wide text-stone-700">
-                  Campaign Tag
+                  {adminT("discounts.fields.campaignTag")}
                   <input
                     value={campaignTag}
                     onChange={(e) => setCampaignTag(e.target.value)}
@@ -452,9 +491,9 @@ export default function AdminDiscountsPage() {
 
           {step === 3 && (
             <div className="space-y-4">
-              <h2 className="font-serif text-xl font-bold text-stone-900">Step 3 — Smart Rules Engine</h2>
+              <h2 className="font-serif text-xl font-bold text-stone-900">{adminT("discounts.step3Title")}</h2>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wide text-stone-700">Condition Mode</span>
+                <span className="text-xs font-bold uppercase tracking-wide text-stone-700">{adminT("discounts.conditionMode")}</span>
                 {(["AND", "OR"] as const).map((mode) => (
                   <button
                     key={mode}
@@ -472,15 +511,7 @@ export default function AdminDiscountsPage() {
                 ))}
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
-                {[
-                  "Cart total > EGP 250",
-                  "Only cookies category",
-                  "First-time customer",
-                  "VIP members only",
-                  "Weekend only",
-                  "Ramadan campaign",
-                  "Birthday discount",
-                ].map((rule) => (
+                {ruleOptions.map((rule) => (
                   <button
                     key={rule}
                     type="button"
@@ -506,7 +537,7 @@ export default function AdminDiscountsPage() {
               type="submit"
               className="rounded-2xl bg-[#E67E22] px-4 py-2 text-sm font-bold text-white shadow-[0_8px_24px_-14px_rgba(230,126,34,0.65)] transition hover:-translate-y-0.5 hover:bg-[#d46d16]"
             >
-              Create Discount
+              {adminT("discounts.create")}
             </button>
             <button
               type="button"
@@ -514,14 +545,14 @@ export default function AdminDiscountsPage() {
               className="inline-flex items-center gap-1 rounded-2xl border border-cb-border bg-white px-4 py-2 text-sm font-semibold text-stone-800"
             >
               <Copy className="h-4 w-4" />
-              Clone Draft
+              {adminT("discounts.cloneDraft")}
             </button>
             <button
               type="button"
               onClick={() => void load()}
               className="rounded-2xl border border-cb-border bg-white px-4 py-2 text-sm font-semibold text-stone-800"
             >
-              Refresh Data
+              {adminT("discounts.refreshData")}
             </button>
           </div>
         </form>
@@ -530,7 +561,7 @@ export default function AdminDiscountsPage() {
           <aside className="rounded-3xl border border-cb-border bg-white/95 p-5 shadow-sm">
             <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900">
               <Brain className="h-5 w-5 text-amber-700" />
-              AI Assistant
+              {adminT("discounts.aiAssistant")}
             </h3>
             <div className="mt-3 space-y-2">
               {aiHints.map((msg) => (
@@ -544,21 +575,21 @@ export default function AdminDiscountsPage() {
           <aside className="rounded-3xl border border-cb-border bg-white/95 p-5 shadow-sm">
             <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900">
               <Ticket className="h-5 w-5 text-amber-700" />
-              Live Preview
+              {adminT("discounts.previewTitle")}
             </h3>
             <div className="mt-4 rounded-2xl border border-cb-border bg-[#FFF6EE] p-4 text-stone-900">
-              <p className="text-xs font-bold uppercase tracking-wide text-stone-700">Coupon Card</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-stone-700">{adminT("discounts.couponCard")}</p>
               <p className="mt-1 font-serif text-2xl font-bold text-stone-950">{code || "YOUR-CODE"}</p>
               <p className="text-sm text-stone-800">
-                {previewValue} off • Min order EGP {Number(minOrder || 0)}
+                {adminT("discounts.previewOff", { value: previewValue, min: previewMin })}
               </p>
-              <p className="mt-1 text-xs text-stone-700">Expires: {previewExpiry}</p>
+              <p className="mt-1 text-xs text-stone-700">{adminT("discounts.previewExpires", { date: previewExpiry })}</p>
               <div className="mt-3 flex gap-2">
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900">
                   {campaignTag}
                 </span>
                 <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-900">
-                  {ruleMode} {selectedRules.length} rules
+                  {adminT("discounts.previewRules", { mode: ruleMode, count: selectedRules.length })}
                 </span>
               </div>
             </div>
@@ -569,8 +600,7 @@ export default function AdminDiscountsPage() {
       <section className="rounded-3xl border border-cb-border bg-white/95 p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-serif text-2xl font-bold text-stone-900">Advanced Campaign Table</h2>
-            <p className="text-sm text-stone-700">Search, filter, sort, and monitor discount performance in one place.</p>
+            <h2 className="font-serif text-2xl font-bold text-stone-900">{adminT("discounts.listTitle")}</h2>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <label className="inline-flex items-center gap-2 rounded-2xl border border-cb-border bg-white px-3 py-2">
@@ -578,7 +608,7 @@ export default function AdminDiscountsPage() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search code or type..."
+                placeholder={adminT("discounts.searchPlaceholder")}
                 className="w-44 bg-transparent text-sm outline-none"
               />
             </label>
@@ -587,24 +617,24 @@ export default function AdminDiscountsPage() {
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
               className="rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm"
             >
-              <option value="all">All states</option>
-              <option value="active">Active</option>
-              <option value="paused">Paused</option>
-              <option value="expired">Expired</option>
+              <option value="all">{adminT("discounts.filterAll")}</option>
+              <option value="active">{adminT("discounts.filterActive")}</option>
+              <option value="paused">{adminT("discounts.filterPaused")}</option>
+              <option value="expired">{adminT("discounts.filterExpired")}</option>
             </select>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
               className="rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm"
             >
-              <option value="performance">Sort by uses</option>
-              <option value="code">Sort by code</option>
-              <option value="value">Sort by value</option>
-              <option value="expires">Sort by expiry</option>
+              <option value="performance">{adminT("discounts.sortPerformance")}</option>
+              <option value="code">{adminT("discounts.sortCode")}</option>
+              <option value="value">{adminT("discounts.sortValue")}</option>
+              <option value="expires">{adminT("discounts.sortExpires")}</option>
             </select>
             <button type="button" className="inline-flex items-center gap-1 rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm font-semibold text-stone-800">
               <Filter className="h-4 w-4" />
-              Saved Views
+              {adminT("discounts.savedViews")}
             </button>
           </div>
         </div>
@@ -613,22 +643,22 @@ export default function AdminDiscountsPage() {
           <table className="w-full min-w-[1200px] text-sm">
             <thead className="sticky top-0 border-b border-cb-border bg-cb-surface-2/90 text-left text-xs font-bold uppercase tracking-wide text-stone-700">
               <tr>
-                <th className="px-4 py-3">Code</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Uses</th>
-                <th className="px-4 py-3">Usage %</th>
-                <th className="px-4 py-3">Remaining</th>
-                <th className="px-4 py-3">Expires</th>
-                <th className="px-4 py-3">Min order</th>
-                <th className="px-4 py-3">Actions</th>
+                <th className="px-4 py-3">{adminT("discounts.colCode")}</th>
+                <th className="px-4 py-3">{adminT("discounts.colType")}</th>
+                <th className="px-4 py-3">{adminT("discounts.colStatus")}</th>
+                <th className="px-4 py-3">{adminT("discounts.colUses")}</th>
+                <th className="px-4 py-3">{adminT("discounts.usagePct")}</th>
+                <th className="px-4 py-3">{adminT("discounts.remaining")}</th>
+                <th className="px-4 py-3">{adminT("discounts.colExpires")}</th>
+                <th className="px-4 py-3">{adminT("discounts.fields.minOrder")}</th>
+                <th className="px-4 py-3">{adminT("discounts.colActions")}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
                   <td className="px-4 py-5 text-stone-700" colSpan={10}>
-                    Loading campaigns...
+                    {adminT("discounts.loading")}
                   </td>
                 </tr>
               ) : error ? (
@@ -640,7 +670,7 @@ export default function AdminDiscountsPage() {
               ) : pagedRows.length === 0 ? (
                 <tr>
                   <td className="px-4 py-8 text-center text-stone-700" colSpan={10}>
-                    No campaigns match your filters.
+                    {adminT("discounts.empty")}
                   </td>
                 </tr>
               ) : (
@@ -657,7 +687,7 @@ export default function AdminDiscountsPage() {
                       {d.type === "percent" ? `${d.value}%` : `EGP ${d.value}`}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={cn("rounded-full px-2 py-1 text-[11px] font-bold", statusClass(d.status))}>{d.status}</span>
+                      <span className={cn("rounded-full px-2 py-1 text-[11px] font-bold", statusClass(d.statusKey))}>{d.status}</span>
                     </td>
                     <td className="px-4 py-3 text-stone-800">{d.used}</td>
                     <td className="px-4 py-3">
@@ -666,11 +696,13 @@ export default function AdminDiscountsPage() {
                       </div>
                       <span className="text-xs text-stone-700">{d.usage}%</span>
                     </td>
-                    <td className="px-4 py-3 text-stone-800">{d.remaining == null ? "Unlimited" : d.remaining}</td>
+                    <td className="px-4 py-3 text-stone-800">{d.remaining == null ? adminT("discounts.unlimited") : d.remaining}</td>
                     <td className="px-4 py-3 text-stone-800">
-                      {d.valid_until ? new Date(d.valid_until).toLocaleDateString() : "No expiry"}
+                      {d.valid_until ? new Date(d.valid_until).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-GB") : adminT("discounts.noEndDate")}
                     </td>
-                    <td className="px-4 py-3 text-stone-800">EGP {d.min_order_amount_egp ?? 0}</td>
+                    <td className="px-4 py-3 text-stone-800">
+                      {lang === "ar" ? `${d.min_order_amount_egp ?? 0} جنيه` : `EGP ${d.min_order_amount_egp ?? 0}`}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         <button
@@ -678,14 +710,14 @@ export default function AdminDiscountsPage() {
                           onClick={() => void toggleActive(d)}
                           className="rounded-lg border border-cb-border px-2 py-1 text-[11px] font-bold text-stone-800"
                         >
-                          {d.is_active ? "Pause" : "Activate"}
+                          {d.is_active ? adminT("discounts.pause") : adminT("discounts.activate")}
                         </button>
                         <button
                           type="button"
                           onClick={() => void deleteDiscount(d)}
                           className="rounded-lg border border-rose-200 px-2 py-1 text-[11px] font-bold text-rose-700"
                         >
-                          Delete
+                          {adminT("discounts.delete")}
                         </button>
                       </div>
                     </td>
@@ -698,7 +730,11 @@ export default function AdminDiscountsPage() {
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs text-stone-700">
-            Showing {(activePage - 1) * pageSize + 1} - {Math.min(activePage * pageSize, rows.length)} of {rows.length}
+            {adminT("discounts.showing", {
+              from: (activePage - 1) * pageSize + 1,
+              to: Math.min(activePage * pageSize, rows.length),
+              total: rows.length,
+            })}
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -706,7 +742,7 @@ export default function AdminDiscountsPage() {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               className="rounded-xl border border-cb-border bg-white px-3 py-1.5 text-xs font-bold text-stone-700"
             >
-              Prev
+              {adminT("discounts.prev")}
             </button>
             <span className="text-xs font-bold text-stone-700">
               {activePage} / {pages}
@@ -716,7 +752,7 @@ export default function AdminDiscountsPage() {
               onClick={() => setPage((p) => Math.min(pages, p + 1))}
               className="rounded-xl border border-cb-border bg-white px-3 py-1.5 text-xs font-bold text-stone-700"
             >
-              Next
+              {adminT("discounts.next")}
             </button>
           </div>
         </div>
@@ -725,21 +761,21 @@ export default function AdminDiscountsPage() {
       <section className="grid gap-4 xl:grid-cols-3">
         {[
           {
-            title: "Total Redemptions",
+            title: adminT("discounts.cardRedemptions"),
             value: String(metrics.totalUses),
-            note: "All-time coupon uses",
+            note: adminT("discounts.cardRedemptionsNote"),
             icon: CircleDollarSign,
           },
           {
-            title: "Active Codes",
+            title: adminT("discounts.cardActive"),
             value: String(metrics.active),
-            note: "Currently accepting at checkout",
+            note: adminT("discounts.cardActiveNote"),
             icon: Clock3,
           },
           {
-            title: "Expiring Soon",
-            value: metrics.expiringSoon > 0 ? `${metrics.expiringSoon} codes` : "None",
-            note: "Within 3 days",
+            title: adminT("discounts.cardExpiring"),
+            value: metrics.expiringSoon > 0 ? `${metrics.expiringSoon}` : adminT("discounts.cardExpiringNone"),
+            note: adminT("discounts.cardExpiringNote"),
             icon: Brain,
           },
         ].map((card) => (

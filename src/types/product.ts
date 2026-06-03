@@ -7,6 +7,8 @@ export interface ProductColor {
 
 export interface Product {
   id: string;
+  /** UUID from API — used for analytics when adding to cart */
+  productUuid?: string;
   name: string;
   brand: string;
   category: ProductCategory;

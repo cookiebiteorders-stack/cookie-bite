@@ -1,4 +1,5 @@
 import { applyVars, renderShell } from "../shell";
+import { pickArEmail } from "./bodies-ar";
 import type { TemplateBuilder } from "../types";
 
 function buildEmail(
@@ -12,6 +13,24 @@ function buildEmail(
     variant: "email",
     lang: opts.lang,
   });
+}
+
+type EmailVars = Record<string, string | number | undefined | null>;
+
+function resolveCopy(
+  key: string,
+  lang: "en" | "ar" | undefined,
+  en: { body: string; subject: string; preheader: string; title: string },
+  merged: EmailVars,
+) {
+  const ar = lang === "ar" ? pickArEmail(key) : undefined;
+  if (!ar) return en;
+  return {
+    body: ar.body,
+    subject: ar.subject(merged),
+    preheader: ar.preheader(merged),
+    title: ar.title,
+  };
 }
 
 /* ─────────────────────────── Welcome ─────────────────────────── */
@@ -58,13 +77,26 @@ export const welcomeTemplate: TemplateBuilder = {
   },
   build(vars, options) {
     const merged = { ...welcomeTemplate.meta.sampleVars, ...vars };
+    const enSubject = `A warm welcome from Cookie Bite, ${merged.first_name ?? "there"}`;
+    const enPreheader = `Your account is ready — and your ${merged.welcome_discount}% welcome treat is waiting.`;
+    const copy = resolveCopy(
+      "welcome",
+      options?.lang,
+      {
+        body: WELCOME_BODY,
+        subject: enSubject,
+        preheader: enPreheader,
+        title: "Welcome to Cookie Bite",
+      },
+      merged,
+    );
     return {
       key: welcomeTemplate.meta.key,
-      subject: `A warm welcome from Cookie Bite, ${merged.first_name ?? "there"}`,
-      preheader: `Your account is ready — and your ${merged.welcome_discount}% welcome treat is waiting.`,
-      html: buildEmail(WELCOME_BODY, merged, {
-        title: "Welcome to Cookie Bite",
-        preheader: `Your account is ready — and your ${merged.welcome_discount}% welcome treat is waiting.`,
+      subject: copy.subject,
+      preheader: copy.preheader,
+      html: buildEmail(copy.body, merged, {
+        title: copy.title,
+        preheader: copy.preheader,
         lang: options?.lang,
       }),
     };
@@ -126,13 +158,26 @@ export const orderConfirmedTemplate: TemplateBuilder = {
   },
   build(vars, options) {
     const merged = { ...orderConfirmedTemplate.meta.sampleVars, ...vars };
+    const enSubject = `Order #${merged.order_number} confirmed — your cookies are queued for the oven`;
+    const enPreheader = `Thanks ${merged.first_name ?? ""} — total ${merged.total_amount}. We've started hand-finishing your batch.`;
+    const copy = resolveCopy(
+      "order-confirmed",
+      options?.lang,
+      {
+        body: ORDER_CONFIRMATION_BODY,
+        subject: enSubject,
+        preheader: enPreheader,
+        title: "Order confirmed",
+      },
+      merged,
+    );
     return {
       key: orderConfirmedTemplate.meta.key,
-      subject: `Order #${merged.order_number} confirmed — your cookies are queued for the oven`,
-      preheader: `Thanks ${merged.first_name ?? ""} — total ${merged.total_amount}. We've started hand-finishing your batch.`,
-      html: buildEmail(ORDER_CONFIRMATION_BODY, merged, {
-        title: "Order confirmed",
-        preheader: `Thanks ${merged.first_name ?? ""} — total ${merged.total_amount}.`,
+      subject: copy.subject,
+      preheader: copy.preheader,
+      html: buildEmail(copy.body, merged, {
+        title: copy.title,
+        preheader: copy.preheader,
         lang: options?.lang,
       }),
     };
@@ -185,13 +230,26 @@ export const orderShippedTemplate: TemplateBuilder = {
   },
   build(vars, options) {
     const merged = { ...orderShippedTemplate.meta.sampleVars, ...vars };
+    const enSubject = `Your Cookie Bite order #${merged.order_number} is on the way`;
+    const enPreheader = `Tracking ${merged.tracking_number} · ${merged.carrier_name} · arrives ${merged.estimated_delivery}`;
+    const copy = resolveCopy(
+      "order-shipped",
+      options?.lang,
+      {
+        body: ORDER_SHIPPED_BODY,
+        subject: enSubject,
+        preheader: enPreheader,
+        title: "Order on the way",
+      },
+      merged,
+    );
     return {
       key: orderShippedTemplate.meta.key,
-      subject: `Your Cookie Bite order #${merged.order_number} is on the way`,
-      preheader: `Tracking ${merged.tracking_number} · ${merged.carrier_name} · arrives ${merged.estimated_delivery}`,
-      html: buildEmail(ORDER_SHIPPED_BODY, merged, {
-        title: "Order on the way",
-        preheader: `Tracking ${merged.tracking_number} · ${merged.carrier_name}`,
+      subject: copy.subject,
+      preheader: copy.preheader,
+      html: buildEmail(copy.body, merged, {
+        title: copy.title,
+        preheader: copy.preheader,
         lang: options?.lang,
       }),
     };
@@ -242,13 +300,26 @@ export const orderDeliveredTemplate: TemplateBuilder = {
   },
   build(vars, options) {
     const merged = { ...orderDeliveredTemplate.meta.sampleVars, ...vars };
+    const enSubject = `Your Cookie Bite box has arrived 🍪`;
+    const enPreheader = `Delivered ${merged.delivery_date} · ${merged.return_window}-day quality guarantee`;
+    const copy = resolveCopy(
+      "order-delivered",
+      options?.lang,
+      {
+        body: ORDER_DELIVERED_BODY,
+        subject: enSubject,
+        preheader: enPreheader,
+        title: "Order delivered",
+      },
+      merged,
+    );
     return {
       key: orderDeliveredTemplate.meta.key,
-      subject: `Your Cookie Bite box has arrived 🍪`,
-      preheader: `Delivered ${merged.delivery_date} · ${merged.return_window}-day quality guarantee`,
-      html: buildEmail(ORDER_DELIVERED_BODY, merged, {
-        title: "Order delivered",
-        preheader: `Delivered ${merged.delivery_date}`,
+      subject: copy.subject,
+      preheader: copy.preheader,
+      html: buildEmail(copy.body, merged, {
+        title: copy.title,
+        preheader: copy.preheader,
         lang: options?.lang,
       }),
     };

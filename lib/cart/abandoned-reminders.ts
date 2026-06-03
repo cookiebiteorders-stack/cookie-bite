@@ -17,11 +17,15 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function itemsRowsFromSnapshot(snapshot: AbandonedCartSnapshot): string {
+function itemsRowsFromSnapshot(
+  snapshot: AbandonedCartSnapshot,
+  lang: "en" | "ar" = "ar",
+): string {
+  const currencySuffix = lang === "ar" ? " جنيه" : " EGP";
   return (snapshot.lines ?? [])
     .map((line) => {
       const total = line.finalUnitPriceEgp * line.quantity;
-      return `<tr><td>${escapeHtml(line.name)}</td><td style="text-align:center;">${line.quantity}</td><td style="text-align:end;">${total.toFixed(2)} EGP</td></tr>`;
+      return `<tr><td>${escapeHtml(line.name)}</td><td style="text-align:center;">${line.quantity}</td><td style="text-align:end;">${total.toFixed(2)}${currencySuffix}</td></tr>`;
     })
     .join("");
 }
@@ -34,24 +38,26 @@ async function sendAbandonedCartEmail(
   if (!cart.email || !isEmailConfigured()) return false;
 
   const snapshot = cart.cart_snapshot;
+  const lang: "en" | "ar" = "ar";
   const recoveryUrl = `${APP_URL.replace(/\/$/, "")}/cart/recover/${cart.recovery_token}`;
   const firstName = cart.email.split("@")[0] ?? "there";
+  const offerExpiry = discountCode ? "48 ساعة" : "24 ساعة";
 
   const rendered = renderTemplate(
     "abandoned-cart",
     {
       first_name: firstName,
-      items_rows: itemsRowsFromSnapshot(snapshot),
-      cart_total: `${Number(cart.cart_value).toFixed(2)} EGP`,
+      items_rows: itemsRowsFromSnapshot(snapshot, lang),
+      cart_total: `${Number(cart.cart_value).toFixed(2)} جنيه`,
       promo_code: discountCode ?? "—",
       discount: discountCode ? 10 : 0,
-      offer_expiry: discountCode ? "48 hours" : "24 hours",
+      offer_expiry: offerExpiry,
       cart_url: recoveryUrl,
-      company_address: "New Cairo, Egypt",
+      company_address: "التجمع الخامس، القاهرة الجديدة",
       unsubscribe_url: `${APP_URL}/contact`,
       privacy_url: `${APP_URL}/privacy`,
     },
-    { lang: "en" },
+    { lang },
   );
 
   if (!rendered) {
@@ -61,8 +67,8 @@ async function sendAbandonedCartEmail(
 
   const subject =
     reminder === 1
-      ? "Your cookies are still in your cart 🍪"
-      : `10% off to finish your Cookie Bite order`;
+      ? rendered.subject
+      : "خصم 10% علشان تكمّل طلبك من كوكي بايت 🍪";
 
   try {
     await sendInternalEmail({

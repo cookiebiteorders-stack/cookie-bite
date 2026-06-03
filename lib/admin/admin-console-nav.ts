@@ -1,33 +1,33 @@
 import { canAccess, type ModuleKey, type UserRole } from "@/lib/admin/rbac";
 
-/** عناصر مسار `/admin` — بدون أيقونات (تُربط بالأيقونات في الواجهة). */
+/** عناصر مسار `/admin` — التسمية عبر adminNav.* في translations. */
 export type AdminConsoleNavItem = {
   href: string;
-  label: string;
+  navKey: string;
   module: ModuleKey;
 };
 
 export const ADMIN_CONSOLE_NAV_ITEMS: AdminConsoleNavItem[] = [
-  { href: "/admin", label: "Dashboard", module: "dashboard" },
-  { href: "/admin/copilot", label: "Mrs. Cookie", module: "dashboard" },
-  { href: "/admin/products", label: "Products", module: "products" },
-  { href: "/admin/addons", label: "Addons", module: "addons" },
-  { href: "/admin/orders", label: "Orders", module: "orders" },
-  { href: "/admin/customers", label: "Customers", module: "customers" },
-  { href: "/admin/discounts", label: "Discounts", module: "discounts" },
-  { href: "/admin/analytics", label: "Analytics", module: "analytics" },
-  { href: "/admin/reports", label: "Reports", module: "analytics" },
-  { href: "/admin/financial", label: "Financial", module: "financial" },
-  { href: "/admin/invoices", label: "Invoices", module: "invoices" },
-  { href: "/admin/payments", label: "Payments", module: "payments" },
-  { href: "/admin/roles", label: "Roles", module: "roles" },
-  { href: "/admin/shipping", label: "Shipping", module: "shipping" },
-  { href: "/admin/audit-logs", label: "Audit Logs", module: "audit" },
-  { href: "/admin/media", label: "Media", module: "media" },
-  { href: "/admin/cms", label: "CMS", module: "cms" },
-  { href: "/admin/template-library", label: "Templates", module: "templates" },
-  { href: "/admin/email", label: "Email", module: "settings" },
-  { href: "/admin/settings", label: "Settings", module: "settings" },
+  { href: "/admin", navKey: "dashboard", module: "dashboard" },
+  { href: "/admin/copilot", navKey: "copilot", module: "dashboard" },
+  { href: "/admin/products", navKey: "products", module: "products" },
+  { href: "/admin/addons", navKey: "addons", module: "addons" },
+  { href: "/admin/orders", navKey: "orders", module: "orders" },
+  { href: "/admin/customers", navKey: "customers", module: "customers" },
+  { href: "/admin/discounts", navKey: "discounts", module: "discounts" },
+  { href: "/admin/analytics", navKey: "analytics", module: "analytics" },
+  { href: "/admin/reports", navKey: "reports", module: "analytics" },
+  { href: "/admin/financial", navKey: "financial", module: "financial" },
+  { href: "/admin/invoices", navKey: "invoices", module: "invoices" },
+  { href: "/admin/payments", navKey: "payments", module: "payments" },
+  { href: "/admin/roles", navKey: "roles", module: "roles" },
+  { href: "/admin/shipping", navKey: "shipping", module: "shipping" },
+  { href: "/admin/audit-logs", navKey: "audit", module: "audit" },
+  { href: "/admin/media", navKey: "media", module: "media" },
+  { href: "/admin/cms", navKey: "cms", module: "cms" },
+  { href: "/admin/template-library", navKey: "templates", module: "templates" },
+  { href: "/admin/email", navKey: "email", module: "settings" },
+  { href: "/admin/settings", navKey: "settings", module: "settings" },
 ];
 
 export function getAccessibleAdminConsoleNav(role: UserRole): AdminConsoleNavItem[] {

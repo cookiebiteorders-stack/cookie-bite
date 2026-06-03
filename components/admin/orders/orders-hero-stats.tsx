@@ -12,12 +12,13 @@ import {
   Warehouse,
 } from "lucide-react";
 import type { OrderStats } from "@/lib/admin/orders-operations-types";
+import { formatAdminMoney } from "@/lib/admin/admin-label";
+import { useLanguage } from "@/components/providers/language-provider";
 import { MiniSparkline } from "@/components/admin/products/mini-sparkline";
 import { cn } from "@/lib/utils";
 
-function fmtEgp(n: number) {
-  if (!Number.isFinite(n)) return "—";
-  return `${Math.round(n).toLocaleString("ar-EG")} ج.م`;
+function fmtEgp(n: number, lang: "ar" | "en") {
+  return formatAdminMoney(n, lang);
 }
 
 function trendPct(today: number, yday: number) {
@@ -113,6 +114,7 @@ type Props = {
 
 export function OrdersHeroStats({ stats, online }: Props) {
   const reduceMotion = useReducedMotion();
+  const { t, lang } = useLanguage();
   const orderFlowTrend = trendPct(stats.orders_today, stats.orders_yesterday);
 
   const cards: Card[] = [
@@ -197,7 +199,7 @@ export function OrdersHeroStats({ stats, online }: Props) {
     },
     {
       title: "إيراد اليوم (مدفوع)",
-      value: fmtEgp(stats.revenue_today_egp),
+      value: fmtEgp(stats.revenue_today_egp, lang),
       sub: "من طلبات paid اليوم",
       trend: orderFlowTrend,
       icon: Banknote,
@@ -232,11 +234,10 @@ export function OrdersHeroStats({ stats, online }: Props) {
             </motion.div>
             <div>
               <h1 className="font-serif text-2xl font-bold tracking-tight text-cb-text-strong sm:text-3xl">
-                Order Operations Board
+                {t("adminHero.orders.title")}
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cb-text sm:text-[15px]">
-                إدارة طابور الطلبات المباشر، المدفوعات، الشحن، التنفيذ، طلبات العملاء، والعمليات الجماعية — لوحة عمليات
-                على مستوى المؤسسات.
+                {t("adminHero.orders.subtitle")}
               </p>
             </div>
           </div>
@@ -249,7 +250,7 @@ export function OrdersHeroStats({ stats, online }: Props) {
             )}
           >
             <span className={cn("h-2 w-2 rounded-full", online ? "animate-pulse bg-emerald-500" : "bg-amber-500")} />
-            {online ? "بث مباشر" : "وضع غير متصل"}
+            {online ? t("adminStatus.online") : t("adminStatus.offline")}
           </div>
         </div>
       </motion.header>

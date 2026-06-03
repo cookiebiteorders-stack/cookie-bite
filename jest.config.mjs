@@ -17,7 +17,6 @@ const customJestConfig = {
   modulePathIgnorePatterns: [
     "<rootDir>/.next/",
     "<rootDir>/out/",
-    "<rootDir>/.firebase/",
   ],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",

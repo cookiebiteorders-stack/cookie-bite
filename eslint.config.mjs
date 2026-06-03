@@ -12,8 +12,6 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Firebase export يضمّ نسخة Next داخل المشروع — لا تُفحص مخرجات البناء
-    ".firebase/**",
     "**/.next/**",
     "coverage/**",
     // سكربتات Node عامة (CommonJS)

@@ -86,10 +86,10 @@ export function MobileHeader() {
                     : title === "Admin Console"
                       ? t("mobileHeader.adminConsole")
                       : title;
-  const adminPageTitle = currentAdminPage?.label ?? "";
+  const adminPageTitle = currentAdminPage ? t(`adminNav.${currentAdminPage.navKey}`) : "";
+  const consoleLabel = t("adminShell.consoleEyebrow");
   const localizedTitleEffective =
     admin && adminPageTitle ? adminPageTitle : localizedTitle;
-  const consoleLabel = lang === "ar" ? "لوحة الإدارة" : "Admin console";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileLinks = useMemo(
     () => [
@@ -139,7 +139,7 @@ export function MobileHeader() {
             aria-controls="admin-mobile-nav"
             aria-expanded={admin.adminNavOpen}
             onClick={() => admin.setAdminNavOpen(true)}
-            aria-label={lang === "ar" ? "قائمة لوحة الإدارة" : "Admin console menu"}
+            aria-label={t("adminShell.adminConsoleMenu")}
           >
             <Menu className="h-6 w-6" aria-hidden />
           </button>

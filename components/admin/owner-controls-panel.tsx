@@ -10,6 +10,7 @@ import {
   type OwnerFlags,
 } from "@/lib/store/owner-flags";
 import { cn } from "@/lib/utils";
+import { useAdminT } from "@/lib/admin/use-admin-t";
 
 type OwnerFlagsResponse = {
   flags: OwnerFlags;
@@ -22,6 +23,7 @@ type Props = {
 };
 
 export function OwnerControlsPanel({ canManage }: Props) {
+  const { adminT, lang } = useAdminT();
   const [flags, setFlags] = useState<OwnerFlags | null>(null);
   const [loading, setLoading] = useState(canManage);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +39,7 @@ export function OwnerControlsPanel({ canManage }: Props) {
       });
       setFlags(data.flags);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load owner flags");
+      setError(err instanceof Error ? err.message : adminT("settings.ownerControls.loadFailed"));
       setFlags(null);
     } finally {
       setLoading(false);
@@ -65,7 +67,7 @@ export function OwnerControlsPanel({ canManage }: Props) {
       setFlags(data.flags);
     } catch (err) {
       setFlags(previous);
-      setError(err instanceof Error ? err.message : "Failed to update flag");
+      setError(err instanceof Error ? err.message : adminT("settings.ownerControls.updateFailed"));
     } finally {
       setBusyKey(null);
     }
@@ -77,10 +79,10 @@ export function OwnerControlsPanel({ canManage }: Props) {
     <article className="rounded-3xl border border-cb-border bg-cb-surface-elevated p-5 shadow-sm">
       <h3 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">
         <KeyRound className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-        Owner Controls
+        {adminT("settings.ownerControls.title")}
       </h3>
       <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
-        Persisted store flags — changes apply site-wide within ~30 seconds.
+        {adminT("settings.ownerControls.subtitle")}
       </p>
 
       {error ? (
@@ -93,7 +95,7 @@ export function OwnerControlsPanel({ canManage }: Props) {
         {loading && !flags ? (
           <p className="flex items-center gap-2 text-xs text-stone-600">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            Loading flags…
+            {adminT("settings.ownerControls.loading")}
           </p>
         ) : null}
 
@@ -101,6 +103,8 @@ export function OwnerControlsPanel({ canManage }: Props) {
           const on = flags?.[flag] ?? false;
           const meta = OWNER_FLAG_LABELS[flag];
           const busy = busyKey === flag;
+          const label = lang === "ar" ? meta.ar : meta.en;
+          const description = lang === "ar" ? meta.description.ar : meta.description.en;
 
           return (
             <button
@@ -118,14 +122,14 @@ export function OwnerControlsPanel({ canManage }: Props) {
               aria-pressed={on}
             >
               <span className="min-w-0">
-                <span className="block font-mono text-[11px]">{flag}</span>
+                <span className="block font-mono text-[11px]">{label}</span>
                 <span className="mt-0.5 block text-[10px] font-normal opacity-80">
-                  {meta.description.en}
+                  {description}
                 </span>
               </span>
               <span className="inline-flex shrink-0 items-center gap-1.5">
                 {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-                {on ? "ON" : "OFF"}
+                {on ? adminT("settings.ownerControls.on") : adminT("settings.ownerControls.off")}
               </span>
             </button>
           );

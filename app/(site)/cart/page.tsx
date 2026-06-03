@@ -11,7 +11,7 @@ import { useLanguage } from "@/components/providers/language-provider";
 import { PromoCodeField } from "@/components/checkout/promo-code-field";
 
 export default function CartPage() {
-  const { t } = useLanguage();
+  const { t, formatPrice } = useLanguage();
   const {
     lines,
     setQuantity,
@@ -28,7 +28,6 @@ export default function CartPage() {
       ? 0
       : siteConfig.standardDeliveryFeeEgp;
   const total = Math.max(0, subtotalEgp - discountEgp + shipping);
-  const fmt = (n: number) => `${n.toFixed(2)} EGP`;
 
   return (
     <div className="bg-cb-cream pb-24 pt-10">
@@ -52,13 +51,15 @@ export default function CartPage() {
           ) : (
             <>
               <ul className="mt-10 space-y-4">
-                {lines.map((item) => (
+                {lines.map((item) => {
+                  const itemHref = item.giftBox ? "/gift-box" : `/shop/${item.productId}`;
+                  return (
                   <li
                     key={item.id}
                     className="flex gap-4 rounded-3xl border border-cb-border bg-cb-surface p-4"
                   >
                     <Link
-                      href={`/shop/${item.productId}`}
+                      href={itemHref}
                       className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-cb-peach/40"
                     >
                       <Image
@@ -72,19 +73,19 @@ export default function CartPage() {
                     </Link>
                     <div className="min-w-0 flex-1">
                       <Link
-                        href={`/shop/${item.productId}`}
+                        href={itemHref}
                         className="font-semibold text-cb-text-strong hover:text-cb-terracotta-dark"
                       >
                         {item.name}
                       </Link>
-                      <p className="text-xs text-cb-text-muted">Cookie Bite</p>
+                      <p className="text-xs text-cb-text-muted">{t("userMenu.brandFoot")}</p>
                       {item.giftBox ? (
                         <p className="text-xs font-semibold text-cb-terracotta-dark">
-                          Gift Box · {item.giftBox.box_size}
+                          {t("pages.cart.giftBoxLine", { size: item.giftBox.box_size })}
                         </p>
                       ) : null}
                       <p className="text-sm font-bold text-cb-terracotta-dark">
-                        {fmt(item.finalUnitPriceEgp)} {t("pages.cart.each")}
+                        {formatPrice(item.finalUnitPriceEgp)} {t("pages.cart.each")}
                       </p>
                       {item.addons.length > 0 ? (
                         <ul className="mt-1 space-y-1 text-xs text-cb-text-muted">
@@ -97,7 +98,7 @@ export default function CartPage() {
                       ) : null}
                       <div className="mt-3 flex items-center gap-2">
                         {item.giftBox ? (
-                          <span className="text-xs text-cb-text-muted">Quantity fixed to 1</span>
+                          <span className="text-xs text-cb-text-muted">{t("pages.cart.quantityFixed")}</span>
                         ) : (
                           <QuantitySelector
                             quantity={item.quantity}
@@ -115,10 +116,11 @@ export default function CartPage() {
                       </div>
                     </div>
                     <p className="shrink-0 font-bold text-cb-text-strong">
-                        {fmt(item.finalUnitPriceEgp * item.quantity)}
+                        {formatPrice(item.finalUnitPriceEgp * item.quantity)}
                     </p>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </>
           )}
@@ -135,21 +137,21 @@ export default function CartPage() {
             </div>
             <div className="flex items-center justify-between text-cb-text-muted">
               <span>{t("pages.cart.subtotal")}</span>
-              <span>{fmt(subtotalEgp)}</span>
+              <span>{formatPrice(subtotalEgp)}</span>
             </div>
             <div className="flex items-center justify-between text-cb-text-muted">
               <span>{t("pages.cart.savings")}</span>
               <span className={discountEgp > 0 ? "text-emerald-600" : ""}>
-                −{fmt(discountEgp)}
+                −{formatPrice(discountEgp)}
               </span>
             </div>
             <div className="flex items-center justify-between text-cb-text-muted">
               <span>{t("pages.cart.shipping")}</span>
-              <span>{shipping === 0 ? t("pages.cart.free") : fmt(shipping)}</span>
+              <span>{shipping === 0 ? t("pages.cart.free") : formatPrice(shipping)}</span>
             </div>
             <div className="mt-3 flex items-center justify-between border-t border-cb-border pt-3 text-base font-bold text-cb-text-strong">
               <span>{t("pages.cart.total")}</span>
-              <span>{fmt(total)}</span>
+              <span>{formatPrice(total)}</span>
             </div>
           </div>
           {lines.length > 0 ? (

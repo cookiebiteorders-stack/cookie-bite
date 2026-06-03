@@ -43,5 +43,5 @@ export function getProductDiscount(
 
 export function formatProductPriceEgp(amount: number, locale: "ar-EG" | "en-EG" = "ar-EG"): string {
   const formatted = amount.toLocaleString(locale, { maximumFractionDigits: 0 });
-  return locale === "ar-EG" ? `${formatted} ج.م` : `${formatted} EGP`;
+  return locale === "ar-EG" ? `${formatted} جنيه` : `${formatted} EGP`;
 }

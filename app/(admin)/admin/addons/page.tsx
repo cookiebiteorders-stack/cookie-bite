@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   AdminBilingualLabel,
   AdminBilingualSection,
+  useAdminBilingual,
 } from "@/components/admin/admin-bilingual-label";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { buildAddonSubmitPayload, validateAddonForm } from "@/lib/addons/submit-payload";
@@ -106,6 +107,7 @@ function Field({
 }
 
 export default function AdminAddonsPage() {
+  const pick = useAdminBilingual();
   type ProductLite = {
     id: string;
     name?: string | null;
@@ -344,8 +346,7 @@ export default function AdminAddonsPage() {
   return (
     <section className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-cb-text-strong">{L.pageTitle.en}</h1>
-        <p className="text-sm font-medium text-cb-text-muted">{L.pageTitle.ar}</p>
+        <h1 className="text-2xl font-bold text-cb-text-strong">{pick(L.pageTitle)}</h1>
       </div>
 
       <div className="rounded-xl border border-cb-border bg-cb-surface p-4">

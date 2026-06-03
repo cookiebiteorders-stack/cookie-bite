@@ -222,6 +222,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const setQuantity = useCallback((lineId: string, quantity: number) => {
     const q = Math.min(99, Math.max(0, quantity));
     setLines((prev) => {
+      const target = prev.find((l) => l.id === lineId);
+      if (target?.giftBox) return prev;
       if (q === 0) return prev.filter((l) => l.id !== lineId);
       return prev.map((l) =>
         l.id === lineId ? { ...l, quantity: q } : l,

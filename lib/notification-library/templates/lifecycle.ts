@@ -1,4 +1,5 @@
 import { applyVars, renderShell } from "../shell";
+import { pickArEmail } from "./bodies-ar";
 import type { TemplateBuilder } from "../types";
 
 function buildEmail(
@@ -12,6 +13,24 @@ function buildEmail(
     variant: "email",
     lang: opts.lang,
   });
+}
+
+type EmailVars = Record<string, string | number | undefined | null>;
+
+function resolveCopy(
+  key: string,
+  lang: "en" | "ar" | undefined,
+  en: { body: string; subject: string; preheader: string; title: string },
+  merged: EmailVars,
+) {
+  const ar = lang === "ar" ? pickArEmail(key) : undefined;
+  if (!ar) return en;
+  return {
+    body: ar.body,
+    subject: ar.subject(merged),
+    preheader: ar.preheader(merged),
+    title: ar.title,
+  };
 }
 
 /* ─────────────────────────── Order cancellation ─────────────────────────── */
@@ -190,13 +209,26 @@ export const abandonedCartTemplate: TemplateBuilder = {
   },
   build(vars, options) {
     const merged = { ...abandonedCartTemplate.meta.sampleVars, ...vars };
+    const enSubject = `Your cookies are still warm in the cart 🍪`;
+    const enPreheader = `Cart total ${merged.cart_total}. Use ${merged.promo_code} for ${merged.discount}% off — ${merged.offer_expiry} left.`;
+    const copy = resolveCopy(
+      "abandoned-cart",
+      options?.lang,
+      {
+        body: ABANDONED_CART_BODY,
+        subject: enSubject,
+        preheader: enPreheader,
+        title: "Your cart is waiting",
+      },
+      merged,
+    );
     return {
       key: abandonedCartTemplate.meta.key,
-      subject: `Your cookies are still warm in the cart 🍪`,
-      preheader: `Cart total ${merged.cart_total}. Use ${merged.promo_code} for ${merged.discount}% off — ${merged.offer_expiry} left.`,
-      html: buildEmail(ABANDONED_CART_BODY, merged, {
-        title: "Your cart is waiting",
-        preheader: `Cart total ${merged.cart_total}`,
+      subject: copy.subject,
+      preheader: copy.preheader,
+      html: buildEmail(copy.body, merged, {
+        title: copy.title,
+        preheader: copy.preheader,
         lang: options?.lang,
       }),
     };

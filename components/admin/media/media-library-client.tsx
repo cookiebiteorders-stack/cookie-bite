@@ -21,6 +21,7 @@ import {
   uploadAdminMediaFile,
 } from "@/lib/client/admin-media-upload";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/components/providers/language-provider";
 
 type MediaItem = {
   id: string;
@@ -62,6 +63,7 @@ function displayName(item: MediaItem): string {
 }
 
 export function MediaLibraryClient() {
+  const { t } = useLanguage();
   const [data, setData] = useState<LibraryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -226,15 +228,13 @@ export function MediaLibraryClient() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-amber-900/90">
-              Media
+              {t("adminHero.media.eyebrow")}
             </p>
             <h1 className="mt-1 font-serif text-2xl font-bold text-cb-text-strong">
-              مكتبة الوسائط
+              {t("adminHero.media.title")}
             </h1>
             <p className="mt-1 max-w-2xl text-sm text-cb-text-muted">
-              عرض كل الملفات المرفوعة على Cloudinary (مجلد{" "}
-              <code className="rounded bg-cb-surface-2 px-1 text-xs">cookie-bite/</code>
-              ) وصور المنتجات المرتبطة. يمكنك الحذف، استبدال الملف، أو تعديل المعرّف.
+              {t("adminHero.media.subtitle")}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

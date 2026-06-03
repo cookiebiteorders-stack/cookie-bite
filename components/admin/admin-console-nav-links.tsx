@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getAdminNavIcon } from "@/lib/admin/admin-console-nav-icons";
+import { useLanguage } from "@/components/providers/language-provider";
 import type { AdminConsoleNavItem } from "@/lib/admin/admin-console-nav";
 
 type AdminConsoleNavLinksProps = {
@@ -18,13 +19,16 @@ export function AdminConsoleNavLinks({
   onNavigate,
   className,
 }: AdminConsoleNavLinksProps) {
+  const { t } = useLanguage();
+
   return (
-    <nav className={cn("space-y-1", className)} aria-label="Admin navigation">
+    <nav className={cn("space-y-1", className)} aria-label={t("adminShell.adminNavigation")}>
       {items.map((item) => {
         const active =
           pathname === item.href ||
           (item.href !== "/admin" && pathname.startsWith(`${item.href}/`));
         const Icon = getAdminNavIcon(item);
+        const label = t(`adminNav.${item.navKey}`);
         return (
           <Link
             key={item.href}
@@ -39,7 +43,7 @@ export function AdminConsoleNavLinks({
             )}
           >
             <Icon className="h-4 w-4 shrink-0" aria-hidden />
-            {item.label}
+            {label}
           </Link>
         );
       })}

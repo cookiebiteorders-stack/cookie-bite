@@ -1,14 +1,10 @@
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { ClerkSmartCaptcha } from "@/components/auth/clerk-smart-captcha";
 import { SignInForm } from "@/components/auth/sign-in-form";
-import {
-  AUTH_SWITCH_SIGN_UP_CTA,
-  AUTH_SWITCH_SIGN_UP_LABEL,
-  SIGN_IN_SUBTITLE,
-  SIGN_IN_TITLE,
-} from "@/lib/auth/clerk-auth-localization";
+import { getServerT } from "@/lib/i18n/server-translate";
 import { safeAuthRedirectPath } from "@/lib/auth/safe-redirect";
 import { IMAGES } from "@/lib/data";
+import { getLangFromCookies } from "@/lib/seo/server";
 
 type Props = {
   searchParams: Promise<{ redirect_url?: string }>;
@@ -17,6 +13,8 @@ type Props = {
 export default async function SignInPage({ searchParams }: Props) {
   const { redirect_url } = await searchParams;
   const afterAuth = safeAuthRedirectPath(redirect_url, "/account");
+  const lang = await getLangFromCookies();
+  const t = getServerT(lang);
 
   const signUpHref =
     redirect_url && redirect_url !== "/account"
@@ -25,17 +23,20 @@ export default async function SignInPage({ searchParams }: Props) {
 
   return (
     <AuthLayout
-      badge="Sign in"
-      title={SIGN_IN_TITLE}
-      subtitle={SIGN_IN_SUBTITLE}
+      badge={t("auth.badgeSignIn")}
+      title={t("auth.signInTitle")}
+      subtitle={t("auth.signInSub")}
       imageSrc={IMAGES.signIn}
-      imageAlt="Cookie Bite — welcome back"
+      imageAlt={t("auth.imageAltSignIn")}
       imageClassName="object-cover object-[center_20%]"
       showAlternateAuth
-      switchLabel={AUTH_SWITCH_SIGN_UP_LABEL}
+      switchLabel={t("auth.switchSignUpLabel")}
       switchHref={signUpHref}
-      switchCta={AUTH_SWITCH_SIGN_UP_CTA}
+      switchCta={t("auth.switchSignUpCta")}
       compactMobilePreview
+      backHomeLabel={t("auth.backHome")}
+      secureAuthLabel={t("auth.secureAuth")}
+      asideTagline={lang === "ar" ? "كوكيز على دفعات صغيرة · التجمع الخامس" : undefined}
     >
       <ClerkSmartCaptcha />
       <SignInForm afterAuth={afterAuth} />

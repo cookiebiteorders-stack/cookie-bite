@@ -3,6 +3,8 @@ import { sendAutomatedEmail } from "@/lib/email/automation/pipeline";
 import { contactNotification, contactAutoReply } from "@/lib/email/templates";
 import { renderTemplate } from "@/lib/notification-library";
 
+const DEFAULT_CUSTOMER_EMAIL_LANG: "en" | "ar" = "ar";
+
 type SendResult = Awaited<ReturnType<ReturnType<typeof getResend>["emails"]["send"]>>;
 
 export type EmailAttachment = {
@@ -70,11 +72,17 @@ export async function sendWelcomeEmail(opts: {
   to: string;
   name?: string;
   credentials?: { username: string; password: string };
+  lang?: "en" | "ar";
 }) {
   const firstName = opts.name?.split(/\s+/)[0] ?? "there";
-  const rendered = renderTemplate("welcome", {
-    first_name: firstName,
-  });
+  const lang = opts.lang ?? DEFAULT_CUSTOMER_EMAIL_LANG;
+  const rendered = renderTemplate(
+    "welcome",
+    {
+      first_name: firstName,
+    },
+    { lang },
+  );
   if (!rendered) throw new Error("Template 'welcome' missing from registry");
 
   let html = rendered.html;
@@ -129,15 +137,25 @@ export async function sendContactAutoReply(opts: {
 export async function sendOrderConfirmation(opts: {
   to: string;
   payload: { name: string; orderId: string; total: number; itemsHtml: string };
+  lang?: "en" | "ar";
 }) {
   const firstName = opts.payload.name?.split(/\s+/)[0] ?? "there";
-  const rendered = renderTemplate("order-confirmed", {
-    first_name: firstName,
-    order_number: opts.payload.orderId,
-    total_amount: `${opts.payload.total.toFixed(2)} EGP`,
-    customer_name: opts.payload.name,
-    items_rows: opts.payload.itemsHtml,
-  });
+  const lang = opts.lang ?? DEFAULT_CUSTOMER_EMAIL_LANG;
+  const totalLabel =
+    lang === "ar"
+      ? `${opts.payload.total.toFixed(2)} جنيه`
+      : `${opts.payload.total.toFixed(2)} EGP`;
+  const rendered = renderTemplate(
+    "order-confirmed",
+    {
+      first_name: firstName,
+      order_number: opts.payload.orderId,
+      total_amount: totalLabel,
+      customer_name: opts.payload.name,
+      items_rows: opts.payload.itemsHtml,
+    },
+    { lang },
+  );
   if (!rendered) {
     throw new Error("Template 'order-confirmed' missing from registry");
   }

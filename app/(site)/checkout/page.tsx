@@ -28,7 +28,7 @@ type Step = 1 | 2 | 3;
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { lang } = useLanguage();
+  const { lang, t, formatPrice } = useLanguage();
   const { lines, subtotalEgp, discountEgp, itemCount, clearCart, promo, applyPromo, clearPromo } =
     useCart();
   const [step, setStep] = useState<Step>(1);
@@ -39,7 +39,7 @@ export default function CheckoutPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-  const [city, setCity] = useState("New Cairo");
+  const [city, setCity] = useState(lang === "ar" ? "القاهرة الجديدة" : "New Cairo");
   const [notes, setNotes] = useState("");
   const [payment, setPayment] = useState<"card" | "wallet" | "cod">("cod");
   const [delivery, setDelivery] = useState<DeliverySchedulingState>(emptyDeliveryScheduling);
@@ -60,11 +60,7 @@ export default function CheckoutPage() {
         )
       : null;
     if (giftBoxLine && !giftBoxSnapshot) {
-      setErrorMsg(
-        lang === "ar"
-          ? "تعذّر تجهيز صندوق الهدايا للدفع. أعد بناء الصندوق من السلة."
-          : "Could not prepare gift box for checkout. Rebuild the box from your cart.",
-      );
+      setErrorMsg(t("pages.checkout.errGiftBox"));
       setStatus("error");
       return;
     }
@@ -90,9 +86,9 @@ export default function CheckoutPage() {
       const data = await res.json();
       if (!res.ok) {
         setErrorMsg(
-          (typeof data.error_ar === "string" && data.error_ar) ||
-            data.error ||
-            "Payment setup failed",
+          (typeof data.error_ar === "string" && lang === "ar" && data.error_ar) ||
+            (typeof data.error === "string" && data.error) ||
+            t("pages.checkout.errPayment"),
         );
         setStatus("error");
         return;
@@ -121,13 +117,11 @@ export default function CheckoutPage() {
         return;
       }
       setErrorMsg(
-        typeof data.message === "string"
-          ? data.message
-          : "Paymob is not fully configured yet — use cash on delivery for now.",
+        typeof data.message === "string" ? data.message : t("pages.checkout.errPaymob"),
       );
       setStatus("error");
     } catch {
-      setErrorMsg("Network error");
+      setErrorMsg(t("pages.checkout.errNetwork"));
       setStatus("error");
     }
   }
@@ -135,7 +129,7 @@ export default function CheckoutPage() {
   if (itemCount === 0) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center bg-cb-cream px-4">
-        <p className="text-cb-text-muted">Redirecting to cart…</p>
+        <p className="text-cb-text-muted">{t("pages.checkout.redirecting")}</p>
       </div>
     );
   }
@@ -147,37 +141,49 @@ export default function CheckoutPage() {
   const giftWrapFee = delivery.isGift || giftBoxLine ? GIFT_WRAP_FEE_EGP : 0;
   const total = Math.max(0, subtotalEgp - discountEgp + deliveryFee + giftWrapFee);
 
+  const steps = [
+    t("pages.checkout.stepShipping"),
+    t("pages.checkout.stepPayment"),
+    t("pages.checkout.stepReview"),
+  ];
+
+  const paymentOptions = [
+    ["cod", t("pages.checkout.payCod")],
+    ["card", t("pages.checkout.payCard")],
+    ["wallet", t("pages.checkout.payWallet")],
+  ] as const;
+
   return (
-    <div className="bg-cb-cream pb-24 pt-10">
+    <div className="bg-cb-cream pb-24 pt-10" dir={lang === "ar" ? "rtl" : "ltr"}>
       <div className="mx-auto max-w-2xl px-4 lg:px-6">
         <h1 className="font-serif text-4xl font-semibold text-cb-text-strong">
-          Checkout
+          {t("pages.checkout.title")}
         </h1>
-        <ol className="mt-6 flex gap-2 text-xs font-bold uppercase tracking-wide text-cb-text-muted">
-          {[
-            ["1", "Shipping"],
-            ["2", "Payment"],
-            ["3", "Review"],
-          ].map(([n, label], i) => (
+        <ol className="mt-6 flex flex-wrap gap-x-2 gap-y-1 text-xs font-bold uppercase tracking-wide text-cb-text-muted">
+          {steps.map((label, i) => (
             <li
-              key={n}
+              key={label}
               className={
-                step > i
+                step > i + 1
                   ? "text-cb-terracotta-dark"
                   : step === i + 1
                     ? "text-cb-text-strong"
                     : ""
               }
             >
-              {n}. {label}
-              {i < 2 ? " · " : ""}
+              {i + 1}. {label}
+              {i < steps.length - 1 ? (
+                <span className="mx-1 text-cb-text-muted/60" aria-hidden>
+                  ·
+                </span>
+              ) : null}
             </li>
           ))}
         </ol>
 
         {step === 1 && (
           <form
-            className="mt-8 space-y-4"
+            className="mt-8 space-y-4 text-start"
             onSubmit={(e) => {
               e.preventDefault();
               const deliveryErr = validateDeliverySchedulingClient(delivery, lang);
@@ -193,7 +199,7 @@ export default function CheckoutPage() {
           >
             <div>
               <label className="mb-1 block text-sm font-semibold text-cb-text-strong">
-                Full name
+                {t("pages.checkout.fullName")}
               </label>
               <input
                 required
@@ -204,35 +210,37 @@ export default function CheckoutPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-cb-text-strong">
-                Email (optional — for order confirmation)
+                {t("pages.checkout.email")}
               </label>
               <input
                 type="email"
                 autoComplete="email"
-                placeholder="you@example.com"
+                placeholder={t("pages.checkout.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-2xl border-2 border-cb-border bg-cb-surface px-4 py-3 text-sm outline-none focus-visible:border-cb-terracotta-dark focus-visible:ring-2 focus-visible:ring-cb-focus"
+                dir="ltr"
               />
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-cb-text-strong">
-                Phone (Egypt)
+                {t("pages.checkout.phone")}
               </label>
               <input
                 required
                 inputMode="tel"
-                placeholder="01xxxxxxxxx"
+                placeholder={t("pages.checkout.phonePlaceholder")}
                 pattern="^01[0125][0-9]{8}$"
-                title="11-digit Egyptian mobile"
+                title={t("pages.checkout.phoneTitle")}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full rounded-2xl border-2 border-cb-border bg-cb-surface px-4 py-3 text-sm outline-none focus-visible:border-cb-terracotta-dark focus-visible:ring-2 focus-visible:ring-cb-focus"
+                dir="ltr"
               />
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-cb-text-strong">
-                Address
+                {t("pages.checkout.address")}
               </label>
               <textarea
                 required
@@ -244,7 +252,7 @@ export default function CheckoutPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-cb-text-strong">
-                City / area
+                {t("pages.checkout.city")}
               </label>
               <input
                 required
@@ -255,7 +263,7 @@ export default function CheckoutPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-cb-text-strong">
-                Order notes (optional)
+                {t("pages.checkout.notes")}
               </label>
               <input
                 value={notes}
@@ -270,26 +278,17 @@ export default function CheckoutPage() {
               </p>
             ) : null}
             <button type="submit" className={buttonClassName("primary", "w-full rounded-full py-4")}>
-              Continue to payment
+              {t("pages.checkout.continuePayment")}
             </button>
           </form>
         )}
 
         {step === 2 && (
-          <div className="mt-8 space-y-4">
-            <p className="text-sm text-cb-text">
-              Choose how you&apos;d like to pay. Paymob (card / wallet) goes live once keys are set in{" "}
-              <code className="rounded bg-cb-peach px-1">.env</code>.
-            </p>
+          <div className="mt-8 space-y-4 text-start">
+            <p className="text-sm text-cb-text">{t("pages.checkout.paymentIntro")}</p>
             <fieldset className="space-y-3">
-              <legend className="sr-only">Payment method</legend>
-              {(
-                [
-                  ["cod", "Cash on delivery"],
-                  ["card", "Card (Paymob)"],
-                  ["wallet", "Mobile wallet (Paymob)"],
-                ] as const
-              ).map(([value, label]) => (
+              <legend className="sr-only">{t("pages.checkout.paymentLegend")}</legend>
+              {paymentOptions.map(([value, label]) => (
                 <label
                   key={value}
                   className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-cb-border bg-cb-surface px-4 py-3 has-[:checked]:border-cb-terracotta-dark"
@@ -300,73 +299,81 @@ export default function CheckoutPage() {
                     value={value}
                     checked={payment === value}
                     onChange={() => setPayment(value)}
-                    className="h-4 w-4 accent-cb-terracotta-dark"
+                    className="h-4 w-4 shrink-0 accent-cb-terracotta-dark"
                   />
                   <span className="font-semibold text-cb-text-strong">{label}</span>
                 </label>
               ))}
             </fieldset>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={() => setStep(1)}
                 className={buttonClassName("outline", "flex-1 rounded-full py-3")}
               >
-                Back
+                {t("pages.checkout.back")}
               </button>
               <button
                 type="button"
                 onClick={() => setStep(3)}
                 className={buttonClassName("primary", "flex-1 rounded-full py-3")}
               >
-                Review order
+                {t("pages.checkout.reviewOrder")}
               </button>
             </div>
           </div>
         )}
 
         {step === 3 && (
-          <div className="mt-8 space-y-6">
+          <div className="mt-8 space-y-6 text-start">
             <div className="rounded-3xl border border-cb-border bg-cb-surface p-6">
-              <h2 className="font-serif text-lg font-semibold text-cb-text-strong">Summary</h2>
+              <h2 className="font-serif text-lg font-semibold text-cb-text-strong">
+                {t("pages.checkout.summary")}
+              </h2>
               <ul className="mt-4 space-y-2 text-sm text-cb-text">
                 {lines.map((l) => (
-                  <li key={l.id} className="flex justify-between">
+                  <li key={l.id} className="flex justify-between gap-3">
                     <span>
                       {l.name} × {l.quantity}
                     </span>
-                    <span className="font-semibold">
-                      {(l.finalUnitPriceEgp * l.quantity).toFixed(0)} EGP
+                    <span className="shrink-0 font-semibold tabular-nums">
+                      {formatPrice(l.finalUnitPriceEgp * l.quantity)}
                     </span>
                   </li>
                 ))}
                 <li className="flex justify-between border-t border-cb-border pt-2">
-                  <span>Discount</span>
+                  <span>{t("pages.checkout.discount")}</span>
                   <span className="text-emerald-700">
-                    {discountEgp > 0 ? `−${discountEgp.toFixed(0)} EGP` : "—"}
+                    {discountEgp > 0
+                      ? `−${formatPrice(discountEgp)}`
+                      : t("pages.checkout.dash")}
                   </span>
                 </li>
                 <li className="flex justify-between">
-                  <span>Delivery</span>
-                  <span>{deliveryFee === 0 ? "Free" : `${deliveryFee} EGP`}</span>
+                  <span>{t("pages.checkout.delivery")}</span>
+                  <span>
+                    {deliveryFee === 0
+                      ? t("pages.checkout.free")
+                      : formatPrice(deliveryFee)}
+                  </span>
                 </li>
                 {giftWrapFee > 0 ? (
                   <li className="flex justify-between">
-                    <span>{lang === "ar" ? "تغليف هدية" : "Gift wrapping"}</span>
-                    <span>{giftWrapFee} EGP</span>
+                    <span>{t("pages.checkout.giftWrap")}</span>
+                    <span>{formatPrice(giftWrapFee)}</span>
                   </li>
                 ) : null}
                 {delivery.deliveryDate && delivery.slotLabel ? (
                   <li className="flex justify-between text-xs text-cb-text-muted">
-                    <span>{lang === "ar" ? "موعد التوصيل" : "Scheduled"}</span>
+                    <span>{t("pages.checkout.scheduled")}</span>
                     <span>
                       {delivery.deliveryDate} · {delivery.slotLabel}
                     </span>
                   </li>
                 ) : null}
                 <li className="flex justify-between font-serif text-lg font-bold text-cb-terracotta-dark">
-                  <span>Total</span>
-                  <span>{total.toFixed(0)} EGP</span>
+                  <span>{t("pages.checkout.total")}</span>
+                  <span className="tabular-nums">{formatPrice(total)}</span>
                 </li>
               </ul>
               <FreeDeliveryBar subtotalEgp={subtotalEgp} className="mt-4" />
@@ -392,7 +399,7 @@ export default function CheckoutPage() {
                 onClick={() => setStep(2)}
                 className={buttonClassName("outline", "flex-1 rounded-full py-3")}
               >
-                Back
+                {t("pages.checkout.back")}
               </button>
               <button
                 type="button"
@@ -400,20 +407,22 @@ export default function CheckoutPage() {
                 onClick={onPaymobPrepare}
                 className={buttonClassName("primary", "flex-1 rounded-full py-3")}
               >
-                {status === "loading" ? "Processing…" : payment === "cod" ? "Place order (COD)" : "Pay with Paymob"}
+                {status === "loading"
+                  ? t("pages.checkout.processing")
+                  : payment === "cod"
+                    ? t("pages.checkout.placeOrderCod")
+                    : t("pages.checkout.payPaymob")}
               </button>
             </div>
             {payment === "cod" && step === 3 ? (
-              <p className="text-center text-xs text-cb-text-muted">
-                COD order is saved instantly. Our team will confirm by WhatsApp or email.
-              </p>
+              <p className="text-center text-xs text-cb-text-muted">{t("pages.checkout.codNote")}</p>
             ) : null}
           </div>
         )}
 
         <p className="mt-10 text-center text-sm">
           <Link href="/cart" className="font-semibold text-cb-terracotta-dark hover:underline">
-            ← Back to cart
+            {t("pages.checkout.backToCart")}
           </Link>
         </p>
       </div>

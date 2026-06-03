@@ -8,6 +8,7 @@ import { buttonClassName } from "@/components/ui/button";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import type { AnalyticsDashboardData } from "@/services/analytics";
+import { useLanguage } from "@/components/providers/language-provider";
 
 const ChartsSection = dynamic(
   () =>
@@ -156,6 +157,7 @@ function EmptyState() {
 }
 
 export default function AdminReportsPage() {
+  const { t } = useLanguage();
   const [filters, setFilters] = useState<Filters>(() => buildInitialFilters());
   const [debouncedFilters, setDebouncedFilters] = useState<Filters>(() => buildInitialFilters());
   const [data, setData] = useState<AnalyticsDashboardData | null>(null);
@@ -265,10 +267,8 @@ export default function AdminReportsPage() {
   return (
     <section className="space-y-5">
       <header className="admin-panel-surface rounded-2xl p-5">
-        <h1 className="font-serif text-3xl font-bold text-cb-text-strong">Advanced Analytics & BI</h1>
-        <p className="mt-2 text-sm text-cb-text-muted">
-          Decision-driven dashboard to transform operational data into revenue and growth insights.
-        </p>
+        <h1 className="font-serif text-3xl font-bold text-cb-text-strong">{t("adminPages.reports.title")}</h1>
+        <p className="mt-2 text-sm text-cb-text-muted">{t("adminPages.reports.subtitle")}</p>
       </header>
 
       <div className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-4">

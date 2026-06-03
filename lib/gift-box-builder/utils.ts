@@ -1,10 +1,10 @@
-import { BRAND } from "@/lib/brand";
 import { GIFT_BOX_BUILDER_DATA, type BuilderProduct } from "@/lib/gift-box-builder/data";
 import type { GiftBoxSizeConfig } from "@/lib/gift-box-builder/sizes";
 import type { GiftBoxBuilderState } from "@/lib/gift-box-builder/types";
+import { formatProductPriceEgp } from "@/lib/products/pricing";
 
-export function formatBuilderPrice(amount: number): string {
-  return `${Math.round(amount).toLocaleString()} ${BRAND.currency}`;
+export function formatBuilderPrice(amount: number, lang: "ar" | "en" = "ar"): string {
+  return formatProductPriceEgp(amount, lang === "ar" ? "ar-EG" : "en-EG");
 }
 
 export function getBoxCapacity(boxCode: string | null, sizes?: GiftBoxSizeConfig[]): number {

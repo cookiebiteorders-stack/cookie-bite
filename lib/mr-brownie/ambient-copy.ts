@@ -1,5 +1,8 @@
-export const ROAM_INTERVAL_MS = 10_000;
+/** الحركة العشوائية صارت أبطأ: كل 4 دقائق */
+export const ROAM_INTERVAL_MS = 4 * 60_000;
 export const BUBBLE_AUTO_HIDE_MS = 10_000;
+/** عند سحب الأيقونة لمكان معيّن: تبقى ثابتة 10 دقائق قبل استئناف الحركة */
+export const DRAG_HOLD_MS = 10 * 60_000;
 /** بعد انتهاء انتقال الحركة: إظهار فقاعة النص */
 export const ROAM_POST_UI_MS = 1040;
 export const ROAM_STORAGE_KEY = "mr-brownie-roam-pos-v1";

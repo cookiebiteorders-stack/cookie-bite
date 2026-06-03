@@ -24,7 +24,7 @@ export function CartDrawer() {
     subtotalEgp,
     itemCount,
   } = useCart();
-  const { t, lang } = useLanguage();
+  const { t, lang, formatPrice } = useLanguage();
   const isRtl = lang === "ar";
   const slideX = isRtl ? "-100%" : "100%";
 
@@ -130,9 +130,12 @@ export function CartDrawer() {
               ) : (
                 <ul className="space-y-3">
                   <AnimatePresence initial={false}>
-                    {lines.map((line) => (
+                    {lines.map((line) => {
+                      const lineHref = line.giftBox ? "/gift-box" : `/shop/${line.productId}`;
+                      const isGiftBox = Boolean(line.giftBox);
+                      return (
                       <motion.li
-                        key={line.productId}
+                        key={line.id}
                         layout
                         initial={{ opacity: 0, x: isRtl ? -12 : 12 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -141,7 +144,7 @@ export function CartDrawer() {
                       >
                         <div className="cb-cart-drawer__line flex gap-3 rounded-2xl border p-3">
                           <Link
-                            href={`/shop/${line.productId}`}
+                            href={lineHref}
                             onClick={closeDrawer}
                             className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-cb-peach/50 ring-1 ring-cb-border/50"
                           >
@@ -156,40 +159,53 @@ export function CartDrawer() {
                           </Link>
                           <div className="min-w-0 flex-1">
                             <Link
-                              href={`/shop/${line.productId}`}
+                              href={lineHref}
                               onClick={closeDrawer}
                               className="line-clamp-2 font-semibold text-cb-text-strong transition hover:text-cb-brand-600"
                             >
                               {line.name}
                             </Link>
+                            {isGiftBox ? (
+                              <p className="mt-0.5 text-xs font-semibold text-cb-brand-600">
+                                {t("pages.cart.giftBoxBadge")}
+                              </p>
+                            ) : null}
                             <p className="mt-0.5 text-sm font-bold text-cb-brand-600">
-                              {line.priceEgp} EGP
+                              {formatPrice(line.finalUnitPriceEgp)}
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
-                              <button
-                                type="button"
-                                className="cb-cart-drawer__qty-btn cb-touch-manipulation flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition active:scale-[0.97]"
-                                aria-label="Decrease quantity"
-                                onClick={() => setQuantity(line.productId, line.quantity - 1)}
-                              >
-                                <Minus className="h-4 w-4" aria-hidden />
-                              </button>
-                              <span className="min-w-[2rem] text-center text-sm font-bold tabular-nums text-cb-text-strong">
-                                {line.quantity}
-                              </span>
-                              <button
-                                type="button"
-                                className="cb-cart-drawer__qty-btn cb-touch-manipulation flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition active:scale-[0.97]"
-                                aria-label="Increase quantity"
-                                onClick={() => setQuantity(line.productId, line.quantity + 1)}
-                              >
-                                <Plus className="h-4 w-4" aria-hidden />
-                              </button>
+                              {isGiftBox ? (
+                                <span className="text-xs text-cb-text-muted">
+                                  {t("pages.cart.quantityFixed")}
+                                </span>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="cb-cart-drawer__qty-btn cb-touch-manipulation flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition active:scale-[0.97]"
+                                    aria-label={t("pages.cart.decreaseQty")}
+                                    onClick={() => setQuantity(line.id, line.quantity - 1)}
+                                  >
+                                    <Minus className="h-4 w-4" aria-hidden />
+                                  </button>
+                                  <span className="min-w-[2rem] text-center text-sm font-bold tabular-nums text-cb-text-strong">
+                                    {line.quantity}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="cb-cart-drawer__qty-btn cb-touch-manipulation flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition active:scale-[0.97]"
+                                    aria-label={t("pages.cart.increaseQty")}
+                                    onClick={() => setQuantity(line.id, line.quantity + 1)}
+                                  >
+                                    <Plus className="h-4 w-4" aria-hidden />
+                                  </button>
+                                </>
+                              )}
                               <button
                                 type="button"
                                 className="cb-touch-manipulation ms-auto flex h-10 w-10 items-center justify-center rounded-lg border border-transparent text-red-700 transition hover:border-red-200 hover:bg-red-50 active:scale-[0.97]"
-                                aria-label="Remove item"
-                                onClick={() => removeItem(line.productId)}
+                                aria-label={t("pages.cart.removeItem")}
+                                onClick={() => removeItem(line.id)}
                               >
                                 <Trash2 className="h-4 w-4" aria-hidden />
                               </button>
@@ -197,7 +213,8 @@ export function CartDrawer() {
                           </div>
                         </div>
                       </motion.li>
-                    ))}
+                      );
+                    })}
                   </AnimatePresence>
                 </ul>
               )}
@@ -218,7 +235,7 @@ export function CartDrawer() {
                     transition={{ duration: 0.18 }}
                     className="font-serif text-xl font-bold text-cb-brand-600"
                   >
-                    {subtotalEgp.toFixed(0)} EGP
+                    {formatPrice(subtotalEgp)}
                   </motion.span>
                 </div>
                 <p className="mb-3 text-xs leading-relaxed text-cb-text-muted">

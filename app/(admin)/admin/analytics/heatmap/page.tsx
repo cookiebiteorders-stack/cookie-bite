@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { getHeatmapForPath, getTopPages } from "@/lib/tracking-server/queries";
 import { HeatmapGrid } from "@/components/admin/tracking/HeatmapGrid";
+import { AdminPageIntro } from "@/components/admin/admin-page-intro";
 
 const DEVICES = ["desktop", "tablet", "mobile"] as const;
 
@@ -21,13 +22,12 @@ export default async function AdminHeatmapPage({
 
   return (
     <div className="space-y-5">
+      <AdminPageIntro
+        titleKey="adminPages.analyticsHeatmap.title"
+        subtitleKey="adminPages.analyticsHeatmap.subtitle"
+      />
       <header className="admin-panel-surface rounded-2xl p-5 shadow-[var(--shadow-card)] cb-shadow-editorial">
-        <h1 className="font-serif text-3xl font-bold text-cb-text-strong">Click heatmap</h1>
-        <p className="mt-2 max-w-3xl text-sm text-cb-text-muted">
-          Aggregated click density per page, bucketed into a 50×50 grid of viewport ratios. Use the
-          filters to switch page and device class.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+        <div className="flex flex-wrap gap-2 text-xs font-semibold">
           {DEVICES.map((d) => (
             <Link
               key={d}

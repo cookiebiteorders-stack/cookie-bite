@@ -45,7 +45,6 @@ debug-*.log
 # local / CI artifacts
 /playwright-results
 /test-results
-/.firebase
 /.swc
 hostinger-deploy.zip
 hostinger-gemini.env

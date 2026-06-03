@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { Tag, X, Loader2 } from "lucide-react";
 import { buttonClassName } from "@/components/ui/button";
+import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 
 export type AppliedPromo = {
@@ -21,6 +22,7 @@ type Props = {
 };
 
 export function PromoCodeField({ cartSubtotal, applied, onApply, onClear, className }: Props) {
+  const { t, lang, formatPrice } = useLanguage();
   const [input, setInput] = useState(applied?.code ?? "");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -28,12 +30,12 @@ export function PromoCodeField({ cartSubtotal, applied, onApply, onClear, classN
   const apply = useCallback(async () => {
     const code = input.trim();
     if (code.length < 3) {
-      setErrorMsg("أدخل كوداً من 3 أحرف على الأقل");
+      setErrorMsg(t("promo.errMinLength"));
       setStatus("error");
       return;
     }
     if (cartSubtotal <= 0) {
-      setErrorMsg("أضف منتجات للسلة أولاً");
+      setErrorMsg(t("promo.errEmptyCart"));
       setStatus("error");
       return;
     }
@@ -56,7 +58,12 @@ export function PromoCodeField({ cartSubtotal, applied, onApply, onClear, classN
       };
 
       if (!data.valid) {
-        setErrorMsg(data.error?.ar ?? data.error?.en ?? "كود غير صالح");
+        setErrorMsg(
+          (lang === "ar" ? data.error?.ar : data.error?.en) ??
+            data.error?.ar ??
+            data.error?.en ??
+            t("promo.errInvalid"),
+        );
         setStatus("error");
         return;
       }
@@ -70,10 +77,10 @@ export function PromoCodeField({ cartSubtotal, applied, onApply, onClear, classN
       setStatus("idle");
       setErrorMsg(null);
     } catch {
-      setErrorMsg("تعذّر التحقق من الكود — حاول مرة أخرى");
+      setErrorMsg(t("promo.errNetwork"));
       setStatus("error");
     }
-  }, [input, cartSubtotal, onApply]);
+  }, [input, cartSubtotal, onApply, t, lang]);
 
   const clear = useCallback(() => {
     setInput("");
@@ -91,17 +98,17 @@ export function PromoCodeField({ cartSubtotal, applied, onApply, onClear, classN
         )}
       >
         <div className="flex items-center gap-2 text-sm">
-          <Tag className="h-4 w-4 text-emerald-700" aria-hidden />
+          <Tag className="h-4 w-4 shrink-0 text-emerald-700" aria-hidden />
           <span className="font-bold text-emerald-900 dark:text-emerald-100">{applied.code}</span>
           <span className="text-emerald-700 dark:text-emerald-300">
-            −{applied.discount_amount.toFixed(0)} EGP
+            −{formatPrice(applied.discount_amount)}
           </span>
         </div>
         <button
           type="button"
           onClick={clear}
           className="rounded-full p-1 text-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60"
-          aria-label="Remove promo code"
+          aria-label={t("promo.removeAria")}
         >
           <X className="h-4 w-4" />
         </button>
@@ -125,9 +132,9 @@ export function PromoCodeField({ cartSubtotal, applied, onApply, onClear, classN
               void apply();
             }
           }}
-          placeholder="كود الخصم"
+          placeholder={t("promo.placeholder")}
           className="min-w-0 flex-1 rounded-2xl border-2 border-cb-border bg-cb-surface px-4 py-2.5 text-sm font-semibold uppercase tracking-wide outline-none focus-visible:border-cb-terracotta-dark focus-visible:ring-2 focus-visible:ring-cb-focus"
-          aria-label="Promo code"
+          aria-label={t("promo.inputAria")}
         />
         <button
           type="button"
@@ -138,7 +145,7 @@ export function PromoCodeField({ cartSubtotal, applied, onApply, onClear, classN
           {status === "loading" ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           ) : (
-            "Apply"
+            t("promo.apply")
           )}
         </button>
       </div>

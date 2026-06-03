@@ -18,6 +18,9 @@ type AuthLayoutProps = {
   imageClassName?: string;
   compactMobilePreview?: boolean;
   badge?: string;
+  backHomeLabel?: string;
+  secureAuthLabel?: string;
+  asideTagline?: string;
 };
 
 export function AuthLayout({
@@ -33,8 +36,12 @@ export function AuthLayout({
   imageClassName = "object-cover",
   compactMobilePreview = false,
   badge,
+  backHomeLabel = "Back to home",
+  secureAuthLabel = "Secure authentication",
+  asideTagline,
 }: AuthLayoutProps) {
   const showSwitch = Boolean(showAlternateAuth && switchHref && switchCta);
+  const tagline = asideTagline ?? SITE.tagline;
 
   return (
     <div className="auth-page relative min-h-dvh overflow-x-hidden">
@@ -66,7 +73,7 @@ export function AuthLayout({
             <Link
               href="/"
               className="absolute left-5 top-5 z-10 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-cb-scrim-strong/80 text-cb-on-dark backdrop-blur-md transition hover:bg-cb-dark-accent/90 hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cb-brand-300"
-              aria-label="Back to home"
+              aria-label={backHomeLabel}
             >
               <ArrowLeft className="h-5 w-5" aria-hidden />
             </Link>
@@ -87,11 +94,11 @@ export function AuthLayout({
                 {SITE.name}
               </p>
               <p className="font-serif text-2xl font-semibold leading-snug drop-shadow-md lg:text-[1.65rem]">
-                {SITE.tagline}
+                {tagline}
               </p>
               <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-white/85">
                 <Lock className="h-3.5 w-3.5 shrink-0 text-cb-brand-200" aria-hidden />
-                Secure authentication
+                {secureAuthLabel}
               </p>
             </div>
           </aside>
@@ -109,7 +116,7 @@ export function AuthLayout({
                 <Link
                   href="/"
                   className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cb-border bg-cb-surface-elevated text-cb-text-strong shadow-sm transition hover:border-cb-brand-300 hover:bg-cb-brand-50 md:hidden"
-                  aria-label="Back to home"
+                  aria-label={backHomeLabel}
                 >
                   <ArrowLeft className="h-4 w-4" aria-hidden />
                 </Link>
@@ -155,7 +162,7 @@ export function AuthLayout({
                   aria-hidden
                 />
                 <p className="absolute bottom-3 left-3 max-w-[70%] text-xs font-semibold text-cb-on-dark drop-shadow-sm">
-                  {SITE.tagline}
+                  {tagline}
                 </p>
               </div>
             </header>

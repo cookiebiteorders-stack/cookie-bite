@@ -16,6 +16,7 @@ import { buttonClassName } from "@/components/ui/button";
 import { InvoiceView } from "@/components/invoices/invoice-view";
 import { PrintActions } from "@/components/print/print-actions";
 import { toInvoiceViewModel } from "@/lib/invoices/to-invoice-view-model";
+import { useLanguage } from "@/components/providers/language-provider";
 import {
   ManualInvoiceDrawer,
   type ManualInvoiceEditTarget,
@@ -234,6 +235,7 @@ function InvoiceDrawer({
 }
 
 export default function AdminInvoicesPage() {
+  const { t } = useLanguage();
   const [rows, setRows] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -410,10 +412,8 @@ export default function AdminInvoicesPage() {
   return (
     <section className="space-y-5">
       <header className="admin-panel-surface rounded-2xl p-5">
-        <h1 className="font-serif text-3xl font-bold text-cb-text-strong">Invoice Lifecycle</h1>
-        <p className="mt-2 text-sm text-cb-text-muted">
-          Track, manage, and audit all invoices across the system.
-        </p>
+        <h1 className="font-serif text-3xl font-bold text-cb-text-strong">{t("adminPages.invoices.title")}</h1>
+        <p className="mt-2 text-sm text-cb-text-muted">{t("adminPages.invoices.subtitle")}</p>
       </header>
 
       <div className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-4">

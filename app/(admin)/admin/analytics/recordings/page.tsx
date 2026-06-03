@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { listRecordings } from "@/lib/tracking-server/recordings";
+import { AdminPageIntro } from "@/components/admin/admin-page-intro";
 
 export default async function AdminRecordingsPage() {
   await requireAdminAccess("analytics");
@@ -8,14 +9,10 @@ export default async function AdminRecordingsPage() {
 
   return (
     <div className="space-y-5">
-      <header className="admin-panel-surface rounded-2xl p-5 shadow-[var(--shadow-card)] cb-shadow-editorial">
-        <h1 className="font-serif text-3xl font-bold text-cb-text-strong">Session recordings</h1>
-        <p className="mt-2 max-w-3xl text-sm text-cb-text-muted">
-          Lightweight click-stream replays captured by the SDK when{" "}
-          <code>enableReplay</code> is set. Each session shows the mouse path, click
-          locations, and page navigations.
-        </p>
-      </header>
+      <AdminPageIntro
+        titleKey="adminPages.analyticsRecordings.title"
+        subtitleKey="adminPages.analyticsRecordings.subtitle"
+      />
 
       <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-3">
         <div className="overflow-x-auto">

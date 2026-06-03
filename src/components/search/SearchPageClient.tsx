@@ -44,10 +44,15 @@ type ApiProduct = {
   created_at: string;
 };
 
-function normalizeProduct(p: ApiProduct, fallbackDescription: string): Product {
-  const title = p.title_en || p.title_ar || p.name;
+function normalizeProduct(p: ApiProduct, fallbackDescription: string, lang: "ar" | "en"): Product {
+  const title =
+    lang === "ar"
+      ? p.title_ar || p.title_en || p.name
+      : p.title_en || p.title_ar || p.name;
   const description =
-    p.description_en || p.description_ar || p.description || fallbackDescription;
+    lang === "ar"
+      ? p.description_ar || p.description_en || p.description || fallbackDescription
+      : p.description_en || p.description_ar || p.description || fallbackDescription;
   const mainImage =
     p.images?.find((img) => typeof img?.url === "string" && img.url)?.url ||
     p.image_url ||
@@ -59,7 +64,8 @@ function normalizeProduct(p: ApiProduct, fallbackDescription: string): Product {
       : undefined;
 
   return {
-    id: p.id,
+    id: p.slug || p.id,
+    productUuid: p.id,
     name: title,
     brand: "Cookie Bite",
     category: (p.category || "cookies") as Product["category"],
@@ -82,7 +88,7 @@ function normalizeProduct(p: ApiProduct, fallbackDescription: string): Product {
   };
 }
 
-async function fetchAllProducts(fallbackDescription: string): Promise<Product[]> {
+async function fetchAllProducts(fallbackDescription: string, lang: "ar" | "en"): Promise<Product[]> {
   const limit = 48;
   let page = 1;
   let totalPages = 1;
@@ -104,7 +110,7 @@ async function fetchAllProducts(fallbackDescription: string): Promise<Product[]>
       retryDelayMs: 350,
     });
     const batch = (payload.products ?? []).map((p) =>
-      normalizeProduct(p, fallbackDescription),
+      normalizeProduct(p, fallbackDescription, lang),
     );
     all.push(...batch);
     totalPages = Math.max(1, Number(payload.total_pages ?? 1));
@@ -115,7 +121,7 @@ async function fetchAllProducts(fallbackDescription: string): Promise<Product[]>
 }
 
 export function SearchPageClient() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const filters = useSearchStore((s) => s.filters);
   const setFilters = useSearchStore((s) => s.setFilters);
   const clearFilters = useSearchStore((s) => s.clearFilters);
@@ -160,7 +166,7 @@ export function SearchPageClient() {
         try {
           setCatalogLoading(true);
           setCatalogError(null);
-          const rows = await fetchAllProducts(t("product.fallbackDescription"));
+          const rows = await fetchAllProducts(t("product.fallbackDescription"), lang);
           setCatalog(rows);
         } catch (e) {
           const message =
@@ -177,7 +183,7 @@ export function SearchPageClient() {
       })();
     });
     return cancel;
-  }, [t]);
+  }, [t, lang]);
 
   const categories = useMemo(
     () => Array.from(new Set(catalog.map((p) => p.category))),

@@ -18,7 +18,9 @@ export type LocalizedPageKey =
   | "/our-story"
   | "/help/faq"
   | "/contact"
-  | "/corporate-gifting";
+  | "/corporate-gifting"
+  | "/privacy"
+  | "/terms";
 
 export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>> = {
   "/": {
@@ -35,9 +37,9 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
       ],
     },
     ar: {
-      title: "كوكي بايت | قضمة واحدة تغيّر يومك — كعكات فاخرة في القاهرة الجديدة",
+      title: "كوكي بايت 🍪 | قضمة واحدة تغيّر يومك — كوكيز وهدايا في القاهرة الجديدة",
       description:
-        "كعكات فاخرة مخبوزة بحب في التجمع الخامس. اطلب دلوقتي أو اكتشف نكهاتنا — تغليف يستاهل اللحظة وصناديق هدايا مخصصة.",
+        "كوكيز فاخرة مخبوزة بحب في التجمع الخامس. صمّم بوكس الهدية، اطلب أونلاين، واستمتع بتوصيل سريع — كل قضمة لحظة تستاهل.",
       keywords: [
         "كوكيز القاهرة الجديدة",
         "طلب كوكيز اونلاين مصر",
@@ -319,6 +321,50 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
         "صناديق هدايا بالعلامة التجارية",
         "هدايا فرق عمل القاهرة",
         "هدايا مناسبات شركات",
+      ],
+    },
+  },
+  "/privacy": {
+    en: {
+      title: "Privacy Policy",
+      description:
+        "How Cookie Bite collects, stores, and protects your order and account data — plain language privacy policy.",
+      keywords: [
+        "cookie bite privacy policy",
+        "data protection bakery website",
+        "customer data privacy egypt",
+      ],
+    },
+    ar: {
+      title: "سياسة الخصوصية | كوكي بايت",
+      description:
+        "إزاي كوكي بايت بتجمع وتحمي بيانات طلباتك وحسابك — بلغة واضحة من غير تعقيد.",
+      keywords: [
+        "سياسة الخصوصية كوكي بايت",
+        "حماية البيانات مصر",
+        "خصوصية طلبات اونلاين",
+      ],
+    },
+  },
+  "/terms": {
+    en: {
+      title: "Terms & Conditions",
+      description:
+        "Cookie Bite terms for using the site, placing orders, pricing in EGP, and delivery policies.",
+      keywords: [
+        "cookie bite terms",
+        "website terms and conditions egypt",
+        "online order terms",
+      ],
+    },
+    ar: {
+      title: "الشروط والأحكام | كوكي بايت",
+      description:
+        "شروط استخدام موقع كوكي بايت، الطلب، الأسعار بالجنيه، وسياسات التوصيل.",
+      keywords: [
+        "شروط الاستخدام كوكي بايت",
+        "شروط الطلب اونلاين مصر",
+        "سياسة التوصيل كوكيز",
       ],
     },
   },

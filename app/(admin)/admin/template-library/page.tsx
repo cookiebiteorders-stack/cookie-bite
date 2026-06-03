@@ -14,6 +14,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { PrintActions } from "@/components/print/print-actions";
+import { useAdminT } from "@/lib/admin/use-admin-t";
+import { useLanguage } from "@/components/providers/language-provider";
 
 type TemplateCategory =
   | "transactional"
@@ -42,12 +44,6 @@ type Group = {
   items: TemplateMeta[];
 };
 
-const VARIANT_LABEL: Record<TemplateVariant, string> = {
-  email: "Email",
-  report: "Printable",
-  dash: "Dashboard",
-};
-
 const VARIANT_FRAME: Record<TemplateVariant, string> = {
   email: "min-h-[820px]",
   report: "min-h-[1180px]",
@@ -57,13 +53,15 @@ const VARIANT_FRAME: Record<TemplateVariant, string> = {
 type ToastState = { kind: "success" | "error"; text: string } | null;
 
 export default function TemplateLibraryPage() {
+  const { adminT, apiErr } = useAdminT();
+  const { lang, setLanguage } = useLanguage();
+  const variantLabel = (v: TemplateVariant) => adminT(`templates.variants.${v}`);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
-  const [lang, setLang] = useState<"en" | "ar">("en");
 
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const [previewSubject, setPreviewSubject] = useState<string>("");
@@ -94,7 +92,7 @@ export default function TemplateLibraryPage() {
         }
       } catch (e) {
         if (!cancelled)
-          setError(e instanceof Error ? e.message : "Unknown error");
+          setError(e instanceof Error ? e.message : adminT("templates.unknownError"));
       } finally {
         if (!cancelled) setLoadingList(false);
       }
@@ -136,7 +134,7 @@ export default function TemplateLibraryPage() {
       } catch (e) {
         setToast({
           kind: "error",
-          text: e instanceof Error ? e.message : "Preview failed",
+          text: e instanceof Error ? e.message : adminT("templates.previewFailed"),
         });
       } finally {
         setPreviewLoading(false);
@@ -172,7 +170,7 @@ export default function TemplateLibraryPage() {
     e.preventDefault();
     if (!selectedKey) return;
     if (!testEmail) {
-      setToast({ kind: "error", text: "Please enter a recipient email" });
+      setToast({ kind: "error", text: adminT("templates.testEmail") });
       return;
     }
     setSending(true);
@@ -193,11 +191,11 @@ export default function TemplateLibraryPage() {
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error?.en ?? `Failed (${res.status})`);
       }
-      setToast({ kind: "success", text: `Sent test email to ${testEmail}` });
+      setToast({ kind: "success", text: adminT("templates.testSent", { email: testEmail }) });
     } catch (e) {
       setToast({
         kind: "error",
-        text: e instanceof Error ? e.message : "Send failed",
+        text: e instanceof Error ? e.message : adminT("templates.sendFailed"),
       });
     } finally {
       setSending(false);
@@ -209,10 +207,10 @@ export default function TemplateLibraryPage() {
     if (!previewHtml) return;
     try {
       await navigator.clipboard.writeText(previewHtml);
-      setToast({ kind: "success", text: "HTML copied to clipboard" });
+      setToast({ kind: "success", text: adminT("templates.copySuccess") });
       setTimeout(() => setToast(null), 3000);
     } catch {
-      setToast({ kind: "error", text: "Copy failed" });
+      setToast({ kind: "error", text: adminT("templates.copyFailed") });
     }
   };
 
@@ -227,21 +225,19 @@ export default function TemplateLibraryPage() {
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-amber-200/80 bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-900 dark:border-amber-800 dark:bg-stone-900/70 dark:text-amber-200">
               <Sparkles className="h-3.5 w-3.5" />
-              Notification Library
+              {adminT("templates.eyebrow")}
             </p>
             <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-stone-950 sm:text-4xl">
-              Template Library & Designer
+              {adminT("templates.title")}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-700 sm:text-base">
-              مكتبة موحّدة لكل قوالب البريد والتقارير والتنبيهات. عاين كل قالب
-              مع بيانات تجريبية، أرسل اختبار، وانسخ الـHTML الجاهز لإرساله من أي
-              مكان.
+              {adminT("templates.subtitle")}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-cb-border bg-white/90 px-3 py-1.5 text-xs font-semibold text-stone-900 dark:bg-stone-900/80 dark:text-stone-100">
               <Mail className="h-3.5 w-3.5" />
-              Resend ready
+              {adminT("templates.resendReady")}
             </span>
             <button
               type="button"
@@ -249,7 +245,7 @@ export default function TemplateLibraryPage() {
               className="inline-flex items-center gap-1.5 rounded-full border border-cb-border bg-white/90 px-3 py-1.5 text-xs font-semibold text-stone-900 hover:bg-stone-100 dark:bg-stone-900/80 dark:text-stone-100 dark:hover:bg-stone-800"
             >
               <RefreshCw className="h-3.5 w-3.5" />
-              Refresh
+              {adminT("templates.refresh")}
             </button>
           </div>
         </div>
@@ -283,7 +279,7 @@ export default function TemplateLibraryPage() {
               type="search"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              placeholder="Search templates..."
+              placeholder={adminT("templates.searchPlaceholder")}
               className="w-full rounded-xl border border-cb-border bg-white py-2 pl-9 pr-3 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200 dark:bg-stone-950/40 dark:text-stone-100"
             />
           </div>
@@ -291,7 +287,7 @@ export default function TemplateLibraryPage() {
           {loadingList ? (
             <p className="px-2 py-4 text-sm text-stone-600 dark:text-stone-400">
               <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
-              Loading library…
+              {adminT("templates.loading")}
             </p>
           ) : error ? (
             <p className="rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs text-rose-900 dark:border-rose-700 dark:bg-rose-950/30 dark:text-rose-100">
@@ -336,7 +332,7 @@ export default function TemplateLibraryPage() {
               ))}
               {filteredGroups.length === 0 ? (
                 <p className="px-2 py-4 text-sm text-stone-600 dark:text-stone-400">
-                  No templates match “{filter}”.
+                  {adminT("templates.noMatch", { query: filter })}
                 </p>
               ) : null}
             </div>
@@ -350,7 +346,7 @@ export default function TemplateLibraryPage() {
                 <div className="min-w-0">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300">
                     {selectedMeta.category.replace(/-/g, " ")} ·{" "}
-                    {VARIANT_LABEL[selectedMeta.variant]}
+                    {variantLabel(selectedMeta.variant)}
                   </p>
                   <h2 className="mt-1 truncate font-serif text-xl font-bold text-stone-950 dark:text-white">
                     {selectedMeta.name}
@@ -365,7 +361,7 @@ export default function TemplateLibraryPage() {
                       <button
                         key={l}
                         type="button"
-                        onClick={() => setLang(l)}
+                        onClick={() => setLanguage(l)}
                         className={`px-3 py-1.5 transition ${
                           lang === l
                             ? "bg-stone-900 text-white"
@@ -383,7 +379,7 @@ export default function TemplateLibraryPage() {
                     className="inline-flex items-center gap-1.5 rounded-xl border border-cb-border bg-white px-3 py-1.5 text-xs font-semibold text-stone-900 hover:bg-stone-100 disabled:opacity-50 dark:bg-stone-950/40 dark:text-stone-100 dark:hover:bg-stone-900"
                   >
                     <Copy className="h-3.5 w-3.5" />
-                    Copy HTML
+                    {adminT("templates.copyHtml")}
                   </button>
                   {previewHtml ? (
                     <PrintActions
@@ -393,7 +389,7 @@ export default function TemplateLibraryPage() {
                       onPrintBlocked={() =>
                         setToast({
                           kind: "error",
-                          text: "Allow pop-ups to print this template with full design.",
+                          text: adminT("templates.printBlocked"),
                         })
                       }
                     />
@@ -408,7 +404,7 @@ export default function TemplateLibraryPage() {
                 >
                   <label className="flex-1">
                     <span className="block text-[11px] font-bold uppercase tracking-wide text-stone-600 dark:text-stone-400">
-                      Send test to
+                      {adminT("templates.sendTest")}
                     </span>
                     <input
                       type="email"
@@ -420,7 +416,7 @@ export default function TemplateLibraryPage() {
                   </label>
                   <div className="flex-[2]">
                     <span className="block text-[11px] font-bold uppercase tracking-wide text-stone-600 dark:text-stone-400">
-                      Subject preview
+                      {adminT("templates.subjectPreview")}
                     </span>
                     <p className="mt-1 truncate rounded-xl border border-cb-border bg-stone-50 px-3 py-2 text-sm text-stone-800 dark:bg-stone-950/30 dark:text-stone-100">
                       {previewSubject || "—"}
@@ -436,7 +432,7 @@ export default function TemplateLibraryPage() {
                     ) : (
                       <Send className="h-4 w-4" />
                     )}
-                    Send test
+                    {sending ? adminT("templates.sending") : adminT("templates.sendTest")}
                   </button>
                 </form>
               </div>
@@ -445,7 +441,7 @@ export default function TemplateLibraryPage() {
                 {previewLoading ? (
                   <div className="flex h-72 items-center justify-center text-sm text-stone-600 dark:text-stone-400">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Rendering preview…
+                    {adminT("templates.renderingPreview")}
                   </div>
                 ) : previewHtml ? (
                   <iframe
@@ -456,7 +452,7 @@ export default function TemplateLibraryPage() {
                   />
                 ) : (
                   <p className="px-3 py-6 text-sm text-stone-600 dark:text-stone-400">
-                    No preview available.
+                    {adminT("templates.noPreview")}
                   </p>
                 )}
               </div>
@@ -465,7 +461,7 @@ export default function TemplateLibraryPage() {
             <div className="rounded-2xl border border-cb-border bg-white/90 p-10 text-center dark:bg-stone-900/70">
               <Layout className="mx-auto h-8 w-8 text-stone-400" />
               <p className="mt-3 text-sm text-stone-700 dark:text-stone-300">
-                Pick a template from the left to preview it.
+                {adminT("templates.pickTemplate")}
               </p>
             </div>
           )}

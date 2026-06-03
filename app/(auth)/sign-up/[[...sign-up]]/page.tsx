@@ -1,14 +1,10 @@
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { ClerkSmartCaptcha } from "@/components/auth/clerk-smart-captcha";
 import { SignUpForm } from "@/components/auth/sign-up-form";
-import {
-  AUTH_SWITCH_SIGN_IN_CTA,
-  AUTH_SWITCH_SIGN_IN_LABEL,
-  SIGN_UP_SUBTITLE,
-  SIGN_UP_TITLE,
-} from "@/lib/auth/clerk-auth-localization";
+import { getServerT } from "@/lib/i18n/server-translate";
 import { safeAuthRedirectPath } from "@/lib/auth/safe-redirect";
 import { IMAGES } from "@/lib/data";
+import { getLangFromCookies } from "@/lib/seo/server";
 
 type Props = {
   searchParams: Promise<{ redirect_url?: string }>;
@@ -17,6 +13,8 @@ type Props = {
 export default async function SignUpPage({ searchParams }: Props) {
   const { redirect_url } = await searchParams;
   const afterAuth = safeAuthRedirectPath(redirect_url, "/account/complete-profile");
+  const lang = await getLangFromCookies();
+  const t = getServerT(lang);
 
   const signInHref =
     redirect_url && redirect_url !== "/account/complete-profile"
@@ -25,17 +23,20 @@ export default async function SignUpPage({ searchParams }: Props) {
 
   return (
     <AuthLayout
-      badge="New account"
+      badge={t("auth.badgeSignUp")}
       imageSrc={IMAGES.signUp}
-      imageAlt="Cookie Bite — join the bakery family"
+      imageAlt={t("auth.imageAltSignUp")}
       imageClassName="object-cover object-[center_20%]"
-      title={SIGN_UP_TITLE}
-      subtitle={SIGN_UP_SUBTITLE}
+      title={t("auth.signUpTitle")}
+      subtitle={t("auth.signUpSub")}
       showAlternateAuth
-      switchLabel={AUTH_SWITCH_SIGN_IN_LABEL}
+      switchLabel={t("auth.switchSignInLabel")}
       switchHref={signInHref}
-      switchCta={AUTH_SWITCH_SIGN_IN_CTA}
+      switchCta={t("auth.switchSignInCta")}
       compactMobilePreview
+      backHomeLabel={t("auth.backHome")}
+      secureAuthLabel={t("auth.secureAuth")}
+      asideTagline={lang === "ar" ? "كوكيز على دفعات صغيرة · التجمع الخامس" : undefined}
     >
       <ClerkSmartCaptcha />
       <SignUpForm afterAuth={afterAuth} />

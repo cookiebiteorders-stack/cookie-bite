@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FileText } from "lucide-react";
 import { ReorderGiftBoxButton } from "@/components/account/reorder-gift-box-button";
 import { GiftRevealLinkButton } from "@/components/account/gift-reveal-link-button";
+import { useLanguage } from "@/components/providers/language-provider";
 import { buttonClassName } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,8 @@ type Props = {
 };
 
 export function AccountOrdersList({ orders }: Props) {
+  const { t, formatPrice } = useLanguage();
+
   return (
     <>
       {orders.length ? (
@@ -47,15 +50,15 @@ export function AccountOrdersList({ orders }: Props) {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-cb-text-strong">
-                      Order #{o.order_number}
+                      {t("accountOrders.orderNumber", { n: o.order_number })}
                       {o.order_type === "gift_box" ? (
                         <span className="ms-2 text-[10px] font-bold uppercase text-cb-terracotta-dark">
-                          Gift box
+                          {t("accountOrders.giftBox")}
                         </span>
                       ) : null}
                     </p>
                     <p className="mt-1 text-xs text-cb-text-muted">
-                      {Number(o.total_egp).toFixed(0)} EGP · {o.payment_status}
+                      {formatPrice(Number(o.total_egp))} · {o.payment_status}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -72,10 +75,10 @@ export function AccountOrdersList({ orders }: Props) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 rounded-full border border-cb-border bg-cb-surface px-3 py-1 text-[11px] font-semibold text-cb-text-strong transition hover:bg-cb-peach/40"
-                      title="View styled invoice"
+                      title={t("accountOrders.viewInvoice")}
                     >
                       <FileText className="h-3.5 w-3.5" />
-                      Invoice
+                      {t("accountOrders.invoice")}
                     </Link>
                     <span
                       className={cn(
@@ -93,12 +96,10 @@ export function AccountOrdersList({ orders }: Props) {
         </ul>
       ) : (
         <div className="rounded-2xl bg-cb-cream p-6 text-center">
-          <p className="text-sm font-semibold text-cb-text-strong">No orders yet</p>
-          <p className="mt-1 text-xs text-cb-text-muted">
-            Explore the shop and your first box will appear here.
-          </p>
+          <p className="text-sm font-semibold text-cb-text-strong">{t("accountOrders.emptyTitle")}</p>
+          <p className="mt-1 text-xs text-cb-text-muted">{t("accountOrders.emptyBody")}</p>
           <Link href="/shop" className={buttonClassName("primary", "mt-4 inline-flex")}>
-            Start shopping
+            {t("accountOrders.startShopping")}
           </Link>
         </div>
       )}

@@ -32,7 +32,7 @@ const GiftBoxAssistant = dynamic(
 );
 
 export function GiftBoxBuilder() {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const { addGiftBoxItem, openDrawer } = useCart();
   const [state, setState] = useState<GiftBoxBuilderState>(loadStoredGiftBoxState);
   const [products, setProducts] = useState<BuilderProduct[]>([]);
@@ -43,6 +43,15 @@ export function GiftBoxBuilder() {
   const [videoFailed, setVideoFailed] = useState(false);
   const [preferReducedMotion, setPreferReducedMotion] = useState(false);
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  const boxLabel = useCallback(
+    (code: string, fallback: string) => {
+      const key = `pages.giftBoxBuilder.boxSizes.${code}`;
+      const label = t(key);
+      return label === key ? fallback : label;
+    },
+    [t],
+  );
 
   const updateState = useCallback((updater: (prev: GiftBoxBuilderState) => GiftBoxBuilderState) => {
     setState((prev) => {
@@ -140,18 +149,14 @@ export function GiftBoxBuilder() {
   const applyTemplate = useCallback(
     (template: OccasionTemplate) => {
       if (!products.length) {
-        setError(
-          lang === "ar"
-            ? "انتظر تحميل المنتجات أولاً."
-            : "Wait for products to load first.",
-        );
+        setError(t("pages.giftBoxBuilder.errWaitProducts"));
         return;
       }
       const partial = applyOccasionTemplateToState(template, products, boxSizes, lang);
       updateState((prev) => ({ ...prev, ...partial }));
       setError(null);
     },
-    [products, boxSizes, lang, updateState],
+    [products, boxSizes, lang, updateState, t],
   );
 
   const selectBox = (id: string) => {
@@ -167,7 +172,7 @@ export function GiftBoxBuilder() {
 
   const changeQty = (productId: string, delta: number) => {
     if (!state.box || cap <= 0) {
-      setError(lang === "ar" ? "اختر حجم الصندوق أولاً." : "Choose box size first.");
+      setError(t("pages.giftBoxBuilder.errBox"));
       return;
     }
     updateState((prev) => {
@@ -178,11 +183,11 @@ export function GiftBoxBuilder() {
       const stock = product?.availableQuantity ?? null;
 
       if (delta > 0 && total >= boxCap) {
-        setError(lang === "ar" ? "تم الوصول للحد الأقصى لهذا الحجم." : "Box limit reached.");
+        setError(t("pages.giftBoxBuilder.errBoxLimit"));
         return prev;
       }
       if (delta > 0 && stock != null && current >= stock) {
-        setError(lang === "ar" ? "الكمية المتاحة انتهت لهذا المنتج." : "No more stock for this product.");
+        setError(t("pages.giftBoxBuilder.errNoStock"));
         return prev;
       }
 
@@ -197,11 +202,11 @@ export function GiftBoxBuilder() {
 
   const addToCart = () => {
     if (!state.box) {
-      setError(lang === "ar" ? "اختر حجم الصندوق أولاً." : "Choose box size first.");
+      setError(t("pages.giftBoxBuilder.errBox"));
       return;
     }
     if (totalItems === 0) {
-      setError(lang === "ar" ? "لا يمكن المتابعة بصندوق فارغ." : "Cannot continue with empty box.");
+      setError(t("pages.giftBoxBuilder.errEmptyContinue"));
       return;
     }
     const selectedProducts = Object.entries(state.items)
@@ -220,7 +225,7 @@ export function GiftBoxBuilder() {
 
     addGiftBoxItem({
       id: crypto.randomUUID(),
-      name: lang === "ar" ? "صندوق هدية مخصص" : "Custom Gift Box",
+      name: t("pages.giftBoxBuilder.customBoxName"),
       image: "/brand/gift-box/box-closed-ref.png",
       boxSize: state.box,
       selectedProducts,
@@ -248,8 +253,8 @@ export function GiftBoxBuilder() {
 
   const nextStep = () => {
     if (!validateStep(state.currentStep)) {
-      if (state.currentStep === 1) setError(lang === "ar" ? "اختر حجم الصندوق أولاً." : "Choose box size first.");
-      if (state.currentStep === 2) setError(lang === "ar" ? "أضف منتجًا واحدًا على الأقل." : "Add at least one product.");
+      if (state.currentStep === 1) setError(t("pages.giftBoxBuilder.errBox"));
+      if (state.currentStep === 2) setError(t("pages.giftBoxBuilder.errItems"));
       return;
     }
     if (state.currentStep === 4) {
@@ -261,10 +266,10 @@ export function GiftBoxBuilder() {
   };
 
   const stepLabels = [
-    lang === "ar" ? "اختيار الحجم" : "Choose Size",
-    lang === "ar" ? "إضافة المنتجات" : "Add Products",
-    lang === "ar" ? "رسالة الهدية" : "Gift Message",
-    lang === "ar" ? "المراجعة" : "Review",
+    t("pages.giftBoxBuilder.stepTabSize"),
+    t("pages.giftBoxBuilder.stepTabProducts"),
+    t("pages.giftBoxBuilder.stepTabMessage"),
+    t("pages.giftBoxBuilder.stepTabReview"),
   ];
 
   const capPct = cap ? Math.min(100, (totalItems / cap) * 100) : 0;
@@ -283,7 +288,7 @@ export function GiftBoxBuilder() {
 
   return (
     <div className="gift-box-builder">
-      <nav className="gb-progress-bar" aria-label="Gift box steps">
+      <nav className="gb-progress-bar" aria-label={t("pages.giftBoxBuilder.progressAria")}>
         {stepLabels.map((label, i) => {
           const n = i + 1;
           const cls = ["gb-step-tab", n === state.currentStep ? "active" : "", n < state.currentStep ? "done" : ""].filter(Boolean).join(" ");
@@ -304,15 +309,15 @@ export function GiftBoxBuilder() {
                 onSelect={applyTemplate}
                 disabled={productsLoading || products.length === 0}
               />
-              <h2 className="gb-step-title">{lang === "ar" ? "اختر حجم الصندوق" : "Choose Box Size"}</h2>
-              <p className="gb-step-sub">{lang === "ar" ? "لا يوجد سعر ثابت للصندوق، السعر = محتوى الصندوق فقط." : "Box has no fixed price. Total = contents only."}</p>
+              <h2 className="gb-step-title">{t("pages.giftBoxBuilder.s1Heading")}</h2>
+              <p className="gb-step-sub">{t("pages.giftBoxBuilder.s1SubNoPrice")}</p>
               <div className="gb-box-grid">
                 {boxSizes.map((b) => (
                   <button key={b.id} type="button" className={`gb-box-card ${state.box === b.code ? "selected" : ""}`} onClick={() => selectBox(b.code)}>
                     <div className="gb-box-icon">🎁</div>
-                    <div className="gb-box-name">{b.name}</div>
-                    <div className="gb-box-free">{lang === "ar" ? "بدون سعر ثابت" : "No fixed price"}</div>
-                    <div style={{ fontSize: 12, color: "var(--gb-text-muted)" }}>{lang === "ar" ? `حد أقصى ${b.max_items} عناصر` : `Max ${b.max_items} items`}</div>
+                    <div className="gb-box-name">{boxLabel(b.code, b.name)}</div>
+                    <div className="gb-box-free">{t("pages.giftBoxBuilder.noFixedPrice")}</div>
+                    <div style={{ fontSize: 12, color: "var(--gb-text-muted)" }}>{t("pages.giftBoxBuilder.maxItems", { n: b.max_items })}</div>
                   </button>
                 ))}
               </div>
@@ -321,8 +326,8 @@ export function GiftBoxBuilder() {
 
           {state.currentStep === 2 ? (
             <div className="gb-step-panel active">
-              <h2 className="gb-step-title">{lang === "ar" ? "أضف المنتجات داخل الصندوق" : "Add Products To Box"}</h2>
-              <p className="gb-step-sub">{lang === "ar" ? "المنتجات من قاعدة بيانات المتجر مباشرة (بدون بيانات وهمية)." : "Products are fetched directly from live shop database."}</p>
+              <h2 className="gb-step-title">{t("pages.giftBoxBuilder.s2Heading")}</h2>
+              <p className="gb-step-sub">{t("pages.giftBoxBuilder.s2SubLive")}</p>
 
               {productsLoading ? (
                 <div className="gb-product-grid gb-product-grid--loading" aria-busy>
@@ -330,8 +335,8 @@ export function GiftBoxBuilder() {
                 </div>
               ) : productsError ? (
                 <div className="gb-catalog-empty">
-                  <p className="gb-catalog-hint">{lang === "ar" ? "تعذر تحميل المنتجات." : "Could not load products."}</p>
-                  <button type="button" className="gb-btn-back" onClick={() => void fetchProducts()}>{lang === "ar" ? "إعادة المحاولة" : "Retry"}</button>
+                  <p className="gb-catalog-hint">{t("pages.giftBoxBuilder.errCatalog")}</p>
+                  <button type="button" className="gb-btn-back" onClick={() => void fetchProducts()}>{t("pages.giftBoxBuilder.retryCatalog")}</button>
                 </div>
               ) : (
                 <>
@@ -342,7 +347,7 @@ export function GiftBoxBuilder() {
                   </div>
 
                   <div className="gb-capacity-bar-wrap">
-                    <span>{lang === "ar" ? "محتوى الصندوق" : "Box Fill"}</span>
+                    <span>{t("pages.giftBoxBuilder.boxFill")}</span>
                     <div className="gb-cap-track"><div className={`gb-cap-fill ${capPct >= 80 ? "warn" : ""}`} style={{ width: `${capPct}%` }} /></div>
                     <strong>{totalItems} / {cap}</strong>
                   </div>
@@ -359,9 +364,8 @@ export function GiftBoxBuilder() {
                           </div>
                           <div style={{ padding: "10px 12px" }}>
                             <div style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</div>
-                            <div style={{ fontSize: 11, color: "var(--gb-text-muted)" }}>ID: {p.id}</div>
-                            <div style={{ color: "var(--gb-gold)", fontWeight: 700, fontSize: 13 }}>{formatBuilderPrice(p.price)}</div>
-                            <div style={{ fontSize: 11, color: "var(--gb-text-muted)" }}>{lang === "ar" ? "المتاح:" : "Available:"} {p.availableQuantity ?? "—"}</div>
+                            <div style={{ color: "var(--gb-gold)", fontWeight: 700, fontSize: 13 }}>{formatBuilderPrice(p.price, lang)}</div>
+                            <div style={{ fontSize: 11, color: "var(--gb-text-muted)" }}>{t("pages.giftBoxBuilder.available")}: {p.availableQuantity ?? t("pages.checkout.dash")}</div>
                             <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
                               <button type="button" className="gb-qty-btn" onClick={() => changeQty(p.id, -1)} aria-label="-">−</button>
                               <span>{qty}</span>
@@ -379,24 +383,24 @@ export function GiftBoxBuilder() {
 
           {state.currentStep === 3 ? (
             <div className="gb-step-panel active">
-              <h2 className="gb-step-title">{lang === "ar" ? "رسالة الهدية (اختيارية)" : "Gift Message (Optional)"}</h2>
+              <h2 className="gb-step-title">{t("pages.giftBoxBuilder.s3Heading")}</h2>
               <div className="gb-section-block">
                 <textarea
                   className="gb-input"
                   rows={4}
                   maxLength={250}
-                  placeholder={lang === "ar" ? "اكتب رسالة الهدية..." : "Write your gift message..."}
+                  placeholder={t("pages.giftBoxBuilder.message")}
                   value={state.msgText}
                   onChange={(e) => patch({ msgText: e.target.value })}
                 />
-                <div style={{ textAlign: "right", fontSize: 12, color: "var(--gb-text-muted)" }}>{state.msgText.length} / 250</div>
+                <div className="text-end text-xs text-[var(--gb-text-muted)]">{state.msgText.length} / 250</div>
               </div>
             </div>
           ) : null}
 
           {state.currentStep === 4 ? (
             <div className="gb-step-panel active">
-              <h2 className="gb-step-title">{lang === "ar" ? "مراجعة نهائية" : "Final Review"}</h2>
+              <h2 className="gb-step-title">{t("pages.giftBoxBuilder.s4HeadingFinal")}</h2>
               <ul style={{ listStyle: "none", marginBottom: 24 }}>
                 {Object.entries(state.items).map(([id, qty]) => {
                   const p = products.find((x) => x.id === id);
@@ -406,15 +410,15 @@ export function GiftBoxBuilder() {
                       <Image src={p.imageUrl} alt="" width={40} height={40} className="gb-review-line__img" />
                       <span style={{ flex: 1 }}>{p.name}</span>
                       <span>×{qty}</span>
-                      <strong style={{ color: "var(--gb-gold)" }}>{formatBuilderPrice(p.price * qty)}</strong>
+                      <strong style={{ color: "var(--gb-gold)" }}>{formatBuilderPrice(p.price * qty, lang)}</strong>
                     </li>
                   );
                 })}
               </ul>
               <div className="gb-checkout-totals">
-                <div className="gb-checkout-row"><span>{lang === "ar" ? "حجم الصندوق" : "Box Size"}</span><strong>{state.box}</strong></div>
-                <div className="gb-checkout-row"><span>{lang === "ar" ? "إجمالي العناصر" : "Total Items"}</span><strong>{totalItems}</strong></div>
-                <div className="gb-checkout-row gb-checkout-row--grand"><span>{lang === "ar" ? "الإجمالي" : "Total"}</span><strong>{formatBuilderPrice(itemsSubtotal)}</strong></div>
+                <div className="gb-checkout-row"><span>{t("pages.giftBoxBuilder.reviewBoxSize")}</span><strong>{state.box ? boxLabel(state.box, state.box) : t("pages.checkout.dash")}</strong></div>
+                <div className="gb-checkout-row"><span>{t("pages.giftBoxBuilder.reviewItemCount")}</span><strong>{totalItems}</strong></div>
+                <div className="gb-checkout-row gb-checkout-row--grand"><span>{t("pages.giftBoxBuilder.total")}</span><strong>{formatBuilderPrice(itemsSubtotal, lang)}</strong></div>
               </div>
               <ShareGiftBoxButton
                 state={state}
@@ -429,7 +433,7 @@ export function GiftBoxBuilder() {
         </main>
 
         <aside className="gb-sidebar">
-          <h2 className="gb-sidebar-title">{lang === "ar" ? "الصندوق الحالي" : "Current Box"}</h2>
+          <h2 className="gb-sidebar-title">{t("pages.giftBoxBuilder.sidebarCurrent")}</h2>
           <div className="gb-mini-scene">
             <div className="gb-preview-layer is-visible" aria-hidden={false}>
               {showVideoPreview ? (
@@ -455,29 +459,19 @@ export function GiftBoxBuilder() {
                   totalItems={totalItems}
                   capacity={cap || 1}
                   className="gb-mini-box3d"
-                  emptyLabel={
-                    lang === "ar" ? "أضف منتجات لملء الصندوق" : "Add treats inside"
-                  }
-                  closingLabel={
-                    lang === "ar"
-                      ? "جاري إغلاق صندوق Cookie Bite…"
-                      : "Closing your Cookie Bite box…"
-                  }
+                  emptyLabel={t("pages.giftBoxBuilder.boxAddProducts")}
+                  closingLabel={t("pages.giftBoxBuilder.boxClosing")}
                 />
               )}
             </div>
           </div>
           {preferReducedMotion ? (
-            <p className="gb-preview-note">
-              {lang === "ar"
-                ? "معاينة تفاعلية ثلاثية الأبعاد (الحركة مخفّفة حسب إعدادات النظام)."
-                : "Interactive 3D preview (motion reduced per system settings)."}
-            </p>
+            <p className="gb-preview-note">{t("pages.giftBoxBuilder.previewReducedMotion")}</p>
           ) : null}
           <div className="gb-sidebar-total">
             <div className="gb-sidebar-total__row">
-              <span>{lang === "ar" ? "الإجمالي" : "Total"}</span>
-              <strong>{formatBuilderPrice(itemsSubtotal)}</strong>
+              <span>{t("pages.giftBoxBuilder.total")}</span>
+              <strong>{formatBuilderPrice(itemsSubtotal, lang)}</strong>
             </div>
           </div>
 
@@ -491,17 +485,27 @@ export function GiftBoxBuilder() {
               className="gb-help-link"
             >
               <MessageCircle className="h-3.5 w-3.5" aria-hidden />
-              {lang === "ar" ? "واتساب للمساعدة" : "WhatsApp help"}
+              {t("pages.giftBoxBuilder.whatsappHelp")}
             </a>
           </div>
         </aside>
       </div>
 
       <div className="gb-bottom-nav">
-        <button type="button" className="gb-btn-back" style={{ visibility: state.currentStep <= 1 ? "hidden" : "visible" }} onClick={prevStep}>← {lang === "ar" ? "رجوع" : "Back"}</button>
-        <span style={{ fontSize: 13, color: "var(--gb-text-muted)" }}>{state.box ? `${totalItems} ${lang === "ar" ? "عنصر" : "items"} · ${formatBuilderPrice(itemsSubtotal)}` : ""}</span>
+        <button type="button" className="gb-btn-back" style={{ visibility: state.currentStep <= 1 ? "hidden" : "visible" }} onClick={prevStep}>
+          {lang === "ar" ? "→" : "←"} {t("pages.giftBoxBuilder.back")}
+        </button>
+        <span style={{ fontSize: 13, color: "var(--gb-text-muted)" }}>
+          {state.box
+            ? `${totalItems} ${t("pages.giftBoxBuilder.itemUnit")} · ${formatBuilderPrice(itemsSubtotal, lang)}`
+            : ""}
+        </span>
         <button type="button" className="gb-btn-next" disabled={state.currentStep === 2 && productsLoading} onClick={nextStep}>
-          {state.currentStep === 4 ? (lang === "ar" ? "إضافة إلى السلة" : "Add to Cart") : `${lang === "ar" ? "التالي" : "Continue"} →`}
+          {state.currentStep === 4
+            ? t("pages.giftBoxBuilder.addToCartBtn")
+            : lang === "ar"
+              ? `← ${t("pages.giftBoxBuilder.continueNext")}`
+              : `${t("pages.giftBoxBuilder.continueNext")} →`}
         </button>
       </div>
     </div>

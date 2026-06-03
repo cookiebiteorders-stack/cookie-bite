@@ -12,11 +12,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CatalogStats } from "@/lib/admin/products-dashboard-types";
+import { formatAdminMoney } from "@/lib/admin/admin-label";
+import { useLanguage } from "@/components/providers/language-provider";
 import { MiniSparkline } from "@/components/admin/products/mini-sparkline";
 
-function fmtEgp(n: number) {
-  if (!Number.isFinite(n)) return "—";
-  return `${Math.round(n).toLocaleString("ar-EG")} ج.م`;
+function fmtEgp(n: number, lang: "ar" | "en") {
+  return formatAdminMoney(n, lang);
 }
 
 function pctChange(current: number, baseline: number) {
@@ -82,6 +83,7 @@ type Props = {
 
 export function ProductsHeroAndStats({ stats, online }: Props) {
   const reduceMotion = useReducedMotion();
+  const { t, lang } = useLanguage();
   const baseline = Math.max(1, stats.total - stats.active);
 
   const cards: StatCardProps[] = [
@@ -137,7 +139,7 @@ export function ProductsHeroAndStats({ stats, online }: Props) {
     },
     {
       title: "قيمة مخزون تقديرية",
-      value: fmtEgp(stats.revenue_estimate_egp),
+      value: fmtEgp(stats.revenue_estimate_egp, lang),
       sub: "Σ (سعر × كمية) للنشط",
       trendPct: pctChange(stats.revenue_estimate_egp, stats.revenue_estimate_egp * 0.92 + 1),
       icon: CircleDollarSign,
@@ -171,11 +173,10 @@ export function ProductsHeroAndStats({ stats, online }: Props) {
             </motion.div>
             <div>
               <h1 className="font-serif text-2xl font-bold tracking-tight text-cb-text-strong sm:text-3xl">
-                Product Management
+                {t("adminHero.products.title")}
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cb-text sm:text-[15px]">
-                إدارة الكتالوج، المتغيرات، التسعير، عتبات المخزون، حالة النشر، SEO، والتحليلات — لوحة
-                تحكم على مستوى المؤسسات بتجربة مستخدم سلسة.
+                {t("adminHero.products.subtitle")}
               </p>
             </div>
           </div>
@@ -188,7 +189,7 @@ export function ProductsHeroAndStats({ stats, online }: Props) {
             )}
           >
             <span className={cn("h-2 w-2 rounded-full", online ? "animate-pulse bg-emerald-500" : "bg-amber-500")} />
-            {online ? "متصل" : "تحقق من الاتصال"}
+            {online ? t("adminStatus.online") : t("adminStatus.offline")}
           </div>
         </div>
       </motion.header>

@@ -7,28 +7,36 @@ import { StarRating } from "@/src/components/ui/StarRating";
 import { Badge } from "@/src/components/ui/Badge";
 import { Modal } from "@/src/components/ui/Modal";
 import { buttonClassName } from "@/components/ui/button";
-import type { Product } from "@/src/types/product";
-import { useCart } from "@/src/hooks/useCart";
+import type { Product as SearchProduct } from "@/src/types/product";
+import type { Product as StorefrontProduct } from "@/lib/data";
+import { useCart } from "@/components/providers/cart-provider";
 import { useToast } from "@/src/hooks/useToast";
 import { useState } from "react";
 import { useLanguage } from "@/components/providers/language-provider";
 
-export function SearchProductCard({ product }: { product: Product }) {
+function toStorefrontProduct(product: SearchProduct): StorefrontProduct {
+  return {
+    id: product.id,
+    productUuid: product.productUuid,
+    name: product.name,
+    description: product.description,
+    price: product.price,
+    comparePrice: product.originalPrice ?? null,
+    image: product.images[0],
+    images: product.images,
+    category: product.subcategory || product.category,
+    stock: product.stockCount,
+  };
+}
+
+export function SearchProductCard({ product }: { product: SearchProduct }) {
   const { addItem, openDrawer } = useCart();
   const toast = useToast();
-  const { t } = useLanguage();
+  const { t, formatPrice } = useLanguage();
   const [quickViewOpen, setQuickViewOpen] = useState(false);
 
   function onAdd() {
-    addItem({
-      id: product.id,
-      name: product.name,
-      brand: product.brand,
-      price: product.price,
-      originalPrice: product.originalPrice,
-      image: product.images[0],
-      maxStock: product.stockCount || 1,
-    });
+    addItem(toStorefrontProduct(product));
     toast.cart(t("search.addedToCartToast"), product.name);
     openDrawer();
   }
@@ -69,11 +77,11 @@ export function SearchProductCard({ product }: { product: Product }) {
         <StarRating rating={product.rating} count={product.reviewCount} />
         <div className="flex items-center gap-2">
           <span className="text-base font-bold text-cb-text-strong">
-            {product.price} EGP
+            {formatPrice(product.price)}
           </span>
           {product.originalPrice ? (
             <span className="text-xs text-cb-text-muted line-through">
-              {product.originalPrice} EGP
+              {formatPrice(product.originalPrice)}
             </span>
           ) : null}
         </div>
@@ -106,7 +114,7 @@ export function SearchProductCard({ product }: { product: Product }) {
             <p className="text-xs uppercase tracking-wide text-cb-text-muted">{product.brand}</p>
             <p className="text-sm text-cb-text-muted">{product.description}</p>
             <StarRating rating={product.rating} count={product.reviewCount} />
-            <p className="text-lg font-bold text-cb-text-strong">{product.price} EGP</p>
+            <p className="text-lg font-bold text-cb-text-strong">{formatPrice(product.price)}</p>
           </div>
         </div>
       </Modal>
@@ -114,21 +122,13 @@ export function SearchProductCard({ product }: { product: Product }) {
   );
 }
 
-export function SearchProductRow({ product }: { product: Product }) {
+export function SearchProductRow({ product }: { product: SearchProduct }) {
   const { addItem, openDrawer } = useCart();
   const toast = useToast();
-  const { t } = useLanguage();
+  const { t, formatPrice } = useLanguage();
 
   function onAdd() {
-    addItem({
-      id: product.id,
-      name: product.name,
-      brand: product.brand,
-      price: product.price,
-      originalPrice: product.originalPrice,
-      image: product.images[0],
-      maxStock: product.stockCount || 1,
-    });
+    addItem(toStorefrontProduct(product));
     toast.cart(t("search.addedToCartToast"), product.name);
     openDrawer();
   }
@@ -156,10 +156,10 @@ export function SearchProductRow({ product }: { product: Product }) {
           <p className="line-clamp-3 text-sm text-cb-text-muted">{product.description}</p>
           <StarRating rating={product.rating} count={product.reviewCount} />
           <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-cb-text-strong">{product.price} EGP</span>
+            <span className="text-lg font-bold text-cb-text-strong">{formatPrice(product.price)}</span>
             {product.originalPrice ? (
               <span className="text-xs text-cb-text-muted line-through">
-                {product.originalPrice} EGP
+                {formatPrice(product.originalPrice)}
               </span>
             ) : null}
           </div>
@@ -173,4 +173,3 @@ export function SearchProductRow({ product }: { product: Product }) {
     </Card>
   );
 }
-

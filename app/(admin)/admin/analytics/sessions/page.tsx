@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { getRecentSessions } from "@/lib/tracking-server/queries";
+import { AdminPageIntro } from "@/components/admin/admin-page-intro";
 
 function formatRelative(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -16,12 +17,10 @@ export default async function AdminSessionsPage() {
 
   return (
     <div className="space-y-5">
-      <header className="admin-panel-surface rounded-2xl p-5 shadow-[var(--shadow-card)] cb-shadow-editorial">
-        <h1 className="font-serif text-3xl font-bold text-cb-text-strong">Recent sessions</h1>
-        <p className="mt-2 max-w-3xl text-sm text-cb-text-muted">
-          The latest 80 non-bot sessions. Click any row to inspect the full timeline.
-        </p>
-      </header>
+      <AdminPageIntro
+        titleKey="adminPages.analyticsSessions.title"
+        subtitleKey="adminPages.analyticsSessions.subtitle"
+      />
 
       <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-3">
         <div className="overflow-x-auto">

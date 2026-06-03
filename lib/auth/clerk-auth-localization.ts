@@ -1,105 +1,193 @@
-import { enUS } from "@clerk/localizations";
+import { arSA, enUS } from "@clerk/localizations";
+import type { Lang } from "@/lib/i18n/translations";
+
+type ClerkLocalization = typeof enUS;
 
 /** يظهر في عناوين Clerk وصفحة تسجيل الدخول بدل اسم التطبيق من لوحة Clerk. */
 export const SITE_HOST = "cookie-bite.com";
 
+/** @deprecated استخدم getAuthCopy(lang) أو مفاتيح auth.* في translations */
 export const SIGN_IN_TITLE = "Welcome back";
 export const SIGN_IN_SUBTITLE =
   "Sign in to track orders, save addresses, and checkout faster — email or social in one tap.";
-
 export const SIGN_UP_TITLE = "Create your account";
 export const SIGN_UP_SUBTITLE =
   "Join Cookie Bite for order history, saved delivery spots, and treats made just for you.";
-
 export const AUTH_SWITCH_SIGN_IN_LABEL = "Already part of the bakery?";
 export const AUTH_SWITCH_SIGN_IN_CTA = "Sign in";
 export const AUTH_SWITCH_SIGN_UP_LABEL = "New here?";
 export const AUTH_SWITCH_SIGN_UP_CTA = "Create free account";
 
-/**
- * نسخة إنجليزية مخصصة لـ Cookie Bite — نبرة دافئة ومتسقة مع العلامة.
- */
-export const cookieBiteClerkLocalization = {
-  ...enUS,
-  signIn: {
-    ...enUS.signIn!,
-    alternativePhoneCodeProvider: {
-      ...enUS.signIn!.alternativePhoneCodeProvider,
-      subtitle: `Continue to ${SITE_HOST}`,
-    },
-    emailCode: {
-      ...enUS.signIn!.emailCode,
-      subtitle: `We sent a code to your inbox for ${SITE_HOST}`,
-    },
-    emailCodeMfa: {
-      ...enUS.signIn!.emailCodeMfa,
-      subtitle: `Verify it’s you on ${SITE_HOST}`,
-    },
-    emailLink: {
-      ...enUS.signIn!.emailLink,
-      subtitle: `Open the link we emailed for ${SITE_HOST}`,
-    },
-    emailLinkMfa: {
-      ...enUS.signIn!.emailLinkMfa,
-      subtitle: `Confirm sign-in to ${SITE_HOST}`,
-    },
-    phoneCode: {
-      ...enUS.signIn!.phoneCode,
-      subtitle: `Enter the code for ${SITE_HOST}`,
-    },
-    start: {
-      ...enUS.signIn!.start,
-      title: SIGN_IN_TITLE,
-      titleCombined: `Continue to ${SITE_HOST}`,
-      subtitle: "Use email, Google, Apple, or X — secured end-to-end.",
-      alternativePhoneCodeProvider: {
-        ...(enUS.signIn!.start?.alternativePhoneCodeProvider ?? {}),
-        title: `Sign in with {{provider}}`,
-      },
-    },
-    password: {
-      ...enUS.signIn!.password,
-      title: "Enter your password",
-      subtitle: "For your Cookie Bite account",
-    },
-    forgotPassword: {
-      ...enUS.signIn!.forgotPassword,
-      title: "Reset your password",
-      subtitle: `We’ll help you back into ${SITE_HOST}`,
-    },
-  },
-  signUp: {
-    ...enUS.signUp!,
-    emailLink: {
-      ...enUS.signUp!.emailLink,
-      subtitle: `Confirm your email for ${SITE_HOST}`,
-    },
-    start: {
-      ...enUS.signUp!.start,
-      title: SIGN_UP_TITLE,
-      subtitle: "Pick email or a social account — takes under a minute.",
-      subtitleCombined: "Pick email or a social account — takes under a minute.",
-      alternativePhoneCodeProvider: {
-        ...(enUS.signUp!.start?.alternativePhoneCodeProvider ?? {}),
-        title: `Sign up with {{provider}}`,
-      },
-    },
-    emailCode: {
-      ...enUS.signUp!.emailCode,
-      subtitle: "Enter the code we sent to verify your email",
-    },
-    continue: {
-      ...enUS.signUp!.continue,
-      title: "Almost there",
-      subtitle: "Add your details to finish your Cookie Bite account",
-    },
-  },
-  userProfile: {
-    ...enUS.userProfile,
-    navbar: {
-      ...enUS.userProfile?.navbar,
-      title: "Your account",
-      description: "Profile & security for Cookie Bite",
-    },
-  },
+const EN_COPY = {
+  signInTitle: SIGN_IN_TITLE,
+  signInSub: SIGN_IN_SUBTITLE,
+  signUpTitle: SIGN_UP_TITLE,
+  signUpSub: SIGN_UP_SUBTITLE,
 };
+
+const AR_COPY = {
+  signInTitle: "أهلاً تاني! 👋",
+  signInSub:
+    "سجّل دخولك علشان تتابع طلباتك وتوصّل أسرع — إيميل أو سوشيال بضغطة.",
+  signUpTitle: "يلّا نعمل حساب",
+  signUpSub: "انضم لعائلة كوكي بايت — تاريخ طلباتك وعناوينك في مكان واحد.",
+};
+
+function buildCookieBiteClerkLocalization(
+  base: ClerkLocalization,
+  copy: typeof EN_COPY,
+): ClerkLocalization {
+  return {
+    ...base,
+    signIn: {
+      ...base.signIn!,
+      alternativePhoneCodeProvider: {
+        ...base.signIn!.alternativePhoneCodeProvider,
+        subtitle: `Continue to ${SITE_HOST}`,
+      },
+      emailCode: {
+        ...base.signIn!.emailCode,
+        subtitle: `We sent a code to your inbox for ${SITE_HOST}`,
+      },
+      emailCodeMfa: {
+        ...base.signIn!.emailCodeMfa,
+        subtitle: `Verify it’s you on ${SITE_HOST}`,
+      },
+      emailLink: {
+        ...base.signIn!.emailLink,
+        subtitle: `Open the link we emailed for ${SITE_HOST}`,
+      },
+      emailLinkMfa: {
+        ...base.signIn!.emailLinkMfa,
+        subtitle: `Confirm sign-in to ${SITE_HOST}`,
+      },
+      phoneCode: {
+        ...base.signIn!.phoneCode,
+        subtitle: `Enter the code for ${SITE_HOST}`,
+      },
+      start: {
+        ...base.signIn!.start,
+        title: copy.signInTitle,
+        titleCombined: `Continue to ${SITE_HOST}`,
+        subtitle: "Use email, Google, Apple, or X — secured end-to-end.",
+        alternativePhoneCodeProvider: {
+          ...(base.signIn!.start?.alternativePhoneCodeProvider ?? {}),
+          title: `Sign in with {{provider}}`,
+        },
+      },
+      password: {
+        ...base.signIn!.password,
+        title: "Enter your password",
+        subtitle: "For your Cookie Bite account",
+      },
+      forgotPassword: {
+        ...base.signIn!.forgotPassword,
+        title: "Reset your password",
+        subtitle: `We’ll help you back into ${SITE_HOST}`,
+      },
+    },
+    signUp: {
+      ...base.signUp!,
+      emailLink: {
+        ...base.signUp!.emailLink,
+        subtitle: `Confirm your email for ${SITE_HOST}`,
+      },
+      start: {
+        ...base.signUp!.start,
+        title: copy.signUpTitle,
+        subtitle: "Pick email or a social account — takes under a minute.",
+        subtitleCombined: "Pick email or a social account — takes under a minute.",
+        alternativePhoneCodeProvider: {
+          ...(base.signUp!.start?.alternativePhoneCodeProvider ?? {}),
+          title: `Sign up with {{provider}}`,
+        },
+      },
+      emailCode: {
+        ...base.signUp!.emailCode,
+        subtitle: "Enter the code we sent to verify your email",
+      },
+      continue: {
+        ...base.signUp!.continue,
+        title: "Almost there",
+        subtitle: "Add your details to finish your Cookie Bite account",
+      },
+    },
+    userProfile: {
+      ...base.userProfile,
+      navbar: {
+        ...base.userProfile?.navbar,
+        title: "Your account",
+        description: "Profile & security for Cookie Bite",
+      },
+    },
+  };
+}
+
+function buildCookieBiteClerkLocalizationAr(
+  base: ClerkLocalization,
+  copy: typeof AR_COPY,
+): ClerkLocalization {
+  return {
+    ...base,
+    signIn: {
+      ...base.signIn!,
+      start: {
+        ...base.signIn!.start,
+        title: copy.signInTitle,
+        titleCombined: `تابع إلى ${SITE_HOST}`,
+        subtitle: "إيميل، Google، Apple، أو X — آمن من الأول للآخر.",
+      },
+      password: {
+        ...base.signIn!.password,
+        title: "أدخل كلمة المرور",
+        subtitle: "لحسابك في كوكي بايت",
+      },
+      forgotPassword: {
+        ...base.signIn!.forgotPassword,
+        title: "إعادة تعيين كلمة المرور",
+        subtitle: `هنساعدك ترجع لـ ${SITE_HOST}`,
+      },
+    },
+    signUp: {
+      ...base.signUp!,
+      start: {
+        ...base.signUp!.start,
+        title: copy.signUpTitle,
+        subtitle: "إيميل أو حساب سوشيال — أقل من دقيقة.",
+        subtitleCombined: "إيميل أو حساب سوشيال — أقل من دقيقة.",
+      },
+      emailCode: {
+        ...base.signUp!.emailCode,
+        subtitle: "أدخل الكود اللي بعتناه على إيميلك",
+      },
+      continue: {
+        ...base.signUp!.continue,
+        title: "كمان خطوة",
+        subtitle: "كمّل بياناتك علشان نخلّص حسابك في كوكي بايت",
+      },
+    },
+    userProfile: {
+      ...base.userProfile,
+      navbar: {
+        ...base.userProfile?.navbar,
+        title: "حسابك",
+        description: "الملف الشخصي والأمان — كوكي بايت",
+      },
+    },
+  };
+}
+
+/** نسخة إنجليزية مخصصة لـ Cookie Bite */
+export const cookieBiteClerkLocalization = buildCookieBiteClerkLocalization(
+  enUS,
+  EN_COPY,
+);
+
+const cookieBiteClerkLocalizationAr = buildCookieBiteClerkLocalizationAr(
+  arSA,
+  AR_COPY,
+);
+
+export function getClerkLocalization(lang: Lang): ClerkLocalization {
+  return lang === "ar" ? cookieBiteClerkLocalizationAr : cookieBiteClerkLocalization;
+}

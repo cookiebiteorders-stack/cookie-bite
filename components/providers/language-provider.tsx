@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { type Lang, translations } from "@/lib/i18n/translations";
+import { formatProductPriceEgp } from "@/lib/products/pricing";
 import { LANG_COOKIE, writeClientPrefCookie } from "@/lib/preferences/client-cookies";
 
 type TranslateVars = Record<string, string | number>;
@@ -18,6 +19,7 @@ type LanguageContextValue = {
   setLanguage: (lang: Lang) => void;
   toggleLanguage: () => void;
   t: (key: string, vars?: TranslateVars) => string;
+  formatPrice: (amount: number) => string;
 };
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
@@ -84,14 +86,21 @@ export function LanguageProvider({ children, initialLang }: LanguageProviderProp
     [lang],
   );
 
+  const formatPrice = useCallback(
+    (amount: number) =>
+      formatProductPriceEgp(amount, lang === "ar" ? "ar-EG" : "en-EG"),
+    [lang],
+  );
+
   const value = useMemo<LanguageContextValue>(
     () => ({
       lang,
       setLanguage,
       toggleLanguage,
       t,
+      formatPrice,
     }),
-    [lang, setLanguage, toggleLanguage, t],
+    [lang, setLanguage, toggleLanguage, t, formatPrice],
   );
 
   return (

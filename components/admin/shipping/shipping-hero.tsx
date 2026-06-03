@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import { Package, Sparkles } from "lucide-react";
+import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 
 type ShippingHeroProps = {
@@ -10,6 +11,7 @@ type ShippingHeroProps = {
 
 export function ShippingHero({ online }: ShippingHeroProps) {
   const reduceMotion = useReducedMotion();
+  const { t } = useLanguage();
 
   return (
     <motion.header
@@ -42,13 +44,12 @@ export function ShippingHero({ online }: ShippingHeroProps) {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-serif text-2xl font-bold tracking-tight text-stone-950 sm:text-3xl">
-                Shipping Orchestration
+                {t("adminHero.shipping.title")}
               </h1>
               <Sparkles className="h-4 w-4 text-amber-700" aria-hidden />
             </div>
             <p className="mt-2 max-w-xl text-sm font-medium leading-relaxed text-stone-700 sm:text-base">
-              Manage delivery zones, fees, SLA ranges, and priority — with live validation and
-              enterprise-grade controls.
+              {t("adminHero.shipping.subtitle")}
             </p>
           </div>
         </div>
@@ -68,7 +69,7 @@ export function ShippingHero({ online }: ShippingHeroProps) {
             )}
             aria-hidden
           />
-          {online ? "System active" : "Check connection"}
+          {online ? t("adminStatus.systemActive") : t("adminStatus.offline")}
         </div>
       </div>
     </motion.header>

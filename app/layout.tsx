@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
-import { cookieBiteClerkLocalization } from "@/lib/auth/clerk-auth-localization";
+import { getClerkLocalization } from "@/lib/auth/clerk-auth-localization";
 import { SiteJsonLd } from "@/components/seo/site-jsonld";
 import { GA4Tracker } from "@/components/analytics/ga4-tracker";
 import {
@@ -196,6 +196,7 @@ export default async function RootLayout({
   const store = await cookies();
   const lang = store.get(LANG_COOKIE)?.value === "en" ? "en" : "ar";
   const dir = lang === "ar" ? "rtl" : "ltr";
+  const clerkLocalization = getClerkLocalization(lang);
   return (
     <html
       lang={lang}
@@ -236,7 +237,7 @@ export default async function RootLayout({
           {...(clerkJsScriptUrl
             ? { __internal_clerkJSUrl: clerkJsScriptUrl }
             : {})}
-          localization={cookieBiteClerkLocalization}
+          localization={clerkLocalization}
           appearance={{
             ...clerkAuthAppearance,
             layout: {

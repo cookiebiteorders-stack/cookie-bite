@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchJson } from "@/lib/http/fetch-json";
+import { useLanguage } from "@/components/providers/language-provider";
 import type { GiftBoxSizeConfig } from "@/lib/gift-box-builder/sizes";
 
 const emptyForm = {
@@ -14,6 +15,7 @@ const emptyForm = {
 };
 
 export default function GiftBoxSizesAdminPage() {
+  const { t } = useLanguage();
   const [sizes, setSizes] = useState<GiftBoxSizeConfig[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -40,7 +42,7 @@ export default function GiftBoxSizesAdminPage() {
 
   return (
     <section className="space-y-6">
-      <h1 className="text-2xl font-bold text-cb-text-strong">Gift Box Sizes</h1>
+      <h1 className="text-2xl font-bold text-cb-text-strong">{t("adminPages.giftBoxSizes.title")}</h1>
       <div className="rounded-xl border border-cb-border bg-cb-surface p-4">
         <div className="grid gap-3 md:grid-cols-2">
           <input className="rounded border border-cb-border px-3 py-2" placeholder="code (small)" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} />

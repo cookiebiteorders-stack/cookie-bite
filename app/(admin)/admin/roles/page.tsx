@@ -10,6 +10,7 @@ import {
 } from "@/lib/admin/rbac";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { cn } from "@/lib/utils";
+import { useAdminT } from "@/lib/admin/use-admin-t";
 
 type PermissionLevel = "full" | "limited" | "view" | "none";
 type Matrix = Record<UserRole, Record<ModuleKey, PermissionLevel>>;
@@ -50,13 +51,6 @@ const modules: ModuleKey[] = [
 ];
 
 const roles: UserRole[] = ["owner", "admin", "staff", "customer"];
-const roleDescriptions: Record<UserRole, string> = {
-  owner: "Full governance including security and permissions.",
-  admin: "Operational control with full module access.",
-  staff: "Limited operational access for daily workflows.",
-  customer: "No admin console access.",
-};
-
 
 type Toast = {
   id: string;
@@ -89,6 +83,13 @@ function permissionBits(level: PermissionLevel) {
 
 export default function AdminRolesPage() {
   const reduceMotion = useReducedMotion();
+  const { adminT, t, apiErr } = useAdminT();
+  const roleDescriptions: Record<UserRole, string> = {
+    owner: adminT("roles.roleDesc.owner"),
+    admin: adminT("roles.roleDesc.admin"),
+    staff: adminT("roles.roleDesc.staff"),
+    customer: adminT("roles.roleDesc.customer"),
+  };
   const [matrix, setMatrix] = useState<Matrix | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
@@ -119,14 +120,14 @@ export default function AdminRolesPage() {
           users?: UserOption[];
           error?: { en?: string };
         };
-        if (!res.ok) throw new Error(d.error?.en ?? "Failed to load roles");
+        if (!res.ok) throw new Error(apiErr(d.error, adminT("roles.errors.loadFailed")));
         if (!cancelled) {
           setMatrix(d.role_matrix ?? null);
           setAssignments(d.assignments ?? []);
           setUsers(d.users ?? []);
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Unknown error");
+        if (!cancelled) setError(err instanceof Error ? err.message : adminT("roles.errors.unknown"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -187,20 +188,20 @@ export default function AdminRolesPage() {
           ? { user_id: selectedUser.id, role }
           : null;
     if (!payload) {
-      setError("Select a registered user or enter their account email.");
-      pushToast("error", "Select a user first.");
+      setError(adminT("roles.errors.selectUser"));
+      pushToast("error", adminT("roles.toasts.selectFirst"));
       setSaving(false);
       return;
     }
     if (selectedResolved && selectedResolved.role === role) {
-      setError("Role already assigned.");
-      pushToast("info", "Role already assigned for this user.");
+      setError(adminT("roles.errors.roleExists"));
+      pushToast("info", adminT("roles.toasts.roleExists"));
       setSaving(false);
       return;
     }
     if (selectedResolved?.role && selectedResolved.role !== role) {
       const accepted = window.confirm(
-        `This user already has role "${selectedResolved.role}". Replace it with "${role}"?`,
+        adminT("roles.replaceConfirm", { current: selectedResolved.role, next: role }),
       );
       if (!accepted) {
         setSaving(false);
@@ -216,12 +217,12 @@ export default function AdminRolesPage() {
       const data = (await res.json()) as {
         ok?: boolean;
         assignment?: Assignment;
-        error?: { en?: string };
+        error?: { en?: string; ar?: string };
       };
       if (!res.ok) {
-        throw new Error(data.error?.en ?? "Failed to assign role");
+        throw new Error(apiErr(data.error, adminT("roles.errors.assignFailed")));
       }
-      pushToast("success", "Role assigned successfully.");
+      pushToast("success", adminT("roles.toasts.assigned"));
       setSelectedUser(null);
       setAssignEmail("");
       setSearchTerm("");
@@ -235,7 +236,7 @@ export default function AdminRolesPage() {
         setUsers((prev) => prev.map((u) => (u.id === updated.id ? { ...u, role: updated.role } : u)));
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+      const message = err instanceof Error ? err.message : adminT("roles.errors.unknown");
       setError(message);
       pushToast("error", message);
     } finally {
@@ -248,7 +249,7 @@ export default function AdminRolesPage() {
     try {
       const current = assignments.find((a) => a.id === userId);
       if (current?.role === nextRole) {
-        pushToast("info", "No changes to apply.");
+        pushToast("info", adminT("roles.toasts.noChanges"));
         return;
       }
       const res = await fetch("/api/admin/roles/matrix", {
@@ -256,15 +257,15 @@ export default function AdminRolesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, role: nextRole }),
       });
-      const data = (await res.json()) as { assignment?: Assignment; error?: { en?: string } };
-      if (!res.ok) throw new Error(data.error?.en ?? "Failed to update role");
+      const data = (await res.json()) as { assignment?: Assignment; error?: { en?: string; ar?: string } };
+      if (!res.ok) throw new Error(apiErr(data.error, adminT("roles.errors.updateFailed")));
       if (data.assignment) {
         setAssignments((prev) => prev.map((a) => (a.id === userId ? data.assignment! : a)));
         setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: data.assignment!.role } : u)));
       }
-      pushToast("success", "Role updated.");
+      pushToast("success", adminT("roles.toasts.updated"));
     } catch (err) {
-      pushToast("error", err instanceof Error ? err.message : "Failed to update role");
+      pushToast("error", err instanceof Error ? err.message : adminT("roles.errors.updateFailed"));
     } finally {
       setChangingRoleUserId(null);
     }
@@ -276,13 +277,13 @@ export default function AdminRolesPage() {
       const res = await fetch(`/api/admin/roles/matrix?user_id=${encodeURIComponent(userId)}`, {
         method: "DELETE",
       });
-      const data = (await res.json()) as { assignment?: Assignment; error?: { en?: string } };
-      if (!res.ok) throw new Error(data.error?.en ?? "Failed to remove role");
+      const data = (await res.json()) as { assignment?: Assignment; error?: { en?: string; ar?: string } };
+      if (!res.ok) throw new Error(apiErr(data.error, adminT("roles.errors.removeFailed")));
       setAssignments((prev) => prev.filter((a) => a.id !== userId));
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: "customer" } : u)));
-      pushToast("success", "Role removed.");
+      pushToast("success", adminT("roles.toasts.removed"));
     } catch (err) {
-      pushToast("error", err instanceof Error ? err.message : "Failed to remove role");
+      pushToast("error", err instanceof Error ? err.message : adminT("roles.errors.removeFailed"));
     } finally {
       setRemovingRoleUserId(null);
     }
@@ -319,10 +320,10 @@ export default function AdminRolesPage() {
         className="admin-panel-surface rounded-2xl p-5"
       >
         <h1 className="font-serif text-3xl font-bold text-stone-950">
-          Role Management
+          {adminT("roles.title")}
         </h1>
         <p className="mt-2 text-sm text-stone-700">
-          Enterprise RBAC control center with assign, preview, and governed updates.
+          {adminT("roles.subtitle")}
         </p>
       </motion.header>
 
@@ -330,10 +331,10 @@ export default function AdminRolesPage() {
         <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
           <h2 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-950">
             <UserPlus className="h-5 w-5 text-amber-700" />
-            Assign Role
+            {adminT("roles.assignTitle")}
           </h2>
           <p className="mt-1 text-sm text-stone-700">
-            Search users by email/name, preview profile, then assign with validation against Clerk linkage.
+            {adminT("roles.assignSub")}
           </p>
 
           <div className="relative mt-4">
@@ -348,14 +349,14 @@ export default function AdminRolesPage() {
                   setSelectedUser(null);
                   setDropdownOpen(true);
                 }}
-                placeholder="Search user by email or username..."
+                placeholder={adminT("roles.searchPlaceholder")}
                 className="w-full bg-transparent text-sm outline-none"
               />
             </div>
             {dropdownOpen ? (
               <div className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-xl border border-cb-border bg-white shadow-sm">
                 {filteredUsers.length === 0 ? (
-                  <p className="px-3 py-2 text-sm text-stone-600">No users found.</p>
+                  <p className="px-3 py-2 text-sm text-stone-600">{adminT("roles.noUsers")}</p>
                 ) : (
                   filteredUsers.map((u) => (
                     <button
@@ -387,7 +388,7 @@ export default function AdminRolesPage() {
           </div>
 
           <label className="mt-3 block text-sm font-semibold text-stone-950">
-            Or assign by exact email
+            {adminT("roles.assignByEmail")}
             <input
               type="email"
               value={assignEmail}
@@ -398,7 +399,7 @@ export default function AdminRolesPage() {
                   setSearchTerm("");
                 }
               }}
-              placeholder="colleague@company.com"
+              placeholder={adminT("roles.emailPlaceholder")}
               className="mt-1 w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
               autoComplete="email"
             />
@@ -412,11 +413,11 @@ export default function AdminRolesPage() {
                 setRole(r);
               }}
               className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
-              aria-label="Role to assign"
+              aria-label={adminT("roles.roleToAssign")}
             >
               {roles.map((r) => (
                 <option key={r} value={r}>
-                  {r}
+                  {t(`adminRoles.${r}`)}
                 </option>
               ))}
             </select>
@@ -427,7 +428,7 @@ export default function AdminRolesPage() {
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-cb-border bg-cb-terracotta-dark px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {saving ? "Assigning..." : "Assign Role"}
+              {saving ? adminT("roles.assigning") : adminT("roles.assignBtn")}
             </button>
           </div>
 
@@ -437,7 +438,7 @@ export default function AdminRolesPage() {
               animate={{ opacity: 1, y: 0 }}
               className="mt-4 rounded-xl border border-cb-border bg-cb-surface-2/70 p-4"
             >
-              <p className="text-xs font-bold uppercase tracking-wide text-stone-700">Selected user</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-stone-700">{adminT("roles.selectedUser")}</p>
               <div className="mt-2 flex items-center gap-3">
                 {selectedResolved.avatar_url ? (
                   <img src={selectedResolved.avatar_url} alt={userDisplayName(selectedResolved)} className="h-10 w-10 rounded-full object-cover" />
@@ -452,14 +453,14 @@ export default function AdminRolesPage() {
                 </div>
                 {selectedResolved.role ? (
                   <span className={cn("ms-auto rounded-full px-2 py-1 text-[11px] font-bold", roleBadgeClass(selectedResolved.role))}>
-                    current: {selectedResolved.role}
+                    {adminT("roles.currentRole", { role: selectedResolved.role })}
                   </span>
                 ) : null}
               </div>
               {!selectedResolved.clerk_user_id ? (
                 <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-amber-700">
                   <AlertTriangle className="h-3.5 w-3.5" />
-                  This user is not linked to Clerk yet.
+                  {adminT("roles.notLinkedClerk")}
                 </p>
               ) : null}
             </motion.div>
@@ -473,10 +474,10 @@ export default function AdminRolesPage() {
         <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
           <h2 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-950">
             <Shield className="h-5 w-5 text-amber-700" />
-            Permissions Preview
+            {adminT("roles.permissionsTitle")}
           </h2>
           <p className="mt-1 text-sm text-stone-700">
-            Granular module capabilities for selected role.
+            {adminT("roles.permissionsSub")}
           </p>
           <select
             value={permissionsTargetRole}
@@ -485,7 +486,7 @@ export default function AdminRolesPage() {
           >
             {roles.map((r) => (
               <option key={r} value={r}>
-                {r} — {roleDescriptions[r]}
+                {t(`adminRoles.${r}`)} — {roleDescriptions[r]}
               </option>
             ))}
           </select>
@@ -493,11 +494,11 @@ export default function AdminRolesPage() {
             <table className="w-full min-w-[520px] text-xs">
               <thead className="bg-cb-surface-2/80 text-stone-700">
                 <tr>
-                  <th className="px-2 py-2 text-left">Module</th>
-                  <th className="px-2 py-2">View</th>
-                  <th className="px-2 py-2">Create</th>
-                  <th className="px-2 py-2">Update</th>
-                  <th className="px-2 py-2">Delete</th>
+                  <th className="px-2 py-2 text-start">{adminT("roles.module")}</th>
+                  <th className="px-2 py-2">{adminT("roles.view")}</th>
+                  <th className="px-2 py-2">{adminT("roles.create")}</th>
+                  <th className="px-2 py-2">{adminT("roles.update")}</th>
+                  <th className="px-2 py-2">{adminT("roles.delete")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -524,14 +525,14 @@ export default function AdminRolesPage() {
 
       <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated">
         <div className="flex items-center justify-between border-b border-cb-border bg-cb-surface-2 px-4 py-3">
-          <h2 className="font-semibold text-stone-950">Current Assignments</h2>
-          <span className="text-xs text-stone-600">{assignments.length} active admin assignments</span>
+          <h2 className="font-semibold text-stone-950">{adminT("roles.assignmentsTitle")}</h2>
+          <span className="text-xs text-stone-600">{adminT("roles.activeCount", { n: assignments.length })}</span>
         </div>
         {assignments.length === 0 ? (
           <div className="px-4 py-10 text-center">
-            <p className="text-sm font-semibold text-stone-800">No roles assigned yet</p>
+            <p className="text-sm font-semibold text-stone-800">{adminT("roles.noAssignments")}</p>
             <p className="mt-1 text-xs text-stone-600">
-              Start by selecting a user and assigning an owner/admin/staff role.
+              {adminT("roles.noAssignmentsSub")}
             </p>
             <button
               type="button"
@@ -541,7 +542,7 @@ export default function AdminRolesPage() {
               }}
               className="mt-3 rounded-xl border border-cb-border bg-white px-4 py-2 text-xs font-bold text-stone-800"
             >
-              Assign first role
+              {adminT("roles.assignFirst")}
             </button>
           </div>
         ) : (
@@ -550,10 +551,10 @@ export default function AdminRolesPage() {
               <table className="w-full min-w-[980px] text-sm">
                 <thead className="bg-cb-surface-2 text-left text-stone-700">
                   <tr>
-                    <th className="px-4 py-3">User</th>
-                    <th className="px-4 py-3">Email</th>
-                    <th className="px-4 py-3">Role</th>
-                    <th className="px-4 py-3">Actions</th>
+                    <th className="px-4 py-3">{adminT("roles.colUser")}</th>
+                    <th className="px-4 py-3">{adminT("roles.colEmail")}</th>
+                    <th className="px-4 py-3">{adminT("roles.colRole")}</th>
+                    <th className="px-4 py-3">{adminT("roles.colActions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -574,7 +575,7 @@ export default function AdminRolesPage() {
                       <td className="px-4 py-3 text-stone-800">{a.email}</td>
                       <td className="px-4 py-3">
                         <span className={cn("rounded-full px-2 py-1 text-[11px] font-bold uppercase", roleBadgeClass(a.role))}>
-                          {a.role}
+                          {t(`adminRoles.${a.role}`)}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -587,7 +588,7 @@ export default function AdminRolesPage() {
                           >
                             {roles.map((r) => (
                               <option key={r} value={r}>
-                                {r}
+                                {t(`adminRoles.${r}`)}
                               </option>
                             ))}
                           </select>
@@ -597,7 +598,7 @@ export default function AdminRolesPage() {
                             className="inline-flex items-center gap-1 rounded-lg border border-cb-border bg-white px-2 py-1 text-xs font-semibold text-stone-800"
                           >
                             <Eye className="h-3.5 w-3.5" />
-                            View permissions
+                            {adminT("roles.viewPermissions")}
                           </button>
                           <button
                             type="button"
@@ -605,7 +606,7 @@ export default function AdminRolesPage() {
                             onClick={() => void removeRole(a.id)}
                             className="rounded-lg border border-rose-300 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-900 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-200"
                           >
-                            {removingRoleUserId === a.id ? "Removing..." : "Remove role"}
+                            {removingRoleUserId === a.id ? adminT("roles.removing") : adminT("roles.removeRole")}
                           </button>
                         </div>
                       </td>
@@ -630,7 +631,7 @@ export default function AdminRolesPage() {
                       <p className="text-sm font-semibold text-stone-900">{a.full_name ?? a.email.split("@")[0]}</p>
                       <p className="text-xs text-stone-600">{a.email}</p>
                     </div>
-                    <span className={cn("ms-auto rounded-full px-2 py-1 text-[11px] font-bold uppercase", roleBadgeClass(a.role))}>{a.role}</span>
+                    <span className={cn("ms-auto rounded-full px-2 py-1 text-[11px] font-bold uppercase", roleBadgeClass(a.role))}>{t(`adminRoles.${a.role}`)}</span>
                   </div>
                   <div className="mt-3 grid gap-2">
                     <select
@@ -640,7 +641,7 @@ export default function AdminRolesPage() {
                     >
                       {roles.map((r) => (
                         <option key={r} value={r}>
-                          {r}
+                          {t(`adminRoles.${r}`)}
                         </option>
                       ))}
                     </select>
@@ -649,7 +650,7 @@ export default function AdminRolesPage() {
                       onClick={() => void removeRole(a.id)}
                       className="w-full rounded-lg border border-rose-300 bg-rose-50 px-2 py-2 text-xs font-semibold text-rose-900 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-200"
                     >
-                      Remove role
+                      {adminT("roles.removeRole")}
                     </button>
                   </div>
                 </article>
@@ -661,19 +662,19 @@ export default function AdminRolesPage() {
 
       <div className="overflow-hidden rounded-2xl border border-cb-border bg-cb-surface-elevated">
         <div className="border-b border-cb-border bg-cb-surface-2 px-4 py-3">
-          <h2 className="font-semibold text-stone-950">Role Matrix</h2>
+          <h2 className="font-semibold text-stone-950">{adminT("roles.matrixTitle")}</h2>
           <p className="mt-1 text-xs text-cb-text-muted lg:hidden">
-            اسحب أفقياً لعرض كل الأدوار
+            {adminT("roles.scrollHint")}
           </p>
         </div>
         <div className="admin-table-scroll">
         <table className="w-full min-w-[900px] text-sm">
           <thead className="bg-cb-surface-2 text-left text-cb-text-muted">
             <tr>
-              <th className="px-4 py-3">Module</th>
+              <th className="px-4 py-3">{adminT("roles.module")}</th>
               {roles.map((r) => (
                 <th key={r} className="px-4 py-3 uppercase">
-                  {r}
+                  {t(`adminRoles.${r}`)}
                 </th>
               ))}
             </tr>
@@ -682,7 +683,7 @@ export default function AdminRolesPage() {
             {loading ? (
               <tr>
                 <td className="px-4 py-3 text-cb-text-muted" colSpan={roles.length + 1}>
-                  Loading...
+                  {adminT("roles.loading")}
                 </td>
               </tr>
             ) : error ? (
