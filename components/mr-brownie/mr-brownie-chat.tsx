@@ -35,6 +35,7 @@ import {
   saveFabPosition,
   type MrBrownieFabPosition,
 } from "@/lib/mr-brownie/fab-position";
+import { layoutAmbientBubble } from "@/lib/mr-brownie/bubble-layout";
 import { pickRoamingTarget } from "@/lib/mr-brownie/roaming-target";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 
@@ -100,13 +101,28 @@ function isMobileViewport() {
 }
 
 function clampDragPosition(left: number, top: number, vw: number, vh: number) {
-  const inset = fabInsetPx();
   const mobile = isMobileViewport();
+  const inset = fabInsetPx(mobile);
   const size = fabSizePx(mobile);
   return {
     left: Math.max(inset, Math.min(vw - size - inset, left)),
     top: Math.max(72, Math.min(vh - size - (mobile ? 200 : 96), top)),
   };
+}
+
+function resolveFabLeftPx(
+  roamPx: { left: number; top: number } | null,
+  dragPx: { left: number; top: number } | null,
+  fabPos: { side: "left" | "right"; bottomPx: number },
+): number | null {
+  if (typeof window === "undefined") return null;
+  const mobile = isMobileViewport();
+  const size = fabSizePx(mobile);
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  if (roamPx) return roamPx.left;
+  if (dragPx) return dragPx.left;
+  return fabTopLeftFromStored(fabPos, vw, vh, mobile).left;
 }
 
 function subtotalFromLines(
@@ -773,7 +789,7 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
       return;
     }
     el.style.removeProperty("will-change");
-    const inset = fabInsetPx();
+    const inset = fabInsetPx(isMobileViewport());
     if (fabPos.side === "left") {
       el.style.setProperty("left", `${inset}px`);
       el.style.setProperty("right", "auto");
@@ -1032,6 +1048,18 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
       return top > vh * 0.52;
     })();
 
+  const mobileVp = isMobileViewport();
+  const fabLeftPx = resolveFabLeftPx(roamPx, dragPx, fabPos);
+  const ambientBubble =
+    fabLeftPx != null && typeof window !== "undefined"
+      ? layoutAmbientBubble(
+          fabLeftPx,
+          fabSizePx(mobileVp),
+          window.innerWidth,
+          mobileVp,
+        )
+      : null;
+
   return (
     <div data-mr-brownie className="cb-mr-brownie">
       <button
@@ -1082,8 +1110,10 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
           />
           <div
             className={cn(
-              "mr-brownie-ambient-bubble pointer-events-none absolute left-1/2 z-[4] w-[min(16rem,calc(100vw-2rem))] max-w-64 -translate-x-1/2 rounded-2xl border border-cb-border/70 bg-cb-surface-elevated/95 px-3 py-2 text-xs text-cb-text-strong shadow-[var(--shadow-glow-warm)] backdrop-blur will-change-transform",
-              bubbleAbove ? "bottom-full mb-2 origin-bottom" : "top-full mt-2 origin-top",
+              "mr-brownie-ambient-bubble pointer-events-none absolute z-[4] rounded-2xl border border-cb-border/70 bg-cb-surface-elevated/95 px-3 py-2 text-xs text-cb-text-strong shadow-[var(--shadow-glow-warm)] backdrop-blur will-change-transform",
+              bubbleAbove
+                ? "mr-brownie-ambient-bubble--above bottom-full mb-2 origin-bottom"
+                : "top-full mt-2 origin-top",
               "transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
               bubbleVisible
                 ? "translate-y-0 scale-100 opacity-100"
@@ -1091,11 +1121,23 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
                   ? "pointer-events-none translate-y-1 scale-[0.96] opacity-0"
                   : "pointer-events-none -translate-y-1 scale-[0.96] opacity-0",
             )}
+            style={
+              ambientBubble
+                ? {
+                    left: ambientBubble.leftPx,
+                    width: ambientBubble.widthPx,
+                    maxWidth: "none",
+                    ["--mr-brownie-bubble-tail" as string]: `${ambientBubble.tailPercent}%`,
+                  }
+                : { left: 0, width: "min(16rem, calc(100vw - 2.5rem))", maxWidth: "16rem" }
+            }
             role="status"
             aria-live="polite"
           >
-            <p className="relative z-[1] leading-relaxed">{bubbleText}</p>
-            <p className="relative z-[1] mt-1 text-[10px] text-cb-text-muted">
+            <p className="relative z-[1] break-words text-start leading-relaxed">
+              {bubbleText}
+            </p>
+            <p className="relative z-[1] mt-1 break-words text-start text-[10px] text-cb-text-muted">
               اضغط على الأيقونة للرد 💬
             </p>
           </div>

@@ -18,7 +18,7 @@
   content: "";
   position: absolute;
   bottom: calc(100% - 5px);
-  left: 50%;
+  left: var(--mr-brownie-bubble-tail, 50%);
   z-index: 0;
   width: 11px;
   height: 11px;
@@ -28,6 +28,16 @@
   border-left: 1px solid color-mix(in oklab, var(--cb-border) 70%, transparent);
   border-top: 1px solid color-mix(in oklab, var(--cb-border) 70%, transparent);
   pointer-events: none;
+}
+
+/* الفقاعة فوق الأيقونة — الذيل للأسفل */
+.mr-brownie-ambient-bubble--above::before {
+  bottom: auto;
+  top: calc(100% - 5px);
+  border-left: none;
+  border-top: none;
+  border-right: 1px solid color-mix(in oklab, var(--cb-border) 70%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--cb-border) 70%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

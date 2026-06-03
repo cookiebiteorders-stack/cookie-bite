@@ -18,8 +18,9 @@ export function fabSizePx(isMobile: boolean): number {
 /** @deprecated استخدم fabSizePx(isMobile) — يبقى للتوافق مع أي استيراد قديم */
 export const FAB_SIZE_PX = FAB_SIZE_DESKTOP_PX;
 
-/** تثبيت قريب من حافة نافذة المتصفح (وليس حاوية المحتوى) */
-const EDGE_INSET = 6;
+/** هامش أفقي من حافة الشاشة — لا يلتصق Mr. Brownie بالجانب */
+const EDGE_INSET_MOBILE = 20;
+const EDGE_INSET_DESKTOP = 28;
 
 export function defaultFabPosition(isMobile: boolean): MrBrownieFabPosition {
   return {
@@ -101,8 +102,8 @@ export function rectToFabPosition(
   };
 }
 
-export function fabInsetPx(): number {
-  return EDGE_INSET;
+export function fabInsetPx(isMobile = false): number {
+  return isMobile ? EDGE_INSET_MOBILE : EDGE_INSET_DESKTOP;
 }
 
 /** موضع الزاوية العلوية اليسرى للزر الثابت من قيمة محفوظة (للمزامنة البصرية والأنيميشن). */
@@ -112,7 +113,7 @@ export function fabTopLeftFromStored(
   viewportH: number,
   isMobile: boolean,
 ): { left: number; top: number } {
-  const inset = fabInsetPx();
+  const inset = fabInsetPx(isMobile);
   const size = fabSizePx(isMobile);
   const left =
     pos.side === "left" ? inset : viewportW - inset - size;
