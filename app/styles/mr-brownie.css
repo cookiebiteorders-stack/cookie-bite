@@ -115,6 +115,27 @@
   filter: drop-shadow(0 6px 20px rgba(201, 151, 42, 0.42));
 }
 
+.cb-mr-brownie--embedded {
+  width: 100%;
+}
+
+.cb-mr-brownie-drawer--embedded {
+  max-height: min(480px, 52vh);
+  animation: none !important;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--mr-gold) 28%, transparent),
+    0 10px 28px rgba(0, 0, 0, 0.22);
+}
+
+.cb-mr-brownie-drawer--embedded .cb-mr-brownie-composer {
+  max-height: 42%;
+  overflow-y: auto;
+}
+
+.cb-mr-brownie-messages--embedded {
+  flex: 0 1 auto;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cb-mr-brownie-scrim,
   .cb-mr-brownie-drawer--left,

@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { usePathname } from "next/navigation";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { AddToHomeScreenPrompt } from "@/components/pwa/add-to-home-screen-prompt";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
@@ -29,59 +28,45 @@ export function PageShell({
   children: React.ReactNode;
   className?: string;
 }) {
-  const pathname = usePathname();
-  const isGiftBoxBuild = pathname?.startsWith("/gift-box/build");
   const { t } = useLanguage();
   return (
     <CartProvider>
       <div
         className={cn(
           "cb-storefront cb-ambient-shell cb-touch-manipulation relative z-[1] flex min-h-screen w-full max-w-[100vw] flex-col overflow-x-hidden bg-background text-foreground",
-          isGiftBoxBuild && "cb-storefront--gift-box-build",
           className,
         )}
       >
-        {!isGiftBoxBuild ? <div className="cb-ambient-orbs" aria-hidden /> : null}
+        <div className="cb-ambient-orbs" aria-hidden />
         <a href="#main-content" className="cb-skip-link">
           {t("actions.skipToMain")}
         </a>
-        {!isGiftBoxBuild ? <AnnouncementBar /> : null}
+        <AnnouncementBar />
 
-        {!isGiftBoxBuild ? (
-          <>
-            <div className="desktop-header">
-              <SiteHeader />
-            </div>
-            <div className="hidden h-16 lg:block" aria-hidden />
-            <MobileHeader />
-          </>
-        ) : null}
+        <div className="desktop-header">
+          <SiteHeader />
+        </div>
+        <div className="hidden h-16 lg:block" aria-hidden />
+        <MobileHeader />
 
-        <main
-          id="main-content"
-          className={cn("relative flex-1", isGiftBoxBuild && "flex min-h-0 flex-col")}
-        >
+        <main id="main-content" className="relative flex-1">
           <LayoutGroup id="storefront-shared">
             <PageTransition>{children}</PageTransition>
           </LayoutGroup>
         </main>
 
-        {!isGiftBoxBuild ? (
-          <>
-            <div className="desktop-footer">
-              <SiteFooter />
-            </div>
-            <MobileFooter />
-            <MobileTabBar />
-            <div className="desktop-whatsapp-fab">
-              <WhatsAppFab />
-            </div>
-            <ClientOnlyMrBrownie />
-          </>
-        ) : null}
+        <div className="desktop-footer">
+          <SiteFooter />
+        </div>
+        <MobileFooter />
+        <MobileTabBar />
+        <div className="desktop-whatsapp-fab">
+          <WhatsAppFab />
+        </div>
+        <ClientOnlyMrBrownie />
 
         <CartDrawer />
-        {!isGiftBoxBuild ? <AddToHomeScreenPrompt /> : null}
+        <AddToHomeScreenPrompt />
       </div>
     </CartProvider>
   );

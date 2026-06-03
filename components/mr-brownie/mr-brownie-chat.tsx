@@ -109,7 +109,7 @@ type MrBrownieChatProps = {
   embedded?: boolean;
 };
 
-export function MrBrownieChat({ embedded = false }: MrBrownieChatProps = {}) {
+export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
   const { lines } = useCart();
   const { isSignedIn, user } = useUser();
   const clerkKey = isSignedIn && user?.id ? user.id : null;
@@ -668,7 +668,7 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps = {}) {
                   type="button"
                   onClick={() => setOpen(false)}
                   className="cb-mr-brownie-header__btn rounded-full p-2"
-                  aria-label="إغلاق المحادثة"
+                  aria-label={embedded ? "طي المحادثة" : "إغلاق المحادثة"}
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -677,7 +677,10 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps = {}) {
 
             <div
               ref={scrollRef}
-              className="cb-mr-brownie-messages flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4 sm:px-5"
+              className={cn(
+                "cb-mr-brownie-messages flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4 sm:px-5",
+                embedded && "cb-mr-brownie-messages--embedded max-h-[220px]",
+              )}
             >
               {historyLoading ? (
                 <div className="space-y-3 px-0.5" aria-busy="true" aria-label="جاري تحميل السجل">
@@ -816,7 +819,82 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps = {}) {
                 Google Gemini · {assistantSubtitleAr(sessionRole, Boolean(isSignedIn))}
               </p>
             </div>
-          </aside>
+    </aside>
+  );
+
+  if (embedded) {
+    return (
+      <div data-mr-brownie className="cb-mr-brownie cb-mr-brownie--embedded gb-assistant">
+        {!open ? (
+          <button
+            type="button"
+            className="gb-assistant__teaser"
+            onClick={() => setOpen(true)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={MR_BROWNIE_MASCOT_SRC}
+              alt=""
+              width={44}
+              height={44}
+              decoding="async"
+              draggable={false}
+              className="gb-assistant__teaser-icon"
+            />
+            <span className="gb-assistant__teaser-copy">
+              <strong>Mr. Brownie</strong>
+              <span>اسأل عن الهدايا، المنتجات، أو التوصيل</span>
+            </span>
+          </button>
+        ) : (
+          chatPanel
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div data-mr-brownie className="cb-mr-brownie">
+      <button
+        ref={fabRef}
+        type="button"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        className={cn(
+          "cb-mr-brownie-fab relative flex max-sm:h-[64px] max-sm:w-[64px] sm:h-[72px] sm:w-[72px] cursor-grab select-none items-center justify-center overflow-visible rounded-full bg-transparent p-0 shadow-none ring-0",
+          !dragPx &&
+            !reduceMotion &&
+            "motion-safe:transition-[left,top,right,bottom,transform] motion-safe:duration-500 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cb-focus",
+          "touch-none active:cursor-grabbing",
+          dragPx && "!transition-none scale-[1.04] ring-2 ring-[#c9972a]/40 ring-offset-0",
+          open && "pointer-events-none opacity-0",
+        )}
+        aria-label="Mr. Brownie — اضغط للدردشة أو اسحب للتحريك"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={MR_BROWNIE_MASCOT_SRC}
+          alt=""
+          width={72}
+          height={72}
+          decoding="async"
+          draggable={false}
+          className="pointer-events-none max-sm:h-[58px] max-sm:w-[58px] sm:h-[66px] sm:w-[66px] object-contain object-center"
+        />
+      </button>
+
+      {open ? (
+        <>
+          <button
+            type="button"
+            className="cb-mr-brownie-scrim"
+            aria-label="إغلاق المحادثة"
+            onClick={() => setOpen(false)}
+          />
+          {chatPanel}
         </>
       ) : null}
     </div>

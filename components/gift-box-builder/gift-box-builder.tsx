@@ -1,10 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MessageCircle } from "lucide-react";
 import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
+import { BRAND } from "@/lib/brand";
+import { siteConfig } from "@/lib/site-config";
 import "./gift-box-builder.css";
 import type { BuilderProduct } from "@/lib/gift-box-builder/data";
 import { builderFilterCategories, loadBuilderProducts } from "@/lib/gift-box-builder/load-products";
@@ -17,6 +20,16 @@ import { ShareGiftBoxButton } from "@/components/gift-box/share-gift-box-button"
 import { OccasionTemplatesBar } from "@/components/gift-box-builder/occasion-templates-bar";
 import { applyOccasionTemplateToState } from "@/lib/occasion-templates/apply";
 import type { OccasionTemplate } from "@/lib/occasion-templates/types";
+
+const GiftBoxAssistant = dynamic(
+  () => import("@/components/mr-brownie/mr-brownie-chat").then((m) => {
+    function EmbeddedAssistant() {
+      return <m.MrBrownieChat embedded />;
+    }
+    return EmbeddedAssistant;
+  }),
+  { ssr: false },
+);
 
 export function GiftBoxBuilder() {
   const { lang } = useLanguage();
@@ -257,6 +270,7 @@ export function GiftBoxBuilder() {
   const capPct = cap ? Math.min(100, (totalItems / cap) * 100) : 0;
   const previewVideo = "/media/gift-box-preview.mp4";
   const showVideoPreview = !preferReducedMotion && !videoFailed;
+  const whatsappHref = `https://wa.me/${siteConfig.whatsappNumber || BRAND.whatsappE164}`;
 
   const handleVideoMeta = () => {
     const node = previewVideoRef.current;
@@ -269,11 +283,6 @@ export function GiftBoxBuilder() {
 
   return (
     <div className="gift-box-builder">
-      <header className="gb-header">
-        <Link href="/" className="gb-logo">Cookie<span> Bite</span></Link>
-        <span className="gb-header-tag">{lang === "ar" ? "صندوق هدية مخصص" : "Custom Gift Box"}</span>
-      </header>
-
       <nav className="gb-progress-bar" aria-label="Gift box steps">
         {stepLabels.map((label, i) => {
           const n = i + 1;
@@ -420,7 +429,7 @@ export function GiftBoxBuilder() {
         </main>
 
         <aside className="gb-sidebar">
-          <h2 style={{ color: "var(--gb-gold-light)", fontFamily: "var(--font-playfair)" }}>{lang === "ar" ? "الصندوق الحالي" : "Current Box"}</h2>
+          <h2 className="gb-sidebar-title">{lang === "ar" ? "الصندوق الحالي" : "Current Box"}</h2>
           <div className="gb-mini-scene">
             <div className="gb-preview-layer is-visible" aria-hidden={false}>
               {showVideoPreview ? (
@@ -465,11 +474,25 @@ export function GiftBoxBuilder() {
                 : "Interactive 3D preview (motion reduced per system settings)."}
             </p>
           ) : null}
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", color: "rgba(255,255,255,0.6)" }}>
+          <div className="gb-sidebar-total">
+            <div className="gb-sidebar-total__row">
               <span>{lang === "ar" ? "الإجمالي" : "Total"}</span>
-              <strong style={{ color: "var(--gb-gold-light)" }}>{formatBuilderPrice(itemsSubtotal)}</strong>
+              <strong>{formatBuilderPrice(itemsSubtotal)}</strong>
             </div>
+          </div>
+
+          <GiftBoxAssistant />
+
+          <div className="gb-help-links">
+            <a
+              href={whatsappHref}
+              target="_blank"
+              rel="noreferrer"
+              className="gb-help-link"
+            >
+              <MessageCircle className="h-3.5 w-3.5" aria-hidden />
+              {lang === "ar" ? "واتساب للمساعدة" : "WhatsApp help"}
+            </a>
           </div>
         </aside>
       </div>
