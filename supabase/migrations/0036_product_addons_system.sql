@@ -21,9 +21,40 @@ alter table public.order_items
   add column if not exists addons_total_egp numeric(10,2) not null default 0,
   add column if not exists final_total_egp numeric(10,2) null;
 
-update public.order_items
-set final_total_egp = coalesce(total_price_egp, unit_price_egp * quantity)
-where final_total_egp is null;
+-- Backfill final_total_egp only when legacy column names exist (prod schemas may differ).
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'order_items'
+      and column_name = 'unit_price_egp'
+  ) then
+    update public.order_items
+    set final_total_egp = coalesce(
+      total_price_egp,
+      unit_price_egp * quantity,
+      final_total_egp
+    )
+    where final_total_egp is null;
+  elsif exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'order_items'
+      and column_name = 'total_price_egp'
+  ) then
+    update public.order_items
+    set final_total_egp = coalesce(total_price_egp, final_total_egp)
+    where final_total_egp is null;
+  end if;
+end $$;
 
 create index if not exists idx_product_addons_product_id on public.product_addons(product_id);
 create index if not exists idx_product_addons_addon_id on public.product_addons(addon_id);
+
+alter table public.addons enable row level security;
+alter table public.product_addons enable row level security;
+
+notify pgrst, 'reload schema';

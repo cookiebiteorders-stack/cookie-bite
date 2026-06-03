@@ -9,6 +9,8 @@ export const APP_DATABASE_TABLES = [
   "order_items",
   "addresses",
   "wishlists",
+  "addons",
+  "product_addons",
   "promo_codes",
   "shipping_zones",
   "gift_boxes",
