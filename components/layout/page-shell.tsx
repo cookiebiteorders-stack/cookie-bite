@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { AddToHomeScreenPrompt } from "@/components/pwa/add-to-home-screen-prompt";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
@@ -28,51 +29,59 @@ export function PageShell({
   children: React.ReactNode;
   className?: string;
 }) {
+  const pathname = usePathname();
+  const isGiftBoxBuild = pathname?.startsWith("/gift-box/build");
   const { t } = useLanguage();
   return (
     <CartProvider>
       <div
         className={cn(
           "cb-storefront cb-ambient-shell cb-touch-manipulation relative z-[1] flex min-h-screen w-full max-w-[100vw] flex-col overflow-x-hidden bg-background text-foreground",
+          isGiftBoxBuild && "cb-storefront--gift-box-build",
           className,
         )}
       >
-        <div className="cb-ambient-orbs" aria-hidden />
+        {!isGiftBoxBuild ? <div className="cb-ambient-orbs" aria-hidden /> : null}
         <a href="#main-content" className="cb-skip-link">
           {t("actions.skipToMain")}
         </a>
-        <AnnouncementBar />
+        {!isGiftBoxBuild ? <AnnouncementBar /> : null}
 
-        {/* Desktop header */}
-        <div className="desktop-header">
-          <SiteHeader />
-        </div>
-        <div className="hidden h-16 lg:block" aria-hidden />
+        {!isGiftBoxBuild ? (
+          <>
+            <div className="desktop-header">
+              <SiteHeader />
+            </div>
+            <div className="hidden h-16 lg:block" aria-hidden />
+            <MobileHeader />
+          </>
+        ) : null}
 
-        {/* Mobile header */}
-        <MobileHeader />
-
-        <main id="main-content" className="relative flex-1">
+        <main
+          id="main-content"
+          className={cn("relative flex-1", isGiftBoxBuild && "flex min-h-0 flex-col")}
+        >
           <LayoutGroup id="storefront-shared">
             <PageTransition>{children}</PageTransition>
           </LayoutGroup>
         </main>
 
-        {/* Desktop footer */}
-        <div className="desktop-footer">
-          <SiteFooter />
-        </div>
+        {!isGiftBoxBuild ? (
+          <>
+            <div className="desktop-footer">
+              <SiteFooter />
+            </div>
+            <MobileFooter />
+            <MobileTabBar />
+            <div className="desktop-whatsapp-fab">
+              <WhatsAppFab />
+            </div>
+            <ClientOnlyMrBrownie />
+          </>
+        ) : null}
 
-        {/* Mobile footer + tab bar */}
-        <MobileFooter />
-        <MobileTabBar />
-
-        <div className="desktop-whatsapp-fab">
-          <WhatsAppFab />
-        </div>
-        <ClientOnlyMrBrownie />
         <CartDrawer />
-        <AddToHomeScreenPrompt />
+        {!isGiftBoxBuild ? <AddToHomeScreenPrompt /> : null}
       </div>
     </CartProvider>
   );

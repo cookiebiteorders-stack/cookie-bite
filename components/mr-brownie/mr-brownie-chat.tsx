@@ -104,8 +104,12 @@ function subtotalFromLines(
   return lines.reduce((acc, l) => acc + l.priceEgp * l.quantity, 0);
 }
 
+type MrBrownieChatProps = {
+  /** Renders inside page layout (e.g. gift box sidebar) instead of a floating FAB. */
+  embedded?: boolean;
+};
 
-export function MrBrownieChat() {
+export function MrBrownieChat({ embedded = false }: MrBrownieChatProps = {}) {
   const { lines } = useCart();
   const { isSignedIn, user } = useUser();
   const clerkKey = isSignedIn && user?.id ? user.id : null;
@@ -338,6 +342,7 @@ export function MrBrownieChat() {
   }, [isSignedIn]);
 
   useEffect(() => {
+    if (embedded) return;
     const onResize = () => {
       const mobile = isMobileViewport();
       setFabPos((p) => ({
@@ -347,7 +352,7 @@ export function MrBrownieChat() {
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, []);
+  }, [embedded]);
 
   useLayoutEffect(() => {
     if (historyLoading || !open) return;
@@ -359,16 +364,16 @@ export function MrBrownieChat() {
   }, [historyLoading, messages, open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (embedded || !open) return;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [open]);
+  }, [embedded, open]);
 
   /** إغلاق عند الضغط أو اللمس خارج لوحة الشات */
   useEffect(() => {
-    if (!open) return;
+    if (embedded || !open) return;
 
     const closeIfOutside = (e: PointerEvent) => {
       const panel = panelRef.current;
@@ -380,7 +385,7 @@ export function MrBrownieChat() {
 
     document.addEventListener("pointerdown", closeIfOutside, true);
     return () => document.removeEventListener("pointerdown", closeIfOutside, true);
-  }, [open]);
+  }, [embedded, open]);
 
   const submitMessage = useCallback(
     async (raw: string) => {
@@ -589,6 +594,7 @@ export function MrBrownieChat() {
 
   /* موضع الـ FAB عبر DOM API */
   useLayoutEffect(() => {
+    if (embedded) return;
     const el = fabRef.current;
     if (!el) return;
     el.style.setProperty("position", "fixed");
@@ -611,62 +617,24 @@ export function MrBrownieChat() {
     }
     el.style.setProperty("bottom", `${fabPos.bottomPx}px`);
     el.style.setProperty("top", "auto");
-  }, [dragPx, fabPos.side, fabPos.bottomPx]);
+  }, [embedded, dragPx, fabPos.side, fabPos.bottomPx]);
 
   const drawerSideClass =
     fabPos.side === "left" ? "cb-mr-brownie-drawer--left left-0" : "cb-mr-brownie-drawer--right right-0";
 
-  return (
-    <div data-mr-brownie className="cb-mr-brownie">
-      <button
-        ref={fabRef}
-        type="button"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-        className={cn(
-          "cb-mr-brownie-fab relative flex max-sm:h-[64px] max-sm:w-[64px] sm:h-[72px] sm:w-[72px] cursor-grab select-none items-center justify-center overflow-visible rounded-full bg-transparent p-0 shadow-none ring-0",
-          !dragPx &&
-            !reduceMotion &&
-            "motion-safe:transition-[left,top,right,bottom,transform] motion-safe:duration-500 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
-          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cb-focus",
-          "touch-none active:cursor-grabbing",
-          dragPx && "!transition-none scale-[1.04] ring-2 ring-[#c9972a]/40 ring-offset-0",
-          open && "pointer-events-none opacity-0",
-        )}
-        aria-label="Mr. Brownie — اضغط للدردشة أو اسحب للتحريك"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={MR_BROWNIE_MASCOT_SRC}
-          alt=""
-          width={72}
-          height={72}
-          decoding="async"
-          draggable={false}
-          className="pointer-events-none max-sm:h-[58px] max-sm:w-[58px] sm:h-[66px] sm:w-[66px] object-contain object-center"
-        />
-      </button>
-
-      {open ? (
-        <>
-          <button
-            type="button"
-            className="cb-mr-brownie-scrim"
-            aria-label="إغلاق المحادثة"
-            onClick={() => setOpen(false)}
-          />
-          <aside
-            ref={panelRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="mr-brownie-title"
-            className={cn(
-              "cb-mr-brownie-drawer fixed inset-y-0 z-[51] flex w-full max-w-[min(100vw,420px)] flex-col",
-              drawerSideClass,
-            )}
-          >
+  const chatPanel = (
+    <aside
+      ref={panelRef}
+      role={embedded ? "region" : "dialog"}
+      aria-modal={embedded ? undefined : true}
+      aria-labelledby="mr-brownie-title"
+      className={cn(
+        "cb-mr-brownie-drawer flex flex-col",
+        embedded
+          ? "cb-mr-brownie-drawer--embedded relative w-full overflow-hidden rounded-[14px]"
+          : cn("fixed inset-y-0 z-[51] w-full max-w-[min(100vw,420px)]", drawerSideClass),
+      )}
+    >
             <div className="cb-mr-brownie-header flex shrink-0 items-center justify-between gap-3 px-4 py-3.5">
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

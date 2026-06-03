@@ -14,6 +14,9 @@ import { formatBuilderPrice, getBoxCapacity, getItemsTotal, getTotalItems, trimI
 import { DEFAULT_GIFT_BOX_SIZES, type GiftBoxSizeConfig } from "@/lib/gift-box-builder/sizes";
 import { Box3DPreview } from "@/components/gift-box-builder/box-3d-preview";
 import { ShareGiftBoxButton } from "@/components/gift-box/share-gift-box-button";
+import { OccasionTemplatesBar } from "@/components/gift-box-builder/occasion-templates-bar";
+import { applyOccasionTemplateToState } from "@/lib/occasion-templates/apply";
+import type { OccasionTemplate } from "@/lib/occasion-templates/types";
 
 export function GiftBoxBuilder() {
   const { lang } = useLanguage();
@@ -120,6 +123,23 @@ export function GiftBoxBuilder() {
     if (state.currentStep <= 1) return;
     patch({ currentStep: state.currentStep - 1 });
   };
+
+  const applyTemplate = useCallback(
+    (template: OccasionTemplate) => {
+      if (!products.length) {
+        setError(
+          lang === "ar"
+            ? "انتظر تحميل المنتجات أولاً."
+            : "Wait for products to load first.",
+        );
+        return;
+      }
+      const partial = applyOccasionTemplateToState(template, products, boxSizes, lang);
+      updateState((prev) => ({ ...prev, ...partial }));
+      setError(null);
+    },
+    [products, boxSizes, lang, updateState],
+  );
 
   const selectBox = (id: string) => {
     const box = boxSizes.find((b) => b.code === id);
@@ -271,6 +291,10 @@ export function GiftBoxBuilder() {
         <main className="gb-main">
           {state.currentStep === 1 ? (
             <div className="gb-step-panel active">
+              <OccasionTemplatesBar
+                onSelect={applyTemplate}
+                disabled={productsLoading || products.length === 0}
+              />
               <h2 className="gb-step-title">{lang === "ar" ? "اختر حجم الصندوق" : "Choose Box Size"}</h2>
               <p className="gb-step-sub">{lang === "ar" ? "لا يوجد سعر ثابت للصندوق، السعر = محتوى الصندوق فقط." : "Box has no fixed price. Total = contents only."}</p>
               <div className="gb-box-grid">

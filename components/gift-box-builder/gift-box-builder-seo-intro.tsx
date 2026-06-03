@@ -10,7 +10,7 @@ export function GiftBoxBuilderSeoIntro({ lang }: Props) {
 
   return (
     <section
-      className="border-b border-[#F2EAD8] bg-[#FAF6EE] px-6 py-8 sm:px-10"
+      className="sr-only border-b border-[#F2EAD8] bg-[#FAF6EE] px-6 py-8 sm:px-10"
       aria-labelledby="gift-box-builder-seo-title"
     >
       <div className="mx-auto max-w-3xl space-y-4 text-[#2A1505]">
