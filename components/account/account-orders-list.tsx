@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FileText } from "lucide-react";
 import { ReorderGiftBoxButton } from "@/components/account/reorder-gift-box-button";
+import { GiftRevealLinkButton } from "@/components/account/gift-reveal-link-button";
 import { buttonClassName } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +15,7 @@ export type AccountOrderRow = {
   status: string;
   order_type?: string | null;
   gift_box_snapshot?: unknown;
+  reveal_token?: string | null;
 };
 
 const STATUS_BADGE: Record<string, string> = {
@@ -62,6 +64,9 @@ export function AccountOrdersList({ orders }: Props) {
                       orderType={o.order_type}
                       hasSnapshot={hasSnapshot}
                     />
+                    {hasSnapshot && o.reveal_token && o.payment_status === "paid" ? (
+                      <GiftRevealLinkButton revealToken={o.reveal_token} />
+                    ) : null}
                     <Link
                       href={`/invoices/${invoiceNumber}`}
                       target="_blank"

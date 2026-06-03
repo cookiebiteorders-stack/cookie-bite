@@ -501,6 +501,7 @@ export default async function AccountPage() {
                   status: o.status,
                   order_type: o.order_type,
                   gift_box_snapshot: o.gift_box_snapshot,
+                  reveal_token: o.reveal_token ?? null,
                 }))}
               />
             </section>

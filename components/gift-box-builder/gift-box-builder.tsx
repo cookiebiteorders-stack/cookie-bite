@@ -13,6 +13,7 @@ import { DEFAULT_GIFT_BOX_STATE, GIFT_BOX_STORAGE_KEY, type GiftBoxBuilderState 
 import { formatBuilderPrice, getBoxCapacity, getItemsTotal, getTotalItems, trimItemsToCapacity } from "@/lib/gift-box-builder/utils";
 import { DEFAULT_GIFT_BOX_SIZES, type GiftBoxSizeConfig } from "@/lib/gift-box-builder/sizes";
 import { Box3DPreview } from "@/components/gift-box-builder/box-3d-preview";
+import { ShareGiftBoxButton } from "@/components/gift-box/share-gift-box-button";
 
 export function GiftBoxBuilder() {
   const { lang } = useLanguage();
@@ -382,6 +383,12 @@ export function GiftBoxBuilder() {
                 <div className="gb-checkout-row"><span>{lang === "ar" ? "إجمالي العناصر" : "Total Items"}</span><strong>{totalItems}</strong></div>
                 <div className="gb-checkout-row gb-checkout-row--grand"><span>{lang === "ar" ? "الإجمالي" : "Total"}</span><strong>{formatBuilderPrice(itemsSubtotal)}</strong></div>
               </div>
+              <ShareGiftBoxButton
+                state={state}
+                products={products}
+                disabled={!state.box || totalItems < 1}
+                className="gb-share-wrap"
+              />
             </div>
           ) : null}
 

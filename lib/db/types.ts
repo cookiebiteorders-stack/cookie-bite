@@ -107,6 +107,9 @@ export type OrderRow = {
   checkout_idempotency_key?: string | null;
   order_type?: "standard" | "gift_box";
   gift_box_snapshot?: Record<string, unknown> | null;
+  reveal_token?: string | null;
+  reveal_viewed_at?: string | null;
+  reveal_reaction?: string | null;
   created_at: string;
   updated_at: string;
 };

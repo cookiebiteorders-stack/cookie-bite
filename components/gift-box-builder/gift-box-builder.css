@@ -889,6 +889,107 @@
   display: block;
 }
 
+.gift-box-builder .gb-share-wrap {
+  margin-top: 20px;
+}
+
+.gift-box-builder .gb-share-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1.5px solid var(--gb-choco-mid);
+  background: var(--gb-cream);
+  color: var(--gb-choco);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.gift-box-builder .gb-share-trigger:hover:not(:disabled) {
+  border-color: var(--gb-gold);
+  background: #fff8ee;
+}
+
+.gift-box-builder .gb-share-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gift-box-builder .gb-share-panel {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--gb-choco-mid);
+  background: var(--gb-cream);
+}
+
+.gift-box-builder .gb-share-panel__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gb-choco);
+  margin-bottom: 10px;
+}
+
+.gift-box-builder .gb-share-panel__row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.gift-box-builder .gb-share-panel__url {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--gb-choco-mid);
+  background: #fff;
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+  color: var(--gb-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gift-box-builder .gb-share-copy {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  background: var(--gb-gold);
+  color: #fff;
+  cursor: pointer;
+}
+
+.gift-box-builder .gb-share-copy.is-copied {
+  background: #2d6a4f;
+}
+
+.gift-box-builder .gb-share-whatsapp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  background: #25d366;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.gift-box-builder .gb-share-error {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #b42318;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .gift-box-builder .gb-mini-box3d {
     animation: none;
