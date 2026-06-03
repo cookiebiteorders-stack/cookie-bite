@@ -18,7 +18,7 @@
 |---|--------|--------|
 | 5 | رابط مشاركة صندوق الهدايا | 🟢 منفّذ | migration `0041` + `POST /api/gift-box/share` + `/gift-preview/[token]` + زر مشاركة في المنشئ |
 | 6 | صفحة كشف الهدية | 🟢 منفّذ | migration `0042` + `GET/PATCH /api/orders/reveal/[token]` + `/gift-reveal/[token]` + زر «Reveal link» في الحساب |
-| 7 | Mystery Box | 🔴 |
+| 7 | Mystery Box | 🟢 منفّذ | migration `0043` + `POST /api/mystery-box/generate` + `/mystery-box` + إضافة للسلة كصندوق هدية |
 | 8 | قوالب المناسبات | 🔴 |
 | 9 | لوحة الولاء | 🟡 API `/api/loyalty` — واجهة حساب محدودة |
 | 10 | مكافآت مضاعفة على الصناديق | 🔴 |

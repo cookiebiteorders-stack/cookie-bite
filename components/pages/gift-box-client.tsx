@@ -42,6 +42,12 @@ export function GiftBoxClient() {
               >
                 {t("pages.giftBox.buildCustom")}
               </Link>
+              <Link
+                href="/mystery-box"
+                className={buttonClassName("ghost", "rounded-full px-8")}
+              >
+                {t("pages.giftBox.mysteryBox")}
+              </Link>
             </div>
           </div>
           <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] shadow-xl ring-1 ring-cb-border">

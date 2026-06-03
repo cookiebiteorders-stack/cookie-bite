@@ -11,6 +11,7 @@ export type LocalizedPageKey =
   | "/shop"
   | "/gift-box"
   | "/gift-box/build"
+  | "/mystery-box"
   | "/delivery/new-cairo"
   | "/blog"
   | "/our-cookies"
@@ -126,6 +127,30 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
         "بناء صندوق حلويات",
         "هدايا كوكيز التجمع الخامس",
         "تخصيص صندوق هدايا",
+      ],
+    },
+  },
+  "/mystery-box": {
+    en: {
+      title: "Mystery Cookie Gift Box — Curated for You",
+      description:
+        "Pick your occasion and budget — Cookie Bite builds a surprise gift box from our fresh cookies and treats. Perfect for birthdays, Ramadan, thank-you gifts, and corporate orders in New Cairo.",
+      keywords: [
+        "mystery gift box cookies",
+        "surprise cookie box cairo",
+        "curated dessert gift egypt",
+        "cookie bite mystery box",
+      ],
+    },
+    ar: {
+      title: "صندوق المفاجأة — كوكي بايت | هدايا مخصصة",
+      description:
+        "اختر المناسبة والميزانية ونحن نختار لك تشكيلة كوكيز وهدايا من المخبز. مثالي لأعياد الميلاد ورمضان وشكر الشركاء في القاهرة الجديدة.",
+      keywords: [
+        "صندوق مفاجأة كوكيز",
+        "هدية كوكيز مفاجأة",
+        "تشكيلة هدايا القاهرة الجديدة",
+        "كوكي بايت صندوق مفاجأة",
       ],
     },
   },

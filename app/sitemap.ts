@@ -16,6 +16,7 @@ const staticRoutes: Array<{
   { path: "/shop", changeFrequency: "daily", priority: 0.95 },
   { path: "/gift-box", changeFrequency: "weekly", priority: 0.9 },
   { path: "/gift-box/build", changeFrequency: "weekly", priority: 0.92 },
+  { path: "/mystery-box", changeFrequency: "weekly", priority: 0.88 },
   { path: "/gift-ideas", changeFrequency: "weekly", priority: 0.82 },
   { path: "/our-cookies", changeFrequency: "weekly", priority: 0.85 },
   { path: "/our-story", changeFrequency: "monthly", priority: 0.8 },

@@ -23,7 +23,7 @@ const EDGE_INSET = 6;
 
 export function defaultFabPosition(isMobile: boolean): MrBrownieFabPosition {
   return {
-    side: "left",
+    side: "right",
     bottomPx: isMobile ? 100 : 32,
   };
 }

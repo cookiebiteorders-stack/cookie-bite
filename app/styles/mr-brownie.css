@@ -1,0 +1,124 @@
+/* Mr. Brownie — integrated storefront assistant (matches gift-box / Cookie Bite palette) */
+
+.cb-mr-brownie-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  margin: 0;
+  padding: 0;
+  border: none;
+  cursor: default;
+  background: color-mix(in srgb, #3b1f0e 22%, transparent);
+  backdrop-filter: blur(2px);
+  animation: cb-mr-brownie-scrim-in 0.28s ease-out both;
+}
+
+@keyframes cb-mr-brownie-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.cb-mr-brownie-drawer {
+  --mr-choco: #3b1f0e;
+  --mr-choco-mid: #6b3a1f;
+  --mr-cream: #faf6ee;
+  --mr-gold: #e8c56a;
+  --mr-gold-deep: #c9972a;
+  --mr-text: #2a1505;
+  --mr-text-muted: #7a5a3a;
+
+  background: var(--mr-cream);
+  color: var(--mr-text);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mr-choco-mid) 18%, transparent),
+    -12px 0 40px rgba(59, 31, 14, 0.16);
+}
+
+.cb-mr-brownie-drawer--left {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mr-choco-mid) 18%, transparent),
+    12px 0 40px rgba(59, 31, 14, 0.16);
+}
+
+.cb-mr-brownie-drawer--right {
+  animation: mr-brownie-drawer-in-right 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cb-mr-brownie-drawer--left {
+  animation: mr-brownie-drawer-in-left 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes mr-brownie-drawer-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0.92;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes mr-brownie-drawer-in-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0.92;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.cb-mr-brownie-header {
+  background: linear-gradient(135deg, var(--mr-choco) 0%, var(--mr-choco-mid) 100%);
+  border-bottom: 1px solid color-mix(in srgb, var(--mr-gold) 35%, transparent);
+  color: var(--mr-cream);
+}
+
+.cb-mr-brownie-header__title {
+  font-family: var(--font-playfair, "Playfair Display", serif);
+  color: var(--mr-gold);
+}
+
+.cb-mr-brownie-header__subtitle {
+  color: color-mix(in srgb, var(--mr-cream) 72%, transparent);
+}
+
+.cb-mr-brownie-header__btn {
+  color: color-mix(in srgb, var(--mr-cream) 88%, transparent);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.cb-mr-brownie-header__btn:hover {
+  background: color-mix(in srgb, var(--mr-gold) 18%, transparent);
+  color: var(--mr-cream);
+}
+
+.cb-mr-brownie-messages {
+  background: linear-gradient(180deg, var(--mr-cream) 0%, #f2ead8 100%);
+}
+
+.cb-mr-brownie-composer {
+  border-top: 1px solid color-mix(in srgb, var(--mr-choco-mid) 22%, transparent);
+  background: color-mix(in srgb, var(--mr-cream) 92%, white);
+}
+
+.cb-mr-brownie-fab {
+  filter: drop-shadow(0 4px 14px rgba(59, 31, 14, 0.28));
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.cb-mr-brownie-fab:hover {
+  filter: drop-shadow(0 6px 20px rgba(201, 151, 42, 0.42));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-mr-brownie-scrim,
+  .cb-mr-brownie-drawer--left,
+  .cb-mr-brownie-drawer--right {
+    animation: none;
+  }
+}
