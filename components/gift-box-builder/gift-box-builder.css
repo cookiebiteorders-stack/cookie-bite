@@ -1,5 +1,8 @@
 /* Cookie Bite — Gift Box Builder (scoped) */
 .gift-box-builder {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   --gb-cream: #faf6ee;
   --gb-cream-dark: #f2ead8;
   --gb-choco: #3b1f0e;
@@ -121,16 +124,35 @@
 @media (max-width: 900px) {
   .gift-box-builder .gb-layout {
     grid-template-columns: 1fr;
+    min-height: auto;
   }
   .gift-box-builder .gb-sidebar {
     position: static;
-    order: -1;
+    order: 2;
+    top: auto;
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    padding: 20px 16px;
   }
   .gift-box-builder .gb-header {
     padding: 14px 20px;
   }
   .gift-box-builder .gb-progress-bar {
     padding: 0 12px;
+  }
+  .gift-box-builder .gb-main {
+    order: 1;
+    padding: 20px 16px;
+    max-width: 100%;
+    width: 100%;
+  }
+  .gift-box-builder .gb-mini-scene {
+    height: 180px;
+    min-height: 180px;
+  }
+  .gift-box-builder .gb-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

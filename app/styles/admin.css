@@ -499,3 +499,31 @@ html.dark .admin-console button.admin-btn-secondary,
 .admin-script-font {
   font-family: var(--font-allura), cursive;
 }
+
+/* Wide tables: horizontal scroll on mobile instead of clipping */
+.admin-console #admin-main-content {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.admin-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-gutter: stable;
+}
+
+@media (max-width: 1023px) {
+  .admin-console main .overflow-hidden:has(table) {
+    overflow-x: auto !important;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-console main :is(section, article, .admin-panel-surface) {
+    max-width: 100%;
+  }
+}

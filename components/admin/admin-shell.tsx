@@ -29,7 +29,7 @@ export function AdminShell({ role, children }: AdminShellProps) {
   return (
     <CartProvider>
       <AdminConsoleProvider role={role} navItems={navItems}>
-        <div className="admin-console cb-touch-manipulation relative z-[1] flex min-h-screen flex-col overflow-x-clip bg-background text-foreground">
+        <div className="admin-console cb-touch-manipulation relative z-[1] flex min-h-screen w-full max-w-[100vw] flex-col overflow-x-hidden bg-background text-foreground">
           <a href="#admin-main-content" className="cb-skip-link">
             {t("actions.skipToMain")}
           </a>
@@ -47,8 +47,8 @@ export function AdminShell({ role, children }: AdminShellProps) {
             <AdminConsoleNavbar />
           </div>
 
-          <div className="min-h-0 flex-1">
-            <div className="mx-auto grid max-w-[1600px] grid-cols-1 lg:grid-cols-[260px_1fr]">
+          <div className="min-h-0 w-full min-w-0 flex-1">
+            <div className="mx-auto grid w-full min-w-0 max-w-[1600px] grid-cols-1 lg:grid-cols-[260px_1fr]">
               <aside
                 className={cn(
                   "cb-no-print sticky top-16 z-20 hidden h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] flex-col overflow-hidden",
@@ -75,8 +75,11 @@ export function AdminShell({ role, children }: AdminShellProps) {
                 </div>
               </aside>
 
-            <div className="min-w-0">
-              <main id="admin-main-content" className="border-t border-transparent px-4 py-6 sm:px-6">
+            <div className="min-w-0 w-full max-w-full">
+              <main
+                id="admin-main-content"
+                className="w-full min-w-0 max-w-full border-t border-transparent px-4 py-6 sm:px-6"
+              >
                 {children}
               </main>
             </div>

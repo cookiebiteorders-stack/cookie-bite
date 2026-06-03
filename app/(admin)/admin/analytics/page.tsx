@@ -135,8 +135,8 @@ export default async function AdminAnalyticsOverviewPage({
       <section className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         <article className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
           <h2 className="text-base font-semibold text-cb-text-strong">Top pages</h2>
-          <div className="mt-3 overflow-x-auto">
-            <table className="min-w-[480px] text-sm">
+          <div className="admin-table-scroll mt-3">
+            <table className="min-w-[480px] w-full text-sm">
               <thead className="text-left text-cb-text-muted">
                 <tr className="border-b border-cb-border">
                   <th className="py-2 pr-4">Path</th>

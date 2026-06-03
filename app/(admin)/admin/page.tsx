@@ -156,7 +156,10 @@ export default async function AdminHomePage() {
           <h2 className="font-serif text-2xl font-bold text-cb-text-strong">
             Role Permission Matrix
           </h2>
-          <div className="mt-4 overflow-x-auto">
+          <div className="admin-table-scroll mt-4">
+            <p className="mb-2 text-xs text-cb-text-muted lg:hidden">
+              اسحب أفقياً لعرض كل الأدوار
+            </p>
             <table className="min-w-[760px] text-sm">
               <thead>
                 <tr className="border-b border-cb-border text-left text-cb-text-muted">

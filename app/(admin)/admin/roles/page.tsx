@@ -489,8 +489,8 @@ export default function AdminRolesPage() {
               </option>
             ))}
           </select>
-          <div className="mt-3 overflow-hidden rounded-xl border border-cb-border">
-            <table className="w-full text-xs">
+          <div className="admin-table-scroll mt-3 rounded-xl border border-cb-border">
+            <table className="w-full min-w-[520px] text-xs">
               <thead className="bg-cb-surface-2/80 text-stone-700">
                 <tr>
                   <th className="px-2 py-2 text-left">Module</th>
@@ -662,7 +662,11 @@ export default function AdminRolesPage() {
       <div className="overflow-hidden rounded-2xl border border-cb-border bg-cb-surface-elevated">
         <div className="border-b border-cb-border bg-cb-surface-2 px-4 py-3">
           <h2 className="font-semibold text-stone-950">Role Matrix</h2>
+          <p className="mt-1 text-xs text-cb-text-muted lg:hidden">
+            اسحب أفقياً لعرض كل الأدوار
+          </p>
         </div>
+        <div className="admin-table-scroll">
         <table className="w-full min-w-[900px] text-sm">
           <thead className="bg-cb-surface-2 text-left text-cb-text-muted">
             <tr>
@@ -701,6 +705,7 @@ export default function AdminRolesPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </section>
   );

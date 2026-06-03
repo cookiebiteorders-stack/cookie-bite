@@ -219,7 +219,7 @@ export default function TemplateLibraryPage() {
   const variant = selectedMeta?.variant ?? "email";
 
   return (
-    <section className="space-y-6 pb-10">
+    <section className="min-w-0 max-w-full space-y-6 pb-10">
       <header className="admin-panel-surface relative overflow-hidden rounded-3xl p-6 sm:p-8">
         <div className="admin-panel-scrim" aria-hidden />
         <div className="pointer-events-none absolute -right-16 -top-12 h-48 w-48 rounded-full bg-amber-300/25 blur-3xl" />
@@ -275,8 +275,8 @@ export default function TemplateLibraryPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="space-y-3 rounded-2xl border border-cb-border bg-white/90 p-4 dark:bg-stone-900/70">
+      <div className="grid min-w-0 max-w-full gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <aside className="min-w-0 space-y-3 rounded-2xl border border-cb-border bg-white/90 p-4 dark:bg-stone-900/70">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500" />
             <input
@@ -320,10 +320,10 @@ export default function TemplateLibraryPage() {
                           >
                             <Layout className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-700 dark:text-amber-300" />
                             <span className="min-w-0">
-                              <span className="block truncate text-sm font-semibold text-stone-900 dark:text-stone-100">
+                              <span className="block text-sm font-semibold text-stone-900 dark:text-stone-100">
                                 {it.name}
                               </span>
-                              <span className="mt-0.5 block truncate text-xs text-stone-600 dark:text-stone-400">
+                              <span className="mt-0.5 block text-xs leading-snug text-stone-600 dark:text-stone-400 sm:line-clamp-2">
                                 {it.description}
                               </span>
                             </span>
@@ -343,7 +343,7 @@ export default function TemplateLibraryPage() {
           )}
         </aside>
 
-        <main className="space-y-4">
+        <main className="min-w-0 max-w-full space-y-4">
           {selectedMeta ? (
             <>
               <div className="flex flex-col gap-3 rounded-2xl border border-cb-border bg-white/90 p-4 dark:bg-stone-900/70 lg:flex-row lg:items-center lg:justify-between">
@@ -441,7 +441,7 @@ export default function TemplateLibraryPage() {
                 </form>
               </div>
 
-              <div className="rounded-2xl border border-cb-border bg-stone-200/40 p-3 dark:bg-stone-950/30">
+              <div className="max-w-full overflow-x-auto rounded-2xl border border-cb-border bg-stone-200/40 p-3 dark:bg-stone-950/30">
                 {previewLoading ? (
                   <div className="flex h-72 items-center justify-center text-sm text-stone-600 dark:text-stone-400">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
