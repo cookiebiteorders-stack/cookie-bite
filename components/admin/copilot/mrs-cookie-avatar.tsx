@@ -15,6 +15,8 @@ type MrsCookieAvatarProps = {
   label?: string;
   /** When true, omits the soft pink background ring. */
   bare?: boolean;
+  /** When true, renders without any wrapper background (transparent PNG). */
+  transparent?: boolean;
 };
 
 export function MrsCookieAvatar({
@@ -22,13 +24,15 @@ export function MrsCookieAvatar({
   className = "",
   label = "Mrs. Cookie",
   bare = false,
+  transparent = false,
 }: MrsCookieAvatarProps) {
-  const wrapperBase = bare
-    ? ""
-    : "rounded-full bg-gradient-to-br from-cb-peach/70 to-cb-cream-2 ring-1 ring-inset ring-cb-border-strong";
+  const wrapperBase =
+    transparent || bare
+      ? ""
+      : "rounded-full bg-gradient-to-br from-cb-peach/70 to-cb-cream-2 ring-1 ring-inset ring-cb-border-strong";
   return (
     <span
-      className={`relative inline-flex items-center justify-center overflow-hidden ${wrapperBase} ${className}`}
+      className={`relative inline-flex items-center justify-center overflow-visible ${wrapperBase} ${className}`}
       style={{ width: size, height: size }}
       aria-label={label}
     >

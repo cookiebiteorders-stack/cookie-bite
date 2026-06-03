@@ -1,18 +1,61 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { X, Maximize2 } from "lucide-react";
 import { useLanguage } from "@/components/providers/language-provider";
 import { CopilotChat } from "@/components/admin/copilot/copilot-chat";
 import { MrsCookieAvatar } from "@/components/admin/copilot/mrs-cookie-avatar";
+import {
+  clampCopilotDragPosition,
+  clampCopilotFabBottom,
+  copilotFabInsetPx,
+  copilotFabSizePx,
+  defaultCopilotFabPosition,
+  loadCopilotFabPosition,
+  rectToCopilotFabPosition,
+  saveCopilotFabPosition,
+  type CopilotFabPosition,
+} from "@/lib/admin/copilot/copilot-fab-position";
+import { cn } from "@/lib/utils";
+
+const DRAG_THRESHOLD_PX = 8;
+
+function isMobileViewport() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(max-width: 639px)").matches;
+}
 
 export function CopilotLauncher() {
   const pathname = usePathname();
   const { t, lang } = useLanguage();
   const [open, setOpen] = useState(false);
   const onDedicatedPage = pathname?.startsWith("/admin/copilot");
+
+  const fabRef = useRef<HTMLButtonElement>(null);
+  const dragSession = useRef<{
+    startX: number;
+    startY: number;
+    originLeft: number;
+    originTop: number;
+  } | null>(null);
+  const pointerMoved = useRef(false);
+  const pendingDragRef = useRef<{ left: number; top: number } | null>(null);
+  const dragFlushRafRef = useRef<number | null>(null);
+
+  const [fabPos, setFabPos] = useState<CopilotFabPosition>(() => {
+    if (typeof window === "undefined") return defaultCopilotFabPosition(false);
+    const mobile = isMobileViewport();
+    const saved = loadCopilotFabPosition();
+    if (!saved) return defaultCopilotFabPosition(mobile);
+    return {
+      ...saved,
+      bottomPx: clampCopilotFabBottom(saved.bottomPx, window.innerHeight, mobile),
+    };
+  });
+  const [dragPx, setDragPx] = useState<{ left: number; top: number } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     queueMicrotask(() => setOpen(false));
@@ -27,26 +70,181 @@ export function CopilotLauncher() {
     };
   }, [open]);
 
+  useEffect(() => {
+    const sync = () => {
+      const mobile = isMobileViewport();
+      setIsMobile(mobile);
+      setFabPos((prev) => ({
+        ...prev,
+        bottomPx: clampCopilotFabBottom(prev.bottomPx, window.innerHeight, mobile),
+      }));
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  }, []);
+
+  const flushPendingDrag = useCallback(() => {
+    dragFlushRafRef.current = null;
+    const p = pendingDragRef.current;
+    if (p) setDragPx(p);
+  }, []);
+
+  const cancelDragRaf = useCallback(() => {
+    if (dragFlushRafRef.current != null) {
+      cancelAnimationFrame(dragFlushRafRef.current);
+      dragFlushRafRef.current = null;
+    }
+  }, []);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (open) return;
+    const el = fabRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    dragSession.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      originLeft: rect.left,
+      originTop: rect.top,
+    };
+    pointerMoved.current = false;
+    el.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const session = dragSession.current;
+    if (!session) return;
+    const dx = e.clientX - session.startX;
+    const dy = e.clientY - session.startY;
+    if (!pointerMoved.current && Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+    pointerMoved.current = true;
+    const mobile = isMobileViewport();
+    const { left, top } = clampCopilotDragPosition(
+      session.originLeft + dx,
+      session.originTop + dy,
+      window.innerWidth,
+      window.innerHeight,
+      mobile,
+    );
+    pendingDragRef.current = { left, top };
+    if (dragFlushRafRef.current == null) {
+      dragFlushRafRef.current = requestAnimationFrame(flushPendingDrag);
+    }
+  };
+
+  const finishDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const el = fabRef.current;
+    if (el?.hasPointerCapture(e.pointerId)) {
+      el.releasePointerCapture(e.pointerId);
+    }
+    cancelDragRaf();
+
+    const session = dragSession.current;
+    const didMove = pointerMoved.current;
+    dragSession.current = null;
+    pointerMoved.current = false;
+
+    if (!didMove) {
+      setDragPx(null);
+      setOpen(true);
+      return;
+    }
+
+    if (session) {
+      const dx = e.clientX - session.startX;
+      const dy = e.clientY - session.startY;
+      const mobile = isMobileViewport();
+      const p = clampCopilotDragPosition(
+        session.originLeft + dx,
+        session.originTop + dy,
+        window.innerWidth,
+        window.innerHeight,
+        mobile,
+      );
+      setDragPx(null);
+      const sz = copilotFabSizePx(mobile);
+      const rect = new DOMRect(p.left, p.top, sz, sz);
+      const next = rectToCopilotFabPosition(
+        rect,
+        window.innerWidth,
+        window.innerHeight,
+        mobile,
+      );
+      setFabPos(next);
+      saveCopilotFabPosition(next);
+      return;
+    }
+    setDragPx(null);
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const el = fabRef.current;
+    if (el?.hasPointerCapture(e.pointerId)) {
+      el.releasePointerCapture(e.pointerId);
+    }
+    cancelDragRaf();
+    dragSession.current = null;
+    pointerMoved.current = false;
+    setDragPx(null);
+  };
+
+  useLayoutEffect(() => {
+    const el = fabRef.current;
+    if (!el) return;
+    el.style.setProperty("position", "fixed");
+    el.style.setProperty("z-index", "45");
+    el.style.setProperty("touch-action", "none");
+
+    if (dragPx) {
+      el.style.setProperty("left", `${dragPx.left}px`);
+      el.style.setProperty("top", `${dragPx.top}px`);
+      el.style.setProperty("right", "auto");
+      el.style.setProperty("bottom", "auto");
+      return;
+    }
+
+    const inset = copilotFabInsetPx();
+    if (fabPos.side === "left") {
+      el.style.setProperty("left", `${inset}px`);
+      el.style.setProperty("right", "auto");
+    } else {
+      el.style.setProperty("right", `${inset}px`);
+      el.style.setProperty("left", "auto");
+    }
+    el.style.setProperty("bottom", `${fabPos.bottomPx}px`);
+    el.style.setProperty("top", "auto");
+  }, [dragPx, fabPos.side, fabPos.bottomPx]);
+
   if (onDedicatedPage) return null;
 
-  const panelSide = lang === "ar" ? "left-0" : "right-0";
+  const panelSide = fabPos.side === "left" ? "left-0" : "right-0";
+  const fabSize = copilotFabSizePx(isMobile);
 
   return (
     <>
       <button
+        ref={fabRef}
         type="button"
-        onClick={() => setOpen(true)}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={finishDrag}
+        onPointerCancel={handlePointerCancel}
         aria-label={t("copilot.openLauncher")}
-        className={
-          lang === "ar"
-            ? "group fixed bottom-5 left-5 z-[45] flex max-w-[min(calc(100vw-2rem),280px)] items-center gap-2 rounded-full border border-cb-border-strong bg-cb-surface py-1.5 ps-1.5 pe-4 text-sm font-semibold text-cb-text-strong shadow-lg transition hover:scale-[1.02] active:scale-[0.98]"
-            : "group fixed bottom-5 right-5 z-[45] flex max-w-[min(calc(100vw-2rem),280px)] items-center gap-2 rounded-full border border-cb-border-strong bg-cb-surface py-1.5 ps-1.5 pe-4 text-sm font-semibold text-cb-text-strong shadow-lg transition hover:scale-[1.02] active:scale-[0.98]"
-        }
+        className={cn(
+          "cursor-grab select-none items-center justify-center overflow-visible rounded-full bg-transparent p-0 shadow-none ring-0",
+          "drop-shadow-[0_4px_14px_rgba(42,24,16,0.28)]",
+          "hover:drop-shadow-[0_6px_20px_rgba(224,77,0,0.35)]",
+          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cb-focus",
+          "touch-none active:cursor-grabbing",
+          !dragPx &&
+            "motion-safe:transition-[left,top,right,bottom,transform,filter] motion-safe:duration-500 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
+          dragPx && "!transition-none scale-[1.05]",
+          open && "pointer-events-none opacity-0",
+        )}
+        style={{ width: fabSize, height: fabSize }}
       >
-        <span className="shrink-0">
-          <MrsCookieAvatar size={40} />
-        </span>
-        <span className="hidden truncate sm:inline">{t("copilot.askCopilot")}</span>
+        <MrsCookieAvatar size={fabSize} bare transparent />
       </button>
 
       {open ? (
@@ -71,7 +269,7 @@ export function CopilotLauncher() {
           >
             <header className="flex shrink-0 items-center justify-between gap-3 border-b border-cb-border px-4 py-3">
               <div className="flex min-w-0 items-center gap-2.5">
-                <MrsCookieAvatar size={36} />
+                <MrsCookieAvatar size={36} bare transparent />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold text-cb-text-strong">
                     {t("copilot.title")}
