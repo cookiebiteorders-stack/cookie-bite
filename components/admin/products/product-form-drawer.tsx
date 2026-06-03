@@ -163,6 +163,37 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
       .catch(() => setAddonsCatalog([]));
   }, [open]);
 
+  const addonSelectOptions = useMemo(
+    () =>
+      addonsCatalog.map((addon) => ({
+        value: addon.id,
+        labelAr: addon.name,
+        labelEn: addon.type === "single_choice" ? "Single choice" : "Multiple choice",
+      })),
+    [addonsCatalog],
+  );
+
+  const addonIdSet = useMemo(() => new Set(addonsCatalog.map((a) => a.id)), [addonsCatalog]);
+
+  const parseLinkedAddonIds = useCallback(
+    (csv: string) =>
+      csv
+        .split(/[,،\n]/g)
+        .map((x) => x.trim())
+        .filter((id) => addonIdSet.has(id)),
+    [addonIdSet],
+  );
+
+  const joinLinkedAddonIds = useCallback(
+    (values: string[]) => [...new Set(values.filter(Boolean))].join(", "),
+    [],
+  );
+
+  const labelForAddon = useCallback(
+    (id: string) => addonsCatalog.find((a) => a.id === id)?.name ?? id,
+    [addonsCatalog],
+  );
+
   const handlePriceChange = useCallback(
     (value: string) => {
       setForm((f) => {
@@ -863,39 +894,52 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     disabled={!canWrite}
                   />
                 </div>
-                <div className={cn("space-y-2", formStep !== 1 && "hidden")}>
-                  <span className={labelClass}>Linked Add-ons</span>
-                  <div className="max-h-44 space-y-2 overflow-auto rounded-xl border border-cb-border/70 bg-white p-3">
-                    {addonsCatalog.length === 0 ? (
+                <div className={cn(formStep !== 1 && "hidden")}>
+                  {addonsCatalog.length === 0 ? (
+                    <div className="space-y-2">
+                      <span className={labelClass}>Linked Add-ons</span>
                       <p className="text-xs text-cb-text-muted">
                         لا يوجد Add-ons بعد. أنشئها من صفحة `/admin/addons`.
                       </p>
-                    ) : (
-                      addonsCatalog.map((addon) => {
-                        const checked = form.linked_addon_ids.includes(addon.id);
-                        return (
-                          <label
-                            key={addon.id}
-                            className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-cb-border/60 px-3 py-2 text-xs"
-                          >
-                            <span className="font-semibold text-cb-text-strong">{addon.name}</span>
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={(e) =>
-                                setForm((f) => ({
-                                  ...f,
-                                  linked_addon_ids: e.target.checked
-                                    ? [...f.linked_addon_ids, addon.id]
-                                    : f.linked_addon_ids.filter((id) => id !== addon.id),
-                                }))
-                              }
-                            />
-                          </label>
-                        );
-                      })
-                    )}
-                  </div>
+                    </div>
+                  ) : addonsCatalog.length === 1 ? (
+                    <div className="space-y-2">
+                      <span className={labelClass}>Linked Add-ons</span>
+                      <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-cb-border/60 px-3 py-2 text-xs">
+                        <span className="font-semibold text-cb-text-strong">{addonsCatalog[0]!.name}</span>
+                        <input
+                          type="checkbox"
+                          checked={form.linked_addon_ids.includes(addonsCatalog[0]!.id)}
+                          disabled={!canWrite}
+                          onChange={(e) =>
+                            setForm((f) => ({
+                              ...f,
+                              linked_addon_ids: e.target.checked
+                                ? [...f.linked_addon_ids, addonsCatalog[0]!.id]
+                                : f.linked_addon_ids.filter((id) => id !== addonsCatalog[0]!.id),
+                            }))
+                          }
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <CatalogMultiSelect
+                      label="Linked Add-ons"
+                      hint="إضافات اختيارية تظهر في صفحة المنتج — اختر من القائمة"
+                      options={addonSelectOptions}
+                      valueCsv={joinLinkedAddonIds(form.linked_addon_ids)}
+                      onChangeCsv={(csv) =>
+                        setForm((f) => ({
+                          ...f,
+                          linked_addon_ids: parseLinkedAddonIds(csv),
+                        }))
+                      }
+                      parse={parseLinkedAddonIds}
+                      join={joinLinkedAddonIds}
+                      labelFor={labelForAddon}
+                      disabled={!canWrite}
+                    />
+                  )}
                 </div>
                 <div className={cn(formStep !== 1 && "hidden")}>
                   <CatalogMultiSelect
