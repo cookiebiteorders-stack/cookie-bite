@@ -3,9 +3,9 @@ import { MysteryBoxClient } from "@/components/mystery-box/mystery-box-client";
 import {
   buildBreadcrumbJsonLd,
   buildPageMetadata,
-  getLangFromCookies,
   getPageSeoEntry,
 } from "@/lib/seo";
+import { getLangFromCookies } from "@/lib/seo/server";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { translations } from "@/lib/i18n/translations";
 

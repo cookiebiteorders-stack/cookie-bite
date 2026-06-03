@@ -1,4 +1,3 @@
-import { APP_URL } from "@/lib/seo";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { parseGiftBoxSnapshot, type GiftBoxOrderSnapshot } from "@/lib/gift-box/order-snapshot";
 
@@ -14,13 +13,7 @@ export type GiftRevealPublic = {
   reveal_reaction: string | null;
 };
 
-export function giftRevealPath(token: string): string {
-  return `/gift-reveal/${encodeURIComponent(token)}`;
-}
-
-export function giftRevealUrl(token: string): string {
-  return `${APP_URL.replace(/\/$/, "")}${giftRevealPath(token)}`;
-}
+export { giftRevealPath, giftRevealUrl } from "@/lib/gift-box/public-urls";
 
 export async function getOrderByRevealToken(
   token: string,

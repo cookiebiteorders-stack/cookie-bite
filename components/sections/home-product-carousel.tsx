@@ -1,6 +1,6 @@
 import { getHomepageFeaturedProducts } from "@/lib/storefront/homepage-featured";
 import { ProductCarousel } from "@/components/sections/product-carousel";
-import { getLangFromCookies } from "@/lib/seo";
+import { getLangFromCookies } from "@/lib/seo/server";
 
 /** كاروسيل الرئيسية — منتجات مميزة من قاعدة البيانات */
 export async function HomeProductCarousel() {

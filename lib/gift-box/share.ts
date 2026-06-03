@@ -1,6 +1,6 @@
-import { APP_URL } from "@/lib/seo";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
+import { giftPreviewUrl } from "@/lib/gift-box/public-urls";
 
 export type GiftBoxShareItem = {
   product_id: string;
@@ -30,13 +30,7 @@ export type SharedGiftBoxRow = {
   created_at: string;
 };
 
-export function giftPreviewPath(token: string): string {
-  return `/gift-preview/${encodeURIComponent(token)}`;
-}
-
-export function giftPreviewUrl(token: string): string {
-  return `${APP_URL.replace(/\/$/, "")}${giftPreviewPath(token)}`;
-}
+export { giftPreviewPath, giftPreviewUrl } from "@/lib/gift-box/public-urls";
 
 export async function createGiftBoxShare(
   input: CreateGiftBoxShareInput,

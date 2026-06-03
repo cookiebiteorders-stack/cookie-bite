@@ -11,8 +11,8 @@ import {
   buildArticleMetadata,
   buildBreadcrumbJsonLd,
   buildBlogPostingJsonLd,
-  getLangFromCookies,
 } from "@/lib/seo";
+import { getLangFromCookies } from "@/lib/seo/server";
 
 type BlogDoc = {
   title_en: string;

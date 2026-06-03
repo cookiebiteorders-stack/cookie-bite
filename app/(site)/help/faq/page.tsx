@@ -6,8 +6,8 @@ import {
   buildBreadcrumbJsonLd,
   buildFaqPageJsonLd,
   buildLocalizedPageMetadata,
-  getLangFromCookies,
 } from "@/lib/seo";
+import { getLangFromCookies } from "@/lib/seo/server";
 import { getFaqItems } from "@/lib/seo/faq-server";
 
 export async function generateMetadata(): Promise<Metadata> {

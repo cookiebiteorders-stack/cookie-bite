@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CheckCheck, Copy, Gift } from "lucide-react";
-import { giftRevealUrl } from "@/lib/gift-box/reveal";
+import { giftRevealUrl } from "@/lib/gift-box/public-urls";
 
 type Props = {
   revealToken: string;

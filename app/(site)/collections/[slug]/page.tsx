@@ -15,7 +15,7 @@ import {
   buildCollectionMetadata,
   buildFaqPageJsonLd,
 } from "@/lib/seo";
-import { getLangFromCookies } from "@/lib/seo";
+import { getLangFromCookies } from "@/lib/seo/server";
 import { isValidCollectionSlug, listProductsForCollection } from "@/lib/storefront/collection-products";
 
 type Props = { params: Promise<{ slug: string }> };

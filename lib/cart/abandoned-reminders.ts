@@ -1,4 +1,4 @@
-import { APP_URL } from "@/lib/seo";
+import { APP_URL } from "@/lib/seo/constants";
 import type { AbandonedCartRow, AbandonedCartSnapshot } from "@/lib/cart/abandoned";
 import { buildRecoveryDiscountCode } from "@/lib/cart/recovery-discount";
 import { sendInternalEmail } from "@/lib/email/send";

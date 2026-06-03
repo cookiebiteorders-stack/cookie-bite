@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { OurStoryClient } from "@/components/pages/our-story-client";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { translations } from "@/lib/i18n/translations";
-import { buildBreadcrumbJsonLd, buildLocalizedPageMetadata, getLangFromCookies } from "@/lib/seo";
+import { buildBreadcrumbJsonLd, buildLocalizedPageMetadata } from "@/lib/seo";
+import { getLangFromCookies } from "@/lib/seo/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const lang = await getLangFromCookies();

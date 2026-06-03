@@ -17,8 +17,8 @@ import {
   buildBreadcrumbJsonLd,
   buildProductJsonLd,
   buildProductMetadata,
-  getLangFromCookies,
 } from "@/lib/seo";
+import { getLangFromCookies } from "@/lib/seo/server";
 
 type Props = { params: Promise<{ slug: string }> };
 

@@ -12,9 +12,9 @@ import {
   buildFaqPageJsonLd,
   buildHowToJsonLd,
   buildPageMetadata,
-  getLangFromCookies,
   getPageSeoEntry,
 } from "@/lib/seo";
+import { getLangFromCookies } from "@/lib/seo/server";
 
 export async function generateMetadata() {
   const lang = await getLangFromCookies();

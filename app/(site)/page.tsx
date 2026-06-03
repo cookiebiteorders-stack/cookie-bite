@@ -3,7 +3,8 @@ import dynamic from "next/dynamic";
 import { ExploreCategories } from "@/components/sections/explore-categories";
 import { HomeStorySnippet } from "@/components/sections/home-story-snippet";
 import { TrustBar } from "@/components/sections/trust-bar";
-import { buildLocalizedPageMetadata, getLangFromCookies } from "@/lib/seo";
+import { buildLocalizedPageMetadata } from "@/lib/seo";
+import { getLangFromCookies } from "@/lib/seo/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const lang = await getLangFromCookies();

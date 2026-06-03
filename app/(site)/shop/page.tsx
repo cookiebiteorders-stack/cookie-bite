@@ -10,8 +10,8 @@ import {
   buildFaqPageJsonLd,
   buildLocalizedPageMetadata,
   buildShopCategoryMetadata,
-  getLangFromCookies,
 } from "@/lib/seo";
+import { getLangFromCookies } from "@/lib/seo/server";
 
 export async function generateMetadata({
   searchParams,

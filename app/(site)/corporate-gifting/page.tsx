@@ -7,8 +7,8 @@ import {
   buildBreadcrumbJsonLd,
   buildFaqPageJsonLd,
   buildLocalizedPageMetadata,
-  getLangFromCookies,
 } from "@/lib/seo";
+import { getLangFromCookies } from "@/lib/seo/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const lang = await getLangFromCookies();

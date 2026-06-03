@@ -1,18 +1,16 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { BRAND } from "@/lib/brand";
 import type { Product } from "@/lib/data";
 import type { Lang } from "@/lib/i18n/translations";
 import { getCollectionPageContent } from "@/lib/content/collections-seo";
-import { LANG_COOKIE } from "@/lib/preferences/client-cookies";
 import {
   PAGE_METADATA,
   type LocalizedPageKey,
   type PageSeoEntry,
 } from "@/lib/seo/page-metadata";
+import { APP_URL, BRAND_NAME, type CollectionSeoKey } from "@/lib/seo/constants";
 
-export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com";
-export const BRAND_NAME = "Cookie Bite";
+export { APP_URL, BRAND_NAME, type CollectionSeoKey } from "@/lib/seo/constants";
 const TWITTER_SITE = "@cookiebite8";
 
 const OG_LOCALE_EN = "en_US";
@@ -28,11 +26,6 @@ type BuildMetadataInput = {
   ogType?: "website" | "article";
   lang?: Lang;
 };
-
-export async function getLangFromCookies(): Promise<Lang> {
-  const store = await cookies();
-  return store.get(LANG_COOKIE)?.value === "en" ? "en" : "ar";
-}
 
 export function getPageSeoEntry(path: LocalizedPageKey, lang: Lang): PageSeoEntry {
   return PAGE_METADATA[path][lang];
@@ -143,8 +136,6 @@ export function buildPageMetadata({
     twitter: sharedTwitter(title, description, image, lang),
   };
 }
-
-export type CollectionSeoKey = "classic" | "seasonal" | "stuffed" | "gifts";
 
 export function buildCollectionMetadata(slug: CollectionSeoKey, lang: Lang = "en"): Metadata {
   const meta = getCollectionPageContent(slug, lang);
