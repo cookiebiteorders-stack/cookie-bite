@@ -17,15 +17,26 @@ import { buttonClassName } from "@/components/ui/button";
 import { streamMrBrownieChat } from "@/lib/mr-brownie/stream-client";
 import { MessageBubble } from "@/components/ai-chat/message-bubble";
 import {
+  BUBBLE_AUTO_HIDE_MS,
+  buildAmbientMessages,
+  loadRoamingPosition,
+  ROAM_INTERVAL_MS,
+  ROAM_POST_UI_MS,
+  saveRoamingPosition,
+} from "@/lib/mr-brownie/ambient-copy";
+import {
   clampFabBottom,
   defaultFabPosition,
   fabInsetPx,
   fabSizePx,
+  fabTopLeftFromStored,
   loadFabPosition,
   rectToFabPosition,
   saveFabPosition,
   type MrBrownieFabPosition,
 } from "@/lib/mr-brownie/fab-position";
+import { pickRoamingTarget } from "@/lib/mr-brownie/roaming-target";
+import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 
 import { getOrCreateChatSessionId, isChatSessionUuid, CHAT_SESSION_ID_KEY } from "@/lib/chat/session-id";
 import {
@@ -140,6 +151,11 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
       : window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
   const [dragPx, setDragPx] = useState<{ left: number; top: number } | null>(null);
+  const [roamPx, setRoamPx] = useState<{ left: number; top: number } | null>(null);
+  const [bubbleVisible, setBubbleVisible] = useState(false);
+  const [bubbleText, setBubbleText] = useState("");
+  const [edgePeek, setEdgePeek] = useState(false);
+  const [showNotifDot, setShowNotifDot] = useState(true);
   const [sessionRole, setSessionRole] = useState<string | null>(null);
   const fabRef = useRef<HTMLButtonElement>(null);
   const dragSession = useRef<{
@@ -154,6 +170,8 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const bubbleHideTimerRef = useRef<number | null>(null);
+  const lastBubbleIndexRef = useRef(-1);
   const openRef = useRef(false);
   const linesRef = useRef(lines);
   const isSignedInRef = useRef(Boolean(isSignedIn));
@@ -180,6 +198,10 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
   useEffect(() => {
     return () => {
       cancelDragRaf();
+      if (bubbleHideTimerRef.current != null) {
+        window.clearTimeout(bubbleHideTimerRef.current);
+        bubbleHideTimerRef.current = null;
+      }
     };
   }, [cancelDragRaf]);
 
@@ -188,6 +210,29 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
     const onChange = () => setReduceMotion(mq.matches);
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const hideBubble = useCallback(() => {
+    setBubbleVisible(false);
+    setEdgePeek(false);
+    if (bubbleHideTimerRef.current != null) {
+      window.clearTimeout(bubbleHideTimerRef.current);
+      bubbleHideTimerRef.current = null;
+    }
+  }, []);
+
+  const showBubble = useCallback((text: string) => {
+    setBubbleText(text);
+    setBubbleVisible(true);
+    setShowNotifDot(true);
+    if (bubbleHideTimerRef.current != null) {
+      window.clearTimeout(bubbleHideTimerRef.current);
+    }
+    bubbleHideTimerRef.current = window.setTimeout(() => {
+      setBubbleVisible(false);
+      setEdgePeek(false);
+      bubbleHideTimerRef.current = null;
+    }, BUBBLE_AUTO_HIDE_MS);
   }, []);
 
   const postMrBrownieAmbient = useCallback(async () => {
@@ -220,6 +265,11 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
     }
   }, []);
 
+  const fetchDynamicAmbientMessage = useCallback(async (): Promise<string | null> => {
+    const { message } = await postMrBrownieAmbient();
+    return message;
+  }, [postMrBrownieAmbient]);
+
   useEffect(() => {
     let cancelled = false;
     queueMicrotask(() => {
@@ -236,6 +286,105 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
       cancelled = true;
     };
   }, [isSignedIn, user?.id, postMrBrownieAmbient]);
+
+  const pickRoamingTargetCb = useCallback(() => {
+    return pickRoamingTarget(isMobileViewport());
+  }, []);
+
+  useEffect(() => {
+    if (embedded || typeof window === "undefined") return;
+    const cancel = scheduleEffectTask(() => {
+      const saved = loadRoamingPosition();
+      if (saved) {
+        const p = clampDragPosition(
+          saved.left,
+          saved.top,
+          window.innerWidth,
+          window.innerHeight,
+        );
+        setRoamPx(p);
+        return;
+      }
+      const fallback = fabTopLeftFromStored(
+        fabPos,
+        window.innerWidth,
+        window.innerHeight,
+        isMobileViewport(),
+      );
+      const p = clampDragPosition(
+        fallback.left,
+        fallback.top,
+        window.innerWidth,
+        window.innerHeight,
+      );
+      setRoamPx(p);
+      saveRoamingPosition(p);
+    });
+    return cancel;
+  }, [embedded, fabPos]);
+
+  useEffect(() => {
+    if (embedded || reduceMotion) return;
+    const tick = () => {
+      if (openRef.current || dragSession.current || dragPx) return;
+      const p = pickRoamingTargetCb();
+      setRoamPx(p);
+      saveRoamingPosition(p);
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const sz = fabSizePx(isMobileViewport());
+      const next = rectToFabPosition(
+        new DOMRect(p.left, p.top, sz, sz),
+        vw,
+        vh,
+        isMobileViewport(),
+      );
+      setFabPos(next);
+      saveFabPosition(next);
+
+      window.setTimeout(() => {
+        if (document.visibilityState === "hidden") return;
+        if (openRef.current || dragSession.current) return;
+
+        const pool = buildAmbientMessages(
+          isSignedInRef.current,
+          linesRef.current.length,
+        );
+        if (pool.length === 0) return;
+
+        const pickRandom = () => {
+          const options =
+            pool.length <= 1
+              ? pool
+              : pool.filter((_, i) => i !== lastBubbleIndexRef.current);
+          const msg =
+            options[Math.floor(Math.random() * Math.max(1, options.length))] ??
+            pool[0];
+          const idx = pool.indexOf(msg);
+          lastBubbleIndexRef.current = idx;
+          return msg;
+        };
+
+        const runBubble = async () => {
+          setEdgePeek(true);
+          const dynamic = await fetchDynamicAmbientMessage();
+          showBubble(dynamic ?? pickRandom());
+        };
+
+        void runBubble();
+      }, ROAM_POST_UI_MS);
+    };
+    const id = window.setInterval(tick, ROAM_INTERVAL_MS);
+    tick();
+    return () => window.clearInterval(id);
+  }, [
+    embedded,
+    reduceMotion,
+    dragPx,
+    pickRoamingTargetCb,
+    showBubble,
+    fetchDynamicAmbientMessage,
+  ]);
 
   const enqueueSaveMessage = useCallback((role: "user" | "assistant", content: string) => {
     const sid = getOrCreateChatSessionId();
@@ -349,6 +498,17 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
         ...p,
         bottomPx: clampFabBottom(p.bottomPx, window.innerHeight, mobile),
       }));
+      setRoamPx((p) => {
+        if (!p) return p;
+        const clamped = clampDragPosition(
+          p.left,
+          p.top,
+          window.innerWidth,
+          window.innerHeight,
+        );
+        saveRoamingPosition(clamped);
+        return clamped;
+      });
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -552,7 +712,10 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
 
     if (!didMove) {
       setDragPx(null);
+      setShowNotifDot(false);
+      hideBubble();
       setOpen(true);
+      setEdgePeek(false);
       return;
     }
 
@@ -566,6 +729,9 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
         window.innerHeight,
       );
       setDragPx(null);
+      setRoamPx(p);
+      saveRoamingPosition(p);
+      setEdgePeek(false);
       const sz = fabSizePx(isMobileViewport());
       const rect = new DOMRect(p.left, p.top, sz, sz);
       const next = rectToFabPosition(
@@ -590,6 +756,7 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
     dragSession.current = null;
     pointerMoved.current = false;
     setDragPx(null);
+    if (!open) setEdgePeek(false);
   };
 
   /* موضع الـ FAB عبر DOM API */
@@ -600,13 +767,19 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
     el.style.setProperty("position", "fixed");
     el.style.setProperty("z-index", "40");
     el.style.setProperty("touch-action", "none");
-    if (dragPx) {
-      el.style.setProperty("left", `${dragPx.left}px`);
-      el.style.setProperty("top", `${dragPx.top}px`);
+    const pos = dragPx ?? roamPx;
+    if (pos) {
+      el.style.setProperty("left", `${pos.left}px`);
+      el.style.setProperty("top", `${pos.top}px`);
       el.style.setProperty("right", "auto");
       el.style.setProperty("bottom", "auto");
+      el.style.setProperty(
+        "will-change",
+        dragPx ? "transform, left, top" : "left, top",
+      );
       return;
     }
+    el.style.removeProperty("will-change");
     const inset = fabInsetPx();
     if (fabPos.side === "left") {
       el.style.setProperty("left", `${inset}px`);
@@ -617,7 +790,7 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
     }
     el.style.setProperty("bottom", `${fabPos.bottomPx}px`);
     el.style.setProperty("top", "auto");
-  }, [embedded, dragPx, fabPos.side, fabPos.bottomPx]);
+  }, [embedded, dragPx, roamPx, fabPos.side, fabPos.bottomPx]);
 
   const drawerSideClass =
     fabPos.side === "left" ? "cb-mr-brownie-drawer--left left-0" : "cb-mr-brownie-drawer--right right-0";
@@ -853,6 +1026,10 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
     );
   }
 
+  const allowSmoothRoamMove = !embedded && dragPx == null && !open && !reduceMotion;
+  const dockedToEdge = !embedded && !open && !dragPx && !edgePeek;
+  const idleFab = !embedded && dragPx == null && !open;
+
   return (
     <div data-mr-brownie className="cb-mr-brownie">
       <button
@@ -863,27 +1040,67 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
         className={cn(
-          "cb-mr-brownie-fab relative flex max-sm:h-[64px] max-sm:w-[64px] sm:h-[72px] sm:w-[72px] cursor-grab select-none items-center justify-center overflow-visible rounded-full bg-transparent p-0 shadow-none ring-0",
-          !dragPx &&
-            !reduceMotion &&
-            "motion-safe:transition-[left,top,right,bottom,transform] motion-safe:duration-500 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "cb-mr-brownie-fab relative flex max-sm:h-[78px] max-sm:w-[78px] sm:h-[92px] sm:w-[92px] cursor-grab select-none items-center justify-center overflow-visible rounded-full bg-transparent p-0 shadow-none ring-0",
+          allowSmoothRoamMove &&
+            "motion-safe:transform-gpu motion-safe:transition-[left,top,right,bottom,transform,filter,opacity] motion-safe:duration-[1000ms] motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
+          !allowSmoothRoamMove &&
+            !dragPx &&
+            "transition-[transform,filter,opacity] duration-200 ease-out",
           "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cb-focus",
           "touch-none active:cursor-grabbing",
-          dragPx && "!transition-none scale-[1.04] ring-2 ring-[#c9972a]/40 ring-offset-0",
+          dragPx && "!transition-none scale-[1.06] ring-2 ring-cb-focus/50 ring-offset-0",
+          idleFab && !reduceMotion && "motion-safe:transform-gpu",
           open && "pointer-events-none opacity-0",
         )}
-        aria-label="Mr. Brownie — اضغط للدردشة أو اسحب للتحريك"
+        aria-label="Mr. Brownie — اضغط للدردشة أو اسحب للتحريك على الشاشة"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={MR_BROWNIE_MASCOT_SRC}
-          alt=""
-          width={72}
-          height={72}
-          decoding="async"
-          draggable={false}
-          className="pointer-events-none max-sm:h-[58px] max-sm:w-[58px] sm:h-[66px] sm:w-[66px] object-contain object-center"
-        />
+        <span
+          className={cn(
+            "relative inline-flex items-center justify-center",
+            allowSmoothRoamMove &&
+              "motion-safe:transition-transform motion-safe:duration-[1000ms] motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
+            dragPx && "!transition-none",
+            dockedToEdge &&
+              fabPos.side === "left" &&
+              "-translate-x-[56%] max-sm:-translate-x-[58%]",
+            dockedToEdge &&
+              fabPos.side === "right" &&
+              "translate-x-[56%] max-sm:translate-x-[58%]",
+          )}
+        >
+          {showNotifDot && !open ? (
+            <span
+              className="absolute -end-0.5 -top-0.5 z-[3] h-3.5 w-3.5 rounded-full border-2 border-white bg-rose-500 motion-safe:[animation:ping_2s_ease-in-out_infinite]"
+              aria-hidden
+            />
+          ) : null}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={MR_BROWNIE_MASCOT_SRC}
+            alt=""
+            width={92}
+            height={92}
+            decoding="async"
+            draggable={false}
+            className="pointer-events-none max-sm:h-[73px] max-sm:w-[73px] sm:h-[87px] sm:w-[87px] object-contain object-center"
+          />
+          <div
+            className={cn(
+              "mr-brownie-ambient-bubble pointer-events-auto absolute left-1/2 top-full z-[4] mt-2 w-64 max-w-[min(16rem,calc(100vw-1.5rem))] -translate-x-1/2 rounded-2xl border border-cb-border/70 bg-cb-surface-elevated/95 px-3 py-2 text-xs text-cb-text-strong shadow-[var(--shadow-glow-warm)] backdrop-blur will-change-transform",
+              "origin-top transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+              bubbleVisible
+                ? "translate-y-0 scale-100 opacity-100"
+                : "pointer-events-none -translate-y-1 scale-[0.96] opacity-0",
+            )}
+            role="status"
+            aria-live="polite"
+          >
+            <p className="relative z-[1] leading-relaxed">{bubbleText}</p>
+            <p className="relative z-[1] mt-1 text-[10px] text-cb-text-muted">
+              اضغط على الأيقونة للرد 💬
+            </p>
+          </div>
+        </span>
       </button>
 
       {open ? (
