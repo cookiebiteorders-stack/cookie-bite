@@ -33,13 +33,15 @@ const L = {
   required: { en: "Required add-on", ar: "إضافة إلزامية" },
   defaultPrice: { en: "Default option price (EGP)", ar: "السعر الافتراضي للخيار (جنيه)" },
   defaultPricePh: { en: "0.00", ar: "0.00" },
-  productSection: { en: "Link to product", ar: "الربط بمنتج" },
+  productSection: { en: "Link to products", ar: "الربط بمنتجات" },
   searchProduct: { en: "Search product by name", ar: "بحث عن منتج بالاسم" },
   searchProductPh: { en: "Type product name…", ar: "اكتب اسم المنتج…" },
-  selectProduct: { en: "Select product", ar: "اختر المنتج" },
-  selectProductPh: { en: "Select product to link (optional)", ar: "اختر منتجاً للربط (اختياري)" },
+  selectProduct: { en: "Select products", ar: "اختر المنتجات" },
+  selectProductPh: { en: "Select one or more products to link (optional)", ar: "اختر منتجاً أو أكثر للربط (اختياري)" },
   productCount: { en: "products shown", ar: "منتج معروض" },
-  selectedProduct: { en: "Selected product", ar: "المنتج المحدد" },
+  selectedProduct: { en: "Selected products", ar: "المنتجات المحددة" },
+  selectAllShown: { en: "Select all shown", ar: "تحديد الكل المعروض" },
+  clearSelection: { en: "Clear selection", ar: "مسح التحديد" },
   applyDefaultPrice: { en: "Apply default price to all options", ar: "تطبيق السعر الافتراضي على كل الخيارات" },
   optionsSection: { en: "Options", ar: "الخيارات" },
   optionName: { en: "Option name", ar: "اسم الخيار" },
@@ -55,7 +57,7 @@ const L = {
   addOption: { en: "Add option", ar: "إضافة خيار" },
   createAddon: { en: "Create Add-on", ar: "إنشاء إضافة" },
   updateAddon: { en: "Update Add-on", ar: "تحديث الإضافة" },
-  createAndLink: { en: "Create & Link to Product", ar: "إنشاء وربط بالمنتج" },
+  createAndLink: { en: "Create & Link to Products", ar: "إنشاء وربط بالمنتجات" },
   cancel: { en: "Cancel", ar: "إلغاء" },
   listSection: { en: "Saved add-ons", ar: "الإضافات المحفوظة" },
   linked: { en: "Linked", ar: "مربوط" },
@@ -64,8 +66,9 @@ const L = {
   optionalBadge: { en: "Optional", ar: "اختياري" },
   priceRange: { en: "Price", ar: "السعر" },
   edit: { en: "Edit", ar: "تعديل" },
-  link: { en: "Link to selected product", ar: "ربط بالمنتج المحدد" },
-  unlink: { en: "Unlink from selected product", ar: "إلغاء الربط من المنتج" },
+  link: { en: "Link to selected products", ar: "ربط بالمنتجات المحددة" },
+  unlink: { en: "Unlink from selected products", ar: "إلغاء الربط من المنتجات" },
+  linkedCount: { en: "linked", ar: "مربوط" },
   delete: { en: "Delete", ar: "حذف" },
 } as const;
 
@@ -112,7 +115,7 @@ export default function AdminAddonsPage() {
   };
   const [addons, setAddons] = useState<Addon[]>([]);
   const [products, setProducts] = useState<ProductLite[]>([]);
-  const [selectedProductId, setSelectedProductId] = useState("");
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [form, setForm] = useState<Addon>(emptyAddon);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -165,14 +168,45 @@ export default function AdminAddonsPage() {
     });
   }, [products, productSearch]);
 
-  const selectedProductName = useMemo(() => {
-    const row = products.find((p) => p.id === selectedProductId);
-    return row ? row.title_en ?? row.name ?? row.id : "";
-  }, [products, selectedProductId]);
-  const selectedProductLinkedAddonIds = useMemo(() => {
-    const row = products.find((p) => p.id === selectedProductId);
-    return new Set(Array.isArray(row?.linked_addon_ids) ? row!.linked_addon_ids : []);
-  }, [products, selectedProductId]);
+  const selectedProductSet = useMemo(() => new Set(selectedProductIds), [selectedProductIds]);
+
+  const selectedProductNames = useMemo(() => {
+    return selectedProductIds
+      .map((id) => {
+        const row = products.find((p) => p.id === id);
+        return row ? row.title_en ?? row.name ?? row.id : id;
+      })
+      .filter(Boolean);
+  }, [products, selectedProductIds]);
+
+  const addonLinkStatsById = useMemo(() => {
+    const stats = new Map<string, { linked: number; total: number }>();
+    if (selectedProductIds.length === 0) return stats;
+    for (const addon of addons) {
+      let linked = 0;
+      for (const productId of selectedProductIds) {
+        const row = products.find((p) => p.id === productId);
+        const ids = Array.isArray(row?.linked_addon_ids) ? row!.linked_addon_ids! : [];
+        if (ids.includes(addon.id)) linked += 1;
+      }
+      stats.set(addon.id, { linked, total: selectedProductIds.length });
+    }
+    return stats;
+  }, [addons, products, selectedProductIds]);
+
+  function toggleProductSelection(productId: string) {
+    setSelectedProductIds((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId],
+    );
+  }
+
+  function selectAllShownProducts() {
+    setSelectedProductIds((prev) => Array.from(new Set([...prev, ...productOptions.map((p) => p.id)])));
+  }
+
+  function clearProductSelection() {
+    setSelectedProductIds([]);
+  }
 
   async function save() {
     const validationError = validateAddonForm(form);
@@ -220,9 +254,17 @@ export default function AdminAddonsPage() {
     });
   }
 
+  async function linkAddonToProducts(addonId: string, productIds: string[]) {
+    await Promise.all(productIds.map((productId) => linkAddonToProduct(addonId, productId)));
+  }
+
+  async function unlinkAddonFromProducts(addonId: string, productIds: string[]) {
+    await Promise.all(productIds.map((productId) => unlinkAddonFromProduct(addonId, productId)));
+  }
+
   async function createAndLinkToProduct() {
-    if (!selectedProductId) {
-      setError("Please select a product first. / الرجاء اختيار منتج أولاً.");
+    if (selectedProductIds.length === 0) {
+      setError("Please select at least one product first. / الرجاء اختيار منتج واحد على الأقل.");
       return;
     }
     const validationError = validateAddonForm(form);
@@ -241,7 +283,7 @@ export default function AdminAddonsPage() {
       if (!res.addon?.id) {
         throw new Error("Add-on was created without a valid id.");
       }
-      await linkAddonToProduct(res.addon.id, selectedProductId);
+      await linkAddonToProducts(res.addon.id, selectedProductIds);
       setForm(emptyAddon);
       setDefaultPrice(0);
       setEditingId(null);
@@ -398,34 +440,85 @@ export default function AdminAddonsPage() {
             </datalist>
           </Field>
           <Field label={L.selectProduct}>
-            <select
-              className="w-full rounded-lg border border-cb-border px-3 py-2"
-              value={selectedProductId}
-              onChange={(e) => setSelectedProductId(e.target.value)}
-            >
-              <option value="">{L.selectProductPh.en} / {L.selectProductPh.ar}</option>
-              {productOptions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.title_en ?? p.name ?? p.id}
-                </option>
-              ))}
-            </select>
+            <p className="text-[11px] text-cb-text-muted">
+              {L.selectProductPh.en} / {L.selectProductPh.ar}
+            </p>
+            <div className="mb-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded border border-cb-border px-2 py-1 text-[11px] font-semibold"
+                onClick={selectAllShownProducts}
+                disabled={productOptions.length === 0}
+              >
+                {L.selectAllShown.en} / {L.selectAllShown.ar}
+              </button>
+              <button
+                type="button"
+                className="rounded border border-cb-border px-2 py-1 text-[11px] font-semibold disabled:opacity-50"
+                onClick={clearProductSelection}
+                disabled={selectedProductIds.length === 0}
+              >
+                {L.clearSelection.en} / {L.clearSelection.ar}
+              </button>
+            </div>
+            <div className="max-h-44 space-y-2 overflow-auto rounded-xl border border-cb-border/70 bg-white p-3">
+              {productOptions.length === 0 ? (
+                <p className="text-xs text-cb-text-muted">
+                  No products match your search. / لا توجد منتجات مطابقة للبحث.
+                </p>
+              ) : (
+                productOptions.map((p) => {
+                  const checked = selectedProductSet.has(p.id);
+                  return (
+                    <label
+                      key={p.id}
+                      className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-cb-border/60 px-3 py-2 text-xs"
+                    >
+                      <span className="font-semibold text-cb-text-strong">
+                        {p.title_en ?? p.name ?? p.id}
+                        {p.title_ar ? (
+                          <span className="ms-2 font-normal text-cb-text-muted">{p.title_ar}</span>
+                        ) : null}
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleProductSelection(p.id)}
+                      />
+                    </label>
+                  );
+                })
+              )}
+            </div>
             <p className="text-[11px] text-cb-text-muted">
               {productOptions.length} {L.productCount.en} / {productOptions.length} {L.productCount.ar}
               {products.length !== productOptions.length
                 ? ` (${products.length} ${L.productCount.en} total)`
                 : null}
+              {selectedProductIds.length > 0
+                ? ` · ${selectedProductIds.length} selected / ${selectedProductIds.length} محدّد`
+                : null}
             </p>
           </Field>
         </div>
-        {selectedProductName ? (
-          <p className="mt-2 text-xs text-cb-text-muted">
-            <span className="font-bold text-cb-text-strong">{L.selectedProduct.en}</span>
-            {" / "}
-            <span className="font-bold text-cb-text-strong">{L.selectedProduct.ar}</span>
-            {": "}
-            <span className="text-cb-text-strong">{selectedProductName}</span>
-          </p>
+        {selectedProductNames.length > 0 ? (
+          <div className="mt-2 space-y-1">
+            <p className="text-xs text-cb-text-muted">
+              <span className="font-bold text-cb-text-strong">{L.selectedProduct.en}</span>
+              {" / "}
+              <span className="font-bold text-cb-text-strong">{L.selectedProduct.ar}</span>
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {selectedProductNames.map((name, idx) => (
+                <span
+                  key={`${name}-${idx}`}
+                  className="inline-flex items-center rounded-full bg-cb-terracotta-dark/10 px-2 py-0.5 text-[11px] font-bold text-cb-terracotta-dark"
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
         ) : null}
 
         <div className="mt-3">
@@ -595,7 +688,7 @@ export default function AdminAddonsPage() {
             <button
               type="button"
               className="rounded border border-cb-border px-4 py-2 disabled:opacity-50"
-              disabled={saving || !selectedProductId}
+              disabled={saving || selectedProductIds.length === 0}
               onClick={() => void createAndLinkToProduct()}
             >
               <span className="block text-sm font-semibold">{L.createAndLink.en}</span>
@@ -627,19 +720,30 @@ export default function AdminAddonsPage() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-semibold">{addon.name}</p>
-                {selectedProductId ? (
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      selectedProductLinkedAddonIds.has(addon.id)
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-stone-200 text-stone-700"
-                    }`}
-                  >
-                    {selectedProductLinkedAddonIds.has(addon.id)
-                      ? `${L.linked.en} / ${L.linked.ar}`
-                      : `${L.notLinked.en} / ${L.notLinked.ar}`}
-                  </span>
-                ) : null}
+                {selectedProductIds.length > 0 ? (() => {
+                  const stats = addonLinkStatsById.get(addon.id);
+                  const linked = stats?.linked ?? 0;
+                  const total = stats?.total ?? selectedProductIds.length;
+                  const allLinked = linked === total && total > 0;
+                  const partiallyLinked = linked > 0 && linked < total;
+                  return (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        allLinked
+                          ? "bg-emerald-100 text-emerald-800"
+                          : partiallyLinked
+                            ? "bg-amber-100 text-amber-900"
+                            : "bg-stone-200 text-stone-700"
+                      }`}
+                    >
+                      {allLinked
+                        ? `${L.linked.en} / ${L.linked.ar}`
+                        : partiallyLinked
+                          ? `${linked}/${total} ${L.linkedCount.en} / ${linked}/${total} ${L.linkedCount.ar}`
+                          : `${L.notLinked.en} / ${L.notLinked.ar}`}
+                    </span>
+                  );
+                })() : null}
               </div>
               <p className="text-xs text-cb-text-muted">
                 {addon.type} · {addon.required ? `${L.requiredBadge.en} / ${L.requiredBadge.ar}` : `${L.optionalBadge.en} / ${L.optionalBadge.ar}`}
@@ -674,11 +778,11 @@ export default function AdminAddonsPage() {
               <button
                 type="button"
                 className="rounded border border-cb-border px-3 py-1 text-xs disabled:opacity-50"
-                disabled={!selectedProductId}
+                disabled={selectedProductIds.length === 0}
                 onClick={async () => {
                   setError(null);
                   try {
-                    await linkAddonToProduct(addon.id, selectedProductId);
+                    await linkAddonToProducts(addon.id, selectedProductIds);
                     await loadProducts();
                   } catch (e) {
                     setError(e instanceof Error ? e.message : "Failed to link add-on");
@@ -691,11 +795,11 @@ export default function AdminAddonsPage() {
               <button
                 type="button"
                 className="rounded border border-cb-border px-3 py-1 text-xs disabled:opacity-50"
-                disabled={!selectedProductId}
+                disabled={selectedProductIds.length === 0}
                 onClick={async () => {
                   setError(null);
                   try {
-                    await unlinkAddonFromProduct(addon.id, selectedProductId);
+                    await unlinkAddonFromProducts(addon.id, selectedProductIds);
                     await loadProducts();
                   } catch (e) {
                     setError(e instanceof Error ? e.message : "Failed to unlink add-on");
