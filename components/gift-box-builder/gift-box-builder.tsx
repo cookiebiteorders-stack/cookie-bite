@@ -12,6 +12,7 @@ import { loadStoredGiftBoxState, persistGiftBoxState, pruneItemsToCatalog } from
 import { DEFAULT_GIFT_BOX_STATE, GIFT_BOX_STORAGE_KEY, type GiftBoxBuilderState } from "@/lib/gift-box-builder/types";
 import { formatBuilderPrice, getBoxCapacity, getItemsTotal, getTotalItems, trimItemsToCapacity } from "@/lib/gift-box-builder/utils";
 import { DEFAULT_GIFT_BOX_SIZES, type GiftBoxSizeConfig } from "@/lib/gift-box-builder/sizes";
+import { Box3DPreview } from "@/components/gift-box-builder/box-3d-preview";
 
 export function GiftBoxBuilder() {
   const { lang } = useLanguage();
@@ -22,9 +23,8 @@ export function GiftBoxBuilder() {
   const [productsError, setProductsError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [boxSizes, setBoxSizes] = useState<GiftBoxSizeConfig[]>(DEFAULT_GIFT_BOX_SIZES);
-  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
-  const [allowVideoPreview, setAllowVideoPreview] = useState(true);
-  const previewRef = useRef<HTMLDivElement | null>(null);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const [preferReducedMotion, setPreferReducedMotion] = useState(false);
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const updateState = useCallback((updater: (prev: GiftBoxBuilderState) => GiftBoxBuilderState) => {
@@ -81,11 +81,8 @@ export function GiftBoxBuilder() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
     const updatePreference = () => {
-      const reducedMotion = mediaQuery.matches;
-      const saveData = Boolean(connection?.saveData);
-      setAllowVideoPreview(!(reducedMotion || saveData));
+      setPreferReducedMotion(mediaQuery.matches);
     };
     updatePreference();
     mediaQuery.addEventListener("change", updatePreference);
@@ -93,22 +90,6 @@ export function GiftBoxBuilder() {
       mediaQuery.removeEventListener("change", updatePreference);
     };
   }, []);
-
-  useEffect(() => {
-    const node = previewRef.current;
-    if (!node || shouldLoadVideo) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setShouldLoadVideo(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "160px" },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [shouldLoadVideo]);
 
   const cap = getBoxCapacity(state.box, boxSizes);
   const totalItems = getTotalItems(state.items);
@@ -253,8 +234,8 @@ export function GiftBoxBuilder() {
   ];
 
   const capPct = cap ? Math.min(100, (totalItems / cap) * 100) : 0;
-  const previewVideoBase = "/media/gift-box-preview.mp4";
-  const previewVideo = `${previewVideoBase}#t=1.8`;
+  const previewVideo = "/media/gift-box-preview.mp4";
+  const showVideoPreview = !preferReducedMotion && !videoFailed;
 
   const handleVideoMeta = () => {
     const node = previewVideoRef.current;
@@ -409,9 +390,9 @@ export function GiftBoxBuilder() {
 
         <aside className="gb-sidebar">
           <h2 style={{ color: "var(--gb-gold-light)", fontFamily: "var(--font-playfair)" }}>{lang === "ar" ? "الصندوق الحالي" : "Current Box"}</h2>
-          <div className="gb-mini-scene" ref={previewRef}>
+          <div className="gb-mini-scene">
             <div className="gb-preview-layer is-visible" aria-hidden={false}>
-              {shouldLoadVideo && allowVideoPreview ? (
+              {showVideoPreview ? (
                 <video
                   ref={previewVideoRef}
                   className="gb-preview-video"
@@ -420,14 +401,39 @@ export function GiftBoxBuilder() {
                   muted
                   loop
                   playsInline
-                  preload="none"
+                  preload="auto"
+                  poster="/brand/gift-box/box-closed-ref.png"
                   controls={false}
                   onLoadedMetadata={handleVideoMeta}
+                  onError={() => setVideoFailed(true)}
                 />
-              ) : null}
+              ) : (
+                <Box3DPreview
+                  size={200}
+                  items={state.items}
+                  products={products}
+                  totalItems={totalItems}
+                  capacity={cap || 1}
+                  className="gb-mini-box3d"
+                  emptyLabel={
+                    lang === "ar" ? "أضف منتجات لملء الصندوق" : "Add treats inside"
+                  }
+                  closingLabel={
+                    lang === "ar"
+                      ? "جاري إغلاق صندوق Cookie Bite…"
+                      : "Closing your Cookie Bite box…"
+                  }
+                />
+              )}
             </div>
           </div>
-          {!allowVideoPreview ? <p className="gb-preview-note">{lang === "ar" ? "تم تعطيل الفيديو حسب إعدادات الجهاز." : "Video preview disabled by device settings."}</p> : null}
+          {preferReducedMotion ? (
+            <p className="gb-preview-note">
+              {lang === "ar"
+                ? "معاينة تفاعلية ثلاثية الأبعاد (الحركة مخفّفة حسب إعدادات النظام)."
+                : "Interactive 3D preview (motion reduced per system settings)."}
+            </p>
+          ) : null}
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", color: "rgba(255,255,255,0.6)" }}>
               <span>{lang === "ar" ? "الإجمالي" : "Total"}</span>
