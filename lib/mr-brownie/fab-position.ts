@@ -7,7 +7,7 @@ export type MrBrownieFabPosition = {
 };
 
 /** موبايل: حجم مريح ولا يغطي المحتوى — يطابق `(max-width: 639px)` في الواجهة */
-export const FAB_SIZE_MOBILE_PX = 78;
+export const FAB_SIZE_MOBILE_PX = 68;
 /** سطح المكتب / تابلت: أوضح على الصفحة */
 export const FAB_SIZE_DESKTOP_PX = 92;
 
@@ -24,7 +24,7 @@ const EDGE_INSET = 6;
 export function defaultFabPosition(isMobile: boolean): MrBrownieFabPosition {
   return {
     side: "right",
-    bottomPx: isMobile ? 100 : 32,
+    bottomPx: isMobile ? 168 : 32,
   };
 }
 
@@ -68,7 +68,7 @@ export function clampFabBottom(
   viewportH: number,
   isMobile: boolean,
 ): number {
-  const safeBottom = isMobile ? 88 : 24;
+  const safeBottom = isMobile ? 200 : 24;
   const safeTop = 72;
   const size = fabSizePx(isMobile);
   const maxBottom = viewportH - safeTop - size;

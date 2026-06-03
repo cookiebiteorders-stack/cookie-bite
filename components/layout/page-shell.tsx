@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { AddToHomeScreenPrompt } from "@/components/pwa/add-to-home-screen-prompt";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
@@ -16,10 +15,7 @@ import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 import { LayoutGroup } from "motion/react";
 
-const ClientOnlyMrBrownie = dynamic(
-  () => import("@/components/mr-brownie/mr-brownie-chat").then((m) => m.MrBrownieChat),
-  { ssr: false },
-);
+import { MrBrownieHost } from "@/components/mr-brownie/mr-brownie-host";
 
 export function PageShell({
   children,
@@ -63,7 +59,7 @@ export function PageShell({
         <div className="desktop-whatsapp-fab">
           <WhatsAppFab />
         </div>
-        <ClientOnlyMrBrownie />
+        <MrBrownieHost />
 
         <CartDrawer />
         <AddToHomeScreenPrompt />
