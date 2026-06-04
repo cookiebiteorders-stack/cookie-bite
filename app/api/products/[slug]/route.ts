@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { listLinkedAddonsForProduct } from "@/lib/db/addons";
+import { getRelatedStorefrontProducts } from "@/lib/storefront/pdp-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { Lang } from "@/lib/i18n/translations";
 
 export async function GET(
   _req: NextRequest,
@@ -17,7 +20,7 @@ export async function GET(
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id, slug, name, title_en, title_ar, description, description_en, description_ar, price_egp, compare_price_egp, image_url, images, badges, dietary, seasons, category, stock, weight_grams, pieces_count, sku, created_at",
+      "id, slug, name, title_en, title_ar, description, description_en, description_ar, price_egp, compare_price_egp, image_url, images, video_url, badges, dietary, seasons, category, stock, weight_grams, pieces_count, sku, created_at",
     )
     .eq("slug", slug)
     .eq("is_active", true)
@@ -50,9 +53,22 @@ export async function GET(
         10
       : null;
 
+  const lang: Lang = req.nextUrl.searchParams.get("lang") === "ar" ? "ar" : "en";
+  const wantAddons = req.nextUrl.searchParams.get("addons") === "1";
+  const wantRelated = req.nextUrl.searchParams.get("related") === "1";
+
+  const [addons, related] = await Promise.all([
+    wantAddons ? listLinkedAddonsForProduct(data.id) : Promise.resolve([]),
+    wantRelated
+      ? getRelatedStorefrontProducts((data.category as string | null) ?? null, slug, 3, lang)
+      : Promise.resolve([]),
+  ]);
+
   return NextResponse.json(
     {
       product: data,
+      addons,
+      related,
       review_count: ratings.length,
       avg_rating,
     },

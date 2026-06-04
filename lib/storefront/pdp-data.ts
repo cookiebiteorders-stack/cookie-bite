@@ -26,7 +26,25 @@ export async function getActivePdpProduct(
       .eq("is_active", true)
       .maybeSingle();
 
-    if (error || !data) return null;
+    if (error) {
+      const msg = String(error.message ?? "");
+      if (/video_url|column/i.test(msg)) {
+        const legacy = await supabase
+          .from("products")
+          .select(
+            "id, slug, name, title_en, title_ar, description, description_en, description_ar, price_egp, compare_price_egp, image_url, images, badges, category, stock, is_active, created_at, updated_at",
+          )
+          .eq("slug", slug)
+          .eq("is_active", true)
+          .maybeSingle();
+        if (!legacy.error && legacy.data) {
+          return productRowToStorefrontProduct(legacy.data as ProductRow, FALLBACK_DESC, lang);
+        }
+      }
+      console.error("getActivePdpProduct", error.message);
+      return null;
+    }
+    if (!data) return null;
     return productRowToStorefrontProduct(data as ProductRow, FALLBACK_DESC, lang);
   } catch (e) {
     console.error("getActivePdpProduct", e);
