@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Bell, CreditCard, MapPin, Package, Truck, X } from "lucide-react";
+import { Bell, CreditCard, MapPin, Package, Trash2, Truck, X } from "lucide-react";
 import type { AdminOrderRow, OrderItemRow } from "@/lib/admin/orders-operations-types";
 import { useOrdersOperationsStore } from "@/stores/orders-operations-store";
 import { cn } from "@/lib/utils";
@@ -38,13 +38,22 @@ type Props = {
   onOpenChange: (v: boolean) => void;
   orderId: string | null;
   canWrite: boolean;
+  canDelete?: boolean;
 };
 
-export function OrderDetailsDrawer({ open, onOpenChange, orderId, canWrite }: Props) {
+export function OrderDetailsDrawer({
+  open,
+  onOpenChange,
+  orderId,
+  canWrite,
+  canDelete = false,
+}: Props) {
   const reduceMotion = useReducedMotion();
   const fetchOrderDetail = useOrdersOperationsStore((s) => s.fetchOrderDetail);
   const patchOrder = useOrdersOperationsStore((s) => s.patchOrder);
+  const deleteOrder = useOrdersOperationsStore((s) => s.deleteOrder);
   const pushToast = useOrdersOperationsStore((s) => s.pushToast);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState<AdminOrderRow | null>(null);
@@ -415,6 +424,38 @@ export function OrderDetailsDrawer({ open, onOpenChange, orderId, canWrite }: Pr
                           </button>
                         ))}
                       </div>
+                    </section>
+                  ) : null}
+
+                  {canDelete ? (
+                    <section className="rounded-2xl border border-red-200/80 bg-red-50/50 p-4 dark:border-red-900/50 dark:bg-red-950/20">
+                      <p className="text-xs font-bold text-red-900 dark:text-red-100">حذف الطلب</p>
+                      <p className="mt-1 text-xs text-red-800/90 dark:text-red-200/80">
+                        يُحذف الطلب وبنوده وسجل النقاط المرتبط به نهائياً.
+                      </p>
+                      <button
+                        type="button"
+                        disabled={deleteBusy}
+                        className="mt-3 inline-flex items-center gap-2 rounded-xl bg-red-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+                        onClick={() => {
+                          const label = order.order_code ?? order.id.slice(0, 8);
+                          if (
+                            !confirm(
+                              `حذف الطلب ${label}؟\nسيتم حذف البنود وسجل النقاط المرتبط. لا يمكن التراجع.`,
+                            )
+                          ) {
+                            return;
+                          }
+                          setDeleteBusy(true);
+                          void deleteOrder(order.id).then((ok) => {
+                            setDeleteBusy(false);
+                            if (ok) onOpenChange(false);
+                          });
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden />
+                        {deleteBusy ? "جاري الحذف…" : "حذف الطلب"}
+                      </button>
                     </section>
                   ) : null}
                 </div>

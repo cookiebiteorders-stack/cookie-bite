@@ -265,6 +265,7 @@ export default async function AccountPage() {
             accountRole === "customer" ? t("accountDashboard.member") : getRoleLabel(accountRole)
           }
           showAdminLinks={adminSidebarLinks.length > 0}
+          adminConsoleLinks={adminSidebarLinks}
         />
 
         <div className="min-w-0 flex-1 space-y-8">

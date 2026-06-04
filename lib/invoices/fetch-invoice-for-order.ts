@@ -2,11 +2,12 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { fetchOrderItemsByOrderIds } from "@/lib/db/order-items-fetch";
 import type { RawInvoice } from "@/lib/invoices/to-invoice-view-model";
 import type { EnsuredInvoice } from "@/lib/invoices/ensure-order-invoice";
-
-function normalizeInvoiceNumber(id: string, issuedAt: string): string {
-  const stamp = issuedAt ? issuedAt.slice(0, 10).replaceAll("-", "") : "00000000";
-  return `INV-${stamp}-${id.slice(0, 8).toUpperCase()}`;
-}
+import { ORDER_FOR_INVOICE_SELECT } from "@/lib/invoices/order-select";
+import {
+  resolveStoredInvoiceNumber,
+  type OrderInvoiceIdentity,
+} from "@/lib/invoices/resolve-invoice-number";
+import { resolveOrderDisplayCode } from "@/lib/orders/order-row-compat";
 
 /** Loads invoice + order data for PDF generation and emails. */
 export async function fetchRawInvoiceForOrder(
@@ -20,9 +21,7 @@ export async function fetchRawInvoiceForOrder(
 
   const { data: order, error: orderErr } = await supabase
     .from("orders")
-    .select(
-      "id, order_code, status, guest_email, user_id, subtotal_egp, discount_amount_egp, delivery_fee_egp, total_egp, notes, shipping_address, payment_method, paymob_transaction_id, payment_status, created_at",
-    )
+    .select(ORDER_FOR_INVOICE_SELECT)
     .eq("id", orderId)
     .maybeSingle();
 
@@ -32,7 +31,7 @@ export async function fetchRawInvoiceForOrder(
   if (!invoiceRow) {
     const { data: inv } = await supabase
       .from("invoices")
-      .select("id, amount, status, issued_at")
+      .select("id, amount, status, issued_at, created_at, invoice_number")
       .eq("order_id", orderId)
       .order("issued_at", { ascending: false })
       .limit(1)
@@ -41,7 +40,10 @@ export async function fetchRawInvoiceForOrder(
       const issuedAt = String(inv.issued_at);
       invoiceRow = {
         id: String(inv.id),
-        invoiceNumber: normalizeInvoiceNumber(String(inv.id), issuedAt),
+        invoiceNumber: resolveStoredInvoiceNumber(
+          inv,
+          order as OrderInvoiceIdentity,
+        ),
         amountEgp: Number(inv.amount),
         status: String(inv.status),
         issuedAt,
@@ -65,7 +67,11 @@ export async function fetchRawInvoiceForOrder(
   }));
 
   const ship = (order.shipping_address ?? {}) as Record<string, unknown>;
-  let customerName = typeof ship.name === "string" ? ship.name : null;
+  const orderRaw = order as Record<string, unknown>;
+  let customerName =
+    (typeof orderRaw.full_name === "string" ? orderRaw.full_name : null) ||
+    (typeof ship.name === "string" ? ship.name : null) ||
+    (typeof ship.recipient === "string" ? ship.recipient : null);
   let customerEmail = order.guest_email as string | null;
   if (order.user_id) {
     const { data: user } = await supabase
@@ -77,6 +83,12 @@ export async function fetchRawInvoiceForOrder(
     customerEmail = user?.email ?? customerEmail;
   }
 
+  const orderCode =
+    resolveOrderDisplayCode(orderRaw) ?? String(order.id).slice(0, 8);
+  const notes =
+    (typeof orderRaw.gift_message === "string" ? orderRaw.gift_message : null) ||
+    (typeof orderRaw.admin_notes === "string" ? orderRaw.admin_notes : null);
+
   return {
     id: invoiceRow.id,
     invoice_number: invoiceRow.invoiceNumber,
@@ -87,13 +99,13 @@ export async function fetchRawInvoiceForOrder(
     customer_email: customerEmail,
     order: {
       id: order.id as string,
-      order_code: (order.order_code as string | null) ?? String(order.id).slice(0, 8),
+      order_code: orderCode,
       status: order.status as string,
       items,
       subtotal_egp: Number(order.subtotal_egp),
       discount_amount_egp: Number(order.discount_amount_egp ?? 0),
       delivery_fee_egp: Number(order.delivery_fee_egp),
-      notes: order.notes as string | null,
+      notes,
       shipping_address: ship,
       user_phone: typeof ship.phone === "string" ? ship.phone : null,
     },

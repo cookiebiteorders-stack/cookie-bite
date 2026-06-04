@@ -44,6 +44,8 @@ type DashboardData = {
   health: Array<{ provider: string; status: string; latency_ms?: number; checked_at: string }>;
   automationEnabled: boolean;
   redis: boolean;
+  dbQueue?: boolean;
+  contactsManagement?: boolean;
 };
 
 function StatusDot({ status }: { status: string }) {
@@ -74,6 +76,7 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
   const [busy, setBusy] = useState(false);
   const [testEmail, setTestEmail] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+  const [contactsReadOnly, setContactsReadOnly] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,8 +97,18 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
         const r = await fetchJson<{ settings: Record<string, unknown> }>("/api/admin/email/settings");
         setSettings(r.settings);
       } else if (activeTab === "contacts") {
-        const r = await fetchJson<{ contacts: ResendContactRow[] }>("/api/admin/email/contacts?limit=50");
+        const r = await fetchJson<{
+          contacts: ResendContactRow[];
+          capabilities?: { canManageContacts: boolean; reason?: string };
+        }>("/api/admin/email/contacts?limit=50");
         setContacts(r.contacts ?? []);
+        if (r.capabilities?.canManageContacts === false) {
+          setContactsReadOnly(
+            "إدارة جهات الاتصال معطّلة (RESEND_CONTACTS_ENABLED=false). أضف الجمهور من لوحة Resend.",
+          );
+        } else {
+          setContactsReadOnly(null);
+        }
       }
     } catch (e) {
       setToast(e instanceof Error ? e.message : "فشل التحميل");
@@ -142,7 +155,28 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
       setToast("تم إنشاء جهة الاتصال في Resend");
       void load();
     } catch (e) {
-      setToast(e instanceof Error ? e.message : "فشل الإنشاء");
+      const msg = e instanceof Error ? e.message : "فشل الإنشاء";
+      setToast(msg);
+      if (/send-only|الإرسال فقط|resend_send_only/i.test(msg)) {
+        setContactsReadOnly(msg);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const processQueue = async () => {
+    setBusy(true);
+    try {
+      const r = await fetchJson<{
+        processed: { database: number; bull: number; requeued: number };
+      }>("/api/admin/email/queue?limit=50", { method: "POST" });
+      setToast(
+        `تمت المعالجة: DB=${r.processed.database} · Bull=${r.processed.bull} · إعادة طابور=${r.processed.requeued}`,
+      );
+      void load();
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : "فشل معالجة الطابور");
     } finally {
       setBusy(false);
     }
@@ -296,8 +330,22 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
                 ))}
               </ul>
               <p className="mt-2 text-[10px] text-cb-text-muted">
-                Redis: {dash.redis ? "متصل" : "غير متاح — يُستخدم طابور DB"}
+                {dash.redis
+                  ? "Redis: مضبوط (BullMQ)"
+                  : dash.dbQueue !== false
+                    ? "Redis: غير مضبوط — طابور قاعدة البيانات + cron / «معالجة الطابور»"
+                    : "Redis: غير مضبوط — فعّل EMAIL_USE_DB_QUEUE أو REDIS_URL"}
               </p>
+              {(dash.stats.queuePending ?? 0) > 0 ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void processQueue()}
+                  className="admin-btn-primary mt-3 w-full rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-50"
+                >
+                  معالجة {dash.stats.queuePending} رسالة معلّقة
+                </button>
+              ) : null}
             </div>
 
             <div className="admin-panel-surface rounded-2xl p-4">
@@ -387,14 +435,43 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
       ) : null}
 
       {!loading && activeTab === "queue" ? (
-        <DataTable
-          rows={queue}
-          columns={["recipient", "subject", "status", "provider", "attempts", "created_at"]}
-        />
+        <div className="space-y-3">
+          {queue.some((r) => r.status === "pending" || r.status === "processing") ? (
+            <div className="admin-alert admin-alert--warning rounded-2xl border p-4 text-sm">
+              <p className="font-bold">رسائل معلّقة في الطابور</p>
+              <p className="mt-1 text-xs text-cb-text-muted">
+                Redis اختياري. اضغط المعالجة الفورية أو شغّل cron{" "}
+                <code className="font-mono text-[10px]">/api/cron/email-worker</code> كل 5 دقائق.
+              </p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void processQueue()}
+                className="admin-btn-primary mt-3 rounded-xl px-4 py-2 text-xs font-bold disabled:opacity-50"
+              >
+                معالجة الطابور الآن (حتى 50)
+              </button>
+            </div>
+          ) : null}
+          <DataTable
+            rows={queue}
+            columns={["recipient", "subject", "status", "provider", "attempts", "created_at"]}
+          />
+        </div>
       ) : null}
 
       {!loading && activeTab === "contacts" ? (
         <div className="space-y-4">
+          {contactsReadOnly ? (
+            <div className="admin-alert admin-alert--warning rounded-2xl border p-4 text-sm">
+              <p className="font-bold">جهات Resend — للقراءة أو من لوحة Resend</p>
+              <p className="mt-2 text-xs leading-relaxed">{contactsReadOnly}</p>
+              <p className="mt-2 text-[10px] text-cb-text-muted">
+                مفتاح «Sending access» يكفي لرسائل الطلبات. لإنشاء جهات اتصال من هنا: مفتاح Full Access
+                مع صلاحية Contacts في resend.com/api-keys
+              </p>
+            </div>
+          ) : null}
           <div className="admin-panel-surface rounded-2xl p-4">
             <h2 className="text-sm font-bold text-cb-text-strong">إضافة جهة اتصال (Resend API)</h2>
             <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -430,11 +507,11 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
             </div>
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || Boolean(contactsReadOnly)}
               onClick={() => void createContact()}
               className="admin-btn-primary mt-3 rounded-xl px-4 py-2 text-xs font-bold disabled:opacity-50"
             >
-              Create Contact
+              إنشاء جهة اتصال
             </button>
             <p className="mt-2 text-[10px] text-cb-text-muted">
               الاشتراك في النشرة من الموقع يُزامَن تلقائياً مع Resend عند تفعيل RESEND_API_KEY.

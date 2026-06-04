@@ -205,29 +205,67 @@ export function newOrderStaffAlert(opts: {
   shippingAddress: string;
   adminUrl: string;
 }) {
-  const subject = `[New order] ${opts.orderNumber} — ${opts.totalEgp.toFixed(2)} EGP`;
+  return storeOrderEventAlert({
+    eventLabel: "New order",
+    orderNumber: opts.orderNumber,
+    customerName: opts.customerName,
+    customerEmail: opts.customerEmail,
+    customerPhone: opts.customerPhone,
+    totalEgp: opts.totalEgp,
+    paymentMethod: opts.paymentMethod,
+    paymentStatus: "unpaid",
+    orderStatus: "pending",
+    shippingAddress: opts.shippingAddress,
+    adminUrl: opts.adminUrl,
+  });
+}
+
+/** تنبيه داخلي لعمليات المتجر — كل أحداث الطلبات. */
+export function storeOrderEventAlert(opts: {
+  eventLabel: string;
+  orderNumber: string;
+  invoiceNumber?: string | null;
+  customerName: string;
+  customerEmail: string | null;
+  customerPhone: string | null;
+  totalEgp: number;
+  paymentMethod: string;
+  paymentStatus: string;
+  orderStatus: string;
+  shippingAddress: string;
+  adminUrl: string;
+  note?: string;
+  actorEmail?: string | null;
+}) {
+  const subject = `[${opts.eventLabel}] ${opts.orderNumber} — ${opts.totalEgp.toFixed(2)} EGP`;
   const rows: NewCustomerStaffAlertRow[] = [
+    { label: "Event", value: opts.eventLabel },
     { label: "Order", value: opts.orderNumber },
+    ...(opts.invoiceNumber ? [{ label: "Invoice", value: opts.invoiceNumber }] : []),
+    { label: "Status", value: opts.orderStatus },
+    { label: "Payment", value: `${opts.paymentStatus} · ${opts.paymentMethod}` },
     { label: "Customer", value: opts.customerName },
     { label: "Email", value: opts.customerEmail ?? "—" },
     { label: "Phone", value: opts.customerPhone ?? "—" },
     { label: "Total", value: `${opts.totalEgp.toFixed(2)} EGP` },
-    { label: "Payment", value: opts.paymentMethod },
     { label: "Ship to", value: opts.shippingAddress },
   ];
+  if (opts.note?.trim()) rows.push({ label: "Note", value: opts.note.trim() });
+  if (opts.actorEmail?.trim()) rows.push({ label: "By", value: opts.actorEmail.trim() });
+
   return {
     subject,
     html: shell(
       `
-      <span style="display:inline-block;background:${BRAND.accentTint};color:${BRAND.accentDark};font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border-radius:999px;margin-bottom:14px;border:1px solid ${BRAND.borderSoft};">New order</span>
+      <span style="display:inline-block;background:${BRAND.accentTint};color:${BRAND.accentDark};font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border-radius:999px;margin-bottom:14px;border:1px solid ${BRAND.borderSoft};">${esc(opts.eventLabel)}</span>
       <h1 style="${heading}">Order ${esc(opts.orderNumber)}</h1>
-      <p style="${body}">A customer just placed an order. Customer confirmation email was sent separately if email is on file.</p>
+      <p style="${body}">Store operations alert — sent to your default inbox and owner/admin team.</p>
       ${detailTable(rows)}
       <p style="margin:18px 0 0;">
         <a href="${esc(opts.adminUrl)}" style="display:inline-block;background:${BRAND.accentDark};color:#ffffff;text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;font-weight:700;">Open in admin</a>
       </p>
     `,
-      { title: subject, preheader: `${opts.customerName} · ${opts.totalEgp.toFixed(2)} EGP` },
+      { title: subject, preheader: `${opts.eventLabel} · ${opts.customerName}` },
     ),
   };
 }

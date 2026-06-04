@@ -2,6 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   normalizeProductImages,
   primaryImageFromProduct,
+  resolveProductImageUrl,
 } from "@/lib/products/media";
 import type { Lang } from "@/lib/i18n/translations";
 import type { MysteryCandidateProduct } from "@/lib/mystery-box/types";
@@ -45,9 +46,9 @@ export async function loadMysteryCandidates(lang: Lang = "en"): Promise<MysteryC
     .filter((p) => p.stock == null || p.stock > 0)
     .map((p) => {
       const imagesNormalized = normalizeProductImages(p.images, p.image_url ?? null);
-      const imageUrl =
-        primaryImageFromProduct(imagesNormalized, p.image_url ?? null) ??
-        "/images/web-logo.png";
+      const imageUrl = resolveProductImageUrl(
+        primaryImageFromProduct(imagesNormalized, p.image_url ?? null),
+      );
       const category = (p.category ?? "Cookies").trim() || "Cookies";
       return {
         id: p.id,

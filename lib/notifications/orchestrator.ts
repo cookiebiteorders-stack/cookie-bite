@@ -1,6 +1,6 @@
 import { BRAND } from "@/lib/brand";
 import { sendTemplateEmail } from "@/lib/email/send";
-import { ensurePaidInvoiceForOrder } from "@/lib/invoices/ensure-order-invoice";
+import { syncOrderFinancialRecords } from "@/lib/orders/sync-order-financials";
 import { fetchRawInvoiceForOrder } from "@/lib/invoices/fetch-invoice-for-order";
 import { generateInvoicePdfBuffer } from "@/lib/invoices/generate-invoice-pdf";
 import { toInvoiceViewModel } from "@/lib/invoices/to-invoice-view-model";
@@ -20,6 +20,7 @@ import {
 } from "@/lib/whatsapp/bridge-notifications";
 import { isWhatsAppBridgeConfigured } from "@/lib/whatsapp/bridge-client";
 import { tryNotifyStaffNewOrder } from "@/lib/notifications/new-order-staff-alert";
+import { notifyStoreOrderEvent } from "@/lib/notifications/store-order-events";
 import {
   buildOrderConfirmedWhatsAppBody,
   buildPaymentConfirmedWhatsAppBody,
@@ -221,7 +222,8 @@ export async function dispatchPaymentConfirmed(
   const ctx = await loadOrderNotificationContext(orderId);
   if (!ctx) return { ok: false, errors: ["order_not_found"] };
 
-  const invoice = await ensurePaidInvoiceForOrder(orderId, ctx.totalEgp);
+  const financials = await syncOrderFinancialRecords(orderId);
+  const invoice = financials.invoice;
   if (!invoice) {
     errors.push("invoice_failed");
   }
@@ -379,6 +381,12 @@ export async function dispatchPaymentConfirmed(
         metadata: { mode: wa.mode },
       });
     }
+  }
+
+  try {
+    await notifyStoreOrderEvent({ orderId, event: "paid" });
+  } catch (e) {
+    console.error("[notifications] store paid alert", e);
   }
 
   return {

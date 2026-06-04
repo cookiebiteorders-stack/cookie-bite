@@ -37,8 +37,9 @@ export const clerkProfileAppearance = {
       "data-[active=true]:shadow-sm",
     ].join(" "),
     navbarButtonIcon: "text-cb-terracotta-dark data-[active=true]:text-white",
-    navbarMobileMenuRow: "hidden",
-    navbarMobileMenuButton: "hidden",
+    navbarMobileMenuRow: "cb-clerk-profile__mobile-menu-row w-full min-w-0",
+    navbarMobileMenuButton:
+      "cb-clerk-profile__mobile-menu-btn rounded-xl border border-cb-border bg-cb-cream/80 px-3 py-2 text-sm font-semibold",
     pageScrollBox: [
       "cb-clerk-profile__scroll",
       "min-h-[20rem] w-full min-w-0 flex-1",
@@ -49,7 +50,6 @@ export const clerkProfileAppearance = {
     profilePage: [
       "cb-clerk-profile__profile-page",
       "flex w-full min-w-0 flex-col gap-6",
-      "lg:flex-row lg:items-start",
     ].join(" "),
     header: "hidden",
     headerTitle: "hidden",

@@ -32,6 +32,7 @@
     "loyalty:backfill": "node scripts/backfill-loyalty-points.mjs",
     "loyalty:backfill:dry": "node scripts/backfill-loyalty-points.mjs --dry-run",
     "e2e:smoke": "node scripts/e2e-smoke-test.mjs",
+    "e2e:cleanup": "node scripts/cleanup-e2e-smoke.mjs",
     "supabase:fix-auth-users-exposed": "node scripts/supabase-fix-auth-users-exposed.mjs",
     "supabase:ensure-schema": "node scripts/supabase-ensure-schema.mjs",
     "supabase:check-schema": "node scripts/supabase-schema-snapshot-check.mjs",

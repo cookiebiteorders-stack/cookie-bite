@@ -27,6 +27,7 @@ export async function GET() {
         "POST /api/cron/email-worker",
         "POST /api/cron/email-health",
         "POST /api/cron/abandoned-cart-reminders",
+        "POST /api/cron/order-lifecycle-purge",
       ],
       schedule_hint: "every 5–60 minutes (Hostinger cron)",
       auth_header: "x-internal-secret",

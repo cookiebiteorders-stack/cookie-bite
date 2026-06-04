@@ -123,7 +123,7 @@ export function SiteHeader() {
     () =>
       staffAdminNavItems.map((item) => ({
         href: item.href,
-        label: t(`adminNav.${item.module}`),
+        label: t(`adminNav.${item.navKey}`),
       })),
     [staffAdminNavItems, t],
   );
@@ -380,7 +380,7 @@ export function SiteHeader() {
                     </div>
                     {staffAdminNavItems.map((item, j) => (
                       <motion.div
-                        key={item.href}
+                        key={`${item.href}-${item.navKey}`}
                         initial={{ opacity: 0, x: 16 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{
@@ -393,7 +393,7 @@ export function SiteHeader() {
                           className="cb-touch-manipulation flex min-h-[2.75rem] items-center rounded-xl px-4 py-3 text-base font-semibold text-cb-text-strong transition-colors hover:bg-cb-peach/50 active:bg-cb-peach/60 dark:hover:bg-cb-peach/20"
                           onClick={() => setMobileOpen(false)}
                         >
-                          {t(`adminNav.${item.module}`)}
+                          {t(`adminNav.${item.navKey}`)}
                         </Link>
                       </motion.div>
                     ))}

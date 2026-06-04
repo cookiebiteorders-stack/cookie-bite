@@ -1,13 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-admin";
+import {
+  requireAdminAccess,
+  requireFullPermission,
+  requireWritePermission,
+} from "@/lib/admin/require-admin";
+import { deleteOrderWithLifecycle } from "@/lib/orders/order-lifecycle";
+import {
+  notifyStoreOrderEvent,
+  storeEventFromOrderPatch,
+} from "@/lib/notifications/store-order-events";
 import { sendOrderStatusEmail } from "@/lib/email/send";
 import { onOrderShipped } from "@/lib/email/automation/triggers";
 import { bilingualError } from "@/lib/validations";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { ORDER_STATUS_VALUES, PAYMENT_STATUS_VALUES } from "@/lib/domain/order-enums";
 import { awardLoyaltyPointsForPaidOrder } from "@/lib/loyalty/award-order-points";
+import { syncOrderFinancialRecords } from "@/lib/orders/sync-order-financials";
+import { schedulePaymentConfirmed } from "@/lib/notifications/schedule";
 
 const schema = z
   .object({
@@ -122,9 +134,26 @@ export async function PATCH(
   const wasPaid = (before?.payment_status ?? "").toLowerCase() === "paid";
   const nowPaid = (order.payment_status ?? "").toLowerCase() === "paid";
   if (!wasPaid && nowPaid) {
+    void syncOrderFinancialRecords(id).catch((err) =>
+      console.error("sync invoice/payment after admin paid", err),
+    );
+    schedulePaymentConfirmed(id);
     void awardLoyaltyPointsForPaidOrder(id).catch((err) =>
       console.error("loyalty award after admin payment update", err),
     );
+  }
+
+  const patchEvents = storeEventFromOrderPatch(
+    (before ?? null) as Record<string, unknown> | null,
+    order as Record<string, unknown>,
+  );
+  for (const ev of patchEvents) {
+    void notifyStoreOrderEvent({
+      orderId: id,
+      event: ev,
+      note: parsed.data.note,
+      actorEmail: actor.email,
+    }).catch((err) => console.error("[admin/orders] store alert", ev, err));
   }
 
   await writeAuditLog({
@@ -141,9 +170,89 @@ export async function PATCH(
     metadata: {
       patch,
       notified_email: to || null,
+      store_alerts: patchEvents,
     },
     request: req,
   });
 
   return NextResponse.json({ ok: true, order });
+}
+
+export async function DELETE(
+  req: NextRequest,
+  ctx: { params: Promise<{ id: string }> },
+) {
+  const { id } = await ctx.params;
+  if (!id || !z.string().uuid().safeParse(id).success) {
+    return NextResponse.json(
+      bilingualError("Invalid order id", "معرّف الطلب غير صالح"),
+      { status: 400 },
+    );
+  }
+
+  const actor = await requireAdminAccess("orders");
+  requireFullPermission(actor);
+
+  const supabase = createSupabaseAdminClient();
+  const { data: before } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
+  if (!before) {
+    return NextResponse.json(bilingualError("Order not found", "الطلب غير موجود"), {
+      status: 404,
+    });
+  }
+
+  let result;
+  try {
+    result = await deleteOrderWithLifecycle(supabase, id, {
+      user_id: actor.user_id,
+      email: actor.email,
+      role: actor.role,
+    });
+  } catch (e) {
+    console.error("[admin/orders/:id] DELETE", e);
+    return NextResponse.json(bilingualError("Failed to delete order", "فشل حذف الطلب"), {
+      status: 500,
+    });
+  }
+
+  if (!result) {
+    return NextResponse.json(bilingualError("Order not found", "الطلب غير موجود"), {
+      status: 404,
+    });
+  }
+
+  await writeAuditLog({
+    actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
+    action: "orders.delete",
+    module: "orders",
+    entity_id: id,
+    before,
+    after: null,
+    metadata: {
+      order_code: before.order_code ?? before.number ?? null,
+      loyalty_reversed_points: result.loyalty.reversedPoints,
+      loyalty_transactions_removed: result.loyalty.transactionCount,
+      invoices_removed: result.financialsRemoved.invoices,
+      payments_removed: result.financialsRemoved.payments,
+      lifecycle_retention_days: 30,
+    },
+    request: req,
+  });
+
+  try {
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin/kitchen");
+    revalidatePath("/admin/reports");
+    revalidatePath("/admin/financial");
+    revalidatePath("/admin/invoices");
+    revalidatePath("/admin/payments");
+  } catch {
+    /* non-fatal */
+  }
+
+  return NextResponse.json({
+    ok: true,
+    loyalty: result.loyalty,
+    financials_removed: result.financialsRemoved,
+  });
 }

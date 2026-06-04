@@ -2,6 +2,10 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isEmailConfigured } from "@/lib/email/resend";
 import { getIntegrationEnvStatus } from "@/lib/config/production-lock";
 import { checkProductionEnv } from "@/lib/config/production-lock";
+import {
+  isEmailDbQueueEnabled,
+  isRedisConfigured,
+} from "@/lib/email/automation/queue-config";
 
 const EXPECTED_EVENT_MAPPINGS = [
   "user_registered",
@@ -80,6 +84,8 @@ export async function getAutomationStatus() {
     cronConfigured: Boolean(process.env.INTERNAL_API_SECRET?.trim()),
     resendConfigured: isEmailConfigured(),
     redisConfigured: integrations.redis_queue,
+    redisUrlSet: isRedisConfigured(),
+    dbQueueEnabled: isEmailDbQueueEnabled(),
     emailAutomationEnabled: process.env.EMAIL_AUTOMATION_ENABLED !== "false",
     queues: {
       notificationJobsPending: notifPending.count ?? 0,

@@ -32,7 +32,13 @@ export const ADMIN_CONSOLE_NAV_ITEMS: AdminConsoleNavItem[] = [
 ];
 
 export function getAccessibleAdminConsoleNav(role: UserRole): AdminConsoleNavItem[] {
-  return ADMIN_CONSOLE_NAV_ITEMS.filter((item) => canAccess(role, item.module));
+  const seen = new Set<string>();
+  return ADMIN_CONSOLE_NAV_ITEMS.filter((item) => {
+    if (!canAccess(role, item.module)) return false;
+    if (seen.has(item.href)) return false;
+    seen.add(item.href);
+    return true;
+  });
 }
 
 /** يطابق الصفحة الحالية مع عنصر التنقل (لوحة الإدارة). */

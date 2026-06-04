@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getUserByClerkId } from "@/lib/db/users";
+import { notifyStoreOrderEvent } from "@/lib/notifications/store-order-events";
 import { bilingualError } from "@/lib/validations";
 
 const CANCELLABLE = new Set(["pending", "processing"]);
@@ -63,6 +64,12 @@ export async function POST(
       { status: 500 },
     );
   }
+
+  void notifyStoreOrderEvent({
+    orderId: id,
+    event: "status_cancelled",
+    note: "Cancelled by customer from account",
+  }).catch((err) => console.error("store cancel alert", err));
 
   return NextResponse.json({ ok: true, id, status: "cancelled" });
 }

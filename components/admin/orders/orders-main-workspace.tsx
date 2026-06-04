@@ -20,6 +20,7 @@ import {
   Search,
   SlidersHorizontal,
   Truck,
+  Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDebounce } from "@/src/hooks/useDebounce";
@@ -144,6 +145,9 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
   const resetFilters = useOrdersOperationsStore((s) => s.resetFilters);
 
   const canWrite = Boolean(meta?.can_write);
+  const canDelete = Boolean(meta?.can_delete);
+  const deleteOrder = useOrdersOperationsStore((s) => s.deleteOrder);
+  const bulkDeleteOrders = useOrdersOperationsStore((s) => s.bulkDeleteOrders);
 
   const [localSearch, setLocalSearch] = useState(search);
   const debouncedSearch = useDebounce(localSearch, 320);
@@ -393,6 +397,30 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
                         طباعة
                       </button>
                     </li>
+                    {canDelete ? (
+                      <li>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="flex w-full px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30"
+                          onClick={() => {
+                            setMenuId(null);
+                            const label = o.order_code ?? o.id.slice(0, 8);
+                            if (
+                              !confirm(
+                                `حذف الطلب ${label}؟\nسيتم حذف البنود وسجل النقاط المرتبط. لا يمكن التراجع.`,
+                              )
+                            ) {
+                              return;
+                            }
+                            void deleteOrder(o.id);
+                          }}
+                        >
+                          <Trash2 className="me-1 inline h-3.5 w-3.5" />
+                          حذف
+                        </button>
+                      </li>
+                    ) : null}
                   </motion.ul>
                 ) : null}
               </AnimatePresence>
@@ -412,6 +440,8 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
       menuId,
       reduceMotion,
       router,
+      canDelete,
+      deleteOrder,
     ],
   );
 
@@ -556,6 +586,25 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
               >
                 إشعار
               </button>
+              {canDelete ? (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-red-700"
+                  onClick={() => {
+                    if (
+                      !confirm(
+                        `حذف ${selectedCount} طلب(ات)؟\nسيتم حذف البنود وسجلات النقاط المرتبطة. لا يمكن التراجع.`,
+                      )
+                    ) {
+                      return;
+                    }
+                    void bulkDeleteOrders(Array.from(selectedIds));
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  حذف
+                </button>
+              ) : null}
               <button type="button" className="rounded-lg px-3 py-1.5 text-xs font-bold underline" onClick={clearSelection}>
                 إلغاء التحديد
               </button>

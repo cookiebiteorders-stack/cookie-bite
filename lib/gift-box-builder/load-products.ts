@@ -3,6 +3,7 @@ import type { Lang } from "@/lib/i18n/translations";
 import {
   normalizeProductImages,
   primaryImageFromProduct,
+  resolveProductImageUrl,
 } from "@/lib/products/media";
 
 const BUILDER_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -119,9 +120,9 @@ export async function loadBuilderProducts(lang: Lang = "en"): Promise<BuilderPro
         if (dietary.some((d) => d.toLowerCase().includes("vegan"))) tags.push("vegan");
         if (dietary.some((d) => d.toLowerCase().includes("gluten"))) tags.push("gf");
         const imagesNormalized = normalizeProductImages(p.images, p.image_url ?? null);
-        const imageUrl =
-          primaryImageFromProduct(imagesNormalized, p.image_url ?? null) ??
-          "/images/web-logo.png";
+        const imageUrl = resolveProductImageUrl(
+          primaryImageFromProduct(imagesNormalized, p.image_url ?? null),
+        );
 
         return {
           id: p.id,

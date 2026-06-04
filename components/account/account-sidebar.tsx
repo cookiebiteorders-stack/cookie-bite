@@ -19,6 +19,7 @@ import {
 import { useLanguage } from "@/components/providers/language-provider";
 import { useStaffAdminNav } from "@/components/providers/staff-admin-nav-provider";
 import { getAdminNavIcon } from "@/lib/admin/admin-console-nav-icons";
+import type { AdminConsoleNavItem } from "@/lib/admin/admin-console-nav";
 import { cn } from "@/lib/utils";
 
 const customerNavItems = [
@@ -40,6 +41,8 @@ type AccountSidebarProps = {
   avatarUrl?: string | null;
   roleLabel?: string;
   showAdminLinks?: boolean;
+  /** عناصر لوحة الإدارة من الخادم (تفضّل على fetch العميل لتجنّب تكرار التسميات). */
+  adminConsoleLinks?: AdminConsoleNavItem[];
 };
 
 export function AccountSidebar({
@@ -48,10 +51,19 @@ export function AccountSidebar({
   avatarUrl,
   roleLabel = "Member",
   showAdminLinks = false,
+  adminConsoleLinks = [],
 }: AccountSidebarProps) {
   const pathname = usePathname();
   const { t } = useLanguage();
   const { items: staffAdminNavItems } = useStaffAdminNav();
+  const adminLinks: AdminConsoleNavItem[] =
+    adminConsoleLinks.length > 0
+      ? adminConsoleLinks
+      : staffAdminNavItems.map((item) => ({
+          href: item.href,
+          navKey: item.navKey,
+          module: item.module,
+        }));
 
   const labels: Record<(typeof customerNavItems)[number]["key"], string> = {
     dashboard: t("accountNav.dashboard"),
@@ -120,7 +132,7 @@ export function AccountSidebar({
               </li>
             );
           })}
-          {showAdminLinks && staffAdminNavItems.length > 0 ? (
+          {showAdminLinks && adminLinks.length > 0 ? (
             <>
               <li
                 className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-wider text-cb-text-muted"
@@ -128,20 +140,16 @@ export function AccountSidebar({
               >
                 {t("accountNav.adminSection")}
               </li>
-              {staffAdminNavItems.map((navItem) => {
-                const AdminIcon = getAdminNavIcon({
-                  href: navItem.href,
-                  navKey: navItem.module,
-                  module: navItem.module,
-                });
+              {adminLinks.map((navItem) => {
+                const AdminIcon = getAdminNavIcon(navItem);
                 return (
-                  <li key={navItem.href}>
+                  <li key={`${navItem.href}-${navItem.navKey}`}>
                     <Link
                       href={navItem.href}
                       className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold text-cb-text-strong ring-1 ring-cb-border/60 hover:bg-cb-peach/50"
                     >
                       <AdminIcon className="h-4 w-4 shrink-0 text-cb-terracotta-dark" aria-hidden />
-                      {t(`adminNav.${navItem.module}`)}
+                      {t(`adminNav.${navItem.navKey}`)}
                     </Link>
                   </li>
                 );

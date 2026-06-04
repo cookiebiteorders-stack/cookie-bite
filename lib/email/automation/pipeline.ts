@@ -8,10 +8,12 @@ import {
 } from "@/lib/email/automation/db";
 import { processEmailQueueRow } from "@/lib/email/automation/process-job";
 import { isSmartRetriesEnabled } from "@/lib/store/owner-flags";
+import {
+  isEmailDbQueueEnabled,
+  isEmailQueueEnabled,
+} from "@/lib/email/automation/queue-config";
 
-const USE_QUEUE =
-  process.env.EMAIL_USE_QUEUE !== "false" &&
-  Boolean(process.env.REDIS_URL?.trim() || process.env.EMAIL_USE_DB_QUEUE === "true");
+const USE_QUEUE = isEmailQueueEnabled();
 
 function retryDelayMs(attempt: number): number {
   return Math.min(3600_000, 30_000 * 2 ** attempt);
@@ -30,8 +32,8 @@ export async function sendAutomatedEmail(
   const queueId = await insertEmailQueue(payload);
   const { addEmailBullJob } = await import("@/lib/email/automation/bull-queue");
   const bullOk = await addEmailBullJob(queueId);
-  if (!bullOk && process.env.EMAIL_USE_DB_QUEUE === "true") {
-    /* DB cron will pick up pending rows */
+  if (!bullOk && isEmailDbQueueEnabled()) {
+    /* DB cron أو «عامل طابور البريد» في مركز الأتمتة */
   } else if (!bullOk) {
     return sendAutomatedEmailNow({ ...payload, metadata: { ...payload.metadata, queueId } });
   }

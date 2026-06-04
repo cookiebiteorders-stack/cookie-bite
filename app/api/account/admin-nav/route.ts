@@ -22,10 +22,13 @@ export async function GET() {
     return Response.json({ items: [] as AdminNavMenuItem[] });
   }
 
-  const items: AdminNavMenuItem[] = getAccessibleAdminConsoleNav(role).map(({ href, module }) => ({
-    href,
-    module,
-  }));
+  const items: AdminNavMenuItem[] = getAccessibleAdminConsoleNav(role).map(
+    ({ href, module, navKey }) => ({
+      href,
+      module,
+      navKey,
+    }),
+  );
 
   return Response.json({ items });
 }

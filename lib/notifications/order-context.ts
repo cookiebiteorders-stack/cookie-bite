@@ -74,6 +74,7 @@ export async function loadOrderNotificationContext(
     return null;
   }
   const row = order as OrderRow;
+  const raw = row as OrderRow & { number?: string | number | null };
   const items = await getOrderItems(orderId);
   const recipient = await resolveRecipient(row);
   const ship = (row.shipping_address ?? {}) as Record<string, unknown>;
@@ -81,10 +82,16 @@ export async function loadOrderNotificationContext(
   const lang: "en" | "ar" =
     row.language === "ar" || row.language === "en" ? row.language : "en";
 
+  const displayNum =
+    row.order_number ??
+    (raw.number != null && raw.number !== "" ? Number(raw.number) : 0);
+
   return {
     orderId: row.id,
-    orderNumber: row.order_number,
-    orderCode: row.order_code ?? null,
+    orderNumber: displayNum,
+    orderCode:
+      row.order_code ??
+      (raw.number != null && String(raw.number).trim() ? String(raw.number) : null),
     totalEgp: Number(row.total_egp),
     subtotalEgp: Number(row.subtotal_egp),
     deliveryFeeEgp: Number(row.delivery_fee_egp),

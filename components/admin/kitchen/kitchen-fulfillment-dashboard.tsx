@@ -11,7 +11,7 @@ import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 type KitchenOrder = {
   id: string;
   order_code: string | null;
-  order_number: number;
+  order_number: string | number | null;
   status: string;
   payment_status: string;
   recipient_name: string | null;
@@ -39,8 +39,10 @@ export function KitchenFulfillmentDashboard() {
     try {
       const res = await fetchJson<ApiPayload>("/api/admin/kitchen/orders?status=all&limit=60");
       setData(res);
-    } catch {
-      setError("تعذر تحميل طلبات المطبخ");
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message ? e.message : "تعذر تحميل طلبات المطبخ",
+      );
     } finally {
       setLoading(false);
     }
@@ -157,7 +159,9 @@ function StatBadge({
 }
 
 function KitchenOrderCard({ order }: { order: KitchenOrder }) {
-  const code = order.order_code ?? `#${order.order_number}`;
+  const code =
+    order.order_code ??
+    (order.order_number != null ? `#${order.order_number}` : order.id.slice(0, 8));
   const snap = order.gift_box_snapshot;
 
   return (

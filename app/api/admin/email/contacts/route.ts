@@ -6,7 +6,15 @@ import {
   isResendContactsAvailable,
   listResendContacts,
 } from "@/lib/email/resend-contacts";
+import {
+  isResendContactsManagementEnabled,
+  resendApiErrorPayload,
+} from "@/lib/email/resend-errors";
 import { bilingualError } from "@/lib/validations";
+
+function resendErrorResponse(message: string, status = 400) {
+  return NextResponse.json(resendApiErrorPayload(message), { status });
+}
 
 const createSchema = z.object({
   email: z.string().email(),
@@ -17,6 +25,17 @@ const createSchema = z.object({
 
 export async function GET(req: NextRequest) {
   await requireAdminAccess("settings");
+  if (!isResendContactsManagementEnabled()) {
+    return NextResponse.json({
+      ok: true,
+      contacts: [],
+      hasMore: false,
+      capabilities: {
+        canManageContacts: false,
+        reason: "RESEND_CONTACTS_ENABLED=false",
+      },
+    });
+  }
   if (!isResendContactsAvailable()) {
     return NextResponse.json(
       bilingualError("Resend not configured", "Resend غير مضبوط"),
@@ -29,10 +48,15 @@ export async function GET(req: NextRequest) {
 
   try {
     const { contacts, hasMore } = await listResendContacts({ limit, after });
-    return NextResponse.json({ ok: true, contacts, hasMore });
+    return NextResponse.json({
+      ok: true,
+      contacts,
+      hasMore,
+      capabilities: { canManageContacts: true },
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "list_failed";
-    return NextResponse.json(bilingualError(msg, msg), { status: 400 });
+    return resendErrorResponse(msg);
   }
 }
 
@@ -40,6 +64,11 @@ export async function POST(req: NextRequest) {
   const actor = await requireAdminAccess("settings");
   requireWritePermission(actor);
 
+  if (!isResendContactsManagementEnabled()) {
+    return resendErrorResponse(
+      "Contact management disabled (RESEND_CONTACTS_ENABLED=false)",
+    );
+  }
   if (!isResendContactsAvailable()) {
     return NextResponse.json(
       bilingualError("Resend not configured", "Resend غير مضبوط"),
@@ -57,6 +86,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, contact });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "create_failed";
-    return NextResponse.json(bilingualError(msg, msg), { status: 400 });
+    return resendErrorResponse(msg);
   }
 }

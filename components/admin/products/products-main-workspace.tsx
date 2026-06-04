@@ -28,6 +28,7 @@ import {
 } from "@/components/admin/products/product-row-actions-menu";
 import { useDebounce } from "@/src/hooks/useDebounce";
 import type { AdminProductRow } from "@/lib/admin/products-dashboard-types";
+import { PRODUCT_PLACEHOLDER_IMAGE } from "@/lib/products/media";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
 import { buttonClassName } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -601,16 +602,14 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
                   aria-label={`تحديد ${p.title_en ?? p.name}`}
                 />
                 <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-cb-border bg-cb-surface-2">
-                  {p.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={p.image_url}
-                      alt={p.title_en ?? p.name}
-                      loading="lazy"
-                      decoding="async"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : null}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={p.image_url?.trim() || PRODUCT_PLACEHOLDER_IMAGE}
+                    alt={p.title_en ?? p.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-contain"
+                  />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-stone-900 dark:text-stone-50">{p.title_en ?? p.name}</p>

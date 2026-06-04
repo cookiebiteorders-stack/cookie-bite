@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getUserByClerkId } from "@/lib/db/users";
 import { onOrderCreated } from "@/lib/email/automation/triggers";
+import { recordOrderCreatedLifecycle } from "@/lib/orders/order-lifecycle";
 import { scheduleOrderConfirmed } from "@/lib/notifications/schedule";
 import { checkoutSchema, bilingualError } from "@/lib/validations";
 import type { Addon } from "@/lib/addons/types";
@@ -371,6 +372,18 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
+
+  const { data: fullOrder } = await supabase.from("orders").select("*").eq("id", order.id).maybeSingle();
+  void recordOrderCreatedLifecycle(
+    supabase,
+    (fullOrder ?? order) as Record<string, unknown>,
+    itemsForInsert as Record<string, unknown>[],
+    {
+      user_id: user_id ?? null,
+      email: user_email ?? data.guest_email ?? null,
+      role: user_id ? "customer" : "guest",
+    },
+  );
 
   // 8) خصم المخزون
   for (const item of data.cart_items) {

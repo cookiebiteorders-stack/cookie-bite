@@ -238,6 +238,12 @@ export const adminSectionsEn = {
       logs24h:
         "Email events: {sent} sent, {failed} failed, {skipped} skipped · Notification failures: {notifFailed}",
       emailLogs: "Email delivery logs",
+      queueBacklogHint:
+        "{count} emails waiting in the database queue. Redis is optional — click «Run now» on Email queue worker, or schedule POST /api/cron/email-worker every 5 minutes.",
+      queueBacklogAction: "Process email queue now",
+      redisDbMode: "DB queue ✓ (no Redis)",
+      redisConnected: "Redis ✓",
+      redisOptional: "Redis optional",
       stats: {
         notifQueue: "Notification jobs pending",
         emailQueue: "Email queue pending",
@@ -891,6 +897,12 @@ export const adminSectionsAr = {
       logs24h:
         "أحداث البريد: {sent} ناجح، {failed} فاشل، {skipped} متخطى · فشل إشعارات: {notifFailed}",
       emailLogs: "سجلات تسليم البريد",
+      queueBacklogHint:
+        "{count} رسالة في طابور قاعدة البيانات. Redis اختياري — اضغط «تشغيل الآن» على عامل طابور البريد، أو جدول POST /api/cron/email-worker كل 5 دقائق.",
+      queueBacklogAction: "معالجة طابور البريد الآن",
+      redisDbMode: "طابور DB ✓ (بدون Redis)",
+      redisConnected: "Redis ✓",
+      redisOptional: "Redis اختياري",
       stats: {
         notifQueue: "مهام إشعار معلّقة",
         emailQueue: "طابور بريد معلّق",

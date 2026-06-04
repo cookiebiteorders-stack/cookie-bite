@@ -2,6 +2,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { AccountSettingsClient } from "@/components/account/account-settings-client";
 import { requireCustomerProfileComplete } from "@/lib/account/require-complete-profile";
+import { getAccessibleAdminConsoleNav } from "@/lib/admin/admin-console-nav";
 import { resolveStaffRole } from "@/lib/admin/auth-role";
 import { getRoleLabel, type UserRole } from "@/lib/admin/rbac";
 import { buildPageMetadata } from "@/lib/seo";
@@ -47,7 +48,7 @@ export default async function AccountSettingsPage() {
   }
 
   const roleLabel = role === "customer" ? "Member" : getRoleLabel(role);
-  const showAdminLinks = role !== "customer";
+  const adminConsoleLinks = role !== "customer" ? getAccessibleAdminConsoleNav(role) : [];
 
   return (
     <AccountSettingsClient
@@ -55,7 +56,8 @@ export default async function AccountSettingsPage() {
       userEmail={email}
       avatarUrl={user?.imageUrl ?? null}
       roleLabel={roleLabel}
-      showAdminLinks={showAdminLinks}
+      showAdminLinks={adminConsoleLinks.length > 0}
+      adminConsoleLinks={adminConsoleLinks}
     />
   );
 }

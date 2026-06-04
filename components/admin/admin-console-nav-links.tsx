@@ -35,7 +35,7 @@ export function AdminConsoleNavLinks({
         const isCopilot = item.navKey === "copilot";
         return (
           <Link
-            key={item.href}
+            key={`${item.href}-${item.navKey}`}
             href={item.href}
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}

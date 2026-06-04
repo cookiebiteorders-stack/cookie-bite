@@ -12,6 +12,7 @@ import { OrdersMainWorkspace } from "@/components/admin/orders/orders-main-works
 import { OrderDetailsDrawer } from "@/components/admin/orders/order-details-drawer";
 import { OrdersToasts } from "@/components/admin/orders/orders-toasts";
 import { OrdersCommandPalette } from "@/components/admin/orders/orders-command-palette";
+import { OrderLifecycleHistoryPanel } from "@/components/admin/orders/order-lifecycle-history-panel";
 import { ImportExportToolbar } from "@/components/admin/import-export/import-export-toolbar";
 import { printOrdersList } from "@/lib/admin/orders-print-html";
 import { useImportExport } from "@/hooks/use-import-export";
@@ -116,6 +117,7 @@ export function OrdersOperationsDashboard() {
 
   const meta = useOrdersOperationsStore((s) => s.meta);
   const canWrite = Boolean(meta?.can_write);
+  const canDelete = Boolean(meta?.can_delete);
   const selectedIdList = useMemo(() => Array.from(selectedIds), [selectedIds]);
 
   return (
@@ -222,6 +224,7 @@ export function OrdersOperationsDashboard() {
 
       <OrdersHeroStats stats={stats} online={online} />
       <OrdersAnalyticsStrip orders={orders} stats={stats} />
+      <OrderLifecycleHistoryPanel />
       <OrdersMainWorkspace searchInputRef={searchRef} onOpenDetail={openDetail} />
 
       <OrderDetailsDrawer
@@ -232,6 +235,7 @@ export function OrdersOperationsDashboard() {
         }}
         orderId={detailId}
         canWrite={canWrite}
+        canDelete={canDelete}
       />
 
       <OrdersCommandPalette

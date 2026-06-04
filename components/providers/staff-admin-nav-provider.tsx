@@ -48,7 +48,8 @@ export function StaffAdminNavProvider({ children }: { children: ReactNode }) {
           (x): x is AdminNavMenuItem =>
             Boolean(x) &&
             typeof x.href === "string" &&
-            typeof (x as AdminNavMenuItem).module === "string",
+            typeof (x as AdminNavMenuItem).module === "string" &&
+            typeof (x as AdminNavMenuItem).navKey === "string",
         );
         setItems(safe);
       })

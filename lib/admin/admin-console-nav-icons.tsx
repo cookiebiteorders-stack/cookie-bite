@@ -28,6 +28,7 @@ const iconByHref: Record<string, LucideIcon> = {
   "/admin/products": Boxes,
   "/admin/addons": Boxes,
   "/admin/orders": ShoppingCart,
+  "/admin/kitchen": Cookie,
   "/admin/customers": Users,
   "/admin/discounts": BadgePercent,
   "/admin/analytics": Activity,

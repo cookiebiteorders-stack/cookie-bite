@@ -4,11 +4,16 @@ export function isUrgentOrder(order: {
   scheduled_delivery_time?: string | null;
   delivery_slot?: string | null;
   notes?: string | null;
+  gift_message?: string | null;
+  admin_notes?: string | null;
   order_type?: string | null;
   status?: string | null;
   created_at?: string;
 }): boolean {
-  const notes = (order.notes ?? "").toLowerCase();
+  const notes = [order.notes, order.gift_message, order.admin_notes]
+    .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+    .join(" ")
+    .toLowerCase();
   if (/urgent|عاجل|asap|فوري|نفس.?اليوم|same.?day/i.test(notes)) {
     return true;
   }

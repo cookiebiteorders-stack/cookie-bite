@@ -26,6 +26,7 @@ describe("listOwnerAndAdminEmails", () => {
     tryCreateSupabaseAdminClientMock.mockReturnValue(null);
 
     const emails = await listOwnerAndAdminEmails();
+    expect(emails).toContain("cookie-bite@cookie-bite.com");
     expect(emails).toContain("owner@test.com");
     expect(emails).toContain("admin1@test.com");
     expect(emails).toContain("admin2@test.com");

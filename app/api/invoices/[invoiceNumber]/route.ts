@@ -132,6 +132,7 @@ export async function GET(
         status,
         issued_at,
         created_at,
+        invoice_number,
         orders:order_id (
           id,
           order_code,
@@ -179,9 +180,14 @@ export async function GET(
         (typeof row.created_at === "string" ? row.created_at : null) ??
         new Date().toISOString();
 
+      const storedInvNum =
+        typeof row.invoice_number === "string" && row.invoice_number.trim()
+          ? row.invoice_number.trim()
+          : normalizeInvoiceNumber(String(row.id ?? ""), issuedAt);
+
       payload = {
         id: String(row.id ?? ""),
-        invoice_number: normalizeInvoiceNumber(String(row.id ?? ""), issuedAt),
+        invoice_number: storedInvNum,
         amount_egp: Number(row.amount ?? 0),
         status: toInvoiceStatus(row.status),
         issued_at: issuedAt,
@@ -233,6 +239,8 @@ export async function GET(
       const orderSelect = `
           id,
           order_code,
+          number,
+          order_number,
           subtotal_egp,
           discount_amount_egp,
           delivery_fee_egp,
@@ -282,11 +290,28 @@ export async function GET(
     const items = orderId ? (itemsByOrderId.get(orderId) ?? []) : [];
     const createdAt =
       typeof orderRow.created_at === "string" ? orderRow.created_at : new Date().toISOString();
-    const invoiceNum = invoiceNumberFromOrder({
-      id: orderId,
-      created_at: createdAt,
-      order_code: typeof orderRow.order_code === "string" ? orderRow.order_code : null,
-    });
+    const { data: linkedInv } = await supabase
+      .from("invoices")
+      .select("invoice_number")
+      .eq("order_id", orderId)
+      .order("issued_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const invoiceNum =
+      typeof linkedInv?.invoice_number === "string" && linkedInv.invoice_number.trim()
+        ? linkedInv.invoice_number.trim()
+        : invoiceNumberFromOrder({
+            id: orderId,
+            created_at: createdAt,
+            order_code: typeof orderRow.order_code === "string" ? orderRow.order_code : null,
+            order_number:
+              typeof orderRow.order_number === "number"
+                ? orderRow.order_number
+                : orderRow.number != null
+                  ? Number(orderRow.number)
+                  : null,
+          });
 
     payload = {
       id: orderId,

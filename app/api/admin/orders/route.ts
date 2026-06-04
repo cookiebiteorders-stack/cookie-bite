@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-admin";
 import { bilingualError } from "@/lib/validations";
 import { writeAuditLog } from "@/lib/admin/audit";
+import { recordOrderCreatedLifecycle } from "@/lib/orders/order-lifecycle";
 import type { AdminOrderRow, OrderStats } from "@/lib/admin/orders-operations-types";
 import { buildIlikeOrClause } from "@/lib/security/sanitize-filter";
 
@@ -280,6 +281,13 @@ export async function POST(req: NextRequest) {
     metadata: { lines: itemsPayload.length },
     request: req,
   });
+
+  void recordOrderCreatedLifecycle(
+    supabase,
+    order as Record<string, unknown>,
+    itemsPayload as Record<string, unknown>[],
+    { user_id: actor.user_id, email: actor.email, role: actor.role },
+  );
 
   return NextResponse.json({ ok: true, order }, { status: 201 });
 }

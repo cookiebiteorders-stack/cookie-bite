@@ -5,6 +5,7 @@ import {
   galleryUrlsFromProduct,
   normalizeProductImages,
   primaryImageFromProduct,
+  resolveProductImageUrl,
 } from "@/lib/products/media";
 
 const BADGE_SET = new Set(["bestseller", "new", "trending", "featured"]);
@@ -34,8 +35,9 @@ export function productRowToStorefrontProduct(
         descriptionFallback;
   const imagesNormalized = normalizeProductImages(row.images, row.image_url);
   const gallery = galleryUrlsFromProduct(imagesNormalized, row.image_url);
-  const mainImage =
-    primaryImageFromProduct(imagesNormalized, row.image_url) ?? "/images/web-logo.png";
+  const mainImage = resolveProductImageUrl(
+    primaryImageFromProduct(imagesNormalized, row.image_url),
+  );
   const videoUrl = row.video_url?.trim() || null;
   const badges = (row.badges ?? []).filter(
     (b): b is NonNullable<Product["badges"]>[number] => BADGE_SET.has(String(b)),

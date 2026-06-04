@@ -210,13 +210,13 @@ export function UserAccountDropdown() {
                 >
                   {staffAdminNavItems.map((item) => (
                     <Link
-                      key={item.href}
+                      key={`${item.href}-${item.navKey}`}
                       href={item.href}
                       role="menuitem"
                       className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-cb-text-strong transition-colors hover:bg-cb-peach/45 dark:hover:bg-cb-peach/15"
                       onClick={close}
                     >
-                      {t(`adminNav.${item.module}`)}
+                      {t(`adminNav.${item.navKey}`)}
                     </Link>
                   ))}
                 </div>

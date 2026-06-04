@@ -14,27 +14,45 @@ export function getResend() {
   return _resend;
 }
 
-/* -------------------------------------------------------------------------- *
- * Brand-aligned defaults                                                      *
- *                                                                             *
- *  - `from`       — From: header. ALWAYS use the brand mailbox so DMARC/DKIM  *
- *                   pass and customers see "Cookie Bite" instead of an alias. *
- *  - `replyTo`    — Replies route back to the same brand inbox by default so  *
- *                   responses arrive in Hostinger Webmail.                    *
- *  - `inbox`      — The address used as "to" when the website sends           *
- *                   internal notifications (contact form, order alerts, …).   *
- *  - `domain`     — The verified Resend domain. Used for SPF/DKIM diagnostics.*
- * -------------------------------------------------------------------------- */
+const DEFAULT_BRAND_MAILBOX = "cookie-bite@cookie-bite.com";
 
-const BRAND_MAILBOX = "cookie-bite@cookie-bite.com";
+function extractEmailAddress(raw: string): string {
+  const trimmed = raw.trim();
+  const angle = trimmed.match(/<([^>]+)>/);
+  return (angle?.[1] ?? trimmed).trim().toLowerCase();
+}
+
+/** صندوق العلامة — يُستخدم للإرسال والرد والتنبيهات الداخلية. */
+export function resolveBrandMailbox(): string {
+  const fromEnv = process.env.RESEND_FROM_EMAIL?.trim();
+  if (fromEnv) {
+    return extractEmailAddress(fromEnv);
+  }
+  return (
+    process.env.RESEND_REPLY_TO?.trim().toLowerCase() ||
+    process.env.STORE_OPS_EMAIL?.trim().toLowerCase() ||
+    process.env.CONTACT_INBOX?.trim().toLowerCase() ||
+    DEFAULT_BRAND_MAILBOX
+  );
+}
+
+function resolveFromHeader(): string {
+  const raw = process.env.RESEND_FROM_EMAIL?.trim();
+  if (raw && raw.includes("<")) return raw;
+  const mailbox = resolveBrandMailbox();
+  return `Cookie Bite <${mailbox}>`;
+}
 
 export const EMAIL_CONFIG = {
-  from: `Cookie Bite <${BRAND_MAILBOX}>`,
-  replyTo: BRAND_MAILBOX,
-  /** Inbox that receives internal notifications (contact form, alerts, …). */
-  inbox: BRAND_MAILBOX,
+  from: resolveFromHeader(),
+  replyTo: process.env.RESEND_REPLY_TO?.trim() || resolveBrandMailbox(),
+  /** Inbox for internal notifications (orders, contact, alerts). */
+  inbox:
+    process.env.STORE_OPS_EMAIL?.trim().toLowerCase() ||
+    process.env.CONTACT_INBOX?.trim().toLowerCase() ||
+    resolveBrandMailbox(),
   domain: process.env.RESEND_DOMAIN ?? "cookie-bite.com",
-  brandMailbox: BRAND_MAILBOX,
+  brandMailbox: resolveBrandMailbox(),
 } as const;
 
 /** True once a Resend key is configured in the environment. */

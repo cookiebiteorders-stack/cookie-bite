@@ -14,6 +14,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import { AccountSidebar } from "@/components/account/account-sidebar";
+import type { AdminConsoleNavItem } from "@/lib/admin/admin-console-nav";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,7 @@ type AccountSettingsClientProps = {
   avatarUrl: string | null;
   roleLabel: string;
   showAdminLinks: boolean;
+  adminConsoleLinks?: AdminConsoleNavItem[];
 };
 
 function SettingsSection({
@@ -82,6 +84,7 @@ export function AccountSettingsClient({
   avatarUrl,
   roleLabel,
   showAdminLinks,
+  adminConsoleLinks = [],
 }: AccountSettingsClientProps) {
   const { t } = useLanguage();
   const [prefs, setPrefs] = useState<NotificationPrefs>(defaultNotificationPrefs);
@@ -144,6 +147,7 @@ export function AccountSettingsClient({
           avatarUrl={avatarUrl}
           roleLabel={roleLabel}
           showAdminLinks={showAdminLinks}
+          adminConsoleLinks={adminConsoleLinks}
         />
 
         <div className="min-w-0 flex-1 space-y-6">
@@ -238,7 +242,7 @@ export function AccountSettingsClient({
             description={t("accountSettings.securityDesc")}
             icon={Lock}
           >
-            <div className="w-full min-w-0 overflow-visible rounded-2xl border border-cb-border/80 bg-cb-cream/40 p-3 sm:p-4 dark:bg-cb-surface-2/30">
+            <div className="w-full min-w-0">
               <ClerkUserProfileEmbed />
             </div>
           </SettingsSection>

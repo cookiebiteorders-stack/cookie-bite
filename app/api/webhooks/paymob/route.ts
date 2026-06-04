@@ -3,6 +3,7 @@ import { resolvePaymobHmacSecret } from "@/lib/paymob/env";
 import { updateOrderPaymentByPaymobAcceptOrderId } from "@/lib/db/orders";
 import { schedulePaymentConfirmed } from "@/lib/notifications/schedule";
 import { awardLoyaltyPointsForPaidOrder } from "@/lib/loyalty/award-order-points";
+import { notifyStoreOrderEvent } from "@/lib/notifications/store-order-events";
 
 type PaymobCallbackBody = {
   obj?: Record<string, unknown>;
@@ -61,11 +62,19 @@ export async function POST(req: Request) {
     paymobTransactionId,
   );
 
-  if (success && updated.ok && updated.becamePaid) {
-    schedulePaymentConfirmed(updated.orderId);
-    void awardLoyaltyPointsForPaidOrder(updated.orderId).catch((err) =>
-      console.error("loyalty award after paymob", err),
-    );
+  if (updated.ok) {
+    if (success && updated.becamePaid) {
+      schedulePaymentConfirmed(updated.orderId);
+      void awardLoyaltyPointsForPaidOrder(updated.orderId).catch((err) =>
+        console.error("loyalty award after paymob", err),
+      );
+    } else if (!success) {
+      void notifyStoreOrderEvent({
+        orderId: updated.orderId,
+        event: "payment_failed",
+        note: "Paymob transaction declined or failed",
+      }).catch((err) => console.error("store paymob failed alert", err));
+    }
   }
 
   return Response.json({ ok: true });

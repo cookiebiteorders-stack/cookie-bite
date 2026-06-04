@@ -7,6 +7,7 @@ import {
   removeResendContact,
   updateResendContact,
 } from "@/lib/email/resend-contacts";
+import { isResendContactsManagementEnabled, resendApiErrorPayload } from "@/lib/email/resend-errors";
 import { bilingualError } from "@/lib/validations";
 
 type Params = { params: Promise<{ ref: string }> };
@@ -38,7 +39,7 @@ export async function GET(_req: NextRequest, ctx: Params) {
     return NextResponse.json({ ok: true, contact });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "not_found";
-    return NextResponse.json(bilingualError(msg, msg), { status: 404 });
+    return NextResponse.json(resendApiErrorPayload(msg), { status: 404 });
   }
 }
 
@@ -46,6 +47,11 @@ export async function PATCH(req: NextRequest, ctx: Params) {
   const actor = await requireAdminAccess("settings");
   requireWritePermission(actor);
 
+  if (!isResendContactsManagementEnabled()) {
+    return NextResponse.json(resendApiErrorPayload("Contact management disabled"), {
+      status: 400,
+    });
+  }
   if (!isResendContactsAvailable()) {
     return NextResponse.json(
       bilingualError("Resend not configured", "Resend غير مضبوط"),
@@ -64,7 +70,7 @@ export async function PATCH(req: NextRequest, ctx: Params) {
     return NextResponse.json({ ok: true, contact });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "update_failed";
-    return NextResponse.json(bilingualError(msg, msg), { status: 400 });
+    return NextResponse.json(resendApiErrorPayload(msg), { status: 400 });
   }
 }
 
@@ -72,6 +78,11 @@ export async function DELETE(_req: NextRequest, ctx: Params) {
   const actor = await requireAdminAccess("settings");
   requireWritePermission(actor);
 
+  if (!isResendContactsManagementEnabled()) {
+    return NextResponse.json(resendApiErrorPayload("Contact management disabled"), {
+      status: 400,
+    });
+  }
   if (!isResendContactsAvailable()) {
     return NextResponse.json(
       bilingualError("Resend not configured", "Resend غير مضبوط"),
@@ -85,6 +96,6 @@ export async function DELETE(_req: NextRequest, ctx: Params) {
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "delete_failed";
-    return NextResponse.json(bilingualError(msg, msg), { status: 400 });
+    return NextResponse.json(resendApiErrorPayload(msg), { status: 400 });
   }
 }

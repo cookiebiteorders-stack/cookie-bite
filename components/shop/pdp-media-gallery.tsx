@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useCallback, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { PRODUCT_PLACEHOLDER_IMAGE } from "@/lib/products/media";
 import { cn } from "@/lib/utils";
 
 export type PdpGallerySlide =
@@ -36,7 +37,7 @@ export function PdpMediaGallery({
       list.push({ type: "image", url: u });
     }
     if (list.length === 0) {
-      list.push({ type: "image", url: "/images/web-logo.png" });
+      list.push({ type: "image", url: PRODUCT_PLACEHOLDER_IMAGE });
     }
     return list;
   }, [images, videoUrl]);

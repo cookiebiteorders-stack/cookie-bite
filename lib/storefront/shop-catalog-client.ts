@@ -1,6 +1,7 @@
 import type { Product } from "@/lib/data";
 import { fetchJson } from "@/lib/http/fetch-json";
 import type { Lang } from "@/lib/i18n/translations";
+import { resolveProductImageUrl } from "@/lib/products/media";
 
 export type ShopApiProduct = {
   id: string;
@@ -43,10 +44,9 @@ export function mapApiProductToCatalog(
     lang === "ar"
       ? p.description_ar || p.description_en || p.description || descFallback
       : p.description_en || p.description_ar || p.description || descFallback;
-  const mainImage =
-    p.images?.find((img) => typeof img?.url === "string" && img.url)?.url ||
-    p.image_url ||
-    "/images/web-logo.png";
+  const mainImage = resolveProductImageUrl(
+    p.images?.find((img) => typeof img?.url === "string" && img.url)?.url || p.image_url,
+  );
   const badges = (p.badges ?? []).filter((b): b is NonNullable<Product["badges"]>[number] =>
     BADGE_SET.has(String(b)),
   );

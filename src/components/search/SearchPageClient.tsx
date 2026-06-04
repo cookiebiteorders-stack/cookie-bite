@@ -21,6 +21,7 @@ import { Badge } from "@/src/components/ui/Badge";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { useLanguage } from "@/components/providers/language-provider";
+import { resolveProductImageUrl } from "@/lib/products/media";
 
 const PAGE_SIZE = 9;
 
@@ -53,10 +54,9 @@ function normalizeProduct(p: ApiProduct, fallbackDescription: string, lang: "ar"
     lang === "ar"
       ? p.description_ar || p.description_en || p.description || fallbackDescription
       : p.description_en || p.description_ar || p.description || fallbackDescription;
-  const mainImage =
-    p.images?.find((img) => typeof img?.url === "string" && img.url)?.url ||
-    p.image_url ||
-    "/images/web-logo.png";
+  const mainImage = resolveProductImageUrl(
+    p.images?.find((img) => typeof img?.url === "string" && img.url)?.url || p.image_url,
+  );
   const compare = p.compare_price_egp ?? undefined;
   const discount =
     compare && compare > p.price_egp

@@ -3,6 +3,11 @@ import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isEmailConfigured } from "@/lib/email/resend";
 import { isProviderConfigured, loadProviderPriority } from "@/lib/email/automation/provider-registry";
+import {
+  isEmailDbQueueEnabled,
+  isRedisConfigured,
+} from "@/lib/email/automation/queue-config";
+import { isResendContactsManagementEnabled } from "@/lib/email/resend-errors";
 import { bilingualError } from "@/lib/validations";
 
 export async function GET() {
@@ -56,7 +61,9 @@ export async function GET() {
       providers,
       settings: settings.data,
       health: health.data ?? [],
-      redis: Boolean(process.env.REDIS_URL?.trim()),
+      redis: isRedisConfigured(),
+      dbQueue: isEmailDbQueueEnabled(),
+      contactsManagement: isResendContactsManagementEnabled(),
       automationEnabled: process.env.EMAIL_AUTOMATION_ENABLED !== "false",
     });
   } catch (e) {

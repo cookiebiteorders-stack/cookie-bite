@@ -26,6 +26,8 @@ type AutomationStatus = {
   cronConfigured: boolean;
   resendConfigured: boolean;
   redisConfigured: boolean;
+  redisUrlSet?: boolean;
+  dbQueueEnabled?: boolean;
   emailAutomationEnabled: boolean;
   queues: {
     notificationJobsPending: number;
@@ -147,6 +149,29 @@ export function AutomationCenterPanel() {
         </p>
       ) : null}
 
+      {(s?.queues.emailQueuePending ?? 0) > 0 ? (
+        <div className="admin-alert admin-alert--warning flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm">
+            {adminT("settings.automation.queueBacklogHint", {
+              count: s?.queues.emailQueuePending ?? 0,
+            })}
+          </p>
+          <button
+            type="button"
+            disabled={busyJob !== null}
+            onClick={() => void runJob("email_worker")}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-cb-terracotta-dark px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
+          >
+            {busyJob === "email_worker" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Play className="h-3.5 w-3.5" />
+            )}
+            {adminT("settings.automation.queueBacklogAction")}
+          </button>
+        </div>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label={adminT("settings.automation.stats.notifQueue")}
@@ -178,8 +203,20 @@ export function AutomationCenterPanel() {
         <AdminBadge tone={s?.resendConfigured ? "success" : "warning"}>
           {s?.resendConfigured ? "Resend ✓" : "Resend ✗"}
         </AdminBadge>
-        <AdminBadge tone={s?.redisConfigured ? "info" : "neutral"}>
-          Redis {s?.redisConfigured ? "✓" : "—"}
+        <AdminBadge
+          tone={
+            s?.redisUrlSet
+              ? "info"
+              : s?.dbQueueEnabled
+                ? "success"
+                : "neutral"
+          }
+        >
+          {s?.redisUrlSet
+            ? adminT("settings.automation.redisConnected")
+            : s?.dbQueueEnabled
+              ? adminT("settings.automation.redisDbMode")
+              : adminT("settings.automation.redisOptional")}
         </AdminBadge>
         <AdminBadge tone={s?.emailAutomationEnabled ? "success" : "warning"}>
           {adminT("settings.automation.emailAutomation")}:{" "}

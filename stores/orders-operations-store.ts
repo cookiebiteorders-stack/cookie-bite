@@ -71,6 +71,8 @@ export interface OrdersOperationsState {
   loadOrders: () => Promise<void>;
   patchOrder: (id: string, body: Record<string, unknown>) => Promise<boolean>;
   bulkPatchOrders: (ids: string[], patch: Record<string, unknown>) => Promise<boolean>;
+  deleteOrder: (id: string) => Promise<boolean>;
+  bulkDeleteOrders: (ids: string[]) => Promise<boolean>;
   fetchOrderDetail: (id: string) => Promise<OrderDetailResponse | null>;
 }
 
@@ -206,6 +208,38 @@ export const useOrdersOperationsStore = create<OrdersOperationsState>((set, get)
       return true;
     } catch (e) {
       get().pushToast(e instanceof Error ? e.message : "فشل التحديث الجماعي", "error");
+      return false;
+    }
+  },
+
+  deleteOrder: async (id) => {
+    try {
+      await fetchJson(`/api/admin/orders/${id}`, { method: "DELETE" });
+      get().pushToast("تم حذف الطلب والسجلات المالية المرتبطة (نسخة في السجل 30 يوماً).", "success");
+      await get().loadOrders();
+      return true;
+    } catch (e) {
+      get().pushToast(e instanceof Error ? e.message : "فشل حذف الطلب", "error");
+      return false;
+    }
+  },
+
+  bulkDeleteOrders: async (ids) => {
+    if (ids.length === 0) return false;
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => fetchJson(`/api/admin/orders/${id}`, { method: "DELETE" })),
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed > 0) {
+        get().pushToast(`فشل حذف ${failed} من ${ids.length} طلب(ات).`, "error");
+      } else {
+        get().pushToast(`تم حذف ${ids.length} طلب(ات).`, "success");
+      }
+      await get().loadOrders();
+      return failed === 0;
+    } catch (e) {
+      get().pushToast(e instanceof Error ? e.message : "فشل الحذف الجماعي", "error");
       return false;
     }
   },

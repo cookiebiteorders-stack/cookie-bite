@@ -2,6 +2,14 @@ import type { ProductImage } from "@/lib/db/types";
 
 export const MAX_PRODUCT_IMAGES = 5;
 
+/** صورة افتراضية للمنتجات بدون صور — public/images/product-coming-soon.png */
+export const PRODUCT_PLACEHOLDER_IMAGE = "/images/product-coming-soon.png";
+
+export function resolveProductImageUrl(url?: string | null): string {
+  const trimmed = url?.trim();
+  return trimmed || PRODUCT_PLACEHOLDER_IMAGE;
+}
+
 export function normalizeProductImages(
   raw: unknown,
   fallbackUrl?: string | null,

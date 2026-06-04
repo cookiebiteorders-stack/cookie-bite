@@ -18,6 +18,7 @@ export const APP_DATABASE_TABLES = [
   "invoices",
   "expenses",
   "audit_logs",
+  "order_lifecycle_events",
   "notification_templates",
   "notification_logs",
   "notification_jobs",
