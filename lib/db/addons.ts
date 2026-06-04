@@ -1,4 +1,4 @@
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseAdminClient, tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Addon } from "@/lib/addons/types";
 
 export async function listAllAddons(): Promise<Addon[]> {
@@ -18,7 +18,8 @@ export async function listAllAddons(): Promise<Addon[]> {
 }
 
 export async function listLinkedAddonsForProduct(productId: string): Promise<Addon[]> {
-  const supabase = createSupabaseAdminClient();
+  const supabase = tryCreateSupabaseAdminClient();
+  if (!supabase) return [];
   const { data, error } = await supabase
     .from("product_addons")
     .select("addon_id, addons(*)")

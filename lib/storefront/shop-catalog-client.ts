@@ -2,6 +2,8 @@ import type { Product } from "@/lib/data";
 import { fetchJson } from "@/lib/http/fetch-json";
 import type { Lang } from "@/lib/i18n/translations";
 import { resolveProductImageUrl } from "@/lib/products/media";
+import { isProductInStock } from "@/lib/products/stock";
+import { coerceStringArray } from "@/lib/products/coerce";
 
 export type ShopApiProduct = {
   id: string;
@@ -47,8 +49,8 @@ export function mapApiProductToCatalog(
   const mainImage = resolveProductImageUrl(
     p.images?.find((img) => typeof img?.url === "string" && img.url)?.url || p.image_url,
   );
-  const badges = (p.badges ?? []).filter((b): b is NonNullable<Product["badges"]>[number] =>
-    BADGE_SET.has(String(b)),
+  const badges = coerceStringArray(p.badges).filter(
+    (b): b is NonNullable<Product["badges"]>[number] => BADGE_SET.has(String(b)),
   );
 
   return {
@@ -64,7 +66,8 @@ export function mapApiProductToCatalog(
     image: mainImage,
     category: p.category?.trim() || "Classic",
     badges: badges.length ? badges : undefined,
-    inStock: p.stock > 0,
+    stock: p.stock,
+    inStock: isProductInStock(p.stock),
     createdAt: p.created_at,
   };
 }

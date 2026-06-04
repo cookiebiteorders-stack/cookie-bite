@@ -7,6 +7,9 @@ import { productRowToStorefrontProduct } from "@/lib/storefront/map-product-row"
 
 const FALLBACK_DESC = "Fresh handcrafted treats from Cookie Bite — New Cairo.";
 
+const PDP_PRODUCT_SELECT =
+  "id, slug, name, title_en, title_ar, description, description_en, description_ar, price_egp, compare_price_egp, image_url, images, video_url, badges, category, stock, is_active, created_at, updated_at";
+
 export async function getActivePdpProduct(
   slug: string,
   lang: Lang = "en",
@@ -18,7 +21,7 @@ export async function getActivePdpProduct(
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase
       .from("products")
-      .select("*")
+      .select(PDP_PRODUCT_SELECT)
       .eq("slug", slug)
       .eq("is_active", true)
       .maybeSingle();

@@ -1,6 +1,7 @@
 import type { Product } from "@/lib/data";
 import type { ProductRow } from "@/lib/db/types";
 import type { Lang } from "@/lib/i18n/translations";
+import { coerceStringArray } from "@/lib/products/coerce";
 import {
   galleryUrlsFromProduct,
   normalizeProductImages,
@@ -39,7 +40,7 @@ export function productRowToStorefrontProduct(
     primaryImageFromProduct(imagesNormalized, row.image_url),
   );
   const videoUrl = row.video_url?.trim() || null;
-  const badges = (row.badges ?? []).filter(
+  const badges = coerceStringArray(row.badges).filter(
     (b): b is NonNullable<Product["badges"]>[number] => BADGE_SET.has(String(b)),
   );
 

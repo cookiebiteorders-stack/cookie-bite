@@ -6,6 +6,7 @@ import { trackProductEvent } from "@/lib/analytics/track-event";
 import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { Button } from "@/components/ui/button";
+import { isProductOutOfStock } from "@/lib/products/stock";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -25,6 +26,20 @@ export function AddToCartButton({
 }: Props) {
   const { addItem } = useCart();
   const { t } = useLanguage();
+  const outOfStock = isProductOutOfStock(product.stock);
+
+  if (outOfStock) {
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center justify-center rounded-full border border-cb-border bg-cb-surface-2 px-4 py-2 text-sm font-bold text-cb-text-muted",
+          className,
+        )}
+      >
+        {t("product.outOfStock")}
+      </span>
+    );
+  }
 
   return (
     <Button

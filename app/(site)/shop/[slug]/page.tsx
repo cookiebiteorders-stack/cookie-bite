@@ -105,11 +105,16 @@ export default async function ProductPage({ params }: Props) {
                 size="lg"
               />
             </div>
-            {product.stock != null && product.stock <= 10 ? (
+            {product.stock != null && product.stock <= 0 ? (
+              <p
+                role="status"
+                className="mt-3 inline-flex rounded-full bg-stone-900 px-4 py-2 text-sm font-bold text-white"
+              >
+                {t("product.outOfStock")}
+              </p>
+            ) : product.stock != null && product.stock <= 10 ? (
               <p className="mt-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
-                {product.stock === 0
-                  ? t("product.stockOnlineOut")
-                  : t("product.stockLeft", { count: product.stock })}
+                {t("product.stockLeft", { count: product.stock })}
               </p>
             ) : null}
 

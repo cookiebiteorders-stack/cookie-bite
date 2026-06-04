@@ -11,6 +11,7 @@ import { AddToCartButton } from "@/components/product/add-to-cart-button";
 import { ProductPriceDisplay } from "@/components/product/product-price-display";
 import { ProductSharedImage } from "@/components/product/product-shared-image";
 import { useLanguage } from "@/components/providers/language-provider";
+import { isProductOutOfStock } from "@/lib/products/stock";
 
 type Props = {
   product: Product;
@@ -42,6 +43,7 @@ export function ProductCard({
   const [uncontrolledSaved, setUncontrolledSaved] = useState(false);
 
   const uuid = product.productUuid;
+  const outOfStock = isProductOutOfStock(product.stock);
   const controlled = onWishlistToggled !== undefined;
   const saved = controlled ? wishlisted : uncontrolledSaved;
 
@@ -115,6 +117,11 @@ export function ProductCard({
         >
           <Heart className={cn("h-4 w-4", saved && "fill-current")} />
         </button>
+        {outOfStock ? (
+          <span className="pointer-events-none absolute inset-x-3 bottom-3 z-10 rounded-full bg-stone-900/90 px-3 py-1.5 text-center text-xs font-bold text-white">
+            {t("product.outOfStock")}
+          </span>
+        ) : null}
         {product.badges?.length ? (
           <div className="pointer-events-none absolute start-3 top-3 z-10 flex flex-wrap gap-1">
             {product.badges.map((b) => (
@@ -148,13 +155,19 @@ export function ProductCard({
           <ProductPriceDisplay price={product.price} comparePrice={product.comparePrice} size="sm" />
         </div>
         {layout === "grid" ? (
-          <AddToCartButton
-            product={product}
-            className="w-full rounded-full py-3 text-sm"
-          >
-            <ShoppingBag className="h-4 w-4" aria-hidden />
-            {t("product.addToCart")}
-          </AddToCartButton>
+          outOfStock ? (
+            <p className="w-full rounded-full border border-cb-border bg-cb-surface-2 py-3 text-center text-sm font-bold text-cb-text-muted">
+              {t("product.outOfStock")}
+            </p>
+          ) : (
+            <AddToCartButton
+              product={product}
+              className="w-full rounded-full py-3 text-sm"
+            >
+              <ShoppingBag className="h-4 w-4" aria-hidden />
+              {t("product.addToCart")}
+            </AddToCartButton>
+          )
         ) : (
           <Link
             href={`/shop/${product.id}`}
