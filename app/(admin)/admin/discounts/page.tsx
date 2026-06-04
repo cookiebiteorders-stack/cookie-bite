@@ -730,7 +730,7 @@ export default function AdminDiscountsPage() {
           </div>
         </div>
 
-        <div className="mt-4 overflow-x-auto rounded-2xl border border-cb-border bg-white/90">
+        <div className="admin-table-scroll mt-4 rounded-2xl border border-cb-border bg-white/90">
           <table className="w-full min-w-[1200px] text-sm">
             <thead className="sticky top-0 border-b border-cb-border bg-cb-surface-2/90 text-left text-xs font-bold uppercase tracking-wide text-stone-700">
               <tr>

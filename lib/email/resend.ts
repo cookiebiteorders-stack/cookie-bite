@@ -43,9 +43,21 @@ function resolveFromHeader(): string {
   return `Cookie Bite <${mailbox}>`;
 }
 
+/** Ignore legacy Gmail reply-to — customer replies should hit the brand mailbox. */
+function resolveReplyTo(): string {
+  const brand = resolveBrandMailbox();
+  const raw = process.env.RESEND_REPLY_TO?.trim();
+  if (!raw) return brand;
+  const addr = extractEmailAddress(raw);
+  if (addr.endsWith("@gmail.com") || addr.endsWith("@googlemail.com")) {
+    return brand;
+  }
+  return raw;
+}
+
 export const EMAIL_CONFIG = {
   from: resolveFromHeader(),
-  replyTo: process.env.RESEND_REPLY_TO?.trim() || resolveBrandMailbox(),
+  replyTo: resolveReplyTo(),
   /** Inbox for internal notifications (orders, contact, alerts). */
   inbox:
     process.env.STORE_OPS_EMAIL?.trim().toLowerCase() ||

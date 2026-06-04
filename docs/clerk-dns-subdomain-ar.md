@@ -51,12 +51,17 @@ Resolve-DnsName clerk.cookie-bite.com -Type CNAME -Server 1.1.1.1
    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
    CLERK_SECRET_KEY=sk_test_...
    ```
-3. أو أضف صراحةً:
+3. أو أضف صراحةً (إن لم يعمل التلقائي):
    ```env
-   NEXT_PUBLIC_CLERK_JS_URL=https://cdn.jsdelivr.net/npm/@clerk/clerk-js@6/dist/clerk.browser.js
+   NEXT_PUBLIC_CLERK_JS_URL=https://cdn.jsdelivr.net/npm/@clerk/clerk-js@6.12.1/dist/clerk.browser.js
+   NEXT_PUBLIC_CLERK_UI_URL=https://cdn.jsdelivr.net/npm/@clerk/ui@1.13.1/dist/ui.browser.js
    ```
 
-الكود يمرّر `__internal_clerkJSUrl` من CDN تلقائياً في `NODE_ENV=development`.
+الكود يمرّر `__internal_clerkJSUrl` و`__internal_clerkUIUrl` من CDN تلقائياً في `NODE_ENV=development`.
+
+## خطأ `failed_to_load_clerk_ui`
+
+يظهر غالباً مع `@clerk/nextjs@7` عندما يُحمَّل `clerk-js` من CDN لكن **واجهة Clerk UI** ما زالت تُطلب من `clerk.cookie-bite.com` (DNS غير مضبوط). الحل نفسه: مفاتيح `pk_test` محلياً، أو ضبط DNS، أو المتغيرين أعلاه ثم إعادة تشغيل `npm run dev`.
 
 ## خطأ `failed_to_load_clerk_js`
 

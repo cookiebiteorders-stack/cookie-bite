@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { AlertTriangle, Check, Eye, Loader2, Search, Shield, UserPlus, X } from "lucide-react";
+import { AlertTriangle, Eye, Loader2, Search, Shield, UserPlus } from "lucide-react";
 import {
   type ModuleKey,
   type UserRole,
@@ -11,6 +11,8 @@ import {
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { cn } from "@/lib/utils";
 import { useAdminT } from "@/lib/admin/use-admin-t";
+import { RolesPermissionsPanel } from "@/components/admin/roles/roles-permissions-panel";
+import { RolesMatrixPanel } from "@/components/admin/roles/roles-matrix-panel";
 
 type PermissionLevel = "full" | "limited" | "view" | "none";
 type Matrix = Record<UserRole, Record<ModuleKey, PermissionLevel>>;
@@ -72,13 +74,6 @@ function roleBadgeClass(role: UserRole) {
   if (role === "admin") return "bg-blue-100 text-blue-900 dark:bg-blue-950/60 dark:text-blue-200";
   if (role === "staff") return "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200";
   return "bg-stone-200 text-stone-800";
-}
-
-function permissionBits(level: PermissionLevel) {
-  if (level === "full") return { view: true, create: true, update: true, delete: true };
-  if (level === "limited") return { view: true, create: false, update: true, delete: false };
-  if (level === "view") return { view: true, create: false, update: false, delete: false };
-  return { view: false, create: false, update: false, delete: false };
 }
 
 export default function AdminRolesPage() {
@@ -295,7 +290,7 @@ export default function AdminRolesPage() {
   }
 
   return (
-    <section className="space-y-6 pb-10">
+    <section className="admin-roles-page space-y-6 pb-10">
       <div className="fixed right-4 top-20 z-50 space-y-2">
         {toasts.map((t) => (
           <motion.div
@@ -327,8 +322,8 @@ export default function AdminRolesPage() {
         </p>
       </motion.header>
 
-      <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
-        <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
+      <div className="admin-split-grid flex w-full min-w-0 max-w-full flex-col gap-5 xl:grid xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+        <section className="min-w-0 w-full max-w-full rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
           <h2 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-950">
             <UserPlus className="h-5 w-5 text-amber-700" />
             {adminT("roles.assignTitle")}
@@ -337,8 +332,8 @@ export default function AdminRolesPage() {
             {adminT("roles.assignSub")}
           </p>
 
-          <div className="relative mt-4">
-            <div className="inline-flex w-full items-center gap-2 rounded-xl border border-cb-border bg-cb-surface px-3 py-2">
+          <div className="relative mt-4 min-w-0 w-full max-w-full">
+            <div className="flex w-full min-w-0 items-center gap-2 rounded-xl border border-cb-border bg-cb-surface px-3 py-2">
               <Search className="h-4 w-4 text-stone-500" />
               <input
                 value={searchTerm}
@@ -367,7 +362,7 @@ export default function AdminRolesPage() {
                         setSearchTerm(`${userDisplayName(u)} — ${u.email}`);
                         setDropdownOpen(false);
                       }}
-                      className="flex w-full items-center gap-3 border-b border-cb-border/60 px-3 py-2 text-left hover:bg-cb-surface-2/70"
+                      className="flex w-full items-center gap-3 border-b border-cb-border/60 px-3 py-2 text-start hover:bg-cb-surface-2/70"
                     >
                       {u.avatar_url ? (
                         <img src={u.avatar_url} alt={userDisplayName(u)} className="h-9 w-9 rounded-full object-cover" />
@@ -387,7 +382,7 @@ export default function AdminRolesPage() {
             ) : null}
           </div>
 
-          <label className="mt-3 block text-sm font-semibold text-stone-950">
+          <label className="mt-3 block min-w-0 text-sm font-semibold text-stone-950">
             {adminT("roles.assignByEmail")}
             <input
               type="email"
@@ -400,19 +395,20 @@ export default function AdminRolesPage() {
                 }
               }}
               placeholder={adminT("roles.emailPlaceholder")}
-              className="mt-1 w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
+              className="mt-1 box-border w-full max-w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
               autoComplete="email"
+              dir="ltr"
             />
           </label>
 
-          <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
+          <div className="mt-3 flex w-full min-w-0 flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto]">
             <select
               value={role}
               onChange={(e) => {
                 const r = e.target.value as UserRole;
                 setRole(r);
               }}
-              className="rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
+              className="w-full min-w-0 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
               aria-label={adminT("roles.roleToAssign")}
             >
               {roles.map((r) => (
@@ -425,7 +421,7 @@ export default function AdminRolesPage() {
               type="button"
               disabled={saving || (!selectedUser && !assignEmail.trim())}
               onClick={() => void assignRole()}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-cb-border bg-cb-terracotta-dark px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cb-border bg-cb-terracotta-dark px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:w-auto"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {saving ? adminT("roles.assigning") : adminT("roles.assignBtn")}
@@ -439,20 +435,20 @@ export default function AdminRolesPage() {
               className="mt-4 rounded-xl border border-cb-border bg-cb-surface-2/70 p-4"
             >
               <p className="text-xs font-bold uppercase tracking-wide text-stone-700">{adminT("roles.selectedUser")}</p>
-              <div className="mt-2 flex items-center gap-3">
+              <div className="mt-2 flex flex-wrap items-center gap-3">
                 {selectedResolved.avatar_url ? (
-                  <img src={selectedResolved.avatar_url} alt={userDisplayName(selectedResolved)} className="h-10 w-10 rounded-full object-cover" />
+                  <img src={selectedResolved.avatar_url} alt={userDisplayName(selectedResolved)} className="h-10 w-10 shrink-0 rounded-full object-cover" />
                 ) : (
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-cb-surface text-sm font-bold text-stone-700">
+                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cb-surface text-sm font-bold text-stone-700">
                     {initials(userDisplayName(selectedResolved))}
                   </span>
                 )}
-                <div>
-                  <p className="text-sm font-semibold text-stone-900">{userDisplayName(selectedResolved)}</p>
-                  <p className="text-xs text-stone-600">{selectedResolved.email}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-stone-900">{userDisplayName(selectedResolved)}</p>
+                  <p className="truncate text-xs text-stone-600">{selectedResolved.email}</p>
                 </div>
                 {selectedResolved.role ? (
-                  <span className={cn("ms-auto rounded-full px-2 py-1 text-[11px] font-bold", roleBadgeClass(selectedResolved.role))}>
+                  <span className={cn("shrink-0 rounded-full px-2 py-1 text-[11px] font-bold", roleBadgeClass(selectedResolved.role))}>
                     {adminT("roles.currentRole", { role: selectedResolved.role })}
                   </span>
                 ) : null}
@@ -471,7 +467,7 @@ export default function AdminRolesPage() {
           ) : null}
         </section>
 
-        <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
+        <section className="min-w-0 w-full max-w-full overflow-x-clip rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
           <h2 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-stone-950">
             <Shield className="h-5 w-5 text-amber-700" />
             {adminT("roles.permissionsTitle")}
@@ -482,7 +478,7 @@ export default function AdminRolesPage() {
           <select
             value={permissionsTargetRole}
             onChange={(e) => setPermissionsTargetRole(e.target.value as UserRole)}
-            className="mt-3 w-full rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
+            className="mt-3 w-full min-w-0 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm"
           >
             {roles.map((r) => (
               <option key={r} value={r}>
@@ -490,40 +486,15 @@ export default function AdminRolesPage() {
               </option>
             ))}
           </select>
-          <div className="admin-table-scroll mt-3 rounded-xl border border-cb-border">
-            <table className="w-full min-w-[520px] text-xs">
-              <thead className="bg-cb-surface-2/80 text-stone-700">
-                <tr>
-                  <th className="px-2 py-2 text-start">{adminT("roles.module")}</th>
-                  <th className="px-2 py-2">{adminT("roles.view")}</th>
-                  <th className="px-2 py-2">{adminT("roles.create")}</th>
-                  <th className="px-2 py-2">{adminT("roles.update")}</th>
-                  <th className="px-2 py-2">{adminT("roles.delete")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {modules.map((m) => {
-                  const level = matrix?.[permissionsTargetRole]?.[m] ?? "none";
-                  const bits = permissionBits(level);
-                  const icon = (v: boolean) =>
-                    v ? <Check className="mx-auto h-3.5 w-3.5 text-emerald-600" /> : <X className="mx-auto h-3.5 w-3.5 text-stone-400" />;
-                  return (
-                    <tr key={m} className="border-t border-cb-border">
-                      <td className="px-2 py-2 font-semibold text-stone-800">{m}</td>
-                      <td className="px-2 py-2 text-center">{icon(bits.view)}</td>
-                      <td className="px-2 py-2 text-center">{icon(bits.create)}</td>
-                      <td className="px-2 py-2 text-center">{icon(bits.update)}</td>
-                      <td className="px-2 py-2 text-center">{icon(bits.delete)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <RolesPermissionsPanel
+            modules={modules}
+            matrix={matrix}
+            targetRole={permissionsTargetRole}
+          />
         </section>
       </div>
 
-      <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated">
+      <section className="min-w-0 w-full max-w-full rounded-2xl border border-cb-border bg-cb-surface-elevated">
         <div className="flex items-center justify-between border-b border-cb-border bg-cb-surface-2 px-4 py-3">
           <h2 className="font-semibold text-stone-950">{adminT("roles.assignmentsTitle")}</h2>
           <span className="text-xs text-stone-600">{adminT("roles.activeCount", { n: assignments.length })}</span>
@@ -660,53 +631,20 @@ export default function AdminRolesPage() {
         )}
       </section>
 
-      <div className="overflow-hidden rounded-2xl border border-cb-border bg-cb-surface-elevated">
+      <div className="min-w-0 w-full max-w-full overflow-x-clip rounded-2xl border border-cb-border bg-cb-surface-elevated">
         <div className="border-b border-cb-border bg-cb-surface-2 px-4 py-3">
           <h2 className="font-semibold text-stone-950">{adminT("roles.matrixTitle")}</h2>
-          <p className="mt-1 text-xs text-cb-text-muted lg:hidden">
+          <p className="mt-1 hidden text-xs text-cb-text-muted lg:block">
             {adminT("roles.scrollHint")}
           </p>
         </div>
-        <div className="admin-table-scroll">
-        <table className="w-full min-w-[900px] text-sm">
-          <thead className="bg-cb-surface-2 text-left text-cb-text-muted">
-            <tr>
-              <th className="px-4 py-3">{adminT("roles.module")}</th>
-              {roles.map((r) => (
-                <th key={r} className="px-4 py-3 uppercase">
-                  {t(`adminRoles.${r}`)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td className="px-4 py-3 text-cb-text-muted" colSpan={roles.length + 1}>
-                  {adminT("roles.loading")}
-                </td>
-              </tr>
-            ) : error ? (
-              <tr>
-                <td className="px-4 py-3 text-red-600" colSpan={roles.length + 1}>
-                  {error}
-                </td>
-              </tr>
-            ) : (
-              modules.map((m) => (
-                <tr key={m} className="border-t border-cb-border">
-                  <td className="px-4 py-3 font-semibold">{m}</td>
-                  {roles.map((r) => (
-                    <td key={`${m}-${r}`} className="px-4 py-3">
-                      {matrix?.[r]?.[m] ?? "-"}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-        </div>
+        <RolesMatrixPanel
+          modules={modules}
+          roles={roles}
+          matrix={matrix}
+          loading={loading}
+          error={error}
+        />
       </div>
     </section>
   );

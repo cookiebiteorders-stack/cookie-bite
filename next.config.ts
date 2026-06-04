@@ -1,7 +1,10 @@
 import { createRequire } from "node:module";
 import path from "node:path";
 import type { NextConfig } from "next";
-import { resolveClerkJsUrlForNextEnv } from "./lib/auth/clerk-js-fallback";
+import {
+  resolveClerkJsUrlForNextEnv,
+  resolveClerkUiUrlForNextEnv,
+} from "./lib/auth/clerk-js-fallback";
 import { assertProductionEnvOrWarn } from "./lib/config/production-lock";
 
 assertProductionEnvOrWarn();
@@ -125,9 +128,10 @@ const DEVELOPMENT_BASIC_HEADERS = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  /** في التطوير: CDN لـ clerk-js إذا لم يُضبط NEXT_PUBLIC_CLERK_JS_URL (انظر clerk-js-fallback.ts) */
+  /** في التطوير: CDN لـ clerk-js و clerk-ui إذا لم تُضبط (انظر clerk-js-fallback.ts) */
   env: {
     NEXT_PUBLIC_CLERK_JS_URL: resolveClerkJsUrlForNextEnv(),
+    NEXT_PUBLIC_CLERK_UI_URL: resolveClerkUiUrlForNextEnv(),
   },
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   turbopack: {

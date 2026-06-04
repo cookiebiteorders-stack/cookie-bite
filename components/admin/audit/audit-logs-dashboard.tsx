@@ -536,8 +536,7 @@ export function AuditLogsDashboard() {
           </div>
         </div>
 
-        <div className="mt-4 overflow-hidden rounded-2xl border border-cb-border bg-white/90">
-          <div className="overflow-x-auto">
+        <div className="admin-table-scroll mt-4 rounded-2xl border border-cb-border bg-white/90">
             <table className="min-w-[1100px] w-full divide-y divide-cb-border text-sm">
               <thead className="sticky top-0 bg-cb-surface-2/95">
                 <tr className="text-left text-xs font-semibold uppercase tracking-wide text-stone-700">
@@ -620,7 +619,6 @@ export function AuditLogsDashboard() {
                 )}
               </tbody>
             </table>
-          </div>
         </div>
 
         <div className="mt-4 flex items-center justify-between rounded-2xl border border-cb-border bg-white/90 px-4 py-3 text-sm">

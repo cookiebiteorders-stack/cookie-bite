@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowUpDown, Copy, ExternalLink, FileText, Check } from "lucide-react";
+import { ArrowUpDown, FileText } from "lucide-react";
 import { AdminPageIntro } from "@/components/admin/admin-page-intro";
 import { useAdminT } from "@/lib/admin/use-admin-t";
 import {
@@ -13,6 +13,7 @@ import {
   type BlogSeedSortKey,
 } from "@/lib/cms/blog-seed-catalog";
 import { cn } from "@/lib/utils";
+import { CmsArticlesPanel } from "@/components/admin/cms/cms-articles-panel";
 
 const CATEGORY_STYLES: Record<BlogSeedCategory, string> = {
   gifting: "bg-amber-100 text-amber-950 dark:bg-amber-950/50 dark:text-amber-100",
@@ -60,10 +61,10 @@ export function AdminCmsPageContent() {
   }
 
   return (
-    <section className="space-y-4">
+    <section className="w-full min-w-0 max-w-full space-y-4 overflow-x-clip">
       <AdminPageIntro titleKey="adminPages.cms.title" subtitleKey="adminPages.cms.subtitle" />
 
-      <div className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-6 shadow-sm">
+      <div className="min-w-0 w-full max-w-full rounded-2xl border border-cb-border bg-cb-surface-elevated p-4 shadow-sm sm:p-6">
         <p className="text-sm text-cb-text-muted">
           {adminT("cms.studioNote")}{" "}
           <Link href="/blog" className="font-semibold text-cb-terracotta-dark underline">
@@ -71,7 +72,7 @@ export function AdminCmsPageContent() {
           </Link>
         </p>
 
-        <div className="mt-6 rounded-2xl border border-cb-border bg-cb-cream/40 p-4 sm:p-5">
+        <div className="mt-6 min-w-0 w-full max-w-full overflow-x-clip rounded-2xl border border-cb-border bg-cb-cream/40 p-4 sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="inline-flex items-center gap-2 font-serif text-xl font-bold text-cb-text-strong">
@@ -130,85 +131,13 @@ export function AdminCmsPageContent() {
             ))}
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-xl border border-cb-border bg-white/95">
-            <div className="overflow-x-auto">
-              <table className="min-w-[880px] w-full divide-y divide-cb-border text-sm">
-                <thead className="bg-cb-surface-2/90">
-                  <tr className="text-start text-xs font-semibold uppercase tracking-wide text-stone-600">
-                    <th className="w-12 px-3 py-3">{adminT("cms.cols.order")}</th>
-                    <th className="px-3 py-3">{adminT("cms.cols.category")}</th>
-                    <th className="min-w-[240px] px-3 py-3">{adminT("cms.cols.title")}</th>
-                    <th className="px-3 py-3">{adminT("cms.cols.slug")}</th>
-                    <th className="min-w-[160px] px-3 py-3">{adminT("cms.cols.keyword")}</th>
-                    <th className="w-36 px-3 py-3">{adminT("cms.cols.actions")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-cb-border">
-                  {articles.map((post, index) => (
-                    <tr
-                      key={post.slug}
-                      className={cn(
-                        "transition hover:bg-cb-hover-overlay/50",
-                        index % 2 === 1 && "bg-cb-surface/25",
-                      )}
-                    >
-                      <td className="px-3 py-3 font-mono text-xs font-bold text-stone-500">
-                        {sortBy === "priority" ? post.priority : index + 1}
-                      </td>
-                      <td className="px-3 py-3">
-                        <span
-                          className={cn(
-                            "inline-block rounded-full px-2 py-0.5 text-[11px] font-bold",
-                            CATEGORY_STYLES[post.category],
-                          )}
-                        >
-                          {adminT(`cms.categories.${post.category}`)}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3">
-                        <p className="font-semibold text-cb-text-strong">{post.title_en}</p>
-                        <p className="mt-0.5 text-xs text-cb-text-muted" dir="rtl">
-                          {post.title_ar}
-                        </p>
-                      </td>
-                      <td className="px-3 py-3">
-                        <code className="rounded bg-stone-100 px-1.5 py-0.5 font-mono text-[11px] text-stone-800 dark:bg-stone-800 dark:text-stone-200">
-                          {post.slug}
-                        </code>
-                        <p className="mt-1 text-[10px] text-cb-text-muted">/blog/{post.slug}</p>
-                      </td>
-                      <td className="px-3 py-3 text-xs text-cb-text">{post.focus_keyword}</td>
-                      <td className="px-3 py-3">
-                        <div className="flex flex-wrap gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => void copySlug(post.slug)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-cb-border px-2 py-1 text-[11px] font-bold hover:bg-cb-surface"
-                          >
-                            {copiedSlug === post.slug ? (
-                              <Check className="h-3 w-3 text-emerald-600" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                            {copiedSlug === post.slug ? adminT("cms.copied") : adminT("cms.copySlug")}
-                          </button>
-                          <Link
-                            href={`/blog/${post.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 rounded-lg border border-cb-border px-2 py-1 text-[11px] font-bold hover:bg-cb-surface"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            {adminT("cms.openBlog")}
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <CmsArticlesPanel
+            articles={articles}
+            sortBy={sortBy}
+            categoryStyles={CATEGORY_STYLES}
+            copiedSlug={copiedSlug}
+            onCopySlug={(slug) => void copySlug(slug)}
+          />
         </div>
 
         <div className="mt-4 rounded-xl border border-dashed border-cb-border bg-white/60 p-4">

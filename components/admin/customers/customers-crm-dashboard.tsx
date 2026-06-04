@@ -195,11 +195,11 @@ export function CustomersCrmDashboard() {
             {online ? t("adminStatus.dataSync") : t("adminStatus.offline")}
           </div>
         </div>
-        <div className="relative z-[1] w-full overflow-x-auto">
-          <div className="flex min-w-max flex-nowrap items-center gap-2 pb-1">
+        <div className="relative z-[1] w-full min-w-0 max-w-full">
+          <div className="admin-toolbar-actions flex flex-wrap items-center gap-2">
             <Link
               href="/admin/customers/new"
-              className="admin-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+              className="admin-btn-primary inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold sm:w-auto sm:justify-start"
             >
               <UserPlus className="h-4 w-4 shrink-0" aria-hidden />
               إضافة عميل
@@ -208,7 +208,8 @@ export function CustomersCrmDashboard() {
               module="customers"
               canWrite={canWrite}
               showHistory={false}
-              buttonClassName="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
+              className="contents"
+              buttonClassName="admin-btn-secondary inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
               onImportSuccess={() => void loadCustomers()}
             />
             <button

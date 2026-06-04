@@ -26,12 +26,16 @@ import { TrackerBootstrap } from "@/components/tracking/TrackerBootstrap";
 import { LANG_COOKIE } from "@/lib/preferences/client-cookies";
 import { cn } from "@/lib/utils";
 import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
-import { resolveClerkJsScriptUrl } from "@/lib/auth/clerk-js-fallback";
+import {
+  resolveClerkJsScriptUrl,
+  resolveClerkUIScriptUrl,
+} from "@/lib/auth/clerk-js-fallback";
 import { CssRecoveryBootstrap } from "@/components/pwa/css-recovery-bootstrap";
 import { CRITICAL_SHELL_CSS } from "@/lib/pwa/critical-shell-css";
 import "./globals.css";
 
 const clerkJsScriptUrl = resolveClerkJsScriptUrl();
+const clerkUIScriptUrl = resolveClerkUIScriptUrl();
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -236,6 +240,9 @@ export default async function RootLayout({
         <ClerkProvider
           {...(clerkJsScriptUrl
             ? { __internal_clerkJSUrl: clerkJsScriptUrl }
+            : {})}
+          {...(clerkUIScriptUrl
+            ? { __internal_clerkUIUrl: clerkUIScriptUrl }
             : {})}
           localization={clerkLocalization}
           appearance={{

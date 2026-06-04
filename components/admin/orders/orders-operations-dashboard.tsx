@@ -126,11 +126,11 @@ export function OrdersOperationsDashboard() {
         initial={reduceMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          "admin-panel-surface flex flex-col gap-4 rounded-2xl p-5 shadow-sm",
+          "admin-panel-surface flex min-w-0 max-w-full flex-col gap-4 rounded-2xl p-5 shadow-sm",
         )}
       >
         <div className="admin-panel-scrim" aria-hidden />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 max-w-full flex-1">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-950 dark:text-sky-200/95">Operations</p>
           <h2 className="mt-1 font-serif text-xl font-bold text-cb-text-strong sm:text-2xl">لوحة الطلبات</h2>
           <p className="mt-1 max-w-3xl text-sm leading-relaxed text-cb-text">
@@ -140,13 +140,13 @@ export function OrdersOperationsDashboard() {
             <kbd className="rounded border px-1 font-mono text-[10px]">/</kbd> للبحث. تحديث تلقائي كل 90 ثانية.
           </p>
         </div>
-        <div className="w-full overflow-x-auto">
-          <div className="flex min-w-max flex-nowrap items-center gap-2 pb-1">
+        <div className="w-full min-w-0 max-w-full">
+          <div className="admin-toolbar-actions flex flex-wrap items-center gap-2">
             <Link
               href="/admin/orders/new"
               aria-disabled={!canWrite}
               className={cn(
-                "admin-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold",
+                "admin-btn-primary inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold sm:w-auto sm:justify-start",
                 !canWrite && "pointer-events-none opacity-50",
               )}
             >
@@ -158,7 +158,8 @@ export function OrdersOperationsDashboard() {
               canWrite={canWrite}
               selectedIds={selectedIdList}
               showHistory={false}
-              buttonClassName="admin-btn-outline inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
+              className="contents"
+              buttonClassName="admin-btn-outline inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
               onImportSuccess={() => void loadOrders()}
             />
             <button

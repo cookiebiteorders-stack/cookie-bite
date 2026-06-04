@@ -507,23 +507,149 @@ html.dark .admin-console button.admin-btn-secondary,
   min-width: 0;
 }
 
+/* Grid/flex children default to min-width:auto and expand with wide tables */
+.admin-console :is(.grid, .flex) > *,
+.admin-console #admin-main-content > * {
+  min-width: 0;
+}
+
+/* Admin page toolbars — wrap on mobile instead of horizontal clip */
+.admin-toolbar-actions {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Analytics — Top pages: cards on narrow viewports (avoids RTL table overflow) */
+.top-pages-panel__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.top-pages-panel__table-wrap {
+  display: none !important;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .top-pages-panel__cards {
+    display: none !important;
+  }
+
+  .top-pages-panel__table-wrap {
+    display: block !important;
+  }
+}
+
+/* Roles — permissions preview: cards on narrow viewports */
+.roles-permissions-panel__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.roles-permissions-panel__table-wrap {
+  display: none !important;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .roles-permissions-panel__cards {
+    display: none !important;
+  }
+
+  .roles-permissions-panel__table-wrap {
+    display: block !important;
+  }
+}
+
+.admin-roles-page {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
 .admin-table-scroll {
   width: 100%;
   max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   scrollbar-gutter: stable;
+  touch-action: pan-x pan-y;
+  contain: inline-size;
+  isolation: isolate;
+}
+
+/* Prevent wide tables from stretching grid/flex tracks (fixes sibling panels clipped on mobile) */
+.admin-console #admin-main-content .grid {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 @media (max-width: 1023px) {
-  .admin-console main .overflow-hidden:has(table) {
-    overflow-x: auto !important;
-    overflow-y: visible;
-    -webkit-overflow-scrolling: touch;
+  .top-pages-panel__table-wrap {
+    display: none !important;
+  }
+
+  .top-pages-panel__cards {
+    display: flex !important;
+  }
+
+  .roles-permissions-panel__table-wrap {
+    display: none !important;
+  }
+
+  .roles-permissions-panel__cards {
+    display: flex !important;
+  }
+
+  .admin-console .admin-split-grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .admin-console main article:has(.admin-table-scroll) {
+    overflow: hidden;
+    width: 100%;
+    max-width: 100%;
   }
 
   .admin-console main :is(section, article, .admin-panel-surface) {
     max-width: 100%;
+  }
+
+  .admin-console main .overflow-hidden:has(table),
+  .admin-console main .overflow-hidden:has(.admin-table-scroll) {
+    overflow-x: auto !important;
+    overflow-y: visible;
+    min-width: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-panel-surface:has(table),
+  .admin-panel-surface:has(.admin-table-scroll),
+  .admin-panel-surface:has(.admin-toolbar-actions) {
+    overflow-x: visible;
+  }
+
+  .admin-console main .overflow-x-auto {
+    max-width: 100%;
+    min-width: 0;
+    -webkit-overflow-scrolling: touch;
   }
 }

@@ -1,9 +1,13 @@
 import { EMAIL_CONFIG } from "@/lib/email/resend";
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 
-const DEFAULT_OWNER_EMAIL = "cookie.bite.orders@gmail.com";
+const DEFAULT_OWNER_EMAIL = "cookie-bite@cookie-bite.com";
 /** البريد الافتراضي لعمليات المتجر — يستقبل كل تنبيهات الطلبات. */
 export const DEFAULT_STORE_OPS_EMAIL = "cookie-bite@cookie-bite.com";
+
+function isBrandDomainEmail(email: string): boolean {
+  return email.endsWith("@cookie-bite.com");
+}
 
 function storeOpsInbox(): string {
   return EMAIL_CONFIG.inbox.toLowerCase();
@@ -30,7 +34,8 @@ export async function listOwnerAndAdminEmails(): Promise<string[]> {
   const owner = (process.env.OWNER_BOOTSTRAP_EMAIL || DEFAULT_OWNER_EMAIL)
     .trim()
     .toLowerCase();
-  if (owner) emails.add(owner);
+  // تنبيهات الطلبات → صندوق العلامة فقط (لا Gmail الشخصي)
+  if (owner && isBrandDomainEmail(owner)) emails.add(owner);
 
   for (const e of parseCsv(process.env.ADMIN_BOOTSTRAP_EMAILS)) {
     emails.add(e);

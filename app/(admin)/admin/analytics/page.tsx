@@ -5,6 +5,7 @@ import type { Range } from "@/lib/tracking-server/queries";
 import { KpiCard } from "@/components/admin/tracking/KpiCard";
 import { TimelineChart } from "@/components/admin/tracking/TimelineChart";
 import { DeviceDonut } from "@/components/admin/tracking/DeviceDonut";
+import { TopPagesPanel } from "@/components/admin/tracking/top-pages-panel";
 import { AdminPageIntro } from "@/components/admin/admin-page-intro";
 
 const RANGE_LABELS: Record<Range, string> = {
@@ -43,7 +44,7 @@ export default async function AdminAnalyticsOverviewPage({
   ]);
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 max-w-full space-y-6">
       <section className="admin-panel-surface rounded-2xl p-5 shadow-[var(--shadow-card)] cb-shadow-editorial">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -131,39 +132,13 @@ export default async function AdminAnalyticsOverviewPage({
         </div>
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-        <article className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
+      <section className="flex w-full min-w-0 max-w-full flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <article className="min-w-0 w-full max-w-full overflow-x-clip rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
           <h2 className="text-base font-semibold text-cb-text-strong">Top pages</h2>
-          <div className="admin-table-scroll mt-3">
-            <table className="min-w-[480px] w-full text-sm">
-              <thead className="text-left text-cb-text-muted">
-                <tr className="border-b border-cb-border">
-                  <th className="py-2 pr-4">Path</th>
-                  <th className="py-2 pr-4">Views</th>
-                  <th className="py-2 pr-4">Unique visitors</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pages.map((row) => (
-                  <tr key={row.path} className="border-b border-cb-border last:border-b-0">
-                    <td className="py-2 pr-4 font-mono text-xs text-cb-text">{row.path}</td>
-                    <td className="py-2 pr-4 font-semibold">{row.views.toLocaleString()}</td>
-                    <td className="py-2 pr-4">{row.unique_visitors.toLocaleString()}</td>
-                  </tr>
-                ))}
-                {pages.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="py-4 text-center text-cb-text-muted">
-                      No data.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+          <TopPagesPanel pages={pages} />
         </article>
 
-        <article className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
+        <article className="min-w-0 w-full max-w-full rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
           <h2 className="text-base font-semibold text-cb-text-strong">Sources</h2>
           <ul className="mt-3 space-y-1 text-sm">
             {referrers.slice(0, 10).map((row) => (

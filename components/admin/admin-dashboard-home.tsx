@@ -104,7 +104,7 @@ export function AdminDashboardHome({
   ] as const;
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 max-w-full space-y-6">
       <section className="admin-panel-surface rounded-2xl p-5 shadow-[var(--shadow-card)] cb-shadow-editorial">
         <h1 className="font-serif text-3xl font-bold text-cb-text-strong">
           {t("adminDashboard.title")}
@@ -146,8 +146,8 @@ export function AdminDashboardHome({
         ))}
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-        <article className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5 shadow-[var(--shadow-card)] cb-shadow-editorial">
+      <div className="admin-split-grid flex w-full min-w-0 max-w-full flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+        <article className="min-w-0 w-full max-w-full overflow-x-clip rounded-2xl border border-cb-border bg-cb-surface-elevated p-5 shadow-[var(--shadow-card)] cb-shadow-editorial">
           <h2 className="font-serif text-2xl font-bold text-cb-text-strong">
             {t("adminDashboard.matrixTitle")}
           </h2>
@@ -186,27 +186,27 @@ export function AdminDashboardHome({
           </div>
         </article>
 
-        <article className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5 shadow-[var(--shadow-card)] cb-shadow-editorial">
+        <article className="min-w-0 w-full max-w-full shrink-0 rounded-2xl border border-cb-border bg-cb-surface-elevated p-5 shadow-[var(--shadow-card)] cb-shadow-editorial">
           <h2 className="font-serif text-2xl font-bold text-cb-text-strong">
             {t("adminDashboard.quickActionsTitle")}
           </h2>
-          <ul className="mt-4 space-y-2">
+          <ul className="mt-4 w-full min-w-0 max-w-full space-y-2">
             {quickActionKeys.map((key) => (
-              <li key={key}>
+              <li key={key} className="min-w-0 max-w-full">
                 <button
                   type="button"
-                  className="w-full rounded-xl border border-cb-border bg-cb-peach/35 px-4 py-2 text-start text-sm font-semibold text-cb-text-strong transition-colors hover:bg-cb-hover-overlay"
+                  className="box-border w-full max-w-full rounded-xl border border-cb-border bg-cb-peach/35 px-4 py-2 text-start text-sm font-semibold text-cb-text-strong transition-colors hover:bg-cb-hover-overlay"
                 >
                   {t(key)}
                 </button>
               </li>
             ))}
           </ul>
-          <div className="mt-5 rounded-xl border border-dashed border-cb-border bg-cb-surface-2 p-3 text-xs text-cb-text-muted">
+          <div className="mt-5 box-border w-full max-w-full rounded-xl border border-dashed border-cb-border bg-cb-surface-2 p-3 text-xs text-cb-text-muted">
             {t("adminDashboard.liveNote")}
           </div>
         </article>
-      </section>
+      </div>
     </div>
   );
 }
