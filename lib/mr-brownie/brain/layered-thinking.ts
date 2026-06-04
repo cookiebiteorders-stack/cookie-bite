@@ -87,13 +87,13 @@ function describeGoal(intent: CommerceIntent): string {
 
 function pickFollowUpTemplate(intent: CommerceIntent): string {
   if (intent === "gift_request" || intent === "fast_gift") {
-    return "تحب أجهزهولك ولا تختار بنفسك؟";
+    return "هل تفضّل صندوقاً جاهزاً أم التخصيص بنفسك؟";
   }
   if (intent === "product_browse" || intent === "budget") {
-    return "تحب أرشح لك 2–3 خيارات حسب ميزانيتك؟";
+    return "هل أرشّح لك 2–3 خيارات حسب ميزانيتك؟";
   }
   if (intent === "complaint") {
-    return "ممكن رقم الطلب وصورة للبوكس؟";
+    return "هل لديك رقم الطلب وصورة للصندوق؟";
   }
-  return "تحب أساعدك في إيه تاني؟";
+  return "هل تريد مساعدة في شيء آخر؟";
 }

@@ -3,7 +3,7 @@ import type { TrainingIntent } from "@/lib/mr-brownie/training/types";
 const RULES: Array<{ intent: TrainingIntent; patterns: RegExp[] }> = [
   {
     intent: "gift_request",
-    patterns: [/هدي|هدية|بوكس|gift|present|occasion/i],
+    patterns: [/هدي|هدية|بوكس|صندوق|gift|present|occasion/i],
   },
   {
     intent: "delivery_faq",
@@ -11,11 +11,11 @@ const RULES: Array<{ intent: TrainingIntent; patterns: RegExp[] }> = [
   },
   {
     intent: "complaint",
-    patterns: [/مشكلة|بايظ|غلط|return|refund|شكوى|وصل.*بايظ|متضرر/i],
+    patterns: [/مشكلة|بايظ|تالف|غلط|return|refund|شكوى|وصل.*(بايظ|تالف)|متضرر/i],
   },
   {
     intent: "order_status",
-    patterns: [/فين.*(أوردر|طلب)|track.*order|order status|حالة الطلب/i],
+    patterns: [/فين.*(أوردر|طلب)|أين.*طلب|track.*order|order status|حالة الطلب/i],
   },
   {
     intent: "cart_help",

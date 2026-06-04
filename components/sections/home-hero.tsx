@@ -24,16 +24,15 @@ export function HomeHero() {
           className="relative z-10 space-y-6"
         >
           <p className="font-serif text-lg font-semibold italic text-cb-terracotta-dark">
-            A bite of happiness
+            Crafted with care in New Cairo
           </p>
           <h1 className="font-serif text-3xl font-semibold leading-tight text-cb-text-strong sm:text-4xl lg:text-5xl">
-            Where every{" "}
-            <span className="text-cb-terracotta-dark">bite</span> tells a story
+            Premium cookies for{" "}
+            <span className="text-cb-terracotta-dark">every</span> moment
           </h1>
           <p className="max-w-xl text-base text-cb-text lg:text-lg">
-            Handcrafted luxury cookies, delivered fresh in New Cairo — baked in
-            small batches with real butter, Belgian chocolate, and a little
-            extra love.
+            Handcrafted cookies delivered fresh in New Cairo — small batches,
+            real butter, Belgian chocolate, and gift-ready packaging.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link
@@ -63,7 +62,7 @@ export function HomeHero() {
               ))}
             </div>
             <p className="text-sm font-semibold text-cb-text">
-              10K+ happy cookie lovers
+              10K+ happy customers
             </p>
           </div>
         </motion.div>

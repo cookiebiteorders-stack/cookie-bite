@@ -68,8 +68,8 @@ export function ShareGiftBoxButton({ state, products, disabled, className }: Pro
   }
 
   const shareText = ar
-    ? "شوف صندوق الهدايا اللي صممته 🎁🍪"
-    : "Check out the gift box I designed 🎁🍪";
+    ? "اطّلع على صندوق الهدايا الذي صمّمته 🎁"
+    : "Check out the gift box I designed 🎁";
 
   return (
     <div className={className}>

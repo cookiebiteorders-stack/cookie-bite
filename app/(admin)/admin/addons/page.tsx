@@ -7,6 +7,8 @@ import {
   useAdminBilingual,
 } from "@/components/admin/admin-bilingual-label";
 import { fetchJson } from "@/lib/http/fetch-json";
+import { AddonAdminGuide } from "@/components/admin/addons/addon-admin-guide";
+import { dedupeIds } from "@/lib/addons/dedupe";
 import { buildAddonSubmitPayload, validateAddonForm } from "@/lib/addons/submit-payload";
 import type { Addon } from "@/lib/addons/types";
 
@@ -18,14 +20,14 @@ const L = {
     ar: "صف الإضافة التي تريد إنشاءها…",
   },
   aiExample: {
-    en: "Example: optional gift wrapping with 3 tiers and realistic EGP prices",
-    ar: "مثال: تغليف هدايا اختياري بثلاث فئات وأسعار جنيه واقعية",
+    en: "e.g. optional chocolate cup: no / small 45 / large 75 EGP",
+    ar: "مثال: كوب شوكولاتة اختياري: بدون / صغير 45 / كبير 75 جنيه",
   },
   generateAi: { en: "Generate with AI", ar: "إنشاء بالذكاء الاصطناعي" },
   generating: { en: "Generating…", ar: "جاري الإنشاء…" },
   detailsSection: { en: "Add-on details", ar: "تفاصيل الإضافة" },
   name: { en: "Name", ar: "الاسم" },
-  namePh: { en: "e.g. Gift wrapping", ar: "مثال: تغليف هدايا" },
+  namePh: { en: "e.g. Chocolate cup", ar: "مثال: كوب شوكولاتة" },
   description: { en: "Description", ar: "الوصف" },
   descriptionPh: { en: "Short customer-facing description", ar: "وصف قصير يظهر للعميل" },
   type: { en: "Selection type", ar: "نوع الاختيار" },
@@ -46,7 +48,7 @@ const L = {
   applyDefaultPrice: { en: "Apply default price to all options", ar: "تطبيق السعر الافتراضي على كل الخيارات" },
   optionsSection: { en: "Options", ar: "الخيارات" },
   optionName: { en: "Option name", ar: "اسم الخيار" },
-  optionNamePh: { en: "e.g. Standard wrap", ar: "مثال: تغليف عادي" },
+  optionNamePh: { en: "e.g. Small cup", ar: "مثال: كوب صغير" },
   size: { en: "Size", ar: "المقاس" },
   sizePh: { en: "e.g. Small, Medium, Large", ar: "مثال: صغير، وسط، كبير" },
   price: { en: "Price (EGP)", ar: "السعر (جنيه)" },
@@ -239,7 +241,7 @@ export default function AdminAddonsPage() {
   async function linkAddonToProduct(addonId: string, productId: string) {
     const product = products.find((p) => p.id === productId);
     const existing = Array.isArray(product?.linked_addon_ids) ? product!.linked_addon_ids! : [];
-    const merged = Array.from(new Set([...existing, addonId]));
+    const merged = dedupeIds([...existing, addonId]);
     await fetchJson("/api/admin/products", {
       method: "PATCH",
       jsonBody: { ids: [productId], patch: { linked_addon_ids: merged } },
@@ -343,11 +345,26 @@ export default function AdminAddonsPage() {
     }
   }
 
+  function applyTemplateToForm(next: Addon, price: number) {
+    setEditingId(null);
+    setForm(next);
+    setDefaultPrice(price);
+    setError(null);
+  }
+
   return (
     <section className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-cb-text-strong">{pick(L.pageTitle)}</h1>
+        <p className="mt-1 text-sm text-cb-text-muted">
+          {pick({
+            en: "Optional extras on product pages — drinks, chocolate cup, toppings. Not the gift box builder.",
+            ar: "إضافات اختيارية مع المنتج — مشروب، كوب شوكولاتة، صوص… وليست صندوق الهدايا.",
+          })}
+        </p>
       </div>
+
+      <AddonAdminGuide onApplyTemplate={applyTemplateToForm} />
 
       <div className="rounded-xl border border-cb-border bg-cb-surface p-4">
         <div className="mb-4 rounded-xl border border-cb-border bg-cb-surface-2 p-3">

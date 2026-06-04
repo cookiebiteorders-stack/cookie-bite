@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { CartSelectedAddon } from "@/lib/addons/types";
+import { addonsFromProductAddonJoinRows, dedupeCartSelectedAddons } from "@/lib/addons/dedupe";
 import type { Addon } from "@/lib/addons/types";
 
 export type ResolvedCheckoutLine = {
@@ -75,7 +76,7 @@ export async function resolveCheckoutLineItems(
     }
     const name = (p.title_en?.trim() || p.name || p.slug).trim();
     const baseUnitPrice = Number(p.price_egp);
-    const selectedAddons = item.addons ?? [];
+    const selectedAddons = dedupeCartSelectedAddons(item.addons ?? []);
     let addonsTotalUnitPrice = 0;
     if (selectedAddons.length > 0) {
       const { data: links } = await supabase
@@ -83,9 +84,7 @@ export async function resolveCheckoutLineItems(
         .select("addons(*)")
         .eq("product_id", p.id)
         .returns<Array<{ addons?: Addon | Addon[] | null }>>();
-      const linkedAddons = (links ?? [])
-        .map((r) => (Array.isArray(r.addons) ? r.addons[0] : r.addons))
-        .filter(Boolean) as Addon[];
+      const linkedAddons = addonsFromProductAddonJoinRows(links ?? []);
       const linkedMap = new Map(linkedAddons.map((a) => [a.id, a]));
       for (const addonSel of selectedAddons) {
         const linked = linkedMap.get(addonSel.addon_id);

@@ -1,3 +1,4 @@
+import { dedupeAddonOptions } from "@/lib/addons/dedupe";
 import type { Addon } from "@/lib/addons/types";
 
 export type AddonSubmitPayload = {
@@ -53,7 +54,7 @@ export function validateAddonForm(form: Addon): string | null {
 }
 
 export function buildAddonSubmitPayload(form: Addon, editingId: string | null): AddonSubmitPayload {
-  const options = form.options.map((o) => ({
+  const options = dedupeAddonOptions(form.options).map((o) => ({
     id: o.id?.trim() || crypto.randomUUID(),
     name: o.name.trim(),
     size: o.size?.trim() ? o.size.trim() : null,

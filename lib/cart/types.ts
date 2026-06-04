@@ -1,4 +1,5 @@
 import type { Product } from "@/lib/data";
+import { dedupeCartSelectedAddons } from "@/lib/addons/dedupe";
 import type { CartSelectedAddon } from "@/lib/addons/types";
 
 export type CartLine = {
@@ -35,7 +36,8 @@ export function lineFromProduct(
   addons: CartSelectedAddon[] = [],
   addonsTotalEgp = 0,
 ): CartLine {
-  const lineId = buildCartLineId(product.id, addons);
+  const normalizedAddons = dedupeCartSelectedAddons(addons);
+  const lineId = buildCartLineId(product.id, normalizedAddons);
   const basePrice = Number(product.price);
   return {
     id: lineId,
@@ -45,7 +47,7 @@ export function lineFromProduct(
     priceEgp: basePrice,
     image: product.image,
     quantity: Math.min(99, Math.max(1, quantity)),
-    addons,
+    addons: normalizedAddons,
     addonsTotalEgp,
     finalUnitPriceEgp: basePrice + addonsTotalEgp,
   };

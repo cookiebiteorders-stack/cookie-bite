@@ -10,7 +10,7 @@ export function getNewCairoDeliveryFaq(lang: Lang): Array<{ q: string; a: string
       },
       {
         q: "ما حد التوصيل المجاني؟",
-        a: `الطلبات فوق ${BRAND.freeDeliveryThresholdEgp} جنيه (قبل الخصومات) قد qualify للتوصيل المجاني حيث تسمح المنطقة.`,
+        a: `الطلبات فوق ${BRAND.freeDeliveryThresholdEgp} جنيه (قبل الخصومات) قد تستحق التوصيل المجاني حيث تسمح المنطقة.`,
       },
       {
         q: "كم يستغرق توصيل الكوكيز؟",

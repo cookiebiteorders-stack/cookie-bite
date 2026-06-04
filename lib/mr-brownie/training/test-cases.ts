@@ -5,13 +5,13 @@ export const MR_BROWNIE_TRAINING_TEST_CASES: TrainingTestCase[] = [
   {
     id: "gift-ar",
     intent: "gift_request",
-    user_message: "عايز هدية لبنت",
-    must_include_any: ["رومانس", "كيوت", "بوكس", "؟"],
+    user_message: "أريد هدية لصديقة",
+    must_include_any: ["مناسبة", "صندوق", "؟", "/gift"],
   },
   {
     id: "gift-box-ar",
     intent: "gift_request",
-    user_message: "عايز بوكس هدية",
+    user_message: "أريد صندوق هدية",
     must_include_any: ["مناسبة", "ميزانية", "؟", "/gift"],
   },
   {
@@ -23,7 +23,7 @@ export const MR_BROWNIE_TRAINING_TEST_CASES: TrainingTestCase[] = [
   {
     id: "order-ar",
     intent: "order_status",
-    user_message: "فين الأوردر",
+    user_message: "أين طلبي",
     must_include_any: ["/account", "/track", "طلب"],
   },
   {

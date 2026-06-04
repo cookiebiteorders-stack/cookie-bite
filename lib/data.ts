@@ -1,4 +1,5 @@
 import { BRAND } from "@/lib/brand";
+import type { Addon } from "@/lib/addons/types";
 
 export const SITE = {
   name: "Cookie Bite",
@@ -74,6 +75,8 @@ export type Product = {
   piecesCount?: number | null;
   dietary?: string[];
   seasons?: string[];
+  /** إضافات مربوطة — تُمرَّر من كتالوج المتجر أو PDP */
+  linkedAddons?: Addon[];
 };
 
 export const PRODUCTS: Product[] = [];

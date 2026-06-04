@@ -13,6 +13,7 @@ import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { ShareButtons } from "@/components/seo/share-buttons";
 import { PdpViewTracker } from "@/components/shop/pdp-view-tracker";
 import { PdpProductSpecs } from "@/components/shop/pdp-product-specs";
+import { dedupeAddons } from "@/lib/addons/dedupe";
 import type { Addon } from "@/lib/addons/types";
 import type { Product } from "@/lib/data";
 import { fetchJson } from "@/lib/http/fetch-json";
@@ -43,7 +44,9 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
   const { lang, t } = useLanguage();
   const [loading, setLoading] = useState(!initialPayload?.product);
   const [product, setProduct] = useState<Product | null>(initialPayload?.product ?? null);
-  const [addons, setAddons] = useState<Addon[]>(initialPayload?.addons ?? []);
+  const [addons, setAddons] = useState<Addon[]>(
+    dedupeAddons(initialPayload?.addons ?? []),
+  );
   const [related, setRelated] = useState<Product[]>(initialPayload?.related ?? []);
 
   useEffect(() => {
@@ -68,7 +71,7 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
         }
         const mapped = productRowToStorefrontProduct(data.product, FALLBACK_DESC, lang);
         setProduct(mapped);
-        setAddons(data.addons ?? []);
+        setAddons(dedupeAddons(data.addons ?? []));
         setRelated((data.related ?? []).filter((p) => p.id !== mapped.id));
       } catch {
         if (!cancelled) router.replace("/shop");

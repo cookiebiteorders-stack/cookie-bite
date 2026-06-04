@@ -1,3 +1,4 @@
+import type { Addon } from "@/lib/addons/types";
 import type { Product } from "@/lib/data";
 import { fetchJson } from "@/lib/http/fetch-json";
 import type { Lang } from "@/lib/i18n/translations";
@@ -23,6 +24,7 @@ export type ShopApiProduct = {
   is_active: boolean;
   stock: number;
   created_at: string;
+  linked_addons?: Addon[];
 };
 
 export type CatalogProduct = Product & {
@@ -69,6 +71,10 @@ export function mapApiProductToCatalog(
     stock: p.stock,
     inStock: isProductInStock(p.stock),
     createdAt: p.created_at,
+    linkedAddons:
+      Array.isArray(p.linked_addons) && p.linked_addons.length > 0
+        ? p.linked_addons
+        : undefined,
   };
 }
 

@@ -44,29 +44,29 @@ export async function POST(req: NextRequest) {
     const namePool =
       liveNames.length > 0
         ? liveNames.slice(0, 6)
-        : (["كوكيز الكلاسيك", "صندوق الهدايا", "البراونيز", "كوكيز محشوة"] as const);
+        : (["كوكيز الكلاسيك", "صندوق الهدايا", "البراونيز", "كوكيز محشية"] as const);
     const pickName = () => pick(namePool);
     const freeShipThreshold = BRAND.freeDeliveryThresholdEgp;
     const amountLeft = Math.max(0, freeShipThreshold - cartSubtotal);
 
     const roleLine =
       resolvedRole === "owner" || resolvedRole === "admin"
-        ? "📊 تحب ملخص سريع للأداء اليومي من لوحة الإدارة؟"
+        ? "📊 هل تريد ملخصاً سريعاً للأداء اليومي من لوحة الإدارة؟"
         : resolvedRole === "staff"
-          ? "🧾 جاهز أساعدك بخطوات تجهيز الطلبات بسرعة."
-          : "🤖 أنا موجود لو محتاج ترشيح سريع أو مساعدة في الاختيار.";
+          ? "🧾 جاهز لمساعدتك في خطوات تجهيز الطلبات."
+          : "🤖 أنا هنا لاقتراح منتج أو مساعدتك في الاختيار.";
 
     const cartLine =
       cartItems > 0
         ? amountLeft > 0
-          ? `🚚 فاضل ${Math.round(amountLeft)} جنيه للوصول للشحن المجاني.`
-          : "🎉 وصلت للشحن المجاني! تقدر تكمل الطلب الآن."
-        : "🛍️ تقدر تبدأ بسؤال: إيه أفضل كوكيز للهدايا؟";
+          ? `🚚 تبقّى ${Math.round(amountLeft)} جنيه للوصول إلى الشحن المجاني.`
+          : "🎉 وصلت إلى حد الشحن المجاني — يمكنك إتمام الطلب الآن."
+        : "🛍️ اسألني عن أفضل كوكيز للهدايا أو حسب ذوقك.";
 
     const dynamicChoices = [
-      `🔥 الأكثر شهرة الآن: ${pickName()} و ${pickName()}.`,
-      `🎁 لو بتدور على هدية: جرب ${pickName()}.`,
-      `☕ مع القهوة غالبًا الناس بتحب ${pickName()}.`,
+      `🔥 من الأكثر طلباً الآن: ${pickName()} و ${pickName()}.`,
+      `🎁 إن كنت تبحث عن هدية: جرّب ${pickName()}.`,
+      `☕ مع القهوة يناسب غالباً ${pickName()}.`,
       roleLine,
       cartLine,
     ];
@@ -83,4 +83,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

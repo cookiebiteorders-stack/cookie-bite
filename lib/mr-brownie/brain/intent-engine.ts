@@ -123,7 +123,7 @@ export function runIntentEngine(params: {
 export function buildSmartFallback(intent: CommerceIntent, locale: "ar" | "en" | "auto"): string {
   const ar = locale !== "en";
   if (ar) {
-    return `ممكن توضّح أكتر؟ 👀\n\nتقصد واحدة من دول؟\n* بوكس هدية → /gift-box\n* منتج معين → /shop\n* طلب أو توصيل → /track أو /help`;
+    return `هل يمكنك التوضيح أكثر؟\n\nهل تقصد:\n* صندوق هدية → /gift-box\n* منتج معيّن → /shop\n* طلب أو توصيل → /track أو /help`;
   }
   if (intent === "complaint") {
     return `I want to help — can you share your order number and what went wrong? See /help/returns for our policy.`;

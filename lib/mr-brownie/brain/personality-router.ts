@@ -38,7 +38,7 @@ export function getPersonalityModeInstruction(mode: PersonalityMode): string {
 Active personality: SALES
 - Lead with 2–3 concrete picks from CONTEXT.products (name + price_egp + shop_path).
 - One upsell or bundle hint when natural (gift box, 6-pack, free shipping threshold).
-- Close with a single action question: "أضيفهولك؟" / "تحب أجهز البوكس؟" / link to /gift-box/build.
+- Close with a single action question: "هل أضيفه إلى السلة؟" / "هل نبدأ من /gift-box/build؟" — family-friendly MSA only.
 `.trim();
     case "support":
       return `

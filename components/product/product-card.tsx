@@ -7,10 +7,17 @@ import { Heart, ShoppingBag } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import type { Product } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { AddToCartButton } from "@/components/product/add-to-cart-button";
+import {
+  ProductAddonPicker,
+  useAddonSelectionState,
+} from "@/components/product/product-addon-picker";
 import { ProductPriceDisplay } from "@/components/product/product-price-display";
 import { ProductSharedImage } from "@/components/product/product-shared-image";
+import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
+import { trackProductEvent } from "@/lib/analytics/track-event";
+import { validateAddonSelection } from "@/lib/addons/selection";
+import { buttonClassName } from "@/components/ui/button";
 import { PRODUCT_PLACEHOLDER_IMAGE } from "@/lib/products/media";
 import { isProductOutOfStock } from "@/lib/products/stock";
 
@@ -37,14 +44,20 @@ export function ProductCard({
   wishlisted = false,
   onWishlistToggled,
 }: Props) {
-  const { t } = useLanguage();
+  const { t, formatPrice } = useLanguage();
   const router = useRouter();
   const { isSignedIn } = useAuth();
+  const { addItem } = useCart();
   const [busy, setBusy] = useState(false);
   const [uncontrolledSaved, setUncontrolledSaved] = useState(false);
+  const [addonError, setAddonError] = useState<string | null>(null);
+  const linkedAddons = product.linkedAddons ?? [];
+  const { addons, selected, setSelected, selectedAddons, addonsTotal } =
+    useAddonSelectionState(linkedAddons, { emptyOptional: true });
 
   const uuid = product.productUuid;
   const outOfStock = isProductOutOfStock(product.stock);
+  const unitPrice = product.price + addonsTotal;
   const isPlaceholderImage = product.image === PRODUCT_PLACEHOLDER_IMAGE;
   const controlled = onWishlistToggled !== undefined;
   const saved = controlled ? wishlisted : uncontrolledSaved;
@@ -159,20 +172,58 @@ export function ProductCard({
         <div className="mt-auto flex items-center justify-between gap-3">
           <ProductPriceDisplay price={product.price} comparePrice={product.comparePrice} size="sm" />
         </div>
+        {addons.length > 0 ? (
+          <ProductAddonPicker
+            variant="compact"
+            linkedAddons={addons}
+            selected={selected}
+            onSelectedChange={setSelected}
+          />
+        ) : null}
         <div className="flex flex-col gap-2">
           {outOfStock ? (
             <p className="w-full rounded-full border border-cb-border bg-cb-surface-2 py-3 text-center text-sm font-bold text-cb-text-muted">
               {t("product.outOfStock")}
             </p>
           ) : (
-            <AddToCartButton
-              product={product}
-              className="w-full rounded-full py-3 text-sm"
+            <button
+              type="button"
+              className={cn(
+                buttonClassName("primary"),
+                "inline-flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm",
+              )}
+              onClick={() => {
+                const missing = validateAddonSelection(addons, selected);
+                if (missing) {
+                  setAddonError(t("product.addonsRequired", { name: missing }));
+                  return;
+                }
+                setAddonError(null);
+                addItem(product, 1, selectedAddons, addonsTotal);
+                if (product.productUuid) {
+                  trackProductEvent({
+                    product_id: product.productUuid,
+                    event_type: "add_to_cart",
+                    metadata: { quantity: 1, slug: product.id },
+                  });
+                } else {
+                  trackProductEvent({
+                    product_slug: product.id,
+                    event_type: "add_to_cart",
+                    metadata: { quantity: 1 },
+                  });
+                }
+              }}
             >
               <ShoppingBag className="h-4 w-4" aria-hidden />
-              {t("product.addToCart")}
-            </AddToCartButton>
+              {addons.length > 0
+                ? t("product.addToCartWithPrice", { price: formatPrice(unitPrice) })
+                : t("product.addToCart")}
+            </button>
           )}
+          {addonError ? (
+            <p className="text-center text-xs font-semibold text-red-700">{addonError}</p>
+          ) : null}
           {layout === "compact" ? (
             <Link
               href={`/shop/${product.id}`}

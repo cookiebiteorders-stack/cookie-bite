@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import type { Product } from "@/lib/data";
+import { dedupeCartSelectedAddons } from "@/lib/addons/dedupe";
 import type { CartSelectedAddon } from "@/lib/addons/types";
 import {
   cartItemCount,
@@ -88,7 +89,7 @@ function loadLines(): CartLine[] {
         typeof (x as CartLine).quantity === "number",
     );
     return list.map((line) => {
-      const addons = Array.isArray(line.addons) ? line.addons : [];
+      const addons = dedupeCartSelectedAddons(Array.isArray(line.addons) ? line.addons : []);
       const addonsTotalEgp = Number(line.addonsTotalEgp ?? 0);
       return {
         id: line.id || buildCartLineId(line.productId, addons),

@@ -37,9 +37,9 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
       ],
     },
     ar: {
-      title: "كوكي بايت 🍪 | قضمة واحدة تغيّر يومك — كوكيز وهدايا في القاهرة الجديدة",
+      title: "كوكي بايت 🍪 | كوكيز وهدايا فاخرة في القاهرة الجديدة",
       description:
-        "كوكيز فاخرة مخبوزة بحب في التجمع الخامس. صمّم بوكس الهدية، اطلب أونلاين، واستمتع بتوصيل سريع — كل قضمة لحظة تستاهل.",
+        "كوكيز فاخرة مخبوزة بعناية في التجمع الخامس. صمّم صندوق الهدية، اطلب أونلاين، واستمتع بتوصيل سريع — مذاق وجودة في كل لقمة.",
       keywords: [
         "كوكيز القاهرة الجديدة",
         "طلب كوكيز اونلاين مصر",
@@ -68,7 +68,7 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
     ar: {
       title: "نكهاتنا — تسوّق الكوكيز | كوكي بايت القاهرة الجديدة",
       description:
-        "كل كعكة اتصنعت علشان تعيش معاك لحظة. المتع الكلاسيكية، الإبداعات المرحة، والإصدارات المحدودة — اطلب أونلاين مع توصيل في التجمع الخامس.",
+        "كل كوكي صُنع ليمنحك لحظة مميزة. الكلاسيكيات، النكهات الإبداعية، والإصدارات المحدودة — اطلب أونلاين مع توصيل في التجمع الخامس.",
       keywords: [
         "تسوق كوكيز القاهرة الجديدة",
         "اشتري كوكيز اونلاين مصر",
@@ -93,7 +93,7 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
       ],
     },
     ar: {
-      title: "هدية بتحكي عنك — صناديق هدايا كوكي بايت",
+      title: "هدية تعبّر عنك — صناديق هدايا كوكي بايت",
       description:
         "علبة اختيار حر، كوليكشن جاهز، أو إصدار خاص بالمناسبات. رسالة بخط أنيق وموعد تسليم — ابدأ هديتك من كوكي بايت في القاهرة الجديدة.",
       keywords: [
@@ -210,7 +210,7 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
     en: {
       title: "Our Cookie Flavors & Collections — New Cairo",
       description:
-        "Explore Cookie Bite flavor collections — classics, chocolate lovers, stuffed cookies, premium specials, and seasonal drops. Handcrafted in Fifth Settlement with delivery in New Cairo.",
+        "Explore Cookie Bite flavor collections — classics, chocolate, stuffed cookies, premium specials, and seasonal drops. Handcrafted in Fifth Settlement with delivery in New Cairo.",
       keywords: [
         "cookie flavors cairo",
         "cookie menu egypt",
@@ -222,7 +222,7 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
     ar: {
       title: "نكهاتنا ومجموعات الكوكيز | كوكي بايت — القاهرة الجديدة",
       description:
-        "اكتشف مجموعات كوكي بايت — كلاسيكيات، عشاق الشوكولاتة، محشية، فاخرة، وموسمية. مخبوزة يدوياً في التجمع الخامس مع توصيل في القاهرة الجديدة.",
+        "اكتشف مجموعات كوكي بايت — كلاسيكيات، محبّو الشوكولاتة، محشية، فاخرة، وموسمية. مخبوزة يدوياً في التجمع الخامس مع توصيل في القاهرة الجديدة.",
       keywords: [
         "نكهات كوكيز القاهرة",
         "قائمة كوكيز مصر",
@@ -244,9 +244,9 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
       ],
     },
     ar: {
-      title: "من إحنا | كوكي بايت — مش بس حلوى. لحظة.",
+      title: "من نحن | كوكي بايت — ليس حلوى فقط، لحظة تستحقها",
       description:
-        "Cookie Bite اتبنت على فكرة بسيطة: الكعكة الكويسة حق مش رفاهية. مكونات بتفرق، فخامة دافئة، وعلاقة حقيقية مع عملائنا في القاهرة الجديدة.",
+        "بُنيت Cookie Bite على فكرة بسيطة: الكوكيز الجيد تجربة يومية تستحقها. مكونات مميزة، فخامة دافئة، وعلاقة حقيقية مع عملائنا في القاهرة الجديدة.",
       keywords: [
         "قصة كوكي بايت",
         "مخبوزات يدوية القاهرة الجديدة",
@@ -289,9 +289,9 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
       ],
     },
     ar: {
-      title: "إحنا هنا | تواصل مع كوكي بايت",
+      title: "تواصل معنا | كوكي بايت",
       description:
-        "سؤال؟ طلب خاص؟ أو عايز تقول إن الكعكة كانت تحفة؟ راسلنا على hello@cookie-bite.com أو واتساب — كل ده بيسعدنا.",
+        "لديك سؤال أو طلب خاص أو تريد مشاركة تجربتك؟ راسلنا على hello@cookie-bite.com أو واتساب — يسعدنا سماعك.",
       keywords: [
         "تواصل كوكي بايت",
         "طلب كوكيز مخصص القاهرة",

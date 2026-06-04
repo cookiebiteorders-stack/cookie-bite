@@ -63,6 +63,7 @@ import {
 } from "@/lib/products/catalog-options";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
 import { cn } from "@/lib/utils";
+import { dedupeIds } from "@/lib/addons/dedupe";
 import type { Addon } from "@/lib/addons/types";
 
 type FormErrors = Partial<Record<keyof ProductFormState, string>>;
@@ -177,10 +178,12 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
 
   const parseLinkedAddonIds = useCallback(
     (csv: string) =>
-      csv
-        .split(/[,،\n]/g)
-        .map((x) => x.trim())
-        .filter((id) => addonIdSet.has(id)),
+      dedupeIds(
+        csv
+          .split(/[,،\n]/g)
+          .map((x) => x.trim())
+          .filter((id) => addonIdSet.has(id)),
+      ),
     [addonIdSet],
   );
 
@@ -900,7 +903,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     <div className="space-y-2">
                       <span className={labelClass}>Linked Add-ons</span>
                       <p className="text-xs text-cb-text-muted">
-                        لا يوجد Add-ons بعد. أنشئها من صفحة `/admin/addons`.
+                        لا توجد إضافات بعد. أنشئها من `/admin/addons` (زر «كوب شوكولاتة» يملأ مثالاً جاهزاً).
                       </p>
                     </div>
                   ) : addonsCatalog.length === 1 ? (
@@ -916,7 +919,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                             setForm((f) => ({
                               ...f,
                               linked_addon_ids: e.target.checked
-                                ? [...f.linked_addon_ids, addonsCatalog[0]!.id]
+                                ? dedupeIds([...f.linked_addon_ids, addonsCatalog[0]!.id])
                                 : f.linked_addon_ids.filter((id) => id !== addonsCatalog[0]!.id),
                             }))
                           }
@@ -926,7 +929,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   ) : (
                     <CatalogMultiSelect
                       label="Linked Add-ons"
-                      hint="إضافات اختيارية تظهر في صفحة المنتج — اختر من القائمة"
+                      hint="إضافات جاهزة من /admin/addons — مثل كوب شوكولاتة. أنشئها هناك ثم اخترها للمنتج."
                       options={addonSelectOptions}
                       valueCsv={joinLinkedAddonIds(form.linked_addon_ids)}
                       onChangeCsv={(csv) =>

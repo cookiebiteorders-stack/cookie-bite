@@ -118,7 +118,7 @@ const EN: Record<CollectionSeoKey, CollectionMeta> = {
     pageTitle: "Stuffed cookies",
     subtitle: "Gooey centers and premium fillings",
     intro:
-      "Stuffed cookies with molten centers — Nutella, caramel, and more for indulgent gifting and special treats in New Cairo.",
+      "Stuffed cookies with rich centers — Nutella, caramel, and more for thoughtful gifting and special treats in New Cairo.",
     faqHeading: "Stuffed cookies FAQ",
     shopAllLabel: "View all cookies",
     giftBoxesLabel: "Gift boxes",
@@ -204,7 +204,7 @@ const AR: Record<CollectionSeoKey, CollectionMeta> = {
     pageTitle: "كوكيز كلاسيكية",
     subtitle: "نكهات خالدة تُخبز على دفعات صغيرة",
     intro:
-      "كلاسيكيات ز buttery وشوكولاتة شيب المحبوبة — مثالية لليوميات وصناديق الهدايا المختلطة في القاهرة الجديدة.",
+      "كلاسيكيات بزبدة غنية وشوكولاتة شيب محبوبة — مثالية لليوميات وصناديق الهدايا المختلطة في القاهرة الجديدة.",
     faqHeading: "أسئلة عن الكلاسيكيات",
     shopAllLabel: "عرض كل الكوكيز",
     giftBoxesLabel: "صناديق الهدايا",

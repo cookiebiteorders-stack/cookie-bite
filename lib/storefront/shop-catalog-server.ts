@@ -3,6 +3,10 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { STOREFRONT_CATALOG_TAG } from "@/lib/storefront/cached-catalog";
+import {
+  attachLinkedAddonsToRows,
+  buildAddonsByProductId,
+} from "@/lib/storefront/enrich-catalog-addons";
 import type { ShopApiProduct } from "@/lib/storefront/shop-catalog-client";
 
 const CATALOG_SELECT =
@@ -20,7 +24,9 @@ async function loadActiveShopCatalog(): Promise<ShopApiProduct[]> {
     console.error("[shop-catalog-server]", error);
     return [];
   }
-  return (data ?? []) as ShopApiProduct[];
+  const rows = (data ?? []) as ShopApiProduct[];
+  const byProduct = await buildAddonsByProductId(rows.map((r) => r.id));
+  return attachLinkedAddonsToRows(rows, byProduct);
 }
 
 /** كتالوج المتجر كاملاً — يُمرَّر للعميل لتجنّب waterfall `/api/products`. */

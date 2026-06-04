@@ -1,3 +1,4 @@
+import { addonsFromProductAddonJoinRows, dedupeIds } from "@/lib/addons/dedupe";
 import { createSupabaseAdminClient, tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Addon } from "@/lib/addons/types";
 
@@ -29,17 +30,7 @@ export async function listLinkedAddonsForProduct(productId: string): Promise<Add
     return [];
   }
   const rows = (data ?? []) as Array<{ addons?: Addon | Addon[] | null }>;
-  const addons: Addon[] = [];
-  for (const row of rows) {
-    const nested = row.addons;
-    const addon = Array.isArray(nested) ? nested[0] : nested;
-    if (!addon) continue;
-    addons.push({
-      ...addon,
-      options: Array.isArray(addon.options) ? addon.options : [],
-    });
-  }
-  return addons;
+  return addonsFromProductAddonJoinRows(rows);
 }
 
 export async function listLinkedAddonIdsByProductIds(productIds: string[]) {
@@ -56,7 +47,7 @@ export async function listLinkedAddonIdsByProductIds(productIds: string[]) {
   const out = new Map<string, string[]>();
   for (const row of (data ?? []) as Array<{ product_id: string; addon_id: string }>) {
     const list = out.get(row.product_id) ?? [];
-    list.push(row.addon_id);
+    if (!list.includes(row.addon_id)) list.push(row.addon_id);
     out.set(row.product_id, list);
   }
   return out;
@@ -68,8 +59,9 @@ export async function replaceProductAddonLinks(productId: string, addonIds: stri
   if (deleteErr) {
     throw new Error("Failed to clear product add-ons");
   }
-  if (addonIds.length === 0) return;
-  const payload = addonIds.map((addon_id) => ({ product_id: productId, addon_id }));
+  const uniqueIds = dedupeIds(addonIds);
+  if (uniqueIds.length === 0) return;
+  const payload = uniqueIds.map((addon_id) => ({ product_id: productId, addon_id }));
   const { error: insertErr } = await supabase.from("product_addons").insert(payload);
   if (insertErr) {
     throw new Error("Failed to link product add-ons");

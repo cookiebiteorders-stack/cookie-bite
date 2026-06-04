@@ -6,6 +6,7 @@ import { onOrderCreated } from "@/lib/email/automation/triggers";
 import { recordOrderCreatedLifecycle } from "@/lib/orders/order-lifecycle";
 import { scheduleOrderConfirmed } from "@/lib/notifications/schedule";
 import { checkoutSchema, bilingualError } from "@/lib/validations";
+import { addonsFromProductAddonJoinRows, dedupeCartSelectedAddons } from "@/lib/addons/dedupe";
 import type { Addon } from "@/lib/addons/types";
 
 type ProductForCheckout = {
@@ -168,16 +169,16 @@ export async function POST(req: NextRequest) {
   });
 
   for (const item of data.cart_items) {
-    if (!item.addons || item.addons.length === 0) continue;
+    const itemAddons = dedupeCartSelectedAddons(item.addons ?? []);
+    if (itemAddons.length === 0) continue;
+    item.addons = itemAddons;
     const product = products.find((p) => p.id === item.product_id)!;
     const { data: links } = await supabase
       .from("product_addons")
       .select("addons(*)")
       .eq("product_id", product.id)
       .returns<Array<{ addons?: Addon | Addon[] | null }>>();
-    const linkedAddons = (links ?? [])
-      .map((r) => (Array.isArray(r.addons) ? r.addons[0] : r.addons))
-      .filter(Boolean) as Addon[];
+    const linkedAddons = addonsFromProductAddonJoinRows(links ?? []);
     const linkedMap = new Map(linkedAddons.map((a) => [a.id, a]));
     for (const addonSel of item.addons) {
       const linked = linkedMap.get(addonSel.addon_id);

@@ -68,7 +68,7 @@ async function sendAbandonedCartEmail(
   const subject =
     reminder === 1
       ? rendered.subject
-      : "خصم 10% علشان تكمّل طلبك من كوكي بايت 🍪";
+      : "خصم 10% لإتمام طلبك من كوكي بايت 🍪";
 
   try {
     await sendInternalEmail({

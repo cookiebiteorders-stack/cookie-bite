@@ -102,9 +102,10 @@ export async function POST(req: NextRequest) {
         reply = "🚚 التوصيل مجاني للطلبات فوق 500 جنيه! وتصلك الكوكيز طازجة خلال 24-48 ساعة داخل القاهرة والجيزة.";
       } else if (lastUserMsg.includes("هدية") || lastUserMsg.includes("هدايا") || lastUserMsg.includes("مناسبة")) {
         reply =
-          "🎁 للهدايا جرّب /gift-box أو صمّم بوكسك من /gift-box/build. تحب أقترح عليك نكهات حسب المناسبة؟";
+          "🎁 للهدايا جرّب /gift-box أو صمّم صندوقك من /gift-box/build. هل تريد اقتراحات نكهات حسب المناسبة؟";
       } else if (lastUserMsg.includes("قهوة") || lastUserMsg.includes("كوفي") || lastUserMsg.includes("مشروب")) {
-        reply = "☕ مع القهوة اختار نكهات تشوكلت كلاسيك أو دارك من المتجر — أقولك أفضل 3 من الكتالوج الحالي لو تحب.";
+        reply =
+          "☕ مع القهوة أنسب نكهات تشوكلت كلاسيك أو دارك من المتجر — أقترح لك 3 خيارات من الكتالوج الحالي إن رغبت.";
       } else if (
         lastUserMsg.includes("أكثر طلبا") ||
         lastUserMsg.includes("مشهور") ||
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
             ? `🍪 عندنا منتجات على الموقع — جرّب مثلاً: ${names.join("، ")}. تصفّح الكل من /shop`
             : "🍪 تصفّح المتجر على /shop لاختيار الكوكيز والهدايا — الكتالوج محدّث من قاعدة البيانات.";
       } else if (lastUserMsg.includes("سعر") || lastUserMsg.includes("بكم") || lastUserMsg.includes("اسعار")) {
-        reply = "💰 الأسعار في الكتالوج الحالي على /shop — قولّي ميزانيتك وأقترح أنسب خيار.";
+        reply = "💰 الأسعار في الكتالوج الحالي على /shop — أخبرني بميزانيتك وأقترح أنسب خيار.";
       } else if (role === "staff" || role === "admin" || role === "owner") {
         if (lastUserMsg.includes("طلبات") || lastUserMsg.includes("ملخص")) {
           reply =

@@ -26,11 +26,11 @@ const EN_COPY = {
 };
 
 const AR_COPY = {
-  signInTitle: "أهلاً تاني! 👋",
+  signInTitle: "أهلاً بعودتك",
   signInSub:
-    "سجّل دخولك علشان تتابع طلباتك وتوصّل أسرع — إيميل أو سوشيال بضغطة.",
-  signUpTitle: "يلّا نعمل حساب",
-  signUpSub: "انضم لعائلة كوكي بايت — تاريخ طلباتك وعناوينك في مكان واحد.",
+    "سجّل دخولك لمتابعة طلباتك وتسريع الدفع — بالبريد أو حسابك الاجتماعي.",
+  signUpTitle: "أنشئ حسابك",
+  signUpSub: "انضم إلى Cookie Bite — تاريخ طلباتك وعناوينك في مكان واحد.",
 };
 
 function buildCookieBiteClerkLocalization(
@@ -135,7 +135,7 @@ function buildCookieBiteClerkLocalizationAr(
         ...base.signIn!.start,
         title: copy.signInTitle,
         titleCombined: `تابع إلى ${SITE_HOST}`,
-        subtitle: "إيميل، Google، Apple، أو X — آمن من الأول للآخر.",
+        subtitle: "البريد أو Google أو Apple أو X — آمن من البداية للنهاية.",
       },
       password: {
         ...base.signIn!.password,
@@ -145,7 +145,7 @@ function buildCookieBiteClerkLocalizationAr(
       forgotPassword: {
         ...base.signIn!.forgotPassword,
         title: "إعادة تعيين كلمة المرور",
-        subtitle: `هنساعدك ترجع لـ ${SITE_HOST}`,
+        subtitle: `سنساعدك على العودة إلى ${SITE_HOST}`,
       },
     },
     signUp: {
@@ -153,17 +153,17 @@ function buildCookieBiteClerkLocalizationAr(
       start: {
         ...base.signUp!.start,
         title: copy.signUpTitle,
-        subtitle: "إيميل أو حساب سوشيال — أقل من دقيقة.",
-        subtitleCombined: "إيميل أو حساب سوشيال — أقل من دقيقة.",
+        subtitle: "البريد أو حساب اجتماعي — أقل من دقيقة.",
+        subtitleCombined: "البريد أو حساب اجتماعي — أقل من دقيقة.",
       },
       emailCode: {
         ...base.signUp!.emailCode,
-        subtitle: "أدخل الكود اللي بعتناه على إيميلك",
+        subtitle: "أدخل الرمز الذي أرسلناه إلى بريدك",
       },
       continue: {
         ...base.signUp!.continue,
-        title: "كمان خطوة",
-        subtitle: "كمّل بياناتك علشان نخلّص حسابك في كوكي بايت",
+        title: "خطوة أخيرة",
+        subtitle: "أكمل بياناتك لإنهاء حسابك في كوكي بايت",
       },
     },
     userProfile: {

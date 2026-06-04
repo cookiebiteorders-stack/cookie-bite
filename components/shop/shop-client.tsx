@@ -12,6 +12,8 @@ import { fetchJson } from "@/lib/http/fetch-json";
 import { buttonClassName } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/data";
+import type { Addon } from "@/lib/addons/types";
+import { mergeAddonsIntoCatalog } from "@/lib/storefront/merge-catalog-addons";
 import {
   fetchAllShopProducts,
   mapApiProductToCatalog,
@@ -176,10 +178,19 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
       try {
         setLoading(true);
         setError(null);
-        const rows = await fetchAllShopProducts();
+        const [rows, addonPayload] = await Promise.all([
+          fetchAllShopProducts(),
+          fetchJson<{ by_product_id?: Record<string, Addon[]> }>(
+            "/api/products/linked-addons",
+            { cache: "no-store", timeoutMs: 12000 },
+          ).catch(() => ({ by_product_id: {} })),
+        ]);
         if (!active) return;
-        const normalized = rows.map((row) =>
-          mapApiProductToCatalog(row, t("product.fallbackDescription"), lang),
+        const normalized = mergeAddonsIntoCatalog(
+          rows.map((row) =>
+            mapApiProductToCatalog(row, t("product.fallbackDescription"), lang),
+          ),
+          addonPayload.by_product_id ?? {},
         );
         setCatalog(normalized);
         const bounds = priceBoundsFromCatalog(normalized);

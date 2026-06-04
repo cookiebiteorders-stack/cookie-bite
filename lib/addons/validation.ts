@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dedupeIds } from "@/lib/addons/dedupe";
 
 export const addonOptionSchema = z.object({
   id: z.string().min(1),
@@ -18,4 +19,7 @@ export const addonSchema = z.object({
   options: z.array(addonOptionSchema).min(1),
 });
 
-export const linkedAddonIdsSchema = z.array(z.string().uuid()).default([]);
+export const linkedAddonIdsSchema = z
+  .array(z.string().uuid())
+  .default([])
+  .transform((ids) => dedupeIds(ids));
