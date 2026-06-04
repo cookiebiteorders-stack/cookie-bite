@@ -94,7 +94,7 @@
 
 .gift-box-builder .gb-layout {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr minmax(400px, 440px);
   gap: 24px;
   max-width: 80rem;
   margin-inline: auto;
@@ -195,7 +195,7 @@
   margin-bottom: 10px;
 }
 .gift-box-builder .gb-box-name {
-  font-family: var(--font-playfair, "Playfair Display", serif);
+  font-family: var(--font-serif);
   font-size: 16px;
   font-weight: 600;
   color: var(--gb-choco);
@@ -565,14 +565,14 @@
 }
 
 .gift-box-builder .cb-face__mono {
-  font-family: var(--font-playfair, "Playfair Display", serif);
+  font-family: var(--font-serif);
   font-size: clamp(12px, 3.5vw, 18px);
   font-weight: 700;
   color: #8b6b4a;
 }
 
 .gift-box-builder .cb-face__word {
-  font-family: var(--font-playfair, "Playfair Display", serif);
+  font-family: var(--font-serif);
   font-size: clamp(7px, 2vw, 10px);
   color: #7a5a3a;
 }
@@ -592,7 +592,7 @@
 }
 
 .gift-box-builder .cb-face__side-mark {
-  font-family: var(--font-playfair, "Playfair Display", serif);
+  font-family: var(--font-serif);
   font-size: clamp(14px, 4vw, 22px);
   font-weight: 700;
   color: rgba(201, 151, 42, 0.35);
@@ -708,7 +708,7 @@
 }
 
 .gift-box-builder .cb-lid__mono {
-  font-family: var(--font-playfair, "Playfair Display", serif);
+  font-family: var(--font-serif);
   font-size: clamp(18px, 6vw, 32px);
   font-weight: 700;
   background: linear-gradient(135deg, #e8c56a, #c9972a, #f5e6a8);
@@ -719,7 +719,7 @@
 }
 
 .gift-box-builder .cb-lid__word {
-  font-family: var(--font-playfair, "Playfair Display", serif);
+  font-family: var(--font-serif);
   font-size: clamp(8px, 2vw, 11px);
   color: #d4af37;
 }
@@ -780,6 +780,11 @@
 .gift-box-builder .gb-assistant {
   margin-top: auto;
   padding-top: 16px;
+  min-width: 0;
+}
+
+.gift-box-builder .gb-assistant .cb-mr-brownie-drawer--embedded {
+  border-radius: 16px;
 }
 
 .gift-box-builder .gb-assistant__teaser {
@@ -813,14 +818,14 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 2px;
-  font-size: 11px;
-  line-height: 1.35;
+  gap: 3px;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--gb-text-muted);
 }
 
 .gift-box-builder .gb-assistant__teaser-copy strong {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--gb-text);
 }
 .gift-box-builder .gb-help-links {
@@ -834,12 +839,12 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
+  padding: 9px 14px;
   border-radius: 999px;
   border: 1px solid var(--cb-border);
   background: var(--cb-surface-2);
   color: var(--gb-gold);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-decoration: none;
   transition: background var(--gb-transition), border-color var(--gb-transition);

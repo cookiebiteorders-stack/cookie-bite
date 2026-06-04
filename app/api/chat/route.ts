@@ -1,23 +1,21 @@
-import { z } from "zod";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
+import { AI_AGENT_IDS } from "@/lib/ai-agent/agents";
+import { finalizeAgentResponse } from "@/lib/ai-agent/post-response";
+import {
+  prepareStorefrontAgentChat,
+  storefrontAgentBodySchema,
+} from "@/lib/ai-agent/prepare-storefront";
+import type { CartLine } from "@/lib/cart/types";
+import type { CommerceIntent } from "@/lib/mr-brownie/brain/intent-engine";
 import { createGeminiStreamResponse } from "@/lib/mr-brownie/gemini-stream";
-import { createOpenAiStreamResponse } from "@/lib/ai-chat/providers/openai-stream";
-import type { ChatApiMessage } from "@/lib/ai-chat/types";
-
-const bodySchema = z.object({
-  messages: z
-    .array(
-      z.object({
-        role: z.enum(["user", "assistant", "system"]),
-        content: z.string().min(1).max(16000),
-      }),
-    )
-    .min(1)
-    .max(40),
-  system: z.string().max(8000).optional(),
-});
+import {
+  isGuestSessionUuid,
+  MR_BROWNIE_GUEST_SESSION_COOKIE,
+} from "@/lib/mr-brownie/guest-session-constants";
 
 export async function POST(req: Request) {
-  const parsed = bodySchema.safeParse(await req.json().catch(() => null));
+  const parsed = storefrontAgentBodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return Response.json(
       { error: { en: "Invalid payload", ar: "بيانات غير صالحة" } },
@@ -25,44 +23,84 @@ export async function POST(req: Request) {
     );
   }
 
-  const apiMessages: ChatApiMessage[] = parsed.data.messages
-    .filter((m) => m.role !== "system")
-    .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
-
-  const systemInstruction =
-    parsed.data.system?.trim() ||
-    "You are a helpful assistant for Cookie Bite. Reply in the user's language. Use Markdown when helpful.";
-
-  if (process.env.OPENAI_API_KEY?.trim()) {
-    const withSystem: ChatApiMessage[] = [
-      { role: "user", content: `[System]\n${systemInstruction}` },
-      ...apiMessages,
-    ];
-    return createOpenAiStreamResponse(withSystem);
-  }
-
-  if (process.env.GEMINI_API_KEY?.trim()) {
-    return createGeminiStreamResponse(
+  const msgList = parsed.data.messages;
+  if (msgList[0]?.role !== "user") {
+    return Response.json(
       {
-        systemInstruction,
-        messages: apiMessages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-        temperature: 0.7,
-        maxOutputTokens: 2048,
+        error: {
+          en: "Conversation must start with a user message.",
+          ar: "يجب أن تبدأ المحادثة برسالة من المستخدم.",
+        },
       },
-      { route: "api/chat" },
+      { status: 400 },
     );
   }
 
-  return Response.json(
+  if (!process.env.GEMINI_API_KEY?.trim()) {
+    return Response.json(
+      {
+        error: {
+          en: "GEMINI_API_KEY required for storefront agent (full brain pipeline).",
+          ar: "مطلوب GEMINI_API_KEY لتشغيل مساعد المتجر الكامل.",
+        },
+      },
+      { status: 503 },
+    );
+  }
+
+  const { userId } = await auth();
+  let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
+  if (userId) {
+    try {
+      clerkUser = await currentUser();
+    } catch (e) {
+      console.error("[api/chat] currentUser failed:", e);
+    }
+  }
+
+  const jar = await cookies();
+  const guestRaw = jar.get(MR_BROWNIE_GUEST_SESSION_COOKIE)?.value;
+  const guestSessionId = isGuestSessionUuid(guestRaw) ? guestRaw : null;
+
+  const prepared = await prepareStorefrontAgentChat({
+    messages: parsed.data.messages,
+    cartLines: (parsed.data.cart?.lines ?? []) as CartLine[],
+    session: parsed.data.session,
+    userId: userId ?? null,
+    clerkUser,
+  });
+
+  return createGeminiStreamResponse(
     {
-      error: {
-        en: "No AI provider configured (OPENAI_API_KEY or GEMINI_API_KEY)",
-        ar: "لم يُضبط مزود الذكاء الاصطناعي",
+      systemInstruction: prepared.systemInstruction,
+      messages: prepared.rawMessages,
+      temperature: prepared.temperature,
+      maxOutputTokens: prepared.maxOutputTokens,
+    },
+    { route: "api/chat", agent: AI_AGENT_IDS.STOREFRONT_CHAT },
+    {
+      onComplete: async (draft) => {
+        await finalizeAgentResponse({
+          agentId: AI_AGENT_IDS.STOREFRONT_CHAT,
+          draft,
+          userMessage: prepared.lastUserMessagePlain,
+          intent: prepared.turnLogMeta.intent as CommerceIntent,
+          confidencePct: prepared.turnLogMeta.confidencePct,
+          locale: prepared.turnLogMeta.locale as "ar" | "en" | "auto",
+          catalogTotal: prepared.turnLogMeta.catalogTotal,
+          turnLog: {
+            intent: prepared.turnLogMeta.intent,
+            confidencePct: prepared.turnLogMeta.confidencePct,
+            personalityMode: prepared.turnLogMeta.personalityMode,
+            pageIntent: prepared.turnLogMeta.pageIntent,
+            pathname: prepared.turnLogMeta.pathname,
+            locale: prepared.turnLogMeta.locale,
+            catalogTotal: prepared.turnLogMeta.catalogTotal,
+            clerkUserId: userId,
+            guestSessionId,
+          },
+        });
       },
     },
-    { status: 503 },
   );
 }

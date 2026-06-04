@@ -22,6 +22,7 @@ export function PageTransition({ children }: Props) {
     prevPathRef.current = pathname;
     if (prev === null || prev === pathname) return;
     if (prefersReducedMotion) return;
+    if (pathname.startsWith("/checkout") || pathname.startsWith("/cart")) return;
     const el = shellRef.current;
     if (!el) return;
     void new LokiTransform({ particleCount: 72 }).playRouteArrival(el);

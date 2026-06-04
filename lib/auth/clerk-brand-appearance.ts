@@ -17,9 +17,9 @@ export const CLERK_BRAND_VARIABLES = {
   borderRadius: "0.875rem",
   spacingUnit: "0.9rem",
   fontSize: "0.9375rem",
-  fontFamily: "var(--font-montserrat), ui-sans-serif, system-ui, sans-serif",
+  fontFamily: "var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif",
   fontFamilyButtons:
-    "var(--font-montserrat), ui-sans-serif, system-ui, sans-serif",
+    "var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif",
 } as const;
 
 /** ظلال وحلقات تركيز مبنية على العلامة */

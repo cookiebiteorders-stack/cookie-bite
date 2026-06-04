@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { revalidateStorefrontCatalog } from "@/lib/storefront/revalidate-catalog";
 import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest) {
 
   let revalidatedProductPages = 0;
   try {
+    await revalidateStorefrontCatalog();
     revalidatePath("/");
     revalidatePath("/shop");
     revalidatePath("/shop", "layout");

@@ -1,21 +1,55 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 const MrBrownieChat = dynamic(
   () => import("@/components/mr-brownie/mr-brownie-chat").then((m) => m.MrBrownieChat),
-  { ssr: false },
+  { ssr: false, loading: () => null },
 );
+
+const MR_BROWNIE_MASCOT_SRC = "/brand/mr-brownie-mascot.png";
 
 /** مسارات فيها Mr. Brownie مضمّن في الصفحة — لا نعرض الـ FAB العائم فوقها */
 const HIDE_FLOATING_PATHS = ["/gift-box/build"];
 
 export function MrBrownieHost() {
   const pathname = usePathname();
+  const [chatLoaded, setChatLoaded] = useState(false);
+
   const hide = HIDE_FLOATING_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
   if (hide) return null;
-  return <MrBrownieChat />;
+
+  if (chatLoaded) {
+    return <MrBrownieChat initialOpen />;
+  }
+
+  return (
+    <button
+      type="button"
+      data-mr-brownie-launch
+      aria-label="Open Mr. Brownie assistant"
+      onClick={() => setChatLoaded(true)}
+      className={cn(
+        "cb-mr-brownie-fab fixed z-[90] flex h-[68px] w-[68px] cursor-pointer items-center justify-center rounded-full bg-transparent p-0 shadow-lg sm:h-[92px] sm:w-[92px]",
+        "end-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:end-6 sm:bottom-8",
+        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cb-focus",
+      )}
+    >
+      <Image
+        src={MR_BROWNIE_MASCOT_SRC}
+        alt=""
+        width={92}
+        height={92}
+        className="h-full w-full object-contain"
+        priority={false}
+        loading="lazy"
+      />
+    </button>
+  );
 }

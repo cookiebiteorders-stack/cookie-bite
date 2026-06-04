@@ -487,10 +487,10 @@
   --color-destructive: var(--destructive);
   --color-popover: var(--popover);
   --radius-lg: var(--radius);
-  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: ui-serif, Georgia, "Times New Roman", serif;
   --font-ar: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
-  --font-ar-display: var(--font-tajawal), ui-sans-serif, system-ui, sans-serif;
-  --font-layout-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-ar-display: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
+  --font-layout-heading: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
   --font-layout-body: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
 }

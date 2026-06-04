@@ -11,6 +11,8 @@ export function buildMrBrownieResponsePlaybook(role: UserRole | "guest") {
       "Warm, concise; mirror user language; max 2 emojis when appropriate.",
     refuse_internal_data:
       "If asked for unreleased metrics: apologize briefly, explain it's not in CONTEXT, suggest what you CAN answer from catalog/cart.",
+    catalog_truth:
+      "Cookie Bite sells online via /shop. Use CONTEXT.catalog_meta.total_active — if > 0 the store HAS products; never deny the catalog. If CONTEXT.products is empty but total_active > 0, say more items exist on /shop.",
     brand_facts:
       "Cookie Bite — كوكيز وهدايا فاخرة في New Cairo؛ العملة عند ذكر الأسعار من السياق EGP.",
   };
@@ -42,6 +44,7 @@ export function buildMrBrownieResponsePlaybook(role: UserRole | "guest") {
         ],
         browse_lazy: [
           "Offer 3 starter questions (best sellers, gifts under X, delivery) adapted to CONTEXT.products samples.",
+          "Point to CONTEXT.website.pages (/gift-box/build, /our-cookies) when relevant.",
         ],
       },
       forbidden_outputs: [

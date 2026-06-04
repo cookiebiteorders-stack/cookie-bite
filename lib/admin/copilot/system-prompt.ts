@@ -12,6 +12,9 @@
  * Variables prefixed with `__` are substituted on the server before sending to
  * Gemini. Do NOT add user-controlled strings into this prompt without
  * sanitising — it is server-only.
+ *
+ * The route appends `BRAIN_CONTEXT` JSON (layered thinking, intent, window)
+ * from `buildCopilotBrainMeta()` — same agent layers as storefront bots.
  */
 
 import {

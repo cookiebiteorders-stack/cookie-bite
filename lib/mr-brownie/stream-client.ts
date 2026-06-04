@@ -18,6 +18,11 @@ export async function streamMrBrownieChat(params: {
     priceEgp: number;
     quantity: number;
   }>;
+  session?: {
+    pathname: string;
+    productSlug?: string;
+    locale?: "ar" | "en" | "auto";
+  };
   signal?: AbortSignal;
   callbacks: MrBrownieStreamCallbacks;
 }): Promise<string> {
@@ -27,6 +32,7 @@ export async function streamMrBrownieChat(params: {
     body: JSON.stringify({
       messages: params.messages,
       cart: { lines: params.cartLines },
+      session: params.session,
     }),
     signal: params.signal,
   });

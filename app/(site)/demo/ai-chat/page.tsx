@@ -14,12 +14,15 @@ export default function AiChatDemoPage() {
     <div className="min-h-dvh bg-zinc-950 px-4 py-8">
       <AiChatApp
         title="Cookie Bite AI"
-        subtitle="بث حي · Markdown · تأثير كتابة بشري"
+        subtitle="نفس عقل Mr. Brownie · بث حي · Markdown"
         suggestions={[
           "What cookies pair best with coffee?",
           "Explain delivery zones in Cairo",
           "Write a short gift message in Arabic",
         ]}
+        extraBody={{
+          session: { pathname: "/demo/ai-chat", locale: "auto" },
+        }}
       />
     </div>
   );

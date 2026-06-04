@@ -85,7 +85,7 @@ const withPWA = (require("next-pwa") as (options: Record<string, unknown>) => Pw
       options: {
         cacheName: "api-products",
         networkTimeoutSeconds: 3,
-        expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 },
+        expiration: { maxEntries: 32, maxAgeSeconds: 60 },
       },
     },
   ],
@@ -128,6 +128,17 @@ const DEVELOPMENT_BASIC_HEADERS = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  poweredByHeader: false,
+  productionBrowserSourceMaps: false,
+  experimental: {
+    optimizePackageImports: [
+      "lucide-react",
+      "motion/react",
+      "date-fns",
+      "@tanstack/react-table",
+      "recharts",
+    ],
+  },
   /** في التطوير: CDN لـ clerk-js و clerk-ui إذا لم تُضبط (انظر clerk-js-fallback.ts) */
   env: {
     NEXT_PUBLIC_CLERK_JS_URL: resolveClerkJsUrlForNextEnv(),
@@ -212,9 +223,74 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: "/api/cart/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, no-store, max-age=0",
+          },
+        ],
+      },
+      {
+        source: "/api/checkout/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, no-store, max-age=0",
+          },
+        ],
+      },
+      {
+        source: "/api/orders/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, no-store, max-age=0",
+          },
+        ],
+      },
+      {
+        source: "/api/account/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, no-store, max-age=0",
+          },
+        ],
+      },
+      {
+        source: "/api/wishlist/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, no-store, max-age=0",
+          },
+        ],
+      },
+      {
+        source: "/api/promo/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, no-store, max-age=0",
+          },
+        ],
+      },
       { source: "/(.*)", headers },
     ];
   },
 };
 
-export default withPWA(nextConfig);
+function wrapConfig(config: NextConfig): NextConfig {
+  if (process.env.ANALYZE === "true") {
+    const withBundleAnalyzer = require("@next/bundle-analyzer")({
+      enabled: true,
+      openAnalyzer: true,
+    }) as PwaWrap;
+    return withBundleAnalyzer(config);
+  }
+  return config;
+}
+
+export default withPWA(wrapConfig(nextConfig));

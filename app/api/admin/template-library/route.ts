@@ -4,6 +4,7 @@ import {
   groupTemplatesByCategory,
   renderTemplate,
 } from "@/lib/notification-library";
+import { resolveRecipientTemplateVars } from "@/lib/notification-library/resolve-recipient-vars";
 
 /**
  * Lists every template in the library, or returns a single rendered preview
@@ -12,6 +13,7 @@ import {
  *  - GET                       → list of categories + templates + sampleVars
  *  - GET ?key=welcome          → { subject, html, preheader, meta }
  *  - GET ?key=welcome&lang=ar  → Arabic-rendered preview
+ *  - GET ?key=welcome&to=user@mail.com → preview with recipient name/data
  */
 export async function GET(req: NextRequest) {
   await requireAdminAccess("templates");
@@ -19,6 +21,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const key = searchParams.get("key");
   const lang = (searchParams.get("lang") ?? "en") as "en" | "ar";
+  const to = searchParams.get("to")?.trim().toLowerCase() ?? "";
 
   if (!key) {
     return NextResponse.json({
@@ -36,7 +39,16 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const rendered = renderTemplate(key, overrides ?? {}, { lang });
+  let recipientVars: Record<string, string | number> = {};
+  if (to && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+    recipientVars = await resolveRecipientTemplateVars(to);
+  }
+
+  const rendered = renderTemplate(
+    key,
+    { ...recipientVars, ...overrides },
+    { lang },
+  );
   if (!rendered) {
     return NextResponse.json(
       {

@@ -15,6 +15,11 @@ When implementing or modifying the platform assistant named **Mr. Brownie**:
 3. **Security:** Never inject `analytics`, internal `orders`, or admin-only fields into prompts or responses for customers. Build context **on the server** after auth.
 4. **Anti-escalation:** Do not implement “switch to admin by chat command”. Default ambiguous roles to customer mode.
 5. **API shape:** Use the JSON context schema in that doc; keep admin fields server-only.
-6. **Runtime:** Production chat uses **Google Gemini** (`GEMINI_API_KEY`, optional `MR_BROWNIE_GEMINI_MODEL`) via `POST /api/mr-brownie/chat` — not Claude.
+6. **Runtime:** Production chat uses **Google Gemini** (`GEMINI_API_KEY`, optional `MR_BROWNIE_GEMINI_MODEL`) via `POST /api/mr-brownie/chat/stream` — not Claude.
+7. **Four layers (code):** `brain-instruction.ts` (thinking + structure) · `personality.ts` (tone) · `agent-capabilities.ts` (guided actions/paths) · CONTEXT `memory` + `session` + `knowledge_base` (RAG-lite catalog + FAQ from DB/translations). Live catalog: `lib/ai/website-knowledge.ts`.
+8. **Continuous training:** Few-shot via `CONTEXT.few_shot_training` + feedback `POST /api/mr-brownie/feedback`. Turn logs: `mr_brownie_turn_logs`. Auto-improve: `npm run mr-brownie:auto-improve`.
+9. **Brain pipeline:** `lib/mr-brownie/brain/` — intent engine (`confidence_pct`), tool router, layered thinking, memory graph, context window (last ~5 turns), follow-up engine, generator + critic supervisor (`runSupervisorPipeline`), coach (`MR_BROWNIE_ENABLE_COACH=1`).
+10. **Analytics dashboard:** `/admin/mr-brownie` · `GET /api/admin/mr-brownie/analytics`. **Scripts:** `mr-brownie:auto-improve`, `mr-brownie:rewrite-weak`, `mr-brownie:bot-test`.
+11. **Stream UX:** User sees Gemini stream; supervisor runs `onComplete` for quality logs + optional coach (does not replace streamed text unless non-stream route).
 
 If no Mr. Brownie code path exists yet, still align new chat/routes with this spec before shipping.

@@ -17,6 +17,8 @@ type AiChatAppProps = {
   endpoint?: string;
   className?: string;
   suggestions?: string[];
+  /** جسم إضافي لـ /api/chat (مثل session.pathname) */
+  extraBody?: Record<string, unknown>;
 };
 
 export function AiChatApp({
@@ -25,6 +27,7 @@ export function AiChatApp({
   endpoint = "/api/chat",
   className,
   suggestions = [],
+  extraBody,
 }: AiChatAppProps) {
   const config = getChatbotConfig();
   const { theme, setTheme } = useTheme();
@@ -32,6 +35,9 @@ export function AiChatApp({
 
   const { messages, send, abort, retry, isStreaming, lastError } = useChatStream({
     endpoint,
+    buildBody: extraBody
+      ? (apiMessages) => ({ messages: apiMessages, ...extraBody })
+      : undefined,
   });
 
   const handleSend = useCallback(() => {

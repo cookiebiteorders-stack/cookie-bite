@@ -13,7 +13,7 @@ export const navMenuPanelClass =
   "rounded-2xl border border-cb-border bg-cb-surface py-1.5 shadow-lg ring-1 ring-cb-peach-deep/30 dark:bg-cb-surface-2";
 
 export const navMenuScrollClass =
-  "max-h-[min(70vh,18rem)] overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]";
+  "max-h-[min(72vh,22rem)] overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]";
 
 /** عند تجاوز هذا العدد تُفعَّل التمرير داخل القائمة */
 const SCROLL_ITEM_THRESHOLD = 5;

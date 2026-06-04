@@ -6,6 +6,7 @@ import {
 } from "@/lib/admin/require-admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { renderTemplate } from "@/lib/notification-library";
+import { resolveRecipientTemplateVars } from "@/lib/notification-library/resolve-recipient-vars";
 import { EMAIL_CONFIG, getResend } from "@/lib/email/resend";
 import { bilingualError } from "@/lib/validations";
 
@@ -30,9 +31,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const rendered = renderTemplate(parsed.data.key, parsed.data.vars ?? {}, {
-    lang: parsed.data.lang,
-  });
+  const recipientVars = await resolveRecipientTemplateVars(parsed.data.to);
+  const rendered = renderTemplate(
+    parsed.data.key,
+    { ...recipientVars, ...parsed.data.vars },
+    { lang: parsed.data.lang },
+  );
   if (!rendered) {
     return NextResponse.json(
       bilingualError(

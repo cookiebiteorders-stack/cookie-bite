@@ -3,8 +3,12 @@ import { z } from "zod";
 import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { bilingualError } from "@/lib/validations";
 import { loadOperatorMemory } from "@/lib/admin/copilot/memory";
+import { buildCopilotBrainMeta } from "@/lib/admin/copilot/brain-pipeline";
 import { buildCopilotSystemPrompt, type CopilotPromptContext } from "@/lib/admin/copilot/system-prompt";
 import { runCopilot } from "@/lib/admin/copilot/runner";
+import { AI_AGENT_IDS } from "@/lib/ai-agent/agents";
+import { finalizeAgentResponse } from "@/lib/ai-agent/post-response";
+import type { CommerceIntent } from "@/lib/mr-brownie/brain/intent-engine";
 import type { CopilotToolActor } from "@/lib/admin/copilot/tools";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { CopilotToolCall } from "@/lib/admin/copilot/tools";
@@ -148,16 +152,25 @@ export async function POST(req: NextRequest) {
 
   const operatorMemory = await loadOperatorMemory(actor.clerk_user_id);
 
-  const systemInstruction = buildCopilotSystemPrompt({
-    today: new Date().toISOString().slice(0, 10),
-    adminFirstName,
-    role: actor.role as "owner" | "admin" | "staff",
-    currency: "EGP",
+  const brain = buildCopilotBrainMeta({
+    userMessage: message,
+    history: safeHistory,
     currentPath,
     snapshot,
-    preferredLanguage: language,
-    operatorMemory,
   });
+
+  const systemInstruction =
+    buildCopilotSystemPrompt({
+      today: new Date().toISOString().slice(0, 10),
+      adminFirstName,
+      role: actor.role as "owner" | "admin" | "staff",
+      currency: "EGP",
+      currentPath,
+      snapshot,
+      preferredLanguage: language,
+      operatorMemory,
+    }) +
+    `\n\nBRAIN_CONTEXT (JSON — layered thinking, intent, window; internal rules):\n${JSON.stringify(brain)}`;
 
   try {
     const toolActor: CopilotToolActor = {
@@ -174,10 +187,29 @@ export async function POST(req: NextRequest) {
       actor: toolActor,
     });
     const warnings = toolWarnings(result.toolCalls);
-    const reply =
+    let reply =
       warnings.length > 0
         ? `${result.reply || ""}\n\n⚠️ ${warnings.join("\n")}`.trim()
         : result.reply;
+
+    const finalized = await finalizeAgentResponse({
+      agentId: AI_AGENT_IDS.MRS_COOKIE,
+      draft: reply,
+      userMessage: message,
+      intent: brain.intent_engine.primary as CommerceIntent,
+      confidencePct: brain.intent_engine.confidence_pct,
+      locale: language,
+      turnLog: {
+        intent: brain.intent_engine.primary,
+        confidencePct: brain.intent_engine.confidence_pct,
+        personalityMode: "support",
+        pageIntent: "admin",
+        pathname: currentPath,
+        locale: language,
+        clerkUserId: actor.clerk_user_id,
+      },
+    });
+    reply = finalized.text;
 
     return NextResponse.json({
       reply,

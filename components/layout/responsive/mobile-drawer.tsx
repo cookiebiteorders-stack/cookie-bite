@@ -77,7 +77,7 @@ export function MobileDrawer() {
             ref={panelRef}
             role="dialog"
             aria-modal="true"
-            className="absolute left-0 top-0 flex h-full w-[min(88vw,320px)] flex-col rounded-r-xl border-r border-cb-border bg-cb-surface p-4"
+            className="absolute left-0 top-0 flex h-full w-[min(88vw,360px)] flex-col rounded-r-xl border-r border-cb-border bg-cb-surface p-4 pt-6"
             initial={{ x: -300 }}
             animate={{ x: 0 }}
             exit={{ x: -300 }}

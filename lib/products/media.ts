@@ -1,13 +1,15 @@
 import type { ProductImage } from "@/lib/db/types";
+import { optimizeCloudinaryDeliveryUrl } from "@/lib/products/cloudinary-delivery";
 
 export const MAX_PRODUCT_IMAGES = 5;
 
 /** صورة افتراضية للمنتجات بدون صور — public/images/product-coming-soon.png */
 export const PRODUCT_PLACEHOLDER_IMAGE = "/images/product-coming-soon.png";
 
-export function resolveProductImageUrl(url?: string | null): string {
+export function resolveProductImageUrl(url?: string | null, width = 1200): string {
   const trimmed = url?.trim();
-  return trimmed || PRODUCT_PLACEHOLDER_IMAGE;
+  if (!trimmed) return PRODUCT_PLACEHOLDER_IMAGE;
+  return optimizeCloudinaryDeliveryUrl(trimmed, width) || PRODUCT_PLACEHOLDER_IMAGE;
 }
 
 export function normalizeProductImages(

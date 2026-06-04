@@ -76,7 +76,7 @@ export function CommandPalette() {
                 Esc
               </kbd>
             </div>
-            <ul className="max-h-[52vh] overflow-y-auto p-2">
+            <ul className="max-h-[min(60vh,28rem)] overflow-y-auto p-2">
               {filtered.map((item) => (
                 <li key={item.href}>
                   <Link

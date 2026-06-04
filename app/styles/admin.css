@@ -42,6 +42,15 @@
    ============================================================ */
 /* Admin inherits global luxury tokens; page bg slightly warmer */
 .admin-console {
+  --text-primary: #1c1917;
+  --text-secondary: #44403c;
+  --text-muted: #57534e;
+  --cb-text-strong: #1c1917;
+  --cb-text: #44403c;
+  --cb-text-muted: #57534e;
+  --cb-text-soft: #57534e;
+  --foreground: #1c1917;
+  color-scheme: light;
   background:
     radial-gradient(ellipse 80% 50% at 100% 0%, color-mix(in oklab, var(--cb-brand-100) 55%, transparent), transparent 50%),
     radial-gradient(ellipse 70% 45% at 0% 100%, color-mix(in oklab, var(--cb-mint) 12%, transparent), transparent 45%),
@@ -201,6 +210,24 @@
   }
 }
 
+/* نص ثانوي ووصف — تباين ثابت في كل صفحات الأونر */
+.admin-console .text-stone-800,
+.admin-console .text-stone-700,
+.admin-console .text-stone-400,
+.admin-console .text-cb-text-soft,
+.admin-console table thead th,
+.admin-console table tbody td {
+  color: #44403c !important;
+}
+
+.admin-console .text-stone-600,
+.admin-console .text-stone-500,
+.admin-console .text-cb-text-muted,
+.admin-console label > span.text-\[11px\],
+.admin-console .text-\[11px\].font-bold.uppercase {
+  color: #57534e !important;
+}
+
 .admin-console [data-admin-badge="success"] {
   background-color: #ecfdf5 !important;
   color: #065f46 !important;
@@ -264,8 +291,15 @@
   color: #57534e !important;
 }
 
-.dark .admin-console :is(.bg-white, .bg-white\/90, .bg-white\/85) {
+.dark .admin-console :is(.bg-white, .bg-white\/90, .bg-white\/85, .bg-white\/95) {
   background-color: rgb(255 255 255 / 0.92) !important;
+}
+
+.dark .admin-console .dark\:bg-stone-900\/70,
+.dark .admin-console .dark\:bg-stone-900\/60,
+.dark .admin-console .dark\:bg-stone-950\/40,
+.dark .admin-console .dark\:bg-stone-950\/30 {
+  background-color: rgb(255 255 255 / 0.94) !important;
 }
 
 .dark .admin-console .text-stone-900,
@@ -276,9 +310,76 @@
 
 .dark .admin-console .text-stone-800,
 .dark .admin-console .text-stone-700,
+.dark .admin-console .text-stone-400,
+.dark .admin-console .text-cb-text,
+.dark .admin-console .text-cb-text-soft,
 .dark .admin-console table thead th,
 .dark .admin-console table tbody td {
   color: #44403c !important;
+}
+
+.dark .admin-console .text-cb-text-strong {
+  color: #1c1917 !important;
+}
+
+/* Tailwind dark: على خلفيات فاتحة — لا نص فاتح باهت */
+.dark .admin-console .dark\:text-stone-100,
+.dark .admin-console .dark\:text-stone-200,
+.dark .admin-console .dark\:text-white {
+  color: #1c1917 !important;
+}
+
+.dark .admin-console .dark\:text-stone-300,
+.dark .admin-console .dark\:text-stone-400 {
+  color: #57534e !important;
+}
+
+.dark .admin-console .dark\:text-amber-200,
+.dark .admin-console .dark\:text-amber-300 {
+  color: #92400e !important;
+}
+
+.dark .admin-console .text-amber-700 {
+  color: #b45309 !important;
+}
+
+.dark .admin-console .text-stone-600,
+.dark .admin-console .text-stone-500,
+.dark .admin-console .text-cb-text-muted,
+.dark .admin-console label > span.text-\[11px\],
+.dark .admin-console .text-\[11px\].font-bold.uppercase {
+  color: #57534e !important;
+}
+
+/* بطاقات القوائم الجانبية — خلفية بيضاء ونص داكن دائماً */
+.admin-console :is(button, a).rounded-xl.border-transparent.bg-stone-50\/80,
+.admin-console :is(button, a).rounded-xl.border-transparent.bg-white\/95,
+.admin-console :is(button, a).rounded-xl.border-transparent.bg-stone-50\/80:hover,
+.admin-console :is(button, a).rounded-xl.border-transparent.bg-white\/95:hover {
+  background-color: rgb(255 255 255 / 0.96) !important;
+}
+
+.admin-console .text-cb-text {
+  color: #44403c !important;
+}
+
+.admin-console .text-cb-text-strong {
+  color: #1c1917 !important;
+}
+
+.admin-console :is(button, a).rounded-xl.border-amber-400.bg-amber-50,
+.admin-console :is(button, a).rounded-xl.border-amber-400.bg-amber-50:hover {
+  background-color: rgb(255 251 235) !important;
+  border-color: rgb(251 191 36) !important;
+}
+
+.dark .admin-console :is(button, a).rounded-xl.border-transparent.dark\:bg-stone-950\/30,
+.dark .admin-console :is(button, a).rounded-xl.border-transparent.dark\:hover\:bg-stone-900\/60 {
+  background-color: rgb(255 255 255 / 0.96) !important;
+}
+
+.dark .admin-console :is(button, a).rounded-xl.dark\:bg-amber-900\/30 {
+  background-color: rgb(255 251 235) !important;
 }
 
 .dark .admin-console input,
@@ -493,11 +594,11 @@ html.dark .admin-console button.admin-btn-secondary,
 }
 /* عناوين لوحة الإدارة — نفس هوية الموقع (Playfair / Allura عبر utilities) */
 .admin-title-font {
-  font-family: var(--font-playfair), ui-serif, Georgia, serif;
+  font-family: var(--font-serif);
 }
 
 .admin-script-font {
-  font-family: var(--font-allura), cursive;
+  font-family: ui-serif, Georgia, serif;
 }
 
 /* Wide tables: horizontal scroll on mobile instead of clipping */

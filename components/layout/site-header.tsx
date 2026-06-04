@@ -1,6 +1,6 @@
 "use client";
 
-import { Show } from "@clerk/nextjs";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -26,7 +26,6 @@ import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { useStaffAdminNav } from "@/components/providers/staff-admin-nav-provider";
 import { duration, easeSoft, spring } from "@/lib/motion/presets";
-import { UserAccountDropdown } from "@/components/ui/profile-dropdown";
 import { useOptionalAdminConsole } from "@/components/admin/admin-console-context";
 import { AdminConsoleNavLinks } from "@/components/admin/admin-console-nav-links";
 import { resolveCurrentAdminConsolePage } from "@/lib/admin/admin-console-nav";
@@ -35,6 +34,19 @@ import { cn } from "@/lib/utils";
 
 const iconBtn =
   "cb-touch-manipulation inline-flex h-11 min-h-[2.75rem] w-11 min-w-[2.75rem] items-center justify-center rounded-xl text-cb-text transition-[transform,box-shadow,color,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:bg-cb-hover-overlay hover:text-cb-terracotta-dark hover:shadow-sm active:scale-[0.97] dark:hover:bg-cb-peach/15";
+
+const SiteHeaderAuthSlot = dynamic(
+  () =>
+    import("@/components/layout/site-header-auth-slot").then((m) => m.SiteHeaderAuthSlot),
+  {
+    ssr: false,
+    loading: () => (
+      <Link href="/sign-in" className={iconBtn} aria-label="Sign in">
+        <UserRound className="h-5 w-5" aria-hidden />
+      </Link>
+    ),
+  },
+);
 
 const navLinkActive =
   "text-cb-text-strong underline decoration-[1.5px] underline-offset-[10px] decoration-cb-terracotta-dark/80 dark:decoration-cb-terracotta/70";
@@ -252,19 +264,7 @@ export function SiteHeader() {
                 <Search className="h-5 w-5" aria-hidden />
               </Link>
 
-              <Show when="signed-out">
-                <Link
-                  href="/sign-in"
-                  className={iconBtn}
-                  aria-label={t("actions.signIn")}
-                >
-                  <UserRound className="h-5 w-5" aria-hidden />
-                </Link>
-              </Show>
-
-              <Show when="signed-in">
-                <UserAccountDropdown />
-              </Show>
+              <SiteHeaderAuthSlot />
 
               <button
                 type="button"

@@ -145,7 +145,7 @@ html.dark .cb-storefront.cb-storefront {
 
 /* ─── C. Utilities ─── */
 .cb-pl-display {
-  font-family: var(--font-playfair), ui-serif, Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.15;
@@ -355,7 +355,7 @@ html[dir="rtl"] .cb-pl-body {
 .cb-pl-hero .cb-pl-hero-title {
   color: var(--color-text-primary) !important;
   text-shadow: none !important;
-  font-family: var(--font-playfair), ui-serif, Georgia, serif;
+  font-family: var(--font-serif);
   font-size: var(--text-pl-hero);
   line-height: 1.1;
 }

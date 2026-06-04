@@ -95,7 +95,7 @@ export function ProductCard({
       )}
     >
       <div className="relative aspect-square overflow-hidden bg-cb-peach/40">
-        <Link href={`/shop/${product.id}`} className="absolute inset-0 block">
+        <Link href={`/shop/${product.id}`} prefetch={false} className="absolute inset-0 block">
           <ProductSharedImage
             productId={product.id}
             src={product.image}
@@ -147,7 +147,7 @@ export function ProductCard({
       </div>
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div>
-          <Link href={`/shop/${product.id}`}>
+          <Link href={`/shop/${product.id}`} prefetch={false}>
             <h3 className="font-serif text-lg font-semibold text-cb-text-strong hover:text-cb-terracotta-dark">
               {product.name}
             </h3>

@@ -4,25 +4,12 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { getClerkLocalization } from "@/lib/auth/clerk-auth-localization";
 import { SiteJsonLd } from "@/components/seo/site-jsonld";
 import { GA4Tracker } from "@/components/analytics/ga4-tracker";
-import {
-  Allura,
-  Cairo,
-  DM_Sans,
-  Montserrat,
-  Nunito_Sans,
-  Outfit,
-  Pacifico,
-  Playfair_Display,
-  Tajawal,
-} from "next/font/google";
+import { Cairo, DM_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { LanguageProvider } from "@/components/providers/language-provider";
 import { StoreFlagsProvider } from "@/components/providers/store-flags-provider";
-import { StaffAdminNavProvider } from "@/components/providers/staff-admin-nav-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { LokiBootstrap } from "@/components/effects/loki-bootstrap";
 import { LokiSvgFilters } from "@/components/effects/loki-svg-filters";
-import { TrackerBootstrap } from "@/components/tracking/TrackerBootstrap";
 import { LANG_COOKIE } from "@/lib/preferences/client-cookies";
 import { cn } from "@/lib/utils";
 import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
@@ -37,59 +24,13 @@ import "./globals.css";
 const clerkJsScriptUrl = resolveClerkJsScriptUrl();
 const clerkUIScriptUrl = resolveClerkUIScriptUrl();
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  display: "swap",
-});
-
-const montserrat = Montserrat({
-  variable: "--font-montserrat",
-  subsets: ["latin"],
-  weight: ["400", "600"],
-  display: "swap",
-});
-
+/** Storefront: two families only — Arabic + Latin body (display uses system serif via tokens). */
 const cairo = Cairo({
   variable: "--font-cairo",
   subsets: ["latin", "arabic"],
   weight: ["400", "600"],
   display: "swap",
-});
-
-const tajawal = Tajawal({
-  variable: "--font-tajawal",
-  subsets: ["arabic", "latin"],
-  weight: ["400", "700"],
-  display: "swap",
-});
-
-const pacifico = Pacifico({
-  variable: "--font-pacifico",
-  subsets: ["latin"],
-  weight: "400",
-  display: "swap",
-});
-
-const nunitoSans = Nunito_Sans({
-  variable: "--font-nunito",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const allura = Allura({
-  variable: "--font-allura",
-  subsets: ["latin"],
-  weight: "400",
-  display: "swap",
-});
-
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  display: "swap",
+  preload: true,
 });
 
 const dmSans = DM_Sans({
@@ -97,6 +38,7 @@ const dmSans = DM_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "700"],
   display: "swap",
+  preload: true,
 });
 
 export const viewport: Viewport = {
@@ -209,18 +151,7 @@ export default async function RootLayout({
       data-theme="light"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={cn(
-        playfair.variable,
-        montserrat.variable,
-        cairo.variable,
-        tajawal.variable,
-        pacifico.variable,
-        nunitoSans.variable,
-        allura.variable,
-        outfit.variable,
-        dmSans.variable,
-        "h-full antialiased",
-      )}
+      className={cn(cairo.variable, dmSans.variable, "h-full antialiased")}
       style={{ colorScheme: "light" }}
     >
       <head>
@@ -229,10 +160,10 @@ export default async function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://clerk.cookie-bite.com" />
         <link rel="dns-prefetch" href="//www.googletagmanager.com" />
         <link rel="dns-prefetch" href="//www.google-analytics.com" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       </head>
       <body className="min-h-full bg-background font-sans text-foreground">
         <CssRecoveryBootstrap />
@@ -258,22 +189,17 @@ export default async function RootLayout({
           signInFallbackRedirectUrl="/account"
           signUpFallbackRedirectUrl="/account"
         >
-          <StaffAdminNavProvider>
-            <ThemeProvider>
-              <LanguageProvider initialLang={lang}>
-                <StoreFlagsProvider>
-                  <LokiBootstrap />
-                  <SiteJsonLd />
-                  <GA4Tracker />
-                  <TrackerBootstrap />
-                  <ErrorBoundary>{children}</ErrorBoundary>
-                </StoreFlagsProvider>
-              </LanguageProvider>
-            </ThemeProvider>
-          </StaffAdminNavProvider>
+          <ThemeProvider>
+            <LanguageProvider initialLang={lang}>
+              <StoreFlagsProvider>
+                <SiteJsonLd />
+                <GA4Tracker />
+                <ErrorBoundary>{children}</ErrorBoundary>
+              </StoreFlagsProvider>
+            </LanguageProvider>
+          </ThemeProvider>
         </ClerkProvider>
       </body>
     </html>
   );
 }
-

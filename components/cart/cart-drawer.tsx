@@ -73,7 +73,7 @@ export function CartDrawer() {
             exit={{ x: slideX }}
             transition={{ duration: 0.3, ease: drawerEase }}
             className={cn(
-              "cb-cart-drawer cb-cart-drawer__panel absolute inset-y-0 end-0 flex h-full max-h-[100dvh] w-full max-w-md flex-col overflow-hidden border-s",
+              "cb-cart-drawer cb-cart-drawer__panel absolute inset-y-0 end-0 flex h-full max-h-[100dvh] w-full max-w-[min(100vw,28rem)] flex-col overflow-hidden border-s sm:max-w-lg",
               isRtl ? "rounded-tr-3xl rounded-br-3xl" : "rounded-tl-3xl rounded-bl-3xl",
             )}
           >

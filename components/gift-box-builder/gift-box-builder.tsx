@@ -445,7 +445,7 @@ export function GiftBoxBuilder() {
                   muted
                   loop
                   playsInline
-                  preload="auto"
+                  preload="metadata"
                   poster="/brand/gift-box/box-closed-ref.png"
                   controls={false}
                   onLoadedMetadata={handleVideoMeta}

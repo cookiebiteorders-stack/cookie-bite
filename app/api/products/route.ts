@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  readProductsListCache,
+  writeProductsListCache,
+} from "@/lib/storefront/products-list-cache";
 import { productsQuerySchema } from "@/lib/validations";
 
 const SORT_MAP = {
@@ -10,16 +14,27 @@ const SORT_MAP = {
   popular: { column: "created_at", ascending: false },
 } as const;
 
+const LIST_CACHE_HEADERS = {
+  "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+} as const;
+
 export async function GET(req: NextRequest) {
   try {
+    const cached = await readProductsListCache(req.nextUrl.searchParams);
+    if (cached) {
+      return new NextResponse(cached, {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...LIST_CACHE_HEADERS },
+      });
+    }
+
     const params = Object.fromEntries(req.nextUrl.searchParams);
     const query = productsQuerySchema.parse(params);
-
     const supabase = await createSupabaseServerClient();
     let q = supabase
       .from("products")
       .select(
-        "id, slug, name, title_en, title_ar, description, description_en, description_ar, price_egp, compare_price_egp, image_url, images, badges, dietary, seasons, category, is_active, stock, weight_grams, pieces_count, created_at",
+        "id, slug, name, title_en, title_ar, description_en, description_ar, price_egp, compare_price_egp, image_url, images, badges, category, is_active, stock, created_at",
         { count: "exact" },
       )
       .eq("is_active", true);
@@ -44,22 +59,20 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return NextResponse.json(
-      {
-        products: data ?? [],
-        total: count ?? 0,
-        page: query.page,
-        limit: query.limit,
-        total_pages: Math.ceil((count ?? 0) / query.limit),
-      },
-      {
-        headers: {
-          "Cache-Control":
-            "public, s-maxage=60, stale-while-revalidate=300",
-        },
-      },
-    );
-  } catch (err) {
+    const payload = {
+      products: data ?? [],
+      total: count ?? 0,
+      page: query.page,
+      limit: query.limit,
+      total_pages: Math.ceil((count ?? 0) / query.limit),
+    };
+    const body = JSON.stringify(payload);
+    void writeProductsListCache(req.nextUrl.searchParams, body);
+
+    return new NextResponse(body, {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...LIST_CACHE_HEADERS },
+    });  } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json(
         {

@@ -1,60 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { z } from "zod";
-import type { UserRole } from "@/lib/admin/rbac";
-import { resolveStaffRole } from "@/lib/admin/auth-role";
-import { buildMrBrownieContext } from "@/lib/mr-brownie/build-context";
+import { cookies } from "next/headers";
+import { getAiProductNamePool } from "@/lib/ai/website-knowledge";
+import { AI_AGENT_IDS } from "@/lib/ai-agent/agents";
+import { finalizeAgentResponse } from "@/lib/ai-agent/post-response";
+import type { CommerceIntent } from "@/lib/mr-brownie/brain/intent-engine";
 import { runMrBrownieGemini } from "@/lib/mr-brownie/gemini";
-import { getMrBrownieSystemInstruction } from "@/lib/mr-brownie/system-instruction";
+import {
+  isGuestSessionUuid,
+  MR_BROWNIE_GUEST_SESSION_COOKIE,
+} from "@/lib/mr-brownie/guest-session-constants";
+import { mrBrownieChatBodySchema, prepareMrBrownieChat } from "@/lib/mr-brownie/prepare-chat";
 import type { CartLine } from "@/lib/cart/types";
-import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
-import { CHAT_IMAGE_MAX_COUNT, isAllowedChatImageUrl } from "@/lib/chat/image-attachments";
-
-const attachmentSchema = z.object({
-  url: z.string().url().max(2000),
-  mimeType: z.string().max(80).optional(),
-  name: z.string().max(200).optional(),
-});
-
-const cartLineSchema = z.object({
-  productId: z.string().min(1),
-  name: z.string().min(1),
-  priceEgp: z.number().nonnegative(),
-  quantity: z.number().int().min(1).max(99),
-});
-
-const bodySchema = z.object({
-  messages: z
-    .array(
-      z.object({
-        role: z.enum(["user", "assistant"]),
-        content: z.string().min(1).max(12000),
-        attachments: z.array(attachmentSchema).max(CHAT_IMAGE_MAX_COUNT).optional(),
-      }),
-    )
-    .min(1)
-    .max(30),
-  cart: z
-    .object({
-      lines: z.array(cartLineSchema).max(50),
-    })
-    .optional(),
-});
-
-function temperatureForRole(role: UserRole | "guest"): number {
-  if (role === "guest" || role === "customer") return 0.7;
-  if (role === "staff") return 0.25;
-  return 0.2;
-}
-
-function maxTokensForRole(role: UserRole | "guest"): number {
-  if (role === "guest" || role === "customer") return 1500;
-  return 3000;
-}
 
 export async function POST(req: NextRequest) {
   try {
-    const parsed = bodySchema.safeParse(await req.json().catch(() => null));
+    const parsed = mrBrownieChatBodySchema.safeParse(await req.json().catch(() => null));
     if (!parsed.success) {
       return NextResponse.json(
         { error: { en: "Invalid payload", ar: "بيانات غير صالحة" } },
@@ -76,7 +37,6 @@ export async function POST(req: NextRequest) {
     }
 
     const { userId } = await auth();
-
     let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
     if (userId) {
       try {
@@ -86,135 +46,98 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    let resolvedRole: UserRole | "guest" = "guest";
-    let email: string | null = null;
-    let name: string | null = null;
-    let dbUserId: string | null = null;
-    let loyaltyTier: string | null = null;
-    let pastOrdersHint = "";
-
-    if (userId) {
-      email = clerkUser?.primaryEmailAddress?.emailAddress ?? null;
-      name = clerkUser
-        ? [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ").trim() ||
-          clerkUser.username ||
-          email
-        : null;
-
-      resolvedRole = await resolveStaffRole({
-        email,
-        clerkUserId: userId,
-      });
-
-      const supabase = tryCreateSupabaseAdminClient();
-      if (supabase) {
-        const { data: row } = await supabase
-          .from("users")
-          .select("id")
-          .eq("clerk_user_id", userId)
-          .maybeSingle();
-        if (row?.id) dbUserId = row.id as string;
-
-        if (dbUserId) {
-          const { data: loyalty } = await supabase
-            .from("loyalty_accounts")
-            .select("tier")
-            .eq("user_id", dbUserId)
-            .maybeSingle();
-          if (loyalty?.tier) loyaltyTier = String(loyalty.tier);
-
-          const { count } = await supabase
-            .from("orders")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", dbUserId);
-          if (typeof count === "number") {
-            pastOrdersHint = `${count} order(s) on record in Cookie Bite.`;
-          }
-        }
-      }
-    }
-
-    const includeAdminData =
-      resolvedRole === "owner" ||
-      resolvedRole === "admin" ||
-      resolvedRole === "staff";
-
-    const cartLines = (parsed.data.cart?.lines ?? []) as CartLine[];
-
-    const contextPayload = await buildMrBrownieContext({
-      role: resolvedRole,
-      userId: dbUserId ?? userId,
-      email,
-      name,
-      loyaltyTier,
-      pastOrdersHint,
-      cartLines,
-      includeAdminData,
-    });
-
-    const contextJson = JSON.stringify(contextPayload);
-    const systemInstruction = getMrBrownieSystemInstruction(resolvedRole);
-
-    const rawMessages = parsed.data.messages.map((m, i, arr) => {
-      const attachments = m.attachments?.filter((a) => isAllowedChatImageUrl(a.url));
-      if (i !== arr.length - 1 || m.role !== "user") {
-        return {
-          role: m.role,
-          content: m.content,
-          attachments: attachments?.length ? attachments : undefined,
-        };
-      }
-      return {
-        role: "user" as const,
-        content: `CONTEXT (JSON — authoritative role & data):\n${contextJson}\n\nUSER MESSAGE:\n${m.content}`,
-        attachments: attachments?.length ? attachments : undefined,
-      };
+    const prepared = await prepareMrBrownieChat({
+      messages: parsed.data.messages,
+      cartLines: (parsed.data.cart?.lines ?? []) as CartLine[],
+      session: parsed.data.session,
+      userId: userId ?? null,
+      clerkUser,
     });
 
     let reply = "";
     let usedModel = process.env.MR_BROWNIE_GEMINI_MODEL?.trim() || "gemini-flash-latest";
 
+    const jar = await cookies();
+    const guestRaw = jar.get(MR_BROWNIE_GUEST_SESSION_COOKIE)?.value;
+    const guestSessionId = isGuestSessionUuid(guestRaw) ? guestRaw : null;
+
     try {
-      reply = await runMrBrownieGemini({
-        systemInstruction,
-        messages: rawMessages,
-        temperature: temperatureForRole(resolvedRole),
-        maxOutputTokens: maxTokensForRole(resolvedRole),
+      const draft = await runMrBrownieGemini({
+        systemInstruction: prepared.systemInstruction,
+        messages: prepared.rawMessages,
+        temperature: prepared.temperature,
+        maxOutputTokens: prepared.maxOutputTokens,
       });
+      const optimized = await finalizeAgentResponse({
+        agentId: AI_AGENT_IDS.MR_BROWNIE,
+        draft,
+        userMessage: prepared.lastUserMessagePlain,
+        intent: prepared.turnLogMeta.intent as CommerceIntent,
+        confidencePct: prepared.turnLogMeta.confidencePct,
+        locale: prepared.turnLogMeta.locale as "ar" | "en" | "auto",
+        catalogTotal: prepared.turnLogMeta.catalogTotal,
+        turnLog: {
+          intent: prepared.turnLogMeta.intent,
+          confidencePct: prepared.turnLogMeta.confidencePct,
+          personalityMode: prepared.turnLogMeta.personalityMode,
+          pageIntent: prepared.turnLogMeta.pageIntent,
+          pathname: prepared.turnLogMeta.pathname,
+          locale: prepared.turnLogMeta.locale,
+          catalogTotal: prepared.turnLogMeta.catalogTotal,
+          clerkUserId: userId,
+          guestSessionId,
+        },
+      });
+      reply = optimized.text;
     } catch (e) {
       console.error("Gemini API Error, falling back to local responses:", e);
       usedModel = "fallback-local-rules";
-      
+
       const lastUserMsg = msgList[msgList.length - 1]?.content.toLowerCase() || "";
-      
-      // Fallback Keyword Logic
+      const role = prepared.resolvedRole;
+
       if (lastUserMsg.includes("مرحبا") || lastUserMsg.includes("هلا") || lastUserMsg.includes("سلام")) {
         reply = "مرحباً بك! أنا مستر براوني 🐻، كيف يمكنني مساعدتك في طلب الكوكيز اليوم؟";
       } else if (lastUserMsg.includes("توصيل") || lastUserMsg.includes("شحن") || lastUserMsg.includes("متى")) {
         reply = "🚚 التوصيل مجاني للطلبات فوق 500 جنيه! وتصلك الكوكيز طازجة خلال 24-48 ساعة داخل القاهرة والجيزة.";
       } else if (lastUserMsg.includes("هدية") || lastUserMsg.includes("هدايا") || lastUserMsg.includes("مناسبة")) {
-        reply = "🎁 للهدايا، أنصحك جداً بـ 'صندوق هدايا مستر براوني' المكون من 12 قطعة كوكيز مشكلة! تغليف فاخر ومثالي لأي مناسبة. هل أضيفه لك في السلة؟";
+        reply =
+          "🎁 للهدايا جرّب /gift-box أو صمّم بوكسك من /gift-box/build. تحب أقترح عليك نكهات حسب المناسبة؟";
       } else if (lastUserMsg.includes("قهوة") || lastUserMsg.includes("كوفي") || lastUserMsg.includes("مشروب")) {
-        reply = "☕ أفضل كوكيز مع القهوة هي 'كلاسيك تشوكليت شيب' أو 'دبل دارك تشوكليت'! حلاوتها موزونة وتذوب مع القهوة الساخنة.";
-      } else if (lastUserMsg.includes("أكثر طلبا") || lastUserMsg.includes("مشهور") || lastUserMsg.includes("اكثر") || lastUserMsg.includes("وين")) {
-        reply = "🍪 الأكثر طلباً لدينا هو 'تشانكي نيو يورك' و 'بستاشيو براوني'. لا يفوتك تجربتها!";
+        reply = "☕ مع القهوة اختار نكهات تشوكلت كلاسيك أو دارك من المتجر — أقولك أفضل 3 من الكتالوج الحالي لو تحب.";
+      } else if (
+        lastUserMsg.includes("أكثر طلبا") ||
+        lastUserMsg.includes("مشهور") ||
+        lastUserMsg.includes("اكثر") ||
+        lastUserMsg.includes("وين") ||
+        lastUserMsg.includes("منتج") ||
+        lastUserMsg.includes("كوكيز") ||
+        lastUserMsg.includes("product")
+      ) {
+        const names = await getAiProductNamePool(4);
+        reply =
+          names.length > 0
+            ? `🍪 عندنا منتجات على الموقع — جرّب مثلاً: ${names.join("، ")}. تصفّح الكل من /shop`
+            : "🍪 تصفّح المتجر على /shop لاختيار الكوكيز والهدايا — الكتالوج محدّث من قاعدة البيانات.";
       } else if (lastUserMsg.includes("سعر") || lastUserMsg.includes("بكم") || lastUserMsg.includes("اسعار")) {
-        reply = "💰 تبدأ أسعار الكوكيز من 65 جنيه للقطعة، وتوجد خصومات رائعة على علب الـ 6 والـ 12 قطعة! تفقد صفحة المتجر لمعرفة كل التفاصيل.";
-      } else if (resolvedRole === "staff" || resolvedRole === "admin" || resolvedRole === "owner") {
+        reply = "💰 الأسعار في الكتالوج الحالي على /shop — قولّي ميزانيتك وأقترح أنسب خيار.";
+      } else if (role === "staff" || role === "admin" || role === "owner") {
         if (lastUserMsg.includes("طلبات") || lastUserMsg.includes("ملخص")) {
-          reply = "📊 (وضع الاستجابة التلقائية): يرجى مراجعة لوحة تحكم الطلبات للحصول على أحدث الإحصائيات الدقيقة، حيث أن الاتصال بالذكاء الاصطناعي غير متاح حالياً.";
+          reply =
+            "📊 (وضع الاستجابة التلقائية): راجع لوحة الطلبات /admin/orders لأحدث الأرقام.";
         } else {
-          reply = `مرحباً بك في وضع الإدارة (${resolvedRole}). عذراً، تعذر الاتصال بـ Gemini API حالياً للقيام بالتحليلات المتقدمة. يرجى مراجعة البيانات من لوحة التحكم مباشرة.`;
+          reply = `مرحباً (${role}). تعذر الاتصال بـ Gemini — استخدم لوحة الإدارة أو Mrs. Cookie في /admin/copilot.`;
         }
       } else {
-        reply = "عذراً، أواجه مشكلة مؤقتة في الاتصال بخوادم الذكاء الاصطناعي (Gemini) 🤖، لكني هنا دائماً لمساعدتك! جرب سؤالي عن التوصيل، الهدايا، أو الكوكيز المناسبة مع القهوة.";
+        reply =
+          "عذراً، مشكلة مؤقتة في الاتصال بـ Gemini 🤖. جرّب السؤال عن التوصيل، الهدايا، أو منتجات /shop.";
       }
     }
 
     return NextResponse.json({
       reply,
       meta: {
-        role: resolvedRole,
+        role: prepared.resolvedRole,
         model: usedModel,
       },
     });

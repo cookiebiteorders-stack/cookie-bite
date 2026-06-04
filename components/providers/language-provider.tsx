@@ -14,9 +14,14 @@ import { LANG_COOKIE, writeClientPrefCookie } from "@/lib/preferences/client-coo
 
 type TranslateVars = Record<string, string | number>;
 
+export type SetLanguageOptions = {
+  /** false = تحديث العميل فقط (معاينة إدارة / morph). الافتراضي: إعادة تحميل كاملة */
+  reload?: boolean;
+};
+
 type LanguageContextValue = {
   lang: Lang;
-  setLanguage: (lang: Lang) => void;
+  setLanguage: (lang: Lang, options?: SetLanguageOptions) => void;
   toggleLanguage: () => void;
   t: (key: string, vars?: TranslateVars) => string;
   formatPrice: (amount: number) => string;
@@ -66,10 +71,28 @@ export function LanguageProvider({ children, initialLang }: LanguageProviderProp
     writeClientPrefCookie(LANG_COOKIE, lang);
   }, [lang]);
 
-  const setLanguage = useCallback((nextLang: Lang) => {
-    setLang(nextLang);
+  const persistLanguage = useCallback((nextLang: Lang) => {
     localStorage.setItem(STORAGE_KEY, nextLang);
+    writeClientPrefCookie(LANG_COOKIE, nextLang);
+    applyLanguageToDocument(nextLang);
   }, []);
+
+  const setLanguage = useCallback(
+    (nextLang: Lang, options?: SetLanguageOptions) => {
+      if (nextLang === lang) return;
+
+      const reload = options?.reload !== false;
+      if (reload) {
+        persistLanguage(nextLang);
+        window.location.reload();
+        return;
+      }
+
+      setLang(nextLang);
+      persistLanguage(nextLang);
+    },
+    [lang, persistLanguage],
+  );
 
   const toggleLanguage = useCallback(() => {
     setLanguage(lang === "ar" ? "en" : "ar");

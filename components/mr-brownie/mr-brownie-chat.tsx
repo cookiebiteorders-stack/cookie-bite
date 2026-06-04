@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { Send, Square, X } from "lucide-react";
 import {
@@ -12,6 +13,7 @@ import {
   type PendingChatImage,
 } from "@/components/chat/chat-image-attachment-input";
 import { useCart } from "@/components/providers/cart-provider";
+import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 import { buttonClassName } from "@/components/ui/button";
 import { streamMrBrownieChat } from "@/lib/mr-brownie/stream-client";
@@ -51,6 +53,13 @@ import {
 } from "@/lib/mr-brownie/chat-persistence";
 
 type ChatMessage = ChatMessagePersisted;
+
+function findPrecedingUserMessage(messages: ChatMessage[], assistantIndex: number): string {
+  for (let i = assistantIndex - 1; i >= 0; i--) {
+    if (messages[i]?.role === "user") return messages[i].content;
+  }
+  return "";
+}
 
 /** شعار Mr. Brownie — PNG بخلفية شفافة في `public/brand/` */
 const MR_BROWNIE_MASCOT_SRC = "/brand/mr-brownie-mascot.png";
@@ -135,13 +144,17 @@ function subtotalFromLines(
 type MrBrownieChatProps = {
   /** Renders inside page layout (e.g. gift box sidebar) instead of a floating FAB. */
   embedded?: boolean;
+  /** Open chat panel on mount (after user tapped lazy launch FAB). */
+  initialOpen?: boolean;
 };
 
-export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
+export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrownieChatProps) {
   const { lines } = useCart();
+  const pathname = usePathname() ?? "/";
+  const { lang } = useLanguage();
   const { isSignedIn, user } = useUser();
   const clerkKey = isSignedIn && user?.id ? user.id : null;
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const [input, setInput] = useState("");
   const [pendingImages, setPendingImages] = useState<PendingChatImage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -173,6 +186,7 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
   const [bubbleText, setBubbleText] = useState("");
   const [showNotifDot, setShowNotifDot] = useState(true);
   const [sessionRole, setSessionRole] = useState<string | null>(null);
+  const [feedbackByMessage, setFeedbackByMessage] = useState<Record<string, 1 | -1>>({});
   const fabRef = useRef<HTMLButtonElement>(null);
   const dragSession = useRef<{
     startX: number;
@@ -403,6 +417,37 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
     fetchDynamicAmbientMessage,
   ]);
 
+  const submitFeedback = useCallback(
+    (assistantIndex: number, rating: 1 | -1) => {
+      const assistant = messages[assistantIndex];
+      if (!assistant || assistant.role !== "assistant" || !assistant.content.trim()) return;
+
+      const msgKey = String(assistant.createdAt ?? assistantIndex);
+      if (feedbackByMessage[msgKey]) return;
+
+      const userMessage = findPrecedingUserMessage(messages, assistantIndex);
+      if (!userMessage.trim()) return;
+
+      setFeedbackByMessage((prev) => ({ ...prev, [msgKey]: rating }));
+
+      const sid = getOrCreateChatSessionId();
+      void fetch("/api/mr-brownie/feedback", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rating,
+          userMessage,
+          assistantMessage: assistant.content,
+          sessionId: sid ?? undefined,
+          pathname,
+          locale: lang,
+        }),
+      }).catch(() => {});
+    },
+    [messages, feedbackByMessage, pathname, lang],
+  );
+
   const enqueueSaveMessage = useCallback((role: "user" | "assistant", content: string) => {
     const sid = getOrCreateChatSessionId();
     if (!sid) return;
@@ -603,6 +648,11 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
       streamAbortRef.current = controller;
 
       try {
+        const productSlug =
+          pathname.startsWith("/shop/") && pathname !== "/shop"
+            ? pathname.split("/").filter(Boolean)[1]
+            : undefined;
+
         const reply = await streamMrBrownieChat({
           messages: nextMessages.map(({ role, content, imageUrls: imgs }) => ({
             role,
@@ -610,6 +660,11 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
             attachments: imgs?.map((url) => ({ url })),
           })),
           cartLines: lines,
+          session: {
+            pathname,
+            locale: lang,
+            productSlug,
+          },
           signal: controller.signal,
           callbacks: {
             onToken: (fullText) => {
@@ -819,27 +874,49 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
       className={cn(
         "cb-mr-brownie-drawer flex flex-col",
         embedded
-          ? "cb-mr-brownie-drawer--embedded relative w-full overflow-hidden rounded-[14px]"
-          : cn("fixed inset-y-0 z-[51] w-full max-w-[min(100vw,420px)]", drawerSideClass),
+          ? "cb-mr-brownie-drawer--embedded relative flex min-h-0 w-full overflow-hidden rounded-2xl"
+          : cn(
+              "cb-mr-brownie-drawer--floating fixed inset-y-0 z-[51]",
+              drawerSideClass,
+            ),
       )}
     >
-            <div className="cb-mr-brownie-header flex shrink-0 items-center justify-between gap-3 px-4 py-3.5">
+            <div
+              className={cn(
+                "cb-mr-brownie-header flex shrink-0 items-center justify-between gap-3",
+                embedded ? "px-4 py-4" : "px-5 py-4",
+              )}
+            >
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={MR_BROWNIE_MASCOT_SRC}
                   alt="Mr. Brownie"
-                  width={48}
-                  height={48}
+                  width={56}
+                  height={56}
                   decoding="async"
                   draggable={false}
-                  className="h-12 w-12 shrink-0 object-contain object-center"
+                  className={cn(
+                    "shrink-0 object-contain object-center",
+                    embedded ? "h-12 w-12" : "h-14 w-14",
+                  )}
                 />
                 <div className="min-w-0">
-                  <p id="mr-brownie-title" className="cb-mr-brownie-header__title text-lg font-semibold">
+                  <p
+                    id="mr-brownie-title"
+                    className={cn(
+                      "cb-mr-brownie-header__title font-semibold",
+                      embedded ? "text-lg" : "text-xl",
+                    )}
+                  >
                     Mr. Brownie
                   </p>
-                  <p className="cb-mr-brownie-header__subtitle text-xs">
+                  <p
+                    className={cn(
+                      "cb-mr-brownie-header__subtitle",
+                      embedded ? "text-xs" : "text-sm",
+                    )}
+                  >
                     {assistantSubtitleAr(sessionRole, Boolean(isSignedIn))}
                   </p>
                 </div>
@@ -848,7 +925,7 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
                 <button
                   type="button"
                   onClick={() => void clearConversation()}
-                  className="cb-mr-brownie-header__btn rounded-full px-2.5 py-1.5 text-[11px] font-semibold"
+                  className="cb-mr-brownie-header__btn rounded-full px-3 py-1.5 text-xs font-semibold"
                 >
                   مسح المحادثة
                 </button>
@@ -866,8 +943,8 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
             <div
               ref={scrollRef}
               className={cn(
-                "cb-mr-brownie-messages flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4 sm:px-5",
-                embedded && "cb-mr-brownie-messages--embedded max-h-[220px]",
+                "cb-mr-brownie-messages flex min-h-0 flex-1 flex-col gap-3.5 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4 sm:gap-4 sm:px-5 sm:py-5",
+                embedded && "cb-mr-brownie-messages--embedded",
               )}
             >
               {historyLoading ? (
@@ -892,16 +969,26 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
                       مرحباً — أنا Mr. Brownie. اسأل عن النكهات، الهدايا، التوصيل، أو صندوق الهدايا.
                     </p>
                   ) : null}
-                  {messages.map((m, i) => (
-                    <MessageBubble
-                      key={`${m.role}-${m.createdAt ?? i}`}
-                      role={m.role}
-                      content={m.content}
-                      isStreaming={loading && streamingIndex === i && m.role === "assistant"}
-                      imageUrls={m.imageUrls}
-                      variant="mr-brownie"
-                    />
-                  ))}
+                  {messages.map((m, i) => {
+                    const msgKey = String(m.createdAt ?? i);
+                    return (
+                      <MessageBubble
+                        key={`${m.role}-${msgKey}`}
+                        role={m.role}
+                        content={m.content}
+                        isStreaming={loading && streamingIndex === i && m.role === "assistant"}
+                        imageUrls={m.imageUrls}
+                        variant="mr-brownie"
+                        showFeedback={m.role === "assistant" && Boolean(m.content.trim())}
+                        feedbackRating={feedbackByMessage[msgKey] ?? null}
+                        onFeedback={
+                          m.role === "assistant"
+                            ? (rating) => submitFeedback(i, rating)
+                            : undefined
+                        }
+                      />
+                    );
+                  })}
                   {error ? (
                     <div
                       role="alert"
@@ -930,7 +1017,12 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
               )}
             </div>
 
-            <div className="cb-mr-brownie-composer relative z-[2] shrink-0 p-3 sm:p-4">
+            <div
+              className={cn(
+                "cb-mr-brownie-composer relative z-[2] shrink-0",
+                embedded ? "p-3.5" : "p-4 sm:p-5",
+              )}
+            >
               <ChatImagePreviewStrip pending={pendingImages} onChange={setPendingImages} />
               <div className="flex gap-2">
                 <ChatImageAttachButton
@@ -983,10 +1075,20 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
                   )}
                 </button>
               </div>
-              <p className="mb-2 mt-3 text-[11px] font-medium text-cb-text-muted">
+              <p
+                className={cn(
+                  "mb-2 mt-3 font-medium text-cb-text-muted",
+                  embedded ? "text-xs" : "text-sm",
+                )}
+              >
                 اقتراحات سريعة
               </p>
-              <div className="flex max-h-[7rem] flex-wrap gap-2 overflow-y-auto overscroll-contain sm:max-h-[8rem]">
+              <div
+                className={cn(
+                  "flex flex-wrap gap-2.5 overflow-y-auto overscroll-contain",
+                  embedded ? "max-h-[11rem]" : "max-h-[10rem] sm:max-h-[12rem]",
+                )}
+              >
                 {suggestionsForRole(sessionRole).map((s) => (
                   <button
                     key={s}
@@ -994,7 +1096,10 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
                     disabled={loading || historyLoading}
                     onClick={() => void submitMessage(s)}
                     className={cn(
-                      "rounded-full border border-cb-border/90 bg-cb-cream/80 px-3 py-1.5 text-left text-xs font-medium text-cb-text-strong",
+                      "rounded-full border border-cb-border/90 bg-cb-cream/80 text-left font-medium leading-snug text-cb-text-strong",
+                      embedded
+                        ? "px-3.5 py-2 text-[13px]"
+                        : "px-4 py-2 text-sm",
                       "transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-px hover:bg-cb-peach/55 hover:shadow-sm",
                       "disabled:pointer-events-none disabled:opacity-50 dark:bg-cb-surface-2/90 dark:hover:bg-cb-peach-deep/35",
                     )}
@@ -1003,7 +1108,7 @@ export function MrBrownieChat({ embedded = false }: MrBrownieChatProps) {
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-[10px] text-cb-text-muted">
+              <p className="mt-2 text-xs text-cb-text-muted">
                 Google Gemini · {assistantSubtitleAr(sessionRole, Boolean(isSignedIn))}
               </p>
             </div>

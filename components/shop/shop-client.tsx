@@ -16,6 +16,7 @@ import {
   fetchAllShopProducts,
   mapApiProductToCatalog,
   type CatalogProduct,
+  type ShopApiProduct,
 } from "@/lib/storefront/shop-catalog-client";
 
 type SortMode = "newest" | "price_asc" | "price_desc" | "popular";
@@ -59,18 +60,25 @@ function isMaxPriceFilterActive(
 type ShopClientProps = {
   /** من الخادم — محرك التوصيات أو fallback */
   initialTrending?: Product[];
+  /** من الخادم — يتجنّب طلبات `/api/products` المتسلسلة عند أول paint */
+  initialCatalog?: ShopApiProduct[];
 };
 
-export function ShopClient({ initialTrending = [] }: ShopClientProps) {
+export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientProps) {
   const { t, lang } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const { isLoaded, isSignedIn } = useAuth();
-  const [catalog, setCatalog] = useState<ShopProduct[]>([]);
+  const [catalog, setCatalog] = useState<ShopProduct[]>(() => {
+    if (!initialCatalog?.length) return [];
+    return initialCatalog.map((row) =>
+      mapApiProductToCatalog(row, t("product.fallbackDescription"), lang),
+    );
+  });
   const [wishlistUuids, setWishlistUuids] = useState<Set<string>>(new Set());
   const filterAnchorRef = useRef<HTMLDivElement>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialCatalog?.length);
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -146,6 +154,23 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
   }, []);
 
   useEffect(() => {
+    if (!initialCatalog?.length) return;
+    const normalized = initialCatalog.map((row) =>
+      mapApiProductToCatalog(row, t("product.fallbackDescription"), lang),
+    );
+    const bounds = priceBoundsFromCatalog(normalized);
+    const minParam = Number(searchParams.get("min"));
+    const maxParam = Number(searchParams.get("max"));
+    if (Number.isFinite(minParam) && minParam > bounds.min && minParam <= bounds.max) {
+      setMinPrice(minParam);
+    }
+    if (Number.isFinite(maxParam) && maxParam < bounds.max && maxParam >= bounds.min) {
+      setMaxPrice(maxParam);
+    }
+  }, [initialCatalog, lang, searchParams, t]);
+
+  useEffect(() => {
+    if (initialCatalog?.length) return;
     let active = true;
     void (async () => {
       try {

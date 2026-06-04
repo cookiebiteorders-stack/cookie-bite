@@ -49,8 +49,8 @@ export function HeroSection5() {
               fill
               priority
               fetchPriority="high"
-              className="object-cover"
               sizes="100vw"
+              className="object-cover"
             />
           )}
           <div className="pointer-events-none absolute inset-0 cb-pl-hero-overlay lg:hidden" />

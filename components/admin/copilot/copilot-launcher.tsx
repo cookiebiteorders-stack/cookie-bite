@@ -263,18 +263,18 @@ export function CopilotLauncher() {
           />
           <aside
             className={
-              "absolute inset-y-0 flex w-full max-w-full flex-col bg-cb-surface shadow-2xl sm:max-w-[min(100vw,520px)] " +
+              "absolute inset-y-0 flex w-full max-w-full flex-col bg-cb-surface shadow-2xl sm:max-w-[min(100vw,560px)] " +
               panelSide
             }
           >
-            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-cb-border px-4 py-3">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <MrsCookieAvatar size={36} bare transparent />
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-cb-border px-4 py-4 sm:px-5">
+              <div className="flex min-w-0 items-center gap-3">
+                <MrsCookieAvatar size={40} bare transparent />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-cb-text-strong">
+                  <p className="truncate text-base font-bold text-cb-text-strong">
                     {t("copilot.title")}
                   </p>
-                  <p className="truncate text-[10px] text-cb-text-soft">
+                  <p className="truncate text-xs text-cb-text-soft sm:text-sm">
                     {t("copilot.subtitle")}
                   </p>
                 </div>

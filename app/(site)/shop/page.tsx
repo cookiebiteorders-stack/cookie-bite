@@ -12,6 +12,11 @@ import {
   buildShopCategoryMetadata,
 } from "@/lib/seo";
 import { getLangFromCookies } from "@/lib/seo/server";
+import { getCachedTrendingRecommendations } from "@/lib/storefront/cached-catalog";
+import { getCachedShopCatalog } from "@/lib/storefront/shop-catalog-server";
+
+/** ISR: كتالوج المتجر يُحدَّث كل دقيقتين؛ الكاش الداخلي للترند 120s. */
+export const revalidate = 120;
 
 export async function generateMetadata({
   searchParams,
@@ -35,15 +40,17 @@ export default async function ShopPage() {
     { name: (dict.nav as { shop: string }).shop, path: "/shop" },
   ]);
 
-  const { getTrendingRecommendations } = await import("@/lib/recommendations/fetch-recommendations");
-  const trending = await getTrendingRecommendations(8, lang);
+  const [trending, initialCatalog] = await Promise.all([
+    getCachedTrendingRecommendations(8, lang),
+    getCachedShopCatalog(),
+  ]);
 
   return (
     <>
       <JsonLdScript id="shop-breadcrumb-jsonld" json={breadcrumbJsonLd} />
       <JsonLdScript id="shop-faq-jsonld" json={faqJsonLd} />
       <Suspense fallback={<ShopLoadingFallback />}>
-        <ShopClient initialTrending={trending} />
+        <ShopClient initialTrending={trending} initialCatalog={initialCatalog} />
       </Suspense>
     </>
   );

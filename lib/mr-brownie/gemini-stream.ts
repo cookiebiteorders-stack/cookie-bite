@@ -71,9 +71,14 @@ export async function* streamMrBrownieGemini(params: {
   }
 }
 
+export type GeminiStreamHooks = {
+  onComplete?: (fullText: string) => void | Promise<void>;
+};
+
 export function createGeminiStreamResponse(
   params: Parameters<typeof streamMrBrownieGemini>[0],
   meta?: Record<string, unknown>,
+  hooks?: GeminiStreamHooks,
 ): Response {
   const encoder = new TextEncoder();
   const modelId =
@@ -82,11 +87,14 @@ export function createGeminiStreamResponse(
   const body = new ReadableStream({
     async start(controller) {
       try {
+        let fullText = "";
         for await (const token of streamMrBrownieGemini(params)) {
+          fullText += token;
           controller.enqueue(
             encoder.encode(encodeSseEvent({ type: "token", content: token })),
           );
         }
+        await hooks?.onComplete?.(fullText);
         controller.enqueue(
           encoder.encode(
             encodeSseEvent({

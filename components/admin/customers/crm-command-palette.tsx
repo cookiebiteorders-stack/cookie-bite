@@ -107,7 +107,7 @@ export function CrmCommandPalette({
                 className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none"
               />
             </div>
-            <ul className="max-h-72 overflow-y-auto py-2" role="listbox">
+            <ul className="max-h-[min(60vh,24rem)] overflow-y-auto py-2" role="listbox">
               {filtered.map((item) => {
                 const Icon = item.icon;
                 return (

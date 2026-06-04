@@ -1181,7 +1181,7 @@ export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) 
                 Click <strong>Add delivery zone</strong> to start.
               </div>
             ) : (
-              <ul className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
+              <ul className="space-y-1.5 max-h-[min(320px,40vh)] overflow-y-auto pr-1">
                 {placedZones.map(({ zone, geo }) => (
                   <li
                     key={zone.id}

@@ -23,6 +23,7 @@ import {
   buildBreadcrumbJsonLd,
   buildProductJsonLd,
 } from "@/lib/seo";
+import type { PdpApiPayload } from "@/lib/storefront/pdp-api";
 
 const FALLBACK_DESC = "Fresh handcrafted treats from Cookie Bite — New Cairo.";
 
@@ -34,17 +35,19 @@ type ApiResponse = {
 
 type Props = {
   slug: string;
+  initialPayload?: PdpApiPayload | null;
 };
 
-export function ProductPdpPageClient({ slug }: Props) {
+export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
   const router = useRouter();
   const { lang, t } = useLanguage();
-  const [loading, setLoading] = useState(true);
-  const [product, setProduct] = useState<Product | null>(null);
-  const [addons, setAddons] = useState<Addon[]>([]);
-  const [related, setRelated] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(!initialPayload?.product);
+  const [product, setProduct] = useState<Product | null>(initialPayload?.product ?? null);
+  const [addons, setAddons] = useState<Addon[]>(initialPayload?.addons ?? []);
+  const [related, setRelated] = useState<Product[]>(initialPayload?.related ?? []);
 
   useEffect(() => {
+    if (initialPayload?.product) return;
     let cancelled = false;
     setLoading(true);
     void (async () => {
@@ -76,7 +79,7 @@ export function ProductPdpPageClient({ slug }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [slug, lang, router]);
+  }, [slug, lang, router, initialPayload?.product]);
 
   const jsonLd = useMemo(() => {
     if (!product) return null;

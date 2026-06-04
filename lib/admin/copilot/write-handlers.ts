@@ -4,6 +4,7 @@
  */
 
 import { revalidatePath } from "next/cache";
+import { revalidateStorefrontCatalog } from "@/lib/storefront/revalidate-catalog";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { normalizeProductImages, primaryImageFromProduct } from "@/lib/products/media";
@@ -114,8 +115,10 @@ async function resolveOrderId(
   return { id: data.id as string };
 }
 
-function revalidateProductPaths(slug?: string | null) {
+async function revalidateProductPaths(slug?: string | null) {
   try {
+    await revalidateStorefrontCatalog();
+    revalidatePath("/");
     revalidatePath("/shop");
     revalidatePath("/api/products");
     if (slug) revalidatePath(`/shop/${slug}`);
@@ -212,7 +215,7 @@ export async function create_product(args: Record<string, unknown>, actor: Copil
       metadata: { source: "copilot", clerk_user_id: actor.clerk_user_id },
     });
 
-    revalidateProductPaths(data.slug as string);
+    await revalidateProductPaths(data.slug as string);
 
     return {
       ok: true,
@@ -295,7 +298,7 @@ export async function update_product(args: Record<string, unknown>, actor: Copil
       metadata: { source: "copilot", patch, clerk_user_id: actor.clerk_user_id },
     });
 
-    revalidateProductPaths(after.slug as string);
+    await revalidateProductPaths(after.slug as string);
 
     return {
       ok: true,
@@ -350,7 +353,7 @@ export async function delete_product(args: Record<string, unknown>, actor: Copil
       metadata: { source: "copilot", clerk_user_id: actor.clerk_user_id },
     });
 
-    revalidateProductPaths(before.slug as string);
+    await revalidateProductPaths(before.slug as string);
 
     return { ok: true, action: "delete_product", product_id: resolved.id, name: resolved.name };
   } catch (e) {

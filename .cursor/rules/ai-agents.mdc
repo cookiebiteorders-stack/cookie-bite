@@ -1,0 +1,27 @@
+---
+description: Cookie Bite AI agents — shared brain pipeline for all chatbots
+globs:
+  - "**/ai-agent/**/*"
+  - "**/api/**/chat/**/*"
+  - "**/mr-brownie/**/*"
+  - "**/copilot/**/*"
+---
+
+# AI Agents (Cookie Bite)
+
+All site assistants share the **storefront brain** (`lib/mr-brownie/brain/`) via `lib/ai-agent/`:
+
+| Agent ID | UI | API |
+|----------|-----|-----|
+| `mr_brownie` | Mr. Brownie widget | `/api/mr-brownie/chat/stream` |
+| `storefront_chat` | Demo `/demo/ai-chat` | `/api/chat` |
+| `mrs_cookie` | Mrs. Cookie admin | `/api/admin/copilot/chat` |
+| `product_wizard` | Product assistant | `/api/admin/product-assistant/chat` |
+
+**Shared post-response:** `finalizeAgentResponse()` → supervisor (critic + coach) + `logAgentTurn()`.
+
+**Storefront prepare:** `prepareStorefrontAgentChat()` — full CONTEXT JSON (catalog, brain, few-shot, memory).
+
+**Admin copilot:** `buildCopilotBrainMeta()` + `BRAIN_CONTEXT` in system prompt; same supervisor.
+
+Do not add a new chat route without wiring `AI_AGENT_IDS` + supervisor + turn logs.

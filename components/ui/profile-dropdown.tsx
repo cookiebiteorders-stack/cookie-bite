@@ -125,7 +125,7 @@ export function UserAccountDropdown() {
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: duration.short, ease: easeSoft }}
             className={cn(
-              "absolute end-0 top-[calc(100%+0.5rem)] flex w-[min(calc(100vw-1.5rem),19.5rem)] max-h-[min(85vh,32rem)] flex-col origin-top",
+              "absolute end-0 top-[calc(100%+0.5rem)] flex w-[min(calc(100vw-1.5rem),21rem)] max-h-[min(88vh,36rem)] flex-col origin-top",
               menuSurface,
             )}
           >
@@ -205,7 +205,7 @@ export function UserAccountDropdown() {
                   className={cn(
                     "flex flex-col gap-0.5",
                     staffAdminNavItems.length > 5 &&
-                      "max-h-[min(50vh,14rem)] overflow-y-auto overscroll-y-contain",
+                      "max-h-[min(55vh,18rem)] overflow-y-auto overscroll-y-contain",
                   )}
                 >
                   {staffAdminNavItems.map((item) => (

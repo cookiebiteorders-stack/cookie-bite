@@ -383,7 +383,7 @@ table[data-cb-zebra="true"] tbody tr:hover {
 
 /* Pacifico — استخدام نادر جداً (ملصقات/تمييز فقط) */
 .font-playful {
-  font-family: var(--font-pacifico), cursive;
+  font-family: var(--font-serif);
 }
 
 /* ============================================================

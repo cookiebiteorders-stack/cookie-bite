@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { revalidateStorefrontCatalog } from "@/lib/storefront/revalidate-catalog";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -339,6 +340,7 @@ export async function POST(req: NextRequest) {
   });
 
   try {
+    await revalidateStorefrontCatalog();
     revalidatePath("/");
     revalidatePath("/shop");
     revalidatePath(`/shop/${data.slug}`);
@@ -397,6 +399,7 @@ export async function PATCH(req: NextRequest) {
   });
 
   try {
+    await revalidateStorefrontCatalog();
     revalidatePath("/");
     revalidatePath("/shop");
     for (const row of data ?? []) {
@@ -441,6 +444,15 @@ export async function DELETE(req: NextRequest) {
     before: before ?? null,
     request: req,
   });
+
+  try {
+    await revalidateStorefrontCatalog();
+    revalidatePath("/");
+    revalidatePath("/shop");
+    revalidatePath("/api/products");
+  } catch {
+    /* non-fatal */
+  }
 
   return NextResponse.json({ ok: true, deleted: ids.length });
 }

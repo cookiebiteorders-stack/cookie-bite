@@ -42,6 +42,13 @@ export const mrBrownieChatBodySchema = z.object({
         .max(50),
     })
     .optional(),
+  session: z
+    .object({
+      pathname: z.string().max(500).default("/"),
+      productSlug: z.string().max(200).optional(),
+      locale: z.enum(["ar", "en", "auto"]).optional(),
+    })
+    .optional(),
 });
 
 export function temperatureForRole(role: UserRole | "guest"): number {
@@ -61,12 +68,24 @@ export type MrBrowniePreparedChat = {
   systemInstruction: string;
   temperature: number;
   maxOutputTokens: number;
+  /** رسالة المستخدم الأخيرة بدون JSON السياق */
+  lastUserMessagePlain: string;
+  turnLogMeta: {
+    intent: string;
+    confidencePct: number;
+    personalityMode: string;
+    pageIntent: string;
+    pathname: string;
+    locale: string;
+    catalogTotal: number;
+  };
 };
 
 export async function prepareMrBrownieChat(params: {
   messages: z.infer<typeof mrBrownieChatBodySchema>["messages"];
   cartLines: CartLine[];
   userId: string | null;
+  session?: z.infer<typeof mrBrownieChatBodySchema>["session"];
   clerkUser: {
     primaryEmailAddress?: { emailAddress?: string | null } | null;
     firstName?: string | null;
@@ -130,19 +149,40 @@ export async function prepareMrBrownieChat(params: {
     resolvedRole === "admin" ||
     resolvedRole === "staff";
 
+  const sessionIn = params.session;
+  const lastUserMessage = [...params.messages]
+    .reverse()
+    .find((m) => m.role === "user")?.content;
+
   const contextPayload = await buildMrBrownieContext({
     role: resolvedRole,
     userId: dbUserId ?? params.userId,
+    dbUserId,
     email,
     name,
     loyaltyTier,
     pastOrdersHint,
     cartLines: params.cartLines,
     includeAdminData,
+    session: sessionIn
+      ? {
+          pathname: sessionIn.pathname,
+          product_slug: sessionIn.productSlug ?? null,
+          locale: sessionIn.locale ?? "auto",
+        }
+      : null,
+    lastUserMessage,
+    conversationMessages: params.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    })),
   });
 
   const contextJson = JSON.stringify(contextPayload);
-  const systemInstruction = getMrBrownieSystemInstruction(resolvedRole);
+  const systemInstruction = getMrBrownieSystemInstruction(
+    resolvedRole,
+    contextPayload.brain?.active_personality,
+  );
 
   const rawMessages: MrBrownieChatMessage[] = params.messages.map((m, i, arr) => {
     const attachments = m.attachments?.filter((a) => isAllowedChatImageUrl(a.url));
@@ -166,5 +206,15 @@ export async function prepareMrBrownieChat(params: {
     systemInstruction,
     temperature: temperatureForRole(resolvedRole),
     maxOutputTokens: maxTokensForRole(resolvedRole),
+    lastUserMessagePlain: lastUserMessage?.trim() ?? "",
+    turnLogMeta: {
+      intent: contextPayload.brain.intent_engine.primary,
+      confidencePct: contextPayload.brain.intent_engine.confidence_pct,
+      personalityMode: contextPayload.brain.active_personality,
+      pageIntent: contextPayload.session.page_intent,
+      pathname: contextPayload.session.pathname,
+      locale: contextPayload.session.locale,
+      catalogTotal: contextPayload.catalog_meta.total_active,
+    },
   };
 }

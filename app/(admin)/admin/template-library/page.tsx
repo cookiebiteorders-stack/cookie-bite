@@ -112,16 +112,26 @@ export default function TemplateLibraryPage() {
     return null;
   }, [groups, selectedKey]);
 
+  const isValidTestEmail = (value: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
   const loadPreview = useCallback(
-    async (key: string, language: "en" | "ar") => {
+    async (key: string, language: "en" | "ar", recipientEmail?: string) => {
       setPreviewLoading(true);
       setPreviewHtml("");
       setPreviewSubject("");
       try {
-        const res = await fetch(
-          `/api/admin/template-library?key=${encodeURIComponent(key)}&lang=${language}`,
-          { cache: "no-store" },
-        );
+        const params = new URLSearchParams({
+          key,
+          lang: language,
+        });
+        const to = recipientEmail?.trim().toLowerCase();
+        if (to && isValidTestEmail(to)) {
+          params.set("to", to);
+        }
+        const res = await fetch(`/api/admin/template-library?${params}`, {
+          cache: "no-store",
+        });
         if (!res.ok) {
           const err = (await res.json().catch(() => null)) as {
             error?: { en?: string };
@@ -146,9 +156,17 @@ export default function TemplateLibraryPage() {
   useEffect(() => {
     if (!selectedKey) return;
     queueMicrotask(() => {
-      void loadPreview(selectedKey, lang);
+      void loadPreview(selectedKey, lang, testEmail);
     });
   }, [selectedKey, lang, loadPreview]);
+
+  useEffect(() => {
+    if (!selectedKey || !isValidTestEmail(testEmail)) return;
+    const timer = window.setTimeout(() => {
+      void loadPreview(selectedKey, lang, testEmail);
+    }, 450);
+    return () => window.clearTimeout(timer);
+  }, [testEmail, selectedKey, lang, loadPreview]);
 
   const filteredGroups = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -241,7 +259,9 @@ export default function TemplateLibraryPage() {
             </span>
             <button
               type="button"
-              onClick={() => selectedKey && void loadPreview(selectedKey, lang)}
+              onClick={() =>
+                selectedKey && void loadPreview(selectedKey, lang, testEmail)
+              }
               className="inline-flex items-center gap-1.5 rounded-full border border-cb-border bg-white/90 px-3 py-1.5 text-xs font-semibold text-stone-900 hover:bg-stone-100 dark:bg-stone-900/80 dark:text-stone-100 dark:hover:bg-stone-800"
             >
               <RefreshCw className="h-3.5 w-3.5" />
@@ -272,7 +292,7 @@ export default function TemplateLibraryPage() {
       ) : null}
 
       <div className="grid min-w-0 max-w-full gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="min-w-0 space-y-3 rounded-2xl border border-cb-border bg-white/90 p-4 dark:bg-stone-900/70">
+        <aside className="min-w-0 space-y-3 rounded-2xl border border-cb-border bg-white/95 p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500" />
             <input
@@ -285,7 +305,7 @@ export default function TemplateLibraryPage() {
           </div>
 
           {loadingList ? (
-            <p className="px-2 py-4 text-sm text-stone-600 dark:text-stone-400">
+            <p className="px-2 py-4 text-sm text-cb-text-muted">
               <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
               {adminT("templates.loading")}
             </p>
@@ -297,7 +317,7 @@ export default function TemplateLibraryPage() {
             <div className="space-y-4 pt-1">
               {filteredGroups.map((g) => (
                 <div key={g.category}>
-                  <p className="px-2 text-[11px] font-bold uppercase tracking-wide text-stone-600 dark:text-stone-400">
+                  <p className="px-2 text-[11px] font-bold uppercase tracking-wide text-cb-text-muted">
                     {g.label}
                   </p>
                   <ul className="mt-1 space-y-1">
@@ -310,16 +330,16 @@ export default function TemplateLibraryPage() {
                             onClick={() => setSelectedKey(it.key)}
                             className={`flex w-full items-start gap-2 rounded-xl border px-3 py-2 text-left transition ${
                               active
-                                ? "border-amber-400 bg-amber-50 text-stone-950 dark:border-amber-500/60 dark:bg-amber-900/30 dark:text-stone-100"
-                                : "border-transparent bg-stone-50/80 hover:border-cb-border hover:bg-stone-100 dark:bg-stone-950/30 dark:hover:bg-stone-900/60"
+                                ? "border-amber-400 bg-amber-50 text-cb-text-strong"
+                                : "border-transparent bg-white/95 hover:border-cb-border hover:bg-amber-50/40"
                             }`}
                           >
                             <Layout className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-700 dark:text-amber-300" />
                             <span className="min-w-0">
-                              <span className="block text-sm font-semibold text-stone-900 dark:text-stone-100">
+                              <span className="block text-sm font-semibold text-cb-text-strong">
                                 {it.name}
                               </span>
-                              <span className="mt-0.5 block text-xs leading-snug text-stone-600 dark:text-stone-400 sm:line-clamp-2">
+                              <span className="mt-0.5 block text-xs leading-snug text-cb-text-muted sm:line-clamp-2">
                                 {it.description}
                               </span>
                             </span>
@@ -331,7 +351,7 @@ export default function TemplateLibraryPage() {
                 </div>
               ))}
               {filteredGroups.length === 0 ? (
-                <p className="px-2 py-4 text-sm text-stone-600 dark:text-stone-400">
+                <p className="px-2 py-4 text-sm text-cb-text-muted">
                   {adminT("templates.noMatch", { query: filter })}
                 </p>
               ) : null}
@@ -342,7 +362,7 @@ export default function TemplateLibraryPage() {
         <main className="min-w-0 max-w-full space-y-4">
           {selectedMeta ? (
             <>
-              <div className="flex flex-col gap-3 rounded-2xl border border-cb-border bg-white/90 p-4 dark:bg-stone-900/70 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-3 rounded-2xl border border-cb-border bg-white/95 p-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300">
                     {selectedMeta.category.replace(/-/g, " ")} ·{" "}
@@ -351,7 +371,7 @@ export default function TemplateLibraryPage() {
                   <h2 className="mt-1 truncate font-serif text-xl font-bold text-stone-950 dark:text-white">
                     {selectedMeta.name}
                   </h2>
-                  <p className="mt-1 line-clamp-2 text-sm text-stone-700 dark:text-stone-300">
+                  <p className="mt-1 line-clamp-2 text-sm text-cb-text">
                     {selectedMeta.description}
                   </p>
                 </div>
@@ -361,7 +381,7 @@ export default function TemplateLibraryPage() {
                       <button
                         key={l}
                         type="button"
-                        onClick={() => setLanguage(l)}
+                        onClick={() => setLanguage(l, { reload: false })}
                         className={`px-3 py-1.5 transition ${
                           lang === l
                             ? "bg-stone-900 text-white"
@@ -397,13 +417,13 @@ export default function TemplateLibraryPage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-cb-border bg-white/90 p-4 dark:bg-stone-900/70">
+              <div className="rounded-2xl border border-cb-border bg-white/95 p-4">
                 <form
                   onSubmit={handleSendTest}
                   className="flex flex-col gap-3 sm:flex-row sm:items-end"
                 >
                   <label className="flex-1">
-                    <span className="block text-[11px] font-bold uppercase tracking-wide text-stone-600 dark:text-stone-400">
+                    <span className="block text-[11px] font-bold uppercase tracking-wide text-cb-text-muted">
                       {adminT("templates.sendTest")}
                     </span>
                     <input
@@ -413,12 +433,17 @@ export default function TemplateLibraryPage() {
                       placeholder="you@example.com"
                       className="mt-1 w-full rounded-xl border border-cb-border bg-white px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200 dark:bg-stone-950/40 dark:text-stone-100"
                     />
+                    {isValidTestEmail(testEmail) ? (
+                      <p className="mt-1 text-xs text-cb-text-muted">
+                        {adminT("templates.testEmailPersonalized")}
+                      </p>
+                    ) : null}
                   </label>
                   <div className="flex-[2]">
-                    <span className="block text-[11px] font-bold uppercase tracking-wide text-stone-600 dark:text-stone-400">
+                    <span className="block text-[11px] font-bold uppercase tracking-wide text-cb-text-muted">
                       {adminT("templates.subjectPreview")}
                     </span>
-                    <p className="mt-1 truncate rounded-xl border border-cb-border bg-stone-50 px-3 py-2 text-sm text-stone-800 dark:bg-stone-950/30 dark:text-stone-100">
+                    <p className="mt-1 truncate rounded-xl border border-cb-border bg-cb-surface-2 px-3 py-2 text-sm text-cb-text-strong">
                       {previewSubject || "—"}
                     </p>
                   </div>
@@ -439,7 +464,7 @@ export default function TemplateLibraryPage() {
 
               <div className="max-w-full overflow-x-auto rounded-2xl border border-cb-border bg-stone-200/40 p-3 dark:bg-stone-950/30">
                 {previewLoading ? (
-                  <div className="flex h-72 items-center justify-center text-sm text-stone-600 dark:text-stone-400">
+                  <div className="flex h-72 items-center justify-center text-sm text-cb-text-muted">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {adminT("templates.renderingPreview")}
                   </div>
@@ -451,16 +476,16 @@ export default function TemplateLibraryPage() {
                     className={`w-full rounded-xl border border-cb-border bg-white ${VARIANT_FRAME[variant]}`}
                   />
                 ) : (
-                  <p className="px-3 py-6 text-sm text-stone-600 dark:text-stone-400">
+                  <p className="px-3 py-6 text-sm text-cb-text-muted">
                     {adminT("templates.noPreview")}
                   </p>
                 )}
               </div>
             </>
           ) : (
-            <div className="rounded-2xl border border-cb-border bg-white/90 p-10 text-center dark:bg-stone-900/70">
+            <div className="rounded-2xl border border-cb-border bg-white/95 p-10 text-center">
               <Layout className="mx-auto h-8 w-8 text-stone-400" />
-              <p className="mt-3 text-sm text-stone-700 dark:text-stone-300">
+              <p className="mt-3 text-sm text-cb-text">
                 {adminT("templates.pickTemplate")}
               </p>
             </div>

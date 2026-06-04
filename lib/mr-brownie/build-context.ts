@@ -1,33 +1,22 @@
-import { BRAND } from "@/lib/brand";
-import { ALL_SELLABLE } from "@/lib/data";
 import type { UserRole } from "@/lib/admin/rbac";
 import type { CartLine } from "@/lib/cart/types";
 import { cartSubtotal } from "@/lib/cart/types";
+import { buildStoreKnowledgeBase } from "@/lib/ai/store-faq-knowledge";
+import { loadAiWebsiteKnowledgeBundle } from "@/lib/ai/website-knowledge";
 import { fetchAdminAnalyticsSnapshot } from "@/lib/mr-brownie/analytics-snapshot";
+import { buildMrBrownieAgentCapabilities } from "@/lib/mr-brownie/agent-capabilities";
+import { fetchCustomerMemory } from "@/lib/mr-brownie/fetch-customer-memory";
+import { buildBrainPipelineMeta } from "@/lib/mr-brownie/brain/pipeline";
+import { buildUserProfileSnapshot } from "@/lib/mr-brownie/brain/user-profile";
+import { getActiveBehaviorRules } from "@/lib/mr-brownie/training/behavior-rules";
+import { loadFewShotExamplesForChat } from "@/lib/mr-brownie/training/load-few-shot";
+import {
+  resolvePageIntent,
+  type MrBrownieSessionContext,
+} from "@/lib/mr-brownie/page-intent";
 import { buildMrBrowniePermissions } from "@/lib/mr-brownie/permissions-context";
 import { buildMrBrownieResponsePlaybook } from "@/lib/mr-brownie/response-playbook";
 import type { MrBrownieContextPayload } from "@/lib/mr-brownie/types";
-
-function productsFromCatalog() {
-  return ALL_SELLABLE.slice(0, 48).map((p) => ({
-    id: p.id,
-    name: p.name,
-    description: p.description?.slice(0, 240) ?? "",
-    price_egp: p.price,
-    category: p.category,
-  }));
-}
-
-function defaultOffers() {
-  return [
-    {
-      code: `FREESHIP_${BRAND.freeDeliveryThresholdEgp}`,
-      discount_summary: `Free delivery on orders over ${BRAND.freeDeliveryThresholdEgp} ${BRAND.currency}`,
-      expiry: null,
-      eligible_products: [] as string[],
-    },
-  ];
-}
 
 export async function buildMrBrownieContext(params: {
   role: UserRole | "guest";
@@ -38,7 +27,76 @@ export async function buildMrBrownieContext(params: {
   pastOrdersHint: string;
   cartLines: CartLine[];
   includeAdminData: boolean;
+  session?: Partial<MrBrownieSessionContext> | null;
+  dbUserId?: string | null;
+  lastUserMessage?: string;
+  conversationMessages?: Array<{ role: "user" | "assistant"; content: string }>;
 }): Promise<MrBrownieContextPayload> {
+  const locale =
+    params.session?.locale === "ar" || params.session?.locale === "en"
+      ? params.session.locale
+      : "auto";
+
+  const [{ catalog, website, promoOffers }, memory, few_shot_training, user_profile] =
+    await Promise.all([
+      loadAiWebsiteKnowledgeBundle(),
+      fetchCustomerMemory(params.dbUserId ?? null),
+      loadFewShotExamplesForChat({
+        lastUserMessage: params.lastUserMessage,
+        locale,
+      }),
+      buildUserProfileSnapshot({
+        dbUserId: params.dbUserId ?? null,
+        displayName: params.name,
+        loyaltyTier: params.loyaltyTier,
+      }),
+    ]);
+
+  const knowledgeRaw = buildStoreKnowledgeBase();
+  const session = params.session?.pathname
+    ? resolvePageIntent(
+        params.session.pathname,
+        params.session.product_slug ?? null,
+      )
+    : resolvePageIntent("/");
+  if (params.session?.locale === "ar" || params.session?.locale === "en") {
+    session.locale = params.session.locale;
+  }
+
+  const knowledge_base = {
+    ...knowledgeRaw,
+    faq:
+      session.locale === "ar"
+        ? knowledgeRaw.faq.filter((f) => f.lang === "ar")
+        : session.locale === "en"
+          ? knowledgeRaw.faq.filter((f) => f.lang === "en")
+          : knowledgeRaw.faq,
+  };
+
+  const brain = buildBrainPipelineMeta({
+    lastUserMessage: params.lastUserMessage,
+    locale: session.locale,
+    pathname: session.pathname,
+    pageIntent: session.page_intent,
+    products: catalog.products,
+    cartLines: params.cartLines,
+    role: params.role,
+    conversationMessages: params.conversationMessages,
+    memory,
+    userProfile: user_profile
+      ? {
+          display_name: user_profile.display_name,
+          favorite_product_names: user_profile.favorite_product_names,
+          order_count: user_profile.order_count,
+          budget_signal: user_profile.budget_signal,
+          last_order_hint: user_profile.last_order_hint,
+        }
+      : null,
+    loyaltyTier: params.loyaltyTier,
+  });
+
+  const behavior_rules = getActiveBehaviorRules();
+
   const subtotal = cartSubtotal(params.cartLines);
   const cart = {
     items: params.cartLines.map((l) => ({
@@ -60,9 +118,39 @@ export async function buildMrBrownieContext(params: {
       loyalty_tier: params.loyaltyTier ?? "standard",
       past_orders_summary: params.pastOrdersHint || "No recent order history in context.",
     },
-    products: productsFromCatalog(),
+    products: catalog.products,
+    catalog_meta: {
+      total_active: catalog.total_active,
+      shown_in_context: catalog.products.length,
+      truncated: catalog.truncated,
+      source: catalog.source,
+      refreshed_at: website.generated_at,
+      note: catalog.note,
+    },
+    website,
     cart,
-    offers: defaultOffers(),
+    offers: promoOffers,
+    knowledge_base,
+    session,
+    memory,
+    user_profile: user_profile
+      ? {
+          display_name: user_profile.display_name,
+          favorite_product_names: user_profile.favorite_product_names,
+          order_count: user_profile.order_count,
+          last_order_hint: user_profile.last_order_hint,
+          budget_signal: user_profile.budget_signal,
+          sales_hooks: user_profile.sales_hooks,
+        }
+      : null,
+    behavior_rules: behavior_rules.map((r) => ({
+      id: r.id,
+      rule: r.rule,
+      source: r.source,
+    })),
+    agent_capabilities: buildMrBrownieAgentCapabilities(params.role),
+    brain,
+    few_shot_training,
     permissions: buildMrBrowniePermissions(params.role),
     response_playbook: buildMrBrownieResponsePlaybook(params.role),
   };

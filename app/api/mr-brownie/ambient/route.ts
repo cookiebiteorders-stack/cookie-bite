@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { z } from "zod";
 import { resolveStaffRole } from "@/lib/admin/auth-role";
+import { getAiProductNamePool } from "@/lib/ai/website-knowledge";
 import { BRAND } from "@/lib/brand";
-import { ALL_SELLABLE } from "@/lib/data";
 
 const bodySchema = z.object({
   cartItems: z.number().int().min(0).max(200).optional(),
@@ -40,12 +40,10 @@ export async function POST(req: NextRequest) {
         })
       : "guest";
 
-    const topProducts = ALL_SELLABLE.map((p) => p.name?.trim()).filter(
-      (n): n is string => Boolean(n && n.length > 0),
-    );
+    const liveNames = await getAiProductNamePool(8);
     const namePool =
-      topProducts.length > 0
-        ? topProducts.slice(0, 6)
+      liveNames.length > 0
+        ? liveNames.slice(0, 6)
         : (["كوكيز الكلاسيك", "صندوق الهدايا", "البراونيز", "كوكيز محشوة"] as const);
     const pickName = () => pick(namePool);
     const freeShipThreshold = BRAND.freeDeliveryThresholdEgp;

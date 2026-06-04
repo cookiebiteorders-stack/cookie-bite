@@ -6,6 +6,8 @@ import { TrustBar } from "@/components/sections/trust-bar";
 import { buildLocalizedPageMetadata } from "@/lib/seo";
 import { getLangFromCookies } from "@/lib/seo/server";
 
+export const revalidate = 300;
+
 export async function generateMetadata(): Promise<Metadata> {
   const lang = await getLangFromCookies();
   return buildLocalizedPageMetadata("/", lang);

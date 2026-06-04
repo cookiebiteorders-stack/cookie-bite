@@ -12,7 +12,7 @@ export const clerkProfileAppearance = {
     colorInputBackground: "#fff8f0",
     colorInputText: "#2d1810",
     borderRadius: "0.875rem",
-    fontFamily: "var(--font-montserrat), ui-sans-serif, system-ui, sans-serif",
+    fontFamily: "var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif",
   },
   elements: {
     rootBox: "cb-clerk-profile__root w-full max-w-none min-w-0",

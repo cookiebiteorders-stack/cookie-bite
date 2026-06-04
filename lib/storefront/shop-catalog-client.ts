@@ -44,8 +44,8 @@ export function mapApiProductToCatalog(
       : p.title_en || p.title_ar || p.name;
   const description =
     lang === "ar"
-      ? p.description_ar || p.description_en || p.description || descFallback
-      : p.description_en || p.description_ar || p.description || descFallback;
+      ? p.description_ar || p.description_en || descFallback
+      : p.description_en || p.description_ar || descFallback;
   const mainImage = resolveProductImageUrl(
     p.images?.find((img) => typeof img?.url === "string" && img.url)?.url || p.image_url,
   );

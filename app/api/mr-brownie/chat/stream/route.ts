@@ -1,7 +1,15 @@
 import { NextRequest } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 import type { CartLine } from "@/lib/cart/types";
+import { AI_AGENT_IDS } from "@/lib/ai-agent/agents";
+import { finalizeAgentResponse } from "@/lib/ai-agent/post-response";
+import type { CommerceIntent } from "@/lib/mr-brownie/brain/intent-engine";
 import { createGeminiStreamResponse } from "@/lib/mr-brownie/gemini-stream";
+import {
+  isGuestSessionUuid,
+  MR_BROWNIE_GUEST_SESSION_COOKIE,
+} from "@/lib/mr-brownie/guest-session-constants";
 import {
   mrBrownieChatBodySchema,
   prepareMrBrownieChat,
@@ -40,9 +48,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const jar = await cookies();
+    const guestRaw = jar.get(MR_BROWNIE_GUEST_SESSION_COOKIE)?.value;
+    const guestSessionId = isGuestSessionUuid(guestRaw) ? guestRaw : null;
+
     const prepared = await prepareMrBrownieChat({
       messages: parsed.data.messages,
       cartLines: (parsed.data.cart?.lines ?? []) as CartLine[],
+      session: parsed.data.session,
       userId: userId ?? null,
       clerkUser,
     });
@@ -55,6 +68,30 @@ export async function POST(req: NextRequest) {
         maxOutputTokens: prepared.maxOutputTokens,
       },
       { role: prepared.resolvedRole },
+      {
+        onComplete: async (draft) => {
+          await finalizeAgentResponse({
+            agentId: AI_AGENT_IDS.MR_BROWNIE,
+            draft,
+            userMessage: prepared.lastUserMessagePlain,
+            intent: prepared.turnLogMeta.intent as CommerceIntent,
+            confidencePct: prepared.turnLogMeta.confidencePct,
+            locale: prepared.turnLogMeta.locale as "ar" | "en" | "auto",
+            catalogTotal: prepared.turnLogMeta.catalogTotal,
+            turnLog: {
+              intent: prepared.turnLogMeta.intent,
+              confidencePct: prepared.turnLogMeta.confidencePct,
+              personalityMode: prepared.turnLogMeta.personalityMode,
+              pageIntent: prepared.turnLogMeta.pageIntent,
+              pathname: prepared.turnLogMeta.pathname,
+              locale: prepared.turnLogMeta.locale,
+              catalogTotal: prepared.turnLogMeta.catalogTotal,
+              clerkUserId: userId,
+              guestSessionId,
+            },
+          });
+        },
+      },
     );
   } catch (e) {
     console.error("mr-brownie chat stream error", e);

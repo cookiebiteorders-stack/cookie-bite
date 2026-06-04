@@ -448,6 +448,8 @@ export const adminSectionsEn = {
     sendTest: "Send test email",
     sending: "Sending…",
     testEmail: "Test email address",
+    testEmailPersonalized:
+      "Preview and send use this recipient's name and order data when available.",
     printBlocked: "Allow pop-ups to print this template with full design.",
     variants: { email: "Email", report: "Printable", dash: "Dashboard" },
     subjectPreview: "Subject preview",
@@ -1108,6 +1110,8 @@ export const adminSectionsAr = {
     sendTest: "إرسال بريد تجريبي",
     sending: "جاري الإرسال…",
     testEmail: "عنوان البريد التجريبي",
+    testEmailPersonalized:
+      "المعاينة والإرسال يستخدمان اسم المستلم وبيانات آخر طلب إن وُجدت.",
     printBlocked: "اسمح بالنوافذ المنبثقة للطباعة بالتصميم الكامل.",
     variants: { email: "بريد", report: "طباعة", dash: "لوحة" },
     subjectPreview: "معاينة الموضوع",

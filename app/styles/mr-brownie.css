@@ -79,7 +79,7 @@
 }
 
 .cb-mr-brownie-header__title {
-  font-family: var(--font-playfair, "Playfair Display", serif);
+  font-family: var(--font-serif);
   color: var(--mr-gold);
 }
 
@@ -120,7 +120,8 @@
 }
 
 .cb-mr-brownie-drawer--embedded {
-  max-height: min(480px, 52vh);
+  min-height: min(520px, 58vh);
+  max-height: min(680px, 78vh);
   animation: none !important;
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--mr-gold) 28%, transparent),
@@ -128,12 +129,53 @@
 }
 
 .cb-mr-brownie-drawer--embedded .cb-mr-brownie-composer {
-  max-height: 42%;
-  overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .cb-mr-brownie-messages--embedded {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
+  min-height: min(280px, 36vh);
+}
+
+.cb-mr-brownie-drawer--floating {
+  width: 100%;
+  max-width: min(100vw, 480px);
+}
+
+@media (min-width: 640px) {
+  .cb-mr-brownie-drawer--floating {
+    max-width: min(100vw, 520px);
+  }
+}
+
+@media (max-width: 900px) {
+  .cb-mr-brownie-drawer--embedded {
+    min-height: min(440px, 56vh);
+    max-height: min(600px, 74vh);
+  }
+
+  .cb-mr-brownie-messages--embedded {
+    min-height: min(220px, 30vh);
+  }
+}
+
+/* صندوق الهدايا: عند فتح المحادثة نُصغّر المعاينة لنفس مساحة الشات */
+.gift-box-builder .gb-sidebar:has(.cb-mr-brownie-drawer--embedded) .gb-mini-scene {
+  height: 148px;
+  min-height: 148px;
+  margin-bottom: 12px;
+}
+
+.gift-box-builder .gb-sidebar:has(.cb-mr-brownie-drawer--embedded) .gb-sidebar-total {
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+  .gift-box-builder .gb-sidebar:has(.cb-mr-brownie-drawer--embedded) .gb-mini-scene {
+    height: 120px;
+    min-height: 120px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

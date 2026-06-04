@@ -12,8 +12,10 @@ import { MobileHeader } from "@/components/layout/mobile-header";
 import { SiteHeader } from "@/components/layout/site-header";
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { CartProvider } from "@/components/providers/cart-provider";
+import { StaffAdminNavProvider } from "@/components/providers/staff-admin-nav-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { CopilotLauncher } from "@/components/admin/copilot/copilot-launcher";
+import { DeferredTrackerBootstrap } from "@/components/tracking/deferred-tracker-bootstrap";
 import { cn } from "@/lib/utils";
 
 type AdminShellProps = {
@@ -27,6 +29,7 @@ export function AdminShell({ role, children }: AdminShellProps) {
   const { t } = useLanguage();
 
   return (
+    <StaffAdminNavProvider>
     <CartProvider>
       <AdminConsoleProvider role={role} navItems={navItems}>
         <div className="admin-console cb-touch-manipulation relative z-[1] flex min-h-screen w-full max-w-full flex-col overflow-x-clip bg-background text-foreground">
@@ -87,9 +90,11 @@ export function AdminShell({ role, children }: AdminShellProps) {
         </div>
 
         <CartDrawer />
+        <DeferredTrackerBootstrap />
         <CopilotLauncher />
         </div>
       </AdminConsoleProvider>
     </CartProvider>
+    </StaffAdminNavProvider>
   );
 }

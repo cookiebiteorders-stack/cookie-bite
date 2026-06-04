@@ -3,7 +3,7 @@
 import { memo } from "react";
 import { motion } from "motion/react";
 import Image from "next/image";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useState } from "react";
 import { getChatbotConfig } from "@/lib/ai-chat/config";
 import { Cursor } from "@/components/ai-chat/cursor";
@@ -18,6 +18,9 @@ export type MessageBubbleProps = {
   imageUrls?: string[];
   variant?: "default" | "mr-brownie";
   className?: string;
+  showFeedback?: boolean;
+  feedbackRating?: 1 | -1 | null;
+  onFeedback?: (rating: 1 | -1) => void;
 };
 
 export const MessageBubble = memo(function MessageBubble({
@@ -27,6 +30,9 @@ export const MessageBubble = memo(function MessageBubble({
   imageUrls,
   variant = "default",
   className,
+  showFeedback = false,
+  feedbackRating = null,
+  onFeedback,
 }: MessageBubbleProps) {
   const config = getChatbotConfig();
   const displayed = useTypingEffect({
@@ -91,14 +97,48 @@ export const MessageBubble = memo(function MessageBubble({
       )}
 
       {!isUser && content && !isStreaming ? (
-        <button
-          type="button"
-          onClick={() => void copy()}
-          className="absolute -bottom-1 end-2 opacity-0 transition-opacity group-hover:opacity-100 rounded-md bg-zinc-800/90 p-1 text-zinc-300 hover:text-white"
-          aria-label="Copy"
-        >
-          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-        </button>
+        <div className="absolute -bottom-1 end-2 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+          {showFeedback && onFeedback ? (
+            <>
+              <button
+                type="button"
+                onClick={() => onFeedback(1)}
+                disabled={feedbackRating != null}
+                className={cn(
+                  "rounded-md p-1",
+                  feedbackRating === 1
+                    ? "bg-emerald-600/90 text-white"
+                    : "bg-zinc-800/90 text-zinc-300 hover:text-white",
+                )}
+                aria-label="رد مفيد"
+              >
+                <ThumbsUp className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onFeedback(-1)}
+                disabled={feedbackRating != null}
+                className={cn(
+                  "rounded-md p-1",
+                  feedbackRating === -1
+                    ? "bg-red-600/90 text-white"
+                    : "bg-zinc-800/90 text-zinc-300 hover:text-white",
+                )}
+                aria-label="رد غير مفيد"
+              >
+                <ThumbsDown className="h-3.5 w-3.5" />
+              </button>
+            </>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => void copy()}
+            className="rounded-md bg-zinc-800/90 p-1 text-zinc-300 hover:text-white"
+            aria-label="Copy"
+          >
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          </button>
+        </div>
       ) : null}
     </div>
   );

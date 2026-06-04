@@ -224,18 +224,18 @@ export function CopilotChat({
               </p>
             </div>
             <div>
-              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-cb-text-soft">
-                <Zap className="h-3 w-3 text-amber-600" aria-hidden />
+              <p className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-cb-text-soft">
+                <Zap className="h-3.5 w-3.5 text-amber-600" aria-hidden />
                 {t("copilot.trySomething")}
               </p>
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 gap-2.5">
                 {quickPrompts.map((s) => (
                   <button
                     key={s}
                     type="button"
                     onClick={() => void send(s)}
                     disabled={busy}
-                    className="rounded-xl border border-cb-border bg-gradient-to-l from-white to-cb-peach/30 px-3 py-2.5 text-start text-xs leading-snug text-cb-text-strong transition hover:border-cb-brand-logo hover:from-amber-50 hover:to-cb-peach/50 hover:shadow-sm disabled:opacity-50"
+                    className="rounded-xl border border-cb-border bg-gradient-to-l from-white to-cb-peach/30 px-4 py-3 text-start text-sm leading-snug text-cb-text-strong transition hover:border-cb-brand-logo hover:from-amber-50 hover:to-cb-peach/50 hover:shadow-sm disabled:opacity-50"
                   >
                     {s}
                   </button>
@@ -338,7 +338,7 @@ export function CopilotChat({
 
       <form
         onSubmit={onSubmit}
-        className="flex shrink-0 flex-col gap-2 border-t border-cb-border bg-cb-surface-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        className="flex shrink-0 flex-col gap-2.5 border-t border-cb-border bg-cb-surface-2 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5"
       >
         <ChatImagePreviewStrip pending={pendingImages} onChange={setPendingImages} />
         <div className="flex items-end gap-2">
@@ -360,7 +360,7 @@ export function CopilotChat({
             rows={1}
             placeholder={t("copilot.inputPlaceholder")}
             disabled={busy}
-            className="max-h-32 min-h-[42px] flex-1 resize-none rounded-xl border border-cb-border bg-cb-surface px-3 py-2.5 text-sm text-cb-text-strong placeholder:text-cb-text-soft focus:border-cb-brand-logo focus:outline-none focus:ring-2 focus:ring-cb-brand-logo/20 disabled:opacity-50"
+            className="max-h-36 min-h-[48px] flex-1 resize-none rounded-xl border border-cb-border bg-cb-surface px-3.5 py-3 text-sm text-cb-text-strong placeholder:text-cb-text-soft focus:border-cb-brand-logo focus:outline-none focus:ring-2 focus:ring-cb-brand-logo/20 disabled:opacity-50"
           />
           <button
             type="submit"
@@ -369,7 +369,7 @@ export function CopilotChat({
               hasUploadingAttachments(pendingImages) ||
               (!input.trim() && readyAttachments(pendingImages).length === 0)
             }
-            className="inline-flex h-[42px] shrink-0 items-center justify-center gap-1.5 rounded-xl bg-cb-brand-logo px-3 text-sm font-semibold text-white transition hover:bg-cb-brand-logo-dark disabled:opacity-40 sm:px-4"
+            className="inline-flex h-12 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-cb-brand-logo px-4 text-sm font-semibold text-white transition hover:bg-cb-brand-logo-dark disabled:opacity-40"
             aria-label={t("copilot.send")}
           >
           {busy ? (

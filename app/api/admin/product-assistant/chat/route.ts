@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-admin";
 import { bilingualError } from "@/lib/validations";
+import { AI_AGENT_IDS } from "@/lib/ai-agent/agents";
+import { finalizeAgentResponse } from "@/lib/ai-agent/post-response";
 import { runMrBrownieGemini } from "@/lib/mr-brownie/gemini";
 import {
   productWizardDraftSchema,
@@ -48,7 +50,7 @@ export async function POST(req: NextRequest) {
     const category = turn.wizard.draft.category?.trim() ?? "";
     const price = turn.wizard.draft.price_egp;
     try {
-      const description = await runMrBrownieGemini({
+      const draft = await runMrBrownieGemini({
         systemInstruction:
           "You write concise e-commerce product descriptions in English only. Output plain text, no markdown, 2–4 short paragraphs, SEO-friendly, appetizing tone for a bakery/dessert brand. No placeholders.",
         messages: [
@@ -60,10 +62,18 @@ export async function POST(req: NextRequest) {
         temperature: 0.65,
         maxOutputTokens: 1024,
       });
+      const finalized = await finalizeAgentResponse({
+        agentId: AI_AGENT_IDS.PRODUCT_WIZARD,
+        draft,
+        userMessage: `product description: ${name}`,
+        intent: "product_browse",
+        confidencePct: 85,
+        locale: "en",
+      });
       turn = runWizardTurn({
         userMessage: message,
         wizard: turn.wizard,
-        injectedDescription: description.trim().slice(0, 3000),
+        injectedDescription: finalized.text.trim().slice(0, 3000),
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Gemini error";
