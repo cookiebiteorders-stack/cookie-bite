@@ -4,6 +4,7 @@ import Link from "next/link";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { useLanguage } from "@/components/providers/language-provider";
 import { buttonClassName } from "@/components/ui/button";
+import { CorporateBulkAddressesForm } from "@/components/pages/corporate-bulk-addresses-form";
 
 const FAQ_KEYS = ["0", "1", "2", "3"] as const;
 
@@ -63,6 +64,8 @@ export function CorporateGiftingClient() {
             ))}
           </ul>
         </section>
+
+        <CorporateBulkAddressesForm />
 
         <Link
           href="/contact"

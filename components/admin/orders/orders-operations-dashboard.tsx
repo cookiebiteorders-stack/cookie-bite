@@ -1,18 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { motion, useReducedMotion } from "motion/react";
-import {
-  Download,
-  Printer,
-  RefreshCw,
-  Settings,
-  ShoppingCart,
-  Upload,
-  Zap,
-} from "lucide-react";
+import { Printer, RefreshCw, Settings, ShoppingCart, Zap } from "lucide-react";
 import { useOrdersOperationsStore } from "@/stores/orders-operations-store";
 import { OrdersHeroStats } from "@/components/admin/orders/orders-hero-stats";
 import { OrdersAnalyticsStrip } from "@/components/admin/orders/orders-analytics-strip";
@@ -20,9 +12,10 @@ import { OrdersMainWorkspace } from "@/components/admin/orders/orders-main-works
 import { OrderDetailsDrawer } from "@/components/admin/orders/order-details-drawer";
 import { OrdersToasts } from "@/components/admin/orders/orders-toasts";
 import { OrdersCommandPalette } from "@/components/admin/orders/orders-command-palette";
+import { ImportExportToolbar } from "@/components/admin/import-export/import-export-toolbar";
+import { printOrdersList } from "@/lib/admin/orders-print-html";
+import { useImportExport } from "@/hooks/use-import-export";
 import { cn } from "@/lib/utils";
-import { parseCsv } from "@/lib/csv/parse-csv";
-import { fetchJson } from "@/lib/http/fetch-json";
 
 export function OrdersOperationsDashboard() {
   const reduceMotion = useReducedMotion();
@@ -53,31 +46,24 @@ export function OrdersOperationsDashboard() {
     setDetailOpen(true);
   }, []);
 
-  const exportPage = useCallback(() => {
-    const headers = ["id", "order_code", "guest_email", "total_egp", "status", "payment_status", "created_at"];
-    const lines = [
-      headers.join(","),
-      ...orders.map((r) =>
-        [
-          r.id,
-          r.order_code ?? "",
-          `"${(r.guest_email ?? "").replace(/"/g, '""')}"`,
-          r.total_egp,
-          r.status,
-          r.payment_status,
-          r.created_at,
-        ].join(","),
-      ),
-    ];
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `orders-page-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    pushToast("تم تصدير الصفحة الحالية.", "success");
-  }, [orders, pushToast]);
+  const selectedIds = useOrdersOperationsStore((s) => s.selectedIds);
+  const { downloadExport } = useImportExport("orders");
+
+  const exportQuick = useCallback(async () => {
+    const ids = Array.from(selectedIds);
+    try {
+      await downloadExport({
+        format: "csv",
+        scope: ids.length > 0 ? "selected" : "filtered",
+        ids: ids.length > 0 ? ids : undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      });
+      pushToast("تم التصدير.", "success");
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "فشل التصدير", "error");
+    }
+  }, [selectedIds, downloadExport, dateFrom, dateTo, pushToast]);
 
   useEffect(() => {
     const cancel = scheduleEffectTask(() => {
@@ -110,51 +96,27 @@ export function OrdersOperationsDashboard() {
     return () => window.removeEventListener("keydown", onKey);
   }, [detailOpen, cmdkOpen]);
 
-  const printPage = useCallback(() => {
-    window.print();
-  }, []);
-
-  const applyCsvImports = useCallback(
-    async (file: File) => {
-      const text = await file.text();
-      const grid = parseCsv(text);
-      if (grid.length < 2) {
-        pushToast("ملف CSV فارغ أو غير صالح.", "error");
-        return;
-      }
-      const header = grid[0]!.map((h) => h.trim().toLowerCase());
-      const idIdx = header.indexOf("id");
-      const stIdx = header.indexOf("status");
-      const payIdx = header.indexOf("payment_status");
-      if (idIdx < 0 || (stIdx < 0 && payIdx < 0)) {
-        pushToast("CSV يحتاج أعمدة: id و status و/أو payment_status", "error");
-        return;
-      }
-      let ok = 0;
-      for (let r = 1; r < grid.length; r++) {
-        const row = grid[r]!;
-        const id = row[idIdx]?.trim();
-        if (!id) continue;
-        const body: Record<string, unknown> = {};
-        if (stIdx >= 0 && row[stIdx]?.trim()) body.status = row[stIdx]!.trim();
-        if (payIdx >= 0 && row[payIdx]?.trim()) body.payment_status = row[payIdx]!.trim();
-        if (Object.keys(body).length === 0) continue;
-        try {
-          await fetchJson(`/api/admin/orders/${id}`, { method: "PATCH", jsonBody: body });
-          ok += 1;
-        } catch {
-          /* skip row */
-        }
-      }
-      pushToast(`تم تطبيق التحديث على ${ok} طلباً.`, "success");
-      void loadOrders();
-    },
-    [loadOrders, pushToast],
-  );
+  const printOrders = useCallback(() => {
+    const toPrint =
+      selectedIds.size > 0 ? orders.filter((o) => selectedIds.has(o.id)) : orders;
+    if (!toPrint.length) {
+      pushToast("لا توجد طلبات للطباعة.", "error");
+      return;
+    }
+    const ok = printOrdersList(toPrint, {
+      subtitle:
+        selectedIds.size > 0
+          ? `طباعة ${toPrint.length} طلب محدد`
+          : `طباعة الصفحة الحالية (${toPrint.length} طلب)`,
+    });
+    if (!ok) {
+      pushToast("تعذّر فتح نافذة الطباعة — تحقق من حاصر النوافذ المنبثقة.", "error");
+    }
+  }, [orders, selectedIds, pushToast]);
 
   const meta = useOrdersOperationsStore((s) => s.meta);
   const canWrite = Boolean(meta?.can_write);
-  const importRef = useRef<HTMLInputElement>(null);
+  const selectedIdList = useMemo(() => Array.from(selectedIds), [selectedIds]);
 
   return (
     <section className="relative space-y-6 pb-20">
@@ -189,34 +151,13 @@ export function OrdersOperationsDashboard() {
               <ShoppingCart className="h-4 w-4" aria-hidden />
               إنشاء طلب
             </Link>
-            <button
-            type="button"
-            onClick={exportPage}
-            className="admin-btn-outline inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
-            >
-              <Download className="h-4 w-4" aria-hidden />
-              تصدير
-            </button>
-            <button
-            type="button"
-            disabled={!canWrite}
-            title={canWrite ? "استيراد تحديثات الحالة من CSV" : "صلاحية القراءة فقط"}
-            onClick={() => importRef.current?.click()}
-            className="admin-btn-outline inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-50"
-            >
-              <Upload className="h-4 w-4" aria-hidden />
-              استيراد
-            </button>
-            <input
-              ref={importRef}
-              type="file"
-              accept=".csv,text/csv"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                if (f) void applyCsvImports(f);
-              }}
+            <ImportExportToolbar
+              module="orders"
+              canWrite={canWrite}
+              selectedIds={selectedIdList}
+              showHistory={false}
+              buttonClassName="admin-btn-outline inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
+              onImportSuccess={() => void loadOrders()}
             />
             <button
             type="button"
@@ -228,7 +169,8 @@ export function OrdersOperationsDashboard() {
             </button>
             <button
             type="button"
-            onClick={printPage}
+            onClick={printOrders}
+            title="طباعة جدول الطلبات (المحدد أو الصفحة الحالية)"
             className="admin-btn-outline inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
             >
               <Printer className="h-4 w-4" aria-hidden />
@@ -298,7 +240,7 @@ export function OrdersOperationsDashboard() {
         onFocusSearch={() => searchRef.current?.focus()}
         onRefresh={() => void loadOrders()}
         onOpenAdvanced={() => setAdvancedFiltersOpen(true)}
-        onExport={exportPage}
+        onExport={() => void exportQuick()}
       />
 
       <OrdersToasts />

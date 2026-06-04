@@ -55,19 +55,25 @@ export function ExportModal({
           <fieldset>
             <legend className="mb-1 font-bold text-cb-text-muted">الصيغة</legend>
             <div className="flex flex-wrap gap-2">
-              {(["csv", "xlsx", "pdf"] as ExportFormat[]).map((f) => (
+              {(
+                [
+                  { id: "csv" as ExportFormat, label: "CSV" },
+                  { id: "xlsx" as ExportFormat, label: "Excel" },
+                  { id: "pdf" as ExportFormat, label: "PDF" },
+                ] as const
+              ).map((f) => (
                 <button
-                  key={f}
+                  key={f.id}
                   type="button"
-                  onClick={() => setFormat(f)}
+                  onClick={() => setFormat(f.id)}
                   className={cn(
                     "rounded-lg border px-3 py-1.5 font-bold uppercase",
-                    format === f
+                    format === f.id
                       ? "border-cb-brand-500 bg-cb-brand-50 text-cb-brand-800"
                       : "border-cb-border",
                   )}
                 >
-                  {f}
+                  {f.label}
                 </button>
               ))}
             </div>

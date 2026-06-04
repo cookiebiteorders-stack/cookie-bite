@@ -14,6 +14,8 @@ type Props = {
   onRefresh: () => void;
   onOpenAdvanced: () => void;
   onExport: () => void;
+  onAddCustomer?: () => void;
+  onCampaign?: () => void;
   onAiInsight: () => void;
 };
 
@@ -24,6 +26,8 @@ export function CrmCommandPalette({
   onRefresh,
   onOpenAdvanced,
   onExport,
+  onAddCustomer,
+  onCampaign,
   onAiInsight,
 }: Props) {
   const [q, setQ] = useState("");
@@ -35,11 +39,17 @@ export function CrmCommandPalette({
     () => [
       { id: "s", label: "التركيز على البحث", hint: "/", icon: Search, action: onFocusSearch },
       { id: "a", label: "فلاتر متقدمة", icon: Command, action: onOpenAdvanced },
-      { id: "e", label: "تصدير CSV", icon: Users, action: onExport },
+      { id: "e", label: "تصدير (CSV / Excel / PDF)", icon: Users, action: onExport },
+      ...(onAddCustomer
+        ? [{ id: "n", label: "إضافة عميل", icon: Users, action: onAddCustomer } satisfies Item]
+        : []),
+      ...(onCampaign
+        ? [{ id: "c", label: "إرسال حملة بريد", icon: Sparkles, action: onCampaign } satisfies Item]
+        : []),
       { id: "r", label: "تحديث البيانات", icon: RefreshCw, action: onRefresh },
       { id: "i", label: "رؤى AI تجريبية", icon: Sparkles, action: onAiInsight },
     ],
-    [onAiInsight, onExport, onFocusSearch, onOpenAdvanced, onRefresh],
+    [onAddCustomer, onAiInsight, onCampaign, onExport, onFocusSearch, onOpenAdvanced, onRefresh],
   );
 
   const filtered = useMemo(() => {

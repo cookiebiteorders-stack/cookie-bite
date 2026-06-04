@@ -52,10 +52,10 @@ export function AdminShell({ role, children }: AdminShellProps) {
               <aside
                 className={cn(
                   "cb-no-print sticky top-16 z-20 hidden h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] flex-col overflow-hidden",
-                  "border-r border-cb-border bg-cb-surface-2 px-4 py-4 backdrop-blur-md lg:flex",
+                  "border-r border-cb-border bg-cb-surface-2 py-4 backdrop-blur-md lg:flex",
                 )}
               >
-                <div className="mb-4 shrink-0 rounded-2xl border border-cb-border bg-cb-surface p-4 shadow-sm cb-shadow-editorial">
+                <div className="mx-4 mb-4 shrink-0 rounded-2xl border border-cb-border bg-cb-surface p-4 shadow-sm cb-shadow-editorial">
                 <div className="flex items-center gap-2">
                   <LogoMark className="h-9 w-9 text-cb-brand-logo" title="Cookie Bite" />
                   <p className="font-playful text-2xl leading-none text-cb-brand-logo">
@@ -70,7 +70,7 @@ export function AdminShell({ role, children }: AdminShellProps) {
                 </span>
               </div>
 
-                <div className="admin-sidebar-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain pe-1 [scrollbar-gutter:stable]">
+                <div className="admin-sidebar-scroll min-h-0 w-full flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
                   <AdminConsoleNavLinks items={navItems} pathname={pathname} />
                 </div>
               </aside>

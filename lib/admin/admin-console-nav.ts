@@ -13,6 +13,7 @@ export const ADMIN_CONSOLE_NAV_ITEMS: AdminConsoleNavItem[] = [
   { href: "/admin/products", navKey: "products", module: "products" },
   { href: "/admin/addons", navKey: "addons", module: "addons" },
   { href: "/admin/orders", navKey: "orders", module: "orders" },
+  { href: "/admin/kitchen", navKey: "kitchen", module: "orders" },
   { href: "/admin/customers", navKey: "customers", module: "customers" },
   { href: "/admin/discounts", navKey: "discounts", module: "discounts" },
   { href: "/admin/analytics", navKey: "analytics", module: "analytics" },

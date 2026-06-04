@@ -17,6 +17,9 @@ export async function sendInternalEmail(opts: {
   subject: string;
   html: string;
   replyTo?: string;
+  emailType?: "transactional" | "notification" | "otp" | "invoice" | "marketing";
+  templateKey?: string;
+  immediate?: boolean;
 }): Promise<SendResult> {
   return dispatch(opts);
 }

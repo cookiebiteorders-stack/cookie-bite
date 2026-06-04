@@ -1,24 +1,19 @@
 "use client";
 
 import { LegalDocumentPage } from "@/components/pages/legal-document-page";
+import { getPrivacyDocument } from "@/lib/legal/content";
 import { useLanguage } from "@/components/providers/language-provider";
 
 export function PrivacyPageContent() {
-  const { t } = useLanguage();
+  const { lang } = useLanguage();
+  const doc = getPrivacyDocument(lang);
 
   return (
     <LegalDocumentPage
       pageKey="privacy"
       path="/privacy"
-      sections={[
-        {
-          paragraphs: [t("legal.privacy.p1"), t("legal.privacy.p2")],
-        },
-        {
-          paragraphs: [t("legal.privacy.summary")],
-          highlight: true,
-        },
-      ]}
+      lastUpdated={doc.lastUpdated}
+      sections={doc.sections}
     />
   );
 }

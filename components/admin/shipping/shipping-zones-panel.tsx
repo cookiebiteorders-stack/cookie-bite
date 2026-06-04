@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createColumnHelper,
   flexRender,
@@ -12,15 +12,13 @@ import { motion, useReducedMotion } from "motion/react";
 import {
   ChevronDown,
   Copy,
-  Download,
   GripVertical,
   Pencil,
   Trash2,
-  Upload,
 } from "lucide-react";
 import type { ShippingZoneRow } from "@/lib/shipping/types";
-import { zonesToCsv, parseZonesCsv } from "@/lib/shipping/csv-zones";
 import { useShippingOrchestrationStore } from "@/stores/shipping-orchestration-store";
+import { ImportExportToolbar } from "@/components/admin/import-export/import-export-toolbar";
 import { cn } from "@/lib/utils";
 
 const columnHelper = createColumnHelper<ShippingZoneRow>();
@@ -79,8 +77,6 @@ export function ShippingZonesPanel() {
   const deleteZone = useShippingOrchestrationStore((s) => s.deleteZone);
   const createZone = useShippingOrchestrationStore((s) => s.createZone);
   const reorderZones = useShippingOrchestrationStore((s) => s.reorderZones);
-  const importRows = useShippingOrchestrationStore((s) => s.importRows);
-
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
   const [feeMin, setFeeMin] = useState("");
@@ -136,8 +132,6 @@ export function ShippingZonesPanel() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<ShippingZoneRow> | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-
   const reorderUnlocked =
     sortKey === "priority" &&
     filtered.length === zones.length &&
@@ -242,29 +236,6 @@ export function ShippingZonesPanel() {
       await updateZone(id, { is_active: active });
     }
     setRowSelection({});
-  };
-
-  const exportCsv = () => {
-    const blob = new Blob([zonesToCsv(zones)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `shipping-zones-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const onCsv = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    const text = await file.text();
-    const parsed = parseZonesCsv(text);
-    if (!parsed.ok) {
-      window.alert(parsed.error);
-      return;
-    }
-    await importRows(parsed.rows);
   };
 
   const columns = useMemo(
@@ -650,23 +621,12 @@ export function ShippingZonesPanel() {
         >
           Refresh
         </button>
-        <button
-          type="button"
-          onClick={exportCsv}
-          className="inline-flex items-center gap-1 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-xs font-bold"
-        >
-          <Download className="h-3.5 w-3.5" />
-          Export CSV
-        </button>
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          className="inline-flex items-center gap-1 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-xs font-bold"
-        >
-          <Upload className="h-3.5 w-3.5" />
-          Import CSV
-        </button>
-        <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => void onCsv(e)} />
+        <ImportExportToolbar
+          module="shipping"
+          showHistory={false}
+          buttonClassName="inline-flex items-center gap-1 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-xs font-bold"
+          onImportSuccess={() => void loadZones()}
+        />
         {selectedCount > 0 && (
           <>
             <span className="text-xs text-stone-700 dark:text-stone-300">{selectedCount} selected</span>

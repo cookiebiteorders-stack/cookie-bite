@@ -449,22 +449,22 @@ html.dark .admin-console button.admin-btn-secondary,
   scroll-margin-top: 4.5rem;
 }
 
-/* تنقل الجانبي — تجاوز underline/لون الروابط العامة (@layer base) */
-.admin-console nav[aria-label="Admin navigation"] .admin-console-nav-link {
+/* تنقل الجانبي — عرض كامل الشريط (بغضّ عن لغة aria-label) */
+.admin-console .admin-console-nav .admin-console-nav-link {
   text-decoration: none !important;
   color: var(--cb-text-strong) !important;
 }
 
-.admin-console nav[aria-label="Admin navigation"] .admin-console-nav-link:hover {
+.admin-console .admin-console-nav .admin-console-nav-link:hover {
   text-decoration: none !important;
 }
 
-.admin-console nav[aria-label="Admin navigation"] .admin-console-nav-link[aria-current="page"] {
+.admin-console .admin-console-nav .admin-console-nav-link[aria-current="page"] {
   color: #ffffff !important;
   background-color: var(--cb-terracotta-dark);
 }
 
-.admin-console nav[aria-label="Admin navigation"] .admin-console-nav-link[aria-current="page"]:hover {
+.admin-console .admin-console-nav .admin-console-nav-link[aria-current="page"]:hover {
   color: #ffffff !important;
 }
 

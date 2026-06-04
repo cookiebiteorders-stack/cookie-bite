@@ -159,24 +159,35 @@ export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) 
   }, []);
 
   useEffect(() => {
-    if (!LRef || !containerRef.current || mapRef.current) return;
-    const map = LRef.map(containerRef.current, { zoomControl: true }).setView(
-      DEFAULT_CENTER,
-      DEFAULT_ZOOM,
-    );
-    LRef.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap",
-      maxZoom: 18,
-    }).addTo(map);
-    mapRef.current = map;
-    const t0 = setTimeout(() => map.invalidateSize(), 50);
-    const t1 = setTimeout(() => map.invalidateSize(), 350);
+    if (!LRef || mapRef.current || loadError) return;
+
+    let map: LeafletMap | null = null;
+    let cancelled = false;
+
+    const boot = () => {
+      if (cancelled || mapRef.current || !LRef || !containerRef.current) return;
+      map = LRef.map(containerRef.current, { zoomControl: true }).setView(
+        DEFAULT_CENTER,
+        DEFAULT_ZOOM,
+      );
+      LRef.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap",
+        maxZoom: 18,
+      }).addTo(map);
+      mapRef.current = map;
+      setTimeout(() => map?.invalidateSize(), 50);
+      setTimeout(() => map?.invalidateSize(), 350);
+      setTimeout(() => map?.invalidateSize(), 900);
+    };
+
+    boot();
+    const retry = setTimeout(boot, 80);
 
     return () => {
-      clearTimeout(t0);
-      clearTimeout(t1);
+      cancelled = true;
+      clearTimeout(retry);
       try {
-        map.remove();
+        map?.remove();
       } catch {
         // ignore — map already destroyed
       }
@@ -184,13 +195,23 @@ export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) 
       layersRef.current = {};
       tempLayersRef.current = { circle: null, marker: null };
     };
-  }, [LRef]);
+  }, [LRef, loadError]);
 
   useEffect(() => {
     if (!LRef || !mapRef.current || loadError) return;
     const t = setTimeout(() => mapRef.current?.invalidateSize(), 120);
     return () => clearTimeout(t);
   }, [LRef, loadError, formOpen]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !mapRef.current) return;
+    const ro = new ResizeObserver(() => {
+      mapRef.current?.invalidateSize();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [LRef, loadError]);
 
   const clearTempLayers = useCallback(() => {
     if (!mapRef.current) return;
@@ -802,20 +823,91 @@ export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) 
         <StatCard label="Fastest delivery" value={stats.fastest != null ? `${stats.fastest}d` : "—"} />
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[300px_1fr]">
-        <aside className="flex flex-col gap-3">
+      <div className="mb-4 space-y-3">
+        <MapPlaceSearch
+          zones={zones}
+          geoStore={geoStore}
+          onSelectPlace={(r) => void handleSearchPlace(r)}
+          onSelectZone={handleSearchZone}
+        />
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={!LRef || locating !== null}
+            onClick={useDeviceGps}
+            className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-xs font-bold text-cb-text-strong transition hover:border-amber-300 hover:bg-amber-50 disabled:opacity-50 sm:flex-none dark:hover:bg-amber-950/25"
+          >
+            {locating === "gps" ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Crosshair className="h-4 w-4 shrink-0 text-amber-700" aria-hidden />
+            )}
+            موقعي (GPS)
+          </button>
+          <button
+            type="button"
+            disabled={!LRef || locating !== null}
+            onClick={useNetworkLocation}
+            className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-xs font-bold text-cb-text-strong transition hover:border-sky-300 hover:bg-sky-50 disabled:opacity-50 sm:flex-none dark:hover:bg-sky-950/25"
+          >
+            {locating === "ip" ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Wifi className="h-4 w-4 shrink-0 text-sky-700" aria-hidden />
+            )}
+            موقع تقريبي (شبكة)
+          </button>
           {!formOpen ? (
             <button
               type="button"
               onClick={openCreateForm}
               disabled={!LRef || mutating}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cb-brand-500 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cb-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl bg-cb-brand-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-cb-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus className="h-4 w-4" />
-              Add delivery zone
+              إضافة منطقة توصيل
             </button>
           ) : null}
+        </div>
+        {locateError ? (
+          <p className="text-xs font-medium text-red-600">{locateError}</p>
+        ) : null}
+      </div>
 
+      <div className="delivery-zones-map-frame relative mb-4 w-full overflow-hidden rounded-2xl border border-cb-border bg-cb-surface/40 p-2 shadow-inner">
+        {loadError ? (
+          <div className="delivery-zones-map-canvas flex items-center justify-center rounded-xl border border-dashed border-red-300 bg-red-50/60 px-6 text-center text-sm text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-100">
+            <div>
+              <AlertTriangle className="mx-auto mb-2 h-6 w-6" />
+              <p className="font-semibold">Map failed to load</p>
+              <p className="mt-1 text-xs">{loadError}</p>
+            </div>
+          </div>
+        ) : !LRef ? (
+          <div className="delivery-zones-map-canvas flex items-center justify-center rounded-xl border border-cb-border bg-cb-surface/60 text-sm text-cb-text-muted">
+            <Loader2 className="me-2 h-4 w-4 animate-spin" />
+            جاري تحميل الخريطة…
+          </div>
+        ) : (
+          <div
+            ref={containerRef}
+            className={`delivery-zones-map-canvas relative z-0 overflow-hidden rounded-xl border ${
+              picking ? "border-cb-brand-500 ring-2 ring-cb-brand-500/20" : "border-cb-border"
+            }`}
+            style={{ cursor: picking ? "crosshair" : undefined }}
+            role="application"
+            aria-label="خريطة مناطق التوصيل"
+          />
+        )}
+        {picking ? (
+          <p className="pointer-events-none absolute bottom-4 start-1/2 z-[8] -translate-x-1/2 rounded-full bg-cb-brand-500 px-4 py-1.5 text-xs font-bold text-white shadow-lg">
+            انقر على الخريطة لتحديد مركز المنطقة
+          </p>
+        ) : null}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(280px,340px)_1fr]">
+        <aside className="flex flex-col gap-3 lg:max-h-[640px] lg:overflow-y-auto lg:pr-1">
           {formOpen ? (
             <form
               onSubmit={handleSave}
@@ -1148,67 +1240,14 @@ export function DeliveryZonesMap({ existingNames = [] }: DeliveryZonesMapProps) 
           </div>
         </aside>
 
-        <div className="delivery-zones-map-frame relative flex flex-col gap-2 overflow-hidden rounded-2xl border border-cb-border bg-cb-surface/40 p-2">
-          <MapPlaceSearch
-            zones={zones}
-            geoStore={geoStore}
-            onSelectPlace={(r) => void handleSearchPlace(r)}
-            onSelectZone={handleSearchZone}
-          />
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={!LRef || locating !== null}
-              onClick={useDeviceGps}
-              className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-xs font-bold text-cb-text-strong transition hover:border-amber-300 hover:bg-amber-50 disabled:opacity-50 sm:flex-none dark:hover:bg-amber-950/25"
-            >
-              {locating === "gps" ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              ) : (
-                <Crosshair className="h-4 w-4 shrink-0 text-amber-700" aria-hidden />
-              )}
-              موقعي (GPS)
-            </button>
-            <button
-              type="button"
-              disabled={!LRef || locating !== null}
-              onClick={useNetworkLocation}
-              className="inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-xs font-bold text-cb-text-strong transition hover:border-sky-300 hover:bg-sky-50 disabled:opacity-50 sm:flex-none dark:hover:bg-sky-950/25"
-            >
-              {locating === "ip" ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              ) : (
-                <Wifi className="h-4 w-4 shrink-0 text-sky-700" aria-hidden />
-              )}
-              موقع تقريبي (شبكة)
-            </button>
-          </div>
-          {locateError ? (
-            <p className="text-xs font-medium text-red-600">{locateError}</p>
-          ) : null}
-          {loadError ? (
-            <div className="flex h-[460px] items-center justify-center rounded-xl border border-dashed border-red-300 bg-red-50/60 px-6 text-center text-sm text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-100">
-              <div>
-                <AlertTriangle className="mx-auto mb-2 h-6 w-6" />
-                <p className="font-semibold">Map failed to load</p>
-                <p className="mt-1 text-xs">{loadError}</p>
-              </div>
-            </div>
-          ) : !LRef ? (
-            <div className="flex h-[460px] items-center justify-center rounded-xl border border-cb-border bg-cb-surface/60 text-sm text-cb-text-muted">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Loading map…
-            </div>
-          ) : null}
-          <div
-            ref={containerRef}
-            className={`relative z-0 h-[460px] w-full overflow-hidden rounded-xl border ${
-              picking ? "border-cb-brand-500 ring-2 ring-cb-brand-500/20" : "border-cb-border"
-            } ${loadError || !LRef ? "hidden" : ""}`}
-            style={{ cursor: picking ? "crosshair" : undefined }}
-            role="application"
-            aria-label="خريطة مناطق التوصيل"
-          />
+        <div className="hidden rounded-2xl border border-dashed border-cb-border bg-cb-surface/50 p-4 text-sm text-stone-700 lg:block">
+          <p className="font-bold text-stone-900">كيفية الاستخدام</p>
+          <ol className="mt-2 list-decimal space-y-1.5 ps-4 text-xs leading-relaxed">
+            <li>ابحث عن حي أو مدينة، أو استخدم GPS، أو انقر على الخريطة.</li>
+            <li>اضغط «إضافة منطقة توصيل» وأكمل الاسم والرسوم والمدن.</li>
+            <li>اسحب نصف القطر من النموذج لضبط تغطية التوصيل.</li>
+            <li>المناطق المحفوظة تظهر في القائمة — انقر للتركيز على الخريطة.</li>
+          </ol>
         </div>
       </div>
     </section>

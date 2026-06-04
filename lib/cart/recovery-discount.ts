@@ -78,6 +78,7 @@ export function validateRecoveryDiscountForCart(
       valid_until: row.expires_at,
     },
     discount_amount,
+    free_shipping: false,
   };
 }
 

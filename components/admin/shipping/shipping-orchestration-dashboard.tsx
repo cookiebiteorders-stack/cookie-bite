@@ -28,6 +28,11 @@ export function ShippingOrchestrationDashboard() {
   return (
     <div className="space-y-6 pb-10">
       <ShippingHero online={online && !error} />
+      {error ? (
+        <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
+          {error}
+        </p>
+      ) : null}
       <ShippingInsights zones={zones} />
       <DeliveryZonesMap existingNames={existingNames} />
       <div className="space-y-4">

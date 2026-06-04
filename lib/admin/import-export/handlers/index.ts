@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ImportCommitResult } from "@/lib/admin/import-export/types";
 import type { ModuleKey } from "@/lib/admin/rbac";
+import { commitOrdersImport } from "@/lib/admin/import-export/handlers/orders";
 import { commitProductsImport } from "@/lib/admin/import-export/handlers/products";
+import { commitCustomersImport } from "@/lib/admin/import-export/handlers/customers";
+import { commitDiscountsImport } from "@/lib/admin/import-export/handlers/discounts";
 import { BULK_INSERT_CHUNK } from "@/lib/admin/import-export/constants";
 
 export type ImportHandler = (
@@ -34,8 +37,10 @@ async function genericInsert(
 }
 
 const HANDLERS: Partial<Record<ModuleKey, ImportHandler>> = {
+  orders: commitOrdersImport,
   products: commitProductsImport,
-  discounts: (sb, rows) => genericInsert(sb, "promo_codes", rows),
+  customers: commitCustomersImport,
+  discounts: commitDiscountsImport,
   financial: (sb, rows) => genericInsert(sb, "expenses", rows),
   shipping: (sb, rows) => genericInsert(sb, "shipping_zones", rows),
 };

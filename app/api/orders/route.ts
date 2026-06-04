@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getUserByClerkId } from "@/lib/db/users";
 import { onOrderCreated } from "@/lib/email/automation/triggers";
+import { scheduleOrderConfirmed } from "@/lib/notifications/schedule";
 import { checkoutSchema, bilingualError } from "@/lib/validations";
 import type { Addon } from "@/lib/addons/types";
 
@@ -207,45 +208,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 3) Promo
-  let discount_amount = 0;
-  let promoIdToIncrement: string | null = null;
-  if (data.promo_code) {
-    const { data: promo } = await supabase
-      .from("promo_codes")
-      .select(
-        "id, type, value, min_order_amount_egp, max_uses, used_count, valid_from, valid_until",
-      )
-      .eq("code", data.promo_code.toUpperCase())
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (promo) {
-      const now = new Date();
-      const expired = promo.valid_until && new Date(promo.valid_until) < now;
-      const notStarted =
-        promo.valid_from && new Date(promo.valid_from) > now;
-      const limitReached =
-        promo.max_uses !== null && promo.used_count >= promo.max_uses;
-      const meetsMin = subtotal >= Number(promo.min_order_amount_egp);
-
-      if (!expired && !notStarted && !limitReached && meetsMin) {
-        discount_amount =
-          promo.type === "percent"
-            ? Math.round(((subtotal * Number(promo.value)) / 100) * 100) / 100
-            : Number(promo.value);
-        discount_amount = Math.min(discount_amount, subtotal);
-        promoIdToIncrement = promo.id;
-      }
-    }
-  }
-
-  const delivery_fee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
-  const gift_wrapping_fee = data.is_gift ? GIFT_WRAP_FEE : 0;
-  const total = Math.max(
-    0,
-    subtotal - discount_amount + delivery_fee + gift_wrapping_fee,
-  );
+  const cartProductIds = orderLines.map((l) => l.product_id);
 
   // 4) العنوان
   let shipping_address: Record<string, unknown> | null = null;
@@ -276,6 +239,39 @@ export async function POST(req: NextRequest) {
     user_email = profile?.email ?? null;
     user_name = profile?.full_name ?? null;
   }
+
+  // 5b) Promo (after user_id for first-order / VIP rules)
+  let discount_amount = 0;
+  let promoIdToIncrement: string | null = null;
+  let promoFreeShipping = false;
+
+  if (data.promo_code) {
+    const { applyPromoAtCheckout } = await import("@/lib/promo/apply-promo-checkout");
+    const promoResult = await applyPromoAtCheckout({
+      supabase,
+      code: data.promo_code,
+      cartSubtotal: subtotal,
+      cartProductIds,
+      userId: user_id,
+    });
+    if (!promoResult.ok) {
+      return NextResponse.json(
+        bilingualError(promoResult.error_en, promoResult.error_ar),
+        { status: 400 },
+      );
+    }
+    discount_amount = promoResult.discount_amount;
+    promoIdToIncrement = promoResult.promo.id;
+    promoFreeShipping = promoResult.free_shipping;
+  }
+
+  let delivery_fee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+  if (promoFreeShipping) delivery_fee = 0;
+  const gift_wrapping_fee = data.is_gift ? GIFT_WRAP_FEE : 0;
+  const total = Math.max(
+    0,
+    subtotal - discount_amount + delivery_fee + gift_wrapping_fee,
+  );
 
   // 6) إنشاء الطلب
   const status = data.payment_method === "cod" ? "processing" : "pending";
@@ -399,6 +395,8 @@ export async function POST(req: NextRequest) {
       .update({ used_count: (await getPromoUsedCount(supabase, promoIdToIncrement)) + 1 })
       .eq("id", promoIdToIncrement);
   }
+
+  scheduleOrderConfirmed(order.id);
 
   const recipientEmail = user_email ?? data.guest_email ?? null;
   if (recipientEmail) {

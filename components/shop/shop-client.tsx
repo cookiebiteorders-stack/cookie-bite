@@ -71,7 +71,12 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
   const [wishlistUuids, setWishlistUuids] = useState<Set<string>>(new Set());
   const filterAnchorRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [cat, setCat] = useState<string>(() => {
     const raw = searchParams.get("cat");
@@ -407,8 +412,10 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
 
             <div className="cb-pl-shop-filters__divider space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-cb-text-strong">
-                  {t("pages.shop.showing", { filtered: filtered.length, total: catalog.length })}
+                <p className="text-sm font-semibold text-cb-text-strong" aria-busy={!mounted || loading}>
+                  {!mounted || loading
+                    ? t("pages.shop.loadingCookies")
+                    : t("pages.shop.showing", { filtered: filtered.length, total: catalog.length })}
                 </p>
                 <div className="flex items-center gap-2">
                   <span className="rounded-full bg-cb-peach px-2.5 py-1 text-xs font-bold text-cb-text-strong ring-1 ring-cb-border">

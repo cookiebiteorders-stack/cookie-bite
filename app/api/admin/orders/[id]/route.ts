@@ -7,6 +7,7 @@ import { onOrderShipped } from "@/lib/email/automation/triggers";
 import { bilingualError } from "@/lib/validations";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { ORDER_STATUS_VALUES, PAYMENT_STATUS_VALUES } from "@/lib/domain/order-enums";
+import { awardLoyaltyPointsForPaidOrder } from "@/lib/loyalty/award-order-points";
 
 const schema = z
   .object({
@@ -116,6 +117,14 @@ export async function PATCH(
         },
       });
     }
+  }
+
+  const wasPaid = (before?.payment_status ?? "").toLowerCase() === "paid";
+  const nowPaid = (order.payment_status ?? "").toLowerCase() === "paid";
+  if (!wasPaid && nowPaid) {
+    void awardLoyaltyPointsForPaidOrder(id).catch((err) =>
+      console.error("loyalty award after admin payment update", err),
+    );
   }
 
   await writeAuditLog({

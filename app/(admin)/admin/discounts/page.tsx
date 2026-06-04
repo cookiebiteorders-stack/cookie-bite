@@ -9,6 +9,7 @@ import {
   Copy,
   Filter,
   Gift,
+  Pencil,
   Percent,
   Search,
   ShieldCheck,
@@ -22,18 +23,14 @@ import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { cn } from "@/lib/utils";
 import { useAdminT } from "@/lib/admin/use-admin-t";
 import { useLanguage } from "@/components/providers/language-provider";
+import type { PromoRuleKey } from "@/lib/promo/promo-metadata";
+import { parsePromoMetadata } from "@/lib/promo/promo-metadata";
+import { ImportExportToolbar } from "@/components/admin/import-export/import-export-toolbar";
+import { ExportModal } from "@/components/admin/import-export/export-modal";
+import { DiscountEditModal, type DiscountRow } from "@/components/admin/discounts/discount-edit-modal";
+import { DiscountAiMenu } from "@/components/admin/discounts/discount-ai-menu";
 
-type Discount = {
-  id: string;
-  code: string;
-  type: "percent" | "fixed";
-  value: number;
-  is_active: boolean;
-  valid_until: string | null;
-  max_uses: number | null;
-  used_count: number;
-  min_order_amount_egp?: number;
-};
+type Discount = DiscountRow;
 
 type BuilderType =
   | "percent"
@@ -103,18 +100,28 @@ export default function AdminDiscountsPage() {
   const statusLabel = (d: Discount) => adminT(`discounts.status.${statusKey(d)}`);
 
   const ruleOptions = useMemo(
-    () => [
-      adminT("discounts.rules.cartTotal"),
-      adminT("discounts.rules.cookiesOnly"),
-      adminT("discounts.rules.firstTime"),
-      adminT("discounts.rules.vipOnly"),
-    ],
+    () =>
+      (
+        [
+          ["cart_total", "discounts.rules.cartTotal"],
+          ["cookies_only", "discounts.rules.cookiesOnly"],
+          ["first_order", "discounts.rules.firstTime"],
+          ["vip_only", "discounts.rules.vipOnly"],
+        ] as const
+      ).map(([key, labelKey]) => ({
+        key: key as PromoRuleKey,
+        label: adminT(labelKey),
+      })),
     [adminT],
   );
 
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [editTarget, setEditTarget] = useState<Discount | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const [step, setStep] = useState(1);
   const [builderType, setBuilderType] = useState<BuilderType>("percent");
@@ -125,7 +132,7 @@ export default function AdminDiscountsPage() {
   const [minOrder, setMinOrder] = useState("0");
   const [campaignTag, setCampaignTag] = useState("Seasonal");
   const [ruleMode, setRuleMode] = useState<"AND" | "OR">("AND");
-  const [selectedRules, setSelectedRules] = useState<string[]>([]);
+  const [selectedRules, setSelectedRules] = useState<PromoRuleKey[]>([]);
 
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused" | "expired">("all");
@@ -138,7 +145,10 @@ export default function AdminDiscountsPage() {
     setError(null);
     try {
       const res = await fetch("/api/admin/discounts", { cache: "no-store" });
-      const data = (await res.json()) as { discounts?: Discount[]; error?: { en?: string } };
+      const data = (await res.json()) as {
+        discounts?: Discount[];
+        error?: { en?: string };
+      };
       if (!res.ok) throw new Error(apiErr(data.error, adminT("discounts.errors.loadFailed")));
       setDiscounts(data.discounts ?? []);
     } catch (err) {
@@ -174,16 +184,10 @@ export default function AdminDiscountsPage() {
   async function createDiscount(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
 
-    const unsupported: BuilderType[] = [
-      "bogo",
-      "bundle",
-      "vip",
-      "first-order",
-      "loyalty",
-    ];
-    if (unsupported.includes(builderType)) {
-      setError(adminT("discounts.errors.unsupportedType"));
+    if (!code.trim()) {
+      setError(adminT("discounts.errors.codeRequired"));
       return;
     }
 
@@ -197,23 +201,26 @@ export default function AdminDiscountsPage() {
       expiresAtIso = d.toISOString();
     }
 
-    const apiType = builderType === "fixed" ? "fixed" : "percent";
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue) || numericValue <= 0) {
       setError(adminT("discounts.errors.invalidValue"));
       return;
     }
-    if (apiType === "percent" && numericValue > 100) {
+    if (builderType !== "fixed" && numericValue > 100) {
       setError(adminT("discounts.errors.percentMax"));
       return;
     }
 
+    setCreating(true);
     const payload: Record<string, unknown> = {
       code: code.trim(),
-      type: apiType,
+      builder_type: builderType,
       value: numericValue,
       active: true,
       min_order_amount_egp: Number(minOrder) || 0,
+      campaign_tag: campaignTag,
+      rule_mode: ruleMode,
+      rule_keys: selectedRules,
     };
     if (maxUses.trim()) {
       const mu = Number(maxUses);
@@ -227,6 +234,8 @@ export default function AdminDiscountsPage() {
       body: JSON.stringify(payload),
     });
 
+    setCreating(false);
+
     if (!res.ok) {
       const d = (await res.json().catch(() => null)) as { error?: { en?: string } } | null;
       setError(apiErr(d?.error, adminT("discounts.errors.createFailed")));
@@ -238,8 +247,54 @@ export default function AdminDiscountsPage() {
     setMaxUses("");
     setExpiry("");
     setMinOrder("0");
+    setSelectedRules([]);
     setStep(1);
+    setSuccess(adminT("discounts.createdSuccess"));
     await load();
+  }
+
+  async function duplicateDiscount(d: Discount) {
+    setError(null);
+    const res = await fetch(`/api/admin/discounts/${d.id}/duplicate`, { method: "POST" });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => null)) as { error?: { en?: string } } | null;
+      setError(apiErr(data?.error, adminT("discounts.errors.duplicateFailed")));
+      return;
+    }
+    setSuccess(adminT("discounts.duplicatedSuccess"));
+    await load();
+  }
+
+  async function pauseExpiringSoon() {
+    const targets = discounts.filter((d) => statusKey(d) === "expiringSoon" && d.is_active);
+    if (!targets.length) {
+      setSuccess(adminT("discounts.noExpiringToPause"));
+      return;
+    }
+    for (const d of targets) {
+      await fetch(`/api/admin/discounts/${d.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_active: false }),
+      });
+    }
+    setSuccess(adminT("discounts.pausedExpiring", { count: targets.length }));
+    await load();
+  }
+
+  function copyCode(text: string) {
+    void navigator.clipboard.writeText(text);
+    setSuccess(adminT("discounts.copiedCode"));
+  }
+
+  function kindLabel(d: Discount): string {
+    const meta = parsePromoMetadata(d.metadata);
+    if (meta.free_shipping) return adminT("discounts.types.shipping.label");
+    if (meta.kind) {
+      const k = typeOptionIds.find((t) => t.id === meta.kind);
+      if (k) return adminT(`discounts.${k.labelKey}`);
+    }
+    return typeLabel(d.type);
   }
 
   async function toggleActive(d: Discount) {
@@ -352,13 +407,16 @@ export default function AdminDiscountsPage() {
               {adminT("discounts.subtitle")}
             </p>
           </div>
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 self-start rounded-2xl border border-cb-border bg-white/85 px-4 py-2 text-sm font-bold text-stone-900 shadow-sm transition hover:-translate-y-0.5 hover:bg-white"
-          >
-            <Brain className="h-4 w-4" />
-            {adminT("discounts.aiQuickActions")}
-          </button>
+          <DiscountAiMenu
+            label={adminT("discounts.aiQuickActions")}
+            onGenerateCode={(c) => {
+              setCode(c);
+              setStep(2);
+            }}
+            onSuggestValue={(v) => setValue(v)}
+            onFocusExpiring={() => setStatusFilter("active")}
+            onPauseExpiring={() => void pauseExpiringSoon()}
+          />
         </div>
 
         <div className="relative mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -375,6 +433,17 @@ export default function AdminDiscountsPage() {
           ))}
         </div>
       </header>
+
+      {success ? (
+        <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900">
+          {success}
+        </p>
+      ) : null}
+      {error ? (
+        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
+          {error}
+        </p>
+      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
         <form onSubmit={(e) => void createDiscount(e)} className="rounded-3xl border border-cb-border bg-white/95 p-5 shadow-sm sm:p-6">
@@ -425,15 +494,24 @@ export default function AdminDiscountsPage() {
             <div className="space-y-4">
               <h2 className="font-serif text-xl font-bold text-stone-900">{adminT("discounts.step2Title")}</h2>
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-xs font-bold uppercase tracking-wide text-stone-700">
+                <label className="text-xs font-bold uppercase tracking-wide text-stone-700 sm:col-span-2">
                   {adminT("discounts.fields.code")}
-                  <input
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.toUpperCase())}
-                    required
-                    placeholder="COOKIE15"
-                    className="mt-1 w-full rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none ring-amber-200 transition focus:ring-2"
-                  />
+                  <div className="mt-1 flex gap-2">
+                    <input
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.toUpperCase())}
+                      required
+                      placeholder="COOKIE15"
+                      className="min-w-0 flex-1 rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none ring-amber-200 transition focus:ring-2"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setCode(`COOKIE${Math.random().toString(36).slice(2, 6).toUpperCase()}`)}
+                      className="shrink-0 rounded-2xl border border-cb-border bg-amber-50 px-3 py-2 text-xs font-bold text-amber-950"
+                    >
+                      {adminT("discounts.generateCode")}
+                    </button>
+                  </div>
                 </label>
                 <label className="text-xs font-bold uppercase tracking-wide text-stone-700">
                   {adminT("discounts.fields.value")}
@@ -513,19 +591,21 @@ export default function AdminDiscountsPage() {
               <div className="grid gap-2 sm:grid-cols-2">
                 {ruleOptions.map((rule) => (
                   <button
-                    key={rule}
+                    key={rule.key}
                     type="button"
                     onClick={() =>
-                      setSelectedRules((prev) => (prev.includes(rule) ? prev.filter((r) => r !== rule) : [...prev, rule]))
+                      setSelectedRules((prev) =>
+                        prev.includes(rule.key) ? prev.filter((r) => r !== rule.key) : [...prev, rule.key],
+                      )
                     }
                     className={cn(
                       "rounded-2xl border p-3 text-left text-sm transition",
-                      selectedRules.includes(rule)
+                      selectedRules.includes(rule.key)
                         ? "border-amber-400 bg-amber-50 text-amber-900"
                         : "border-cb-border bg-white text-stone-700",
                     )}
                   >
-                    {rule}
+                    {rule.label}
                   </button>
                 ))}
               </div>
@@ -535,9 +615,10 @@ export default function AdminDiscountsPage() {
           <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-cb-border/70 pt-4">
             <button
               type="submit"
-              className="rounded-2xl bg-[#E67E22] px-4 py-2 text-sm font-bold text-white shadow-[0_8px_24px_-14px_rgba(230,126,34,0.65)] transition hover:-translate-y-0.5 hover:bg-[#d46d16]"
+              disabled={creating}
+              className="rounded-2xl bg-[#E67E22] px-4 py-2 text-sm font-bold text-white shadow-[0_8px_24px_-14px_rgba(230,126,34,0.65)] transition hover:-translate-y-0.5 hover:bg-[#d46d16] disabled:opacity-60"
             >
-              {adminT("discounts.create")}
+              {creating ? adminT("discounts.creating") : adminT("discounts.create")}
             </button>
             <button
               type="button"
@@ -632,9 +713,19 @@ export default function AdminDiscountsPage() {
               <option value="value">{adminT("discounts.sortValue")}</option>
               <option value="expires">{adminT("discounts.sortExpires")}</option>
             </select>
-            <button type="button" className="inline-flex items-center gap-1 rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm font-semibold text-stone-800">
+            <ImportExportToolbar
+              module="discounts"
+              showHistory={false}
+              buttonClassName="inline-flex items-center gap-1 rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm font-semibold text-stone-800"
+              onImportSuccess={() => void load()}
+            />
+            <button
+              type="button"
+              onClick={() => setExportOpen(true)}
+              className="inline-flex items-center gap-1 rounded-2xl border border-cb-border bg-white px-3 py-2 text-sm font-semibold text-stone-800"
+            >
               <Filter className="h-4 w-4" />
-              {adminT("discounts.savedViews")}
+              {adminT("discounts.exportOnly")}
             </button>
           </div>
         </div>
@@ -661,12 +752,6 @@ export default function AdminDiscountsPage() {
                     {adminT("discounts.loading")}
                   </td>
                 </tr>
-              ) : error ? (
-                <tr>
-                  <td className="px-4 py-5 text-rose-700" colSpan={10}>
-                    {error}
-                  </td>
-                </tr>
               ) : pagedRows.length === 0 ? (
                 <tr>
                   <td className="px-4 py-8 text-center text-stone-700" colSpan={10}>
@@ -682,9 +767,18 @@ export default function AdminDiscountsPage() {
                       idx % 2 === 0 ? "bg-transparent" : "bg-cb-surface/30",
                     )}
                   >
-                    <td className="px-4 py-3 font-bold text-stone-900">{d.code}</td>
+                    <td className="px-4 py-3 font-bold text-stone-900">
+                      <button
+                        type="button"
+                        className="hover:text-amber-800"
+                        onClick={() => copyCode(d.code)}
+                        title={adminT("discounts.copyCode")}
+                      >
+                        {d.code}
+                      </button>
+                    </td>
                     <td className="px-4 py-3 text-stone-800">
-                      {d.type === "percent" ? `${d.value}%` : `EGP ${d.value}`}
+                      {kindLabel(d)} — {d.type === "percent" ? `${d.value}%` : `EGP ${d.value}`}
                     </td>
                     <td className="px-4 py-3">
                       <span className={cn("rounded-full px-2 py-1 text-[11px] font-bold", statusClass(d.statusKey))}>{d.status}</span>
@@ -705,6 +799,20 @@ export default function AdminDiscountsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditTarget(d)}
+                          className="rounded-lg border border-cb-border px-2 py-1 text-[11px] font-bold text-stone-800"
+                        >
+                          <Pencil className="inline h-3 w-3" /> {adminT("discounts.edit")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void duplicateDiscount(d)}
+                          className="rounded-lg border border-cb-border px-2 py-1 text-[11px] font-bold text-stone-800"
+                        >
+                          <Copy className="inline h-3 w-3" /> {adminT("discounts.duplicate")}
+                        </button>
                         <button
                           type="button"
                           onClick={() => void toggleActive(d)}
@@ -789,6 +897,19 @@ export default function AdminDiscountsPage() {
           </article>
         ))}
       </section>
+
+      <DiscountEditModal
+        discount={editTarget}
+        onClose={() => setEditTarget(null)}
+        onSaved={() => {
+          setSuccess(adminT("discounts.savedSuccess"));
+          void load();
+        }}
+        adminT={adminT}
+        apiErr={apiErr}
+      />
+
+      <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} module="discounts" />
     </section>
   );
 }

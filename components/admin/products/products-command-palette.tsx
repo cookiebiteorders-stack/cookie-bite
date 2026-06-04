@@ -19,6 +19,7 @@ type Props = {
   onAddProduct: () => void;
   onFocusSearch: () => void;
   onRefresh: () => void;
+  onSync?: () => void;
   onOpenAdvanced: () => void;
   onExport: () => void;
 };
@@ -29,6 +30,7 @@ export function ProductsCommandPalette({
   onAddProduct,
   onFocusSearch,
   onRefresh,
+  onSync,
   onOpenAdvanced,
   onExport,
 }: Props) {
@@ -47,8 +49,11 @@ export function ProductsCommandPalette({
       { id: "adv", label: "فلاتر متقدمة", icon: Command, action: onOpenAdvanced },
       { id: "export", label: "تصدير CSV للصفحة الحالية", icon: Upload, action: onExport },
       { id: "refresh", label: "إعادة التحميل", icon: RefreshCw, action: onRefresh },
+      ...(onSync
+        ? [{ id: "sync", label: "مزامنة المتجر (كاش + قائمة)", icon: RefreshCw, action: onSync }]
+        : []),
     ],
-    [onAddProduct, onExport, onFocusSearch, onOpenAdvanced, onRefresh],
+    [onAddProduct, onExport, onFocusSearch, onOpenAdvanced, onRefresh, onSync],
   );
 
   const filtered = useMemo(() => {

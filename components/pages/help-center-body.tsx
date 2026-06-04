@@ -23,6 +23,7 @@ import {
 import { SectionHeading } from "@/components/sections/section-heading";
 import { useLanguage } from "@/components/providers/language-provider";
 import { BRAND } from "@/lib/brand";
+import { helpArticlePathForKey, type HelpCenterArticleKey } from "@/lib/content/help-center";
 import { cn } from "@/lib/utils";
 
 type CategoryId =
@@ -33,33 +34,7 @@ type CategoryId =
   | "products"
   | "gifting";
 
-type ArticleKey =
-  | "trackOrder"
-  | "deliveryZones"
-  | "freeShipping"
-  | "deliveryTime"
-  | "changeAddress"
-  | "cancelOrder"
-  | "damagedOrder"
-  | "wrongItem"
-  | "refundTime"
-  | "returnsPolicy"
-  | "createAccount"
-  | "resetPassword"
-  | "socialLogin"
-  | "updateProfile"
-  | "paymentMethods"
-  | "codAvailable"
-  | "cardDeclined"
-  | "downloadInvoice"
-  | "ingredients"
-  | "allergens"
-  | "storage"
-  | "shelfLife"
-  | "giftNotes"
-  | "giftBoxes"
-  | "corporate"
-  | "customCookies";
+type ArticleKey = HelpCenterArticleKey;
 
 type Article = {
   key: ArticleKey;
@@ -70,38 +45,34 @@ type Article = {
 };
 
 const ARTICLES: Article[] = [
-  // Orders & delivery
-  { key: "trackOrder", category: "orders", href: "/account", keywords: "track order shipment تتبع شحنة طلب" },
-  { key: "deliveryZones", category: "orders", href: "/delivery/areas", keywords: "delivery zone area cairo توصيل منطقة قاهرة" },
-  { key: "freeShipping", category: "orders", href: "/help/delivery", keywords: "free delivery threshold مجاني شحن حد" },
-  { key: "deliveryTime", category: "orders", href: "/help/delivery", keywords: "delivery time how long توصيل وقت مدة" },
-  { key: "changeAddress", category: "orders", href: "/contact", keywords: "change address edit عنوان تعديل" },
-  { key: "cancelOrder", category: "orders", href: "/contact", keywords: "cancel order إلغاء طلب" },
-  // Returns
-  { key: "damagedOrder", category: "returns", href: "/help/returns", keywords: "damaged broken تالف كسر" },
-  { key: "wrongItem", category: "returns", href: "/help/returns", keywords: "wrong item missing خاطئ ناقص" },
-  { key: "refundTime", category: "returns", href: "/help/returns", keywords: "refund time money استرداد مبلغ وقت" },
-  { key: "returnsPolicy", category: "returns", href: "/help/returns", keywords: "returns policy سياسة استرجاع" },
-  // Account
-  { key: "createAccount", category: "account", href: "/sign-up", keywords: "create account sign up حساب تسجيل إنشاء" },
-  { key: "resetPassword", category: "account", href: "/sign-in", keywords: "password reset forgot كلمة سر نسيت" },
-  { key: "socialLogin", category: "account", href: "/sign-in", keywords: "google apple social oauth جوجل آبل" },
-  { key: "updateProfile", category: "account", href: "/account/settings", keywords: "profile update edit ملف تحديث" },
-  // Payment
-  { key: "paymentMethods", category: "payment", href: "/help/payments", keywords: "payment cards visa mastercard دفع بطاقة فيزا" },
-  { key: "codAvailable", category: "payment", href: "/help/payments", keywords: "cash delivery cod نقدي عند استلام" },
-  { key: "cardDeclined", category: "payment", href: "/contact", keywords: "card declined failed بطاقة رفض فشل" },
-  { key: "downloadInvoice", category: "payment", href: "/account", keywords: "invoice receipt download فاتورة إيصال تنزيل" },
-  // Products
-  { key: "ingredients", category: "products", href: "/our-cookies", keywords: "ingredients butter chocolate مكونات زبدة شوكولاتة" },
-  { key: "allergens", category: "products", href: "/help/allergens", keywords: "allergen nut gluten حساسية مكسرات جلوتين" },
-  { key: "storage", category: "products", href: "/help/faq", keywords: "storage store keep تخزين حفظ" },
-  { key: "shelfLife", category: "products", href: "/help/faq", keywords: "fresh shelf life طزاج صلاحية" },
-  // Gifting
-  { key: "giftNotes", category: "gifting", href: "/help/gifting", keywords: "gift note handwritten ملاحظة هدية خط يد" },
-  { key: "giftBoxes", category: "gifting", href: "/help/gifting", keywords: "gift box set صندوق هدية" },
-  { key: "corporate", category: "gifting", href: "/corporate-gifting", keywords: "corporate bulk شركات كميات" },
-  { key: "customCookies", category: "gifting", href: "/contact", keywords: "custom design تصميم مخصص" },
+  { key: "trackOrder", category: "orders", href: helpArticlePathForKey("trackOrder"), keywords: "track order shipment تتبع شحنة طلب" },
+  { key: "deliveryZones", category: "orders", href: helpArticlePathForKey("deliveryZones"), keywords: "delivery zone area cairo توصيل منطقة قاهرة" },
+  { key: "freeShipping", category: "orders", href: helpArticlePathForKey("freeShipping"), keywords: "free delivery threshold مجاني شحن حد" },
+  { key: "deliveryTime", category: "orders", href: helpArticlePathForKey("deliveryTime"), keywords: "delivery time how long توصيل وقت مدة" },
+  { key: "changeAddress", category: "orders", href: helpArticlePathForKey("changeAddress"), keywords: "change address edit عنوان تعديل" },
+  { key: "cancelOrder", category: "orders", href: helpArticlePathForKey("cancelOrder"), keywords: "cancel order إلغاء طلب" },
+  { key: "damagedOrder", category: "returns", href: helpArticlePathForKey("damagedOrder"), keywords: "damaged broken تالف كسر" },
+  { key: "wrongItem", category: "returns", href: helpArticlePathForKey("wrongItem"), keywords: "wrong item missing خاطئ ناقص" },
+  { key: "refundTime", category: "returns", href: helpArticlePathForKey("refundTime"), keywords: "refund time money استرداد مبلغ وقت" },
+  { key: "returnsPolicy", category: "returns", href: helpArticlePathForKey("returnsPolicy"), keywords: "returns policy سياسة استرجاع" },
+  { key: "createAccount", category: "account", href: helpArticlePathForKey("createAccount"), keywords: "create account sign up login حساب تسجيل إنشاء دخول" },
+  { key: "resetPassword", category: "account", href: helpArticlePathForKey("resetPassword"), keywords: "password reset forgot كلمة سر نسيت" },
+  { key: "socialLogin", category: "account", href: helpArticlePathForKey("socialLogin"), keywords: "google apple social oauth جوجل آبل" },
+  { key: "updateProfile", category: "account", href: helpArticlePathForKey("updateProfile"), keywords: "profile update edit ملف تحديث" },
+  { key: "deleteAccount", category: "account", href: helpArticlePathForKey("deleteAccount"), keywords: "delete account remove حذف حساب" },
+  { key: "paymentMethods", category: "payment", href: helpArticlePathForKey("paymentMethods"), keywords: "payment cards visa mastercard دفع بطاقة فيزا" },
+  { key: "codAvailable", category: "payment", href: helpArticlePathForKey("codAvailable"), keywords: "cash delivery cod نقدي عند استلام" },
+  { key: "cardDeclined", category: "payment", href: helpArticlePathForKey("cardDeclined"), keywords: "card declined failed بطاقة رفض فشل" },
+  { key: "downloadInvoice", category: "payment", href: helpArticlePathForKey("downloadInvoice"), keywords: "invoice receipt download فاتورة إيصال تنزيل" },
+  { key: "promoCode", category: "payment", href: helpArticlePathForKey("promoCode"), keywords: "promo discount coupon code خصم كوبون" },
+  { key: "ingredients", category: "products", href: helpArticlePathForKey("ingredients"), keywords: "ingredients butter chocolate مكونات زبدة شوكولاتة" },
+  { key: "allergens", category: "products", href: helpArticlePathForKey("allergens"), keywords: "allergen nut gluten حساسية مكسرات جلوتين" },
+  { key: "storage", category: "products", href: helpArticlePathForKey("storage"), keywords: "storage store keep تخزين حفظ" },
+  { key: "shelfLife", category: "products", href: helpArticlePathForKey("shelfLife"), keywords: "fresh shelf life طزاج صلاحية" },
+  { key: "giftNotes", category: "gifting", href: helpArticlePathForKey("giftNotes"), keywords: "gift note handwritten ملاحظة هدية خط يد" },
+  { key: "giftBoxes", category: "gifting", href: helpArticlePathForKey("giftBoxes"), keywords: "gift box set صندوق هدية تغليف" },
+  { key: "corporate", category: "gifting", href: helpArticlePathForKey("corporate"), keywords: "corporate bulk شركات كميات" },
+  { key: "customCookies", category: "gifting", href: helpArticlePathForKey("customCookies"), keywords: "custom design تصميم مخصص" },
 ];
 
 const POPULAR_KEYS: ArticleKey[] = [

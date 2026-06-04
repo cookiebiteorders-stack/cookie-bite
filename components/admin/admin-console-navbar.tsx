@@ -52,11 +52,11 @@ export function AdminConsoleNavbar() {
       />
       <aside
         className={cn(
-          "absolute inset-y-0 start-0 flex w-[min(100%,280px)] flex-col border-e border-cb-border bg-cb-surface-2 p-4 shadow-xl transition-transform duration-200",
+          "absolute inset-y-0 start-0 flex w-[min(100%,280px)] flex-col border-e border-cb-border bg-cb-surface-2 py-4 shadow-xl transition-transform duration-200",
           adminNavOpen ? "translate-x-0" : "-translate-x-full rtl:translate-x-full",
         )}
       >
-        <div className="mb-4 flex shrink-0 items-center justify-between gap-2">
+        <div className="mb-4 flex shrink-0 items-center justify-between gap-2 px-4">
           <div>
             <p className="font-playful text-xl text-cb-brand-logo">Cookie Bite</p>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cb-text-muted">
@@ -72,7 +72,7 @@ export function AdminConsoleNavbar() {
             <span className="sr-only">{t("adminShell.close")}</span>
           </button>
         </div>
-        <div className="admin-sidebar-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain pe-1 [scrollbar-gutter:stable]">
+        <div className="admin-sidebar-scroll min-h-0 w-full flex-1 overflow-y-auto overscroll-y-contain [scrollbar-gutter:stable]">
           <AdminConsoleNavLinks
             items={navItems}
             pathname={pathname}
@@ -81,7 +81,7 @@ export function AdminConsoleNavbar() {
         </div>
         <Link
           href="/"
-          className="mt-3 inline-flex shrink-0 items-center gap-2 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm font-semibold text-cb-text-strong"
+          className="mx-4 mt-3 inline-flex shrink-0 items-center gap-2 rounded-xl border border-cb-border bg-cb-surface px-3 py-2 text-sm font-semibold text-cb-text-strong"
           onClick={() => setAdminNavOpen?.(false)}
         >
           <Store className="h-4 w-4" aria-hidden />

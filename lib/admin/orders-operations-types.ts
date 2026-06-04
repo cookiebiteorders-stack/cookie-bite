@@ -23,6 +23,10 @@ export type AdminOrderRow = {
   payment_status: PaymentStatus;
   shipping_address?: Record<string, unknown> | null;
   notes?: string | null;
+  order_type?: string | null;
+  delivery_slot?: string | null;
+  scheduled_delivery_date?: string | null;
+  scheduled_delivery_time?: string | null;
   created_at: string;
   updated_at?: string | null;
   promo_code?: string | null;

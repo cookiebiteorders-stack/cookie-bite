@@ -20,19 +20,19 @@
 | 6 | صفحة كشف الهدية | 🟢 منفّذ | migration `0042` + `GET/PATCH /api/orders/reveal/[token]` + `/gift-reveal/[token]` + زر «Reveal link» في الحساب |
 | 7 | Mystery Box | 🟢 منفّذ | migration `0043` + `POST /api/mystery-box/generate` + `/mystery-box` + إضافة للسلة كصندوق هدية |
 | 8 | قوالب المناسبات | 🟢 منفّذ | migration `0044` + `GET /api/occasion-templates` + شريط قوالب في `/gift-box/build` |
-| 9 | لوحة الولاء | 🟡 API `/api/loyalty` — واجهة حساب محدودة |
-| 10 | مكافآت مضاعفة على الصناديق | 🔴 |
-| 11 | إحالة مرئية | 🟡 API موجود |
-| 12 | لوحة مطبخ (أدمن) | 🔴 |
-| 13 | تنبيهات عاجلة | 🟡 إشعارات staff جزئية |
-| 14 | تقارير إضافات/صناديق | 🔴 |
+| 9 | لوحة الولاء | 🟢 `LoyaltyDashboard` في `/account` + `/api/loyalty` |
+| 10 | مكافآت مضاعفة على الصناديق | 🟢 `awardLoyaltyPointsForPaidOrder` ×2 لـ `gift_box` |
+| 11 | إحالة مرئية | 🟢 كود + تطبيق في لوحة الولاء |
+| 12 | لوحة مطبخ (أدمن) | 🟢 `/admin/kitchen` + `/api/admin/kitchen/orders` |
+| 13 | تنبيهات عاجلة | 🟢 `isUrgentOrder` في لوحة الطلبات |
+| 14 | تقارير إضافات/صناديق | 🟢 `/api/admin/reports/gift-addon-insights` + لوحة التقارير |
 | 15 | Mrs. Cookie للعملاء | 🟡 Mr Brownie / demo chat |
 
 ## المرحلة 3 — B2B
 
 | # | الميزة | الحالة |
 |---|--------|--------|
-| 16 | B2B متعدد العناوين | 🔴 |
+| 16 | B2B متعدد العناوين | 🟢 migration `0047` + `/api/corporate/bulk-delivery` + نموذج في `/corporate-gifting` |
 | 17 | كتالوج B2B + فواتير | 🟡 `/corporate-gifting` + فواتير أدمن |
 
 ---

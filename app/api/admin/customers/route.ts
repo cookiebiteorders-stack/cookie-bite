@@ -1,8 +1,11 @@
+import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { requireAdminAccess } from "@/lib/admin/require-admin";
+import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-admin";
+import { writeAuditLog } from "@/lib/admin/audit";
 import { bilingualError } from "@/lib/validations";
+import { syncContactToResend } from "@/lib/email/resend-contacts";
 import type { AdminCustomerRow, CustomerSegments, CustomerStats } from "@/lib/admin/crm-types";
 import { buildIlikeOrClause } from "@/lib/security/sanitize-filter";
 
@@ -224,4 +227,99 @@ export async function GET(req: NextRequest) {
       can_delete: actor.permission === "full",
     },
   });
+}
+
+const createSchema = z.object({
+  email: z.string().email(),
+  full_name: z.string().min(1).max(160),
+  phone: z.string().min(6).max(40).optional(),
+  phone_secondary: z.string().max(40).optional(),
+  profile_notes: z.string().max(2000).optional(),
+  points: z.number().int().min(0).max(2_000_000).default(0),
+  address: z
+    .object({
+      label: z.string().max(60).optional(),
+      recipient: z.string().min(1).max(160),
+      phone: z.string().min(6).max(40),
+      street: z.string().min(1).max(240),
+      city: z.string().min(1).max(120),
+      governorate: z.string().max(120).optional(),
+      is_default: z.boolean().default(true),
+    })
+    .optional(),
+});
+
+export async function POST(req: NextRequest) {
+  const actor = await requireAdminAccess("customers");
+  requireWritePermission(actor);
+
+  const parsed = createSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json(bilingualError("Invalid payload", "بيانات غير صالحة"), { status: 400 });
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const email = parsed.data.email.trim().toLowerCase();
+
+  const { data: existing } = await supabase.from("users").select("id,role").eq("email", email).maybeSingle();
+  if (existing) {
+    return NextResponse.json(
+      bilingualError("Email already registered", "البريد مسجّل مسبقاً"),
+      { status: 409 },
+    );
+  }
+
+  const { data: user, error: userErr } = await supabase
+    .from("users")
+    .insert({
+      clerk_user_id: `crm-manual:${randomUUID()}`,
+      email,
+      full_name: parsed.data.full_name.trim(),
+      phone: parsed.data.phone?.trim() ?? null,
+      phone_secondary: parsed.data.phone_secondary?.trim() ?? null,
+      profile_notes: parsed.data.profile_notes?.trim() ?? null,
+      points: parsed.data.points,
+      role: "customer",
+    })
+    .select("id,email,full_name,phone,points,created_at")
+    .single();
+
+  if (userErr || !user) {
+    return NextResponse.json(
+      bilingualError("Failed to create customer", "فشل إنشاء العميل"),
+      { status: 500 },
+    );
+  }
+
+  if (parsed.data.address) {
+    const a = parsed.data.address;
+    await supabase.from("addresses").insert({
+      user_id: user.id,
+      label: a.label?.trim() || "المنزل",
+      recipient: a.recipient.trim(),
+      phone: a.phone.trim(),
+      street: a.street.trim(),
+      city: a.city.trim(),
+      governorate: a.governorate?.trim() ?? null,
+      is_default: a.is_default,
+    });
+  }
+
+  await syncContactToResend({
+    email,
+    firstName: parsed.data.full_name.split(/\s+/)[0],
+    unsubscribed: false,
+    source: "crm_manual",
+  });
+
+  await writeAuditLog({
+    actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
+    action: "customers.create",
+    module: "customers",
+    entity_id: user.id as string,
+    after: user,
+    request: req,
+  });
+
+  return NextResponse.json({ ok: true, customer: user }, { status: 201 });
 }

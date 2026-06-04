@@ -2,6 +2,7 @@ import { verifyPaymobTransactionHmac } from "@/lib/paymob/hmac";
 import { resolvePaymobHmacSecret } from "@/lib/paymob/env";
 import { updateOrderPaymentByPaymobAcceptOrderId } from "@/lib/db/orders";
 import { schedulePaymentConfirmed } from "@/lib/notifications/schedule";
+import { awardLoyaltyPointsForPaidOrder } from "@/lib/loyalty/award-order-points";
 
 type PaymobCallbackBody = {
   obj?: Record<string, unknown>;
@@ -62,6 +63,9 @@ export async function POST(req: Request) {
 
   if (success && updated.ok && updated.becamePaid) {
     schedulePaymentConfirmed(updated.orderId);
+    void awardLoyaltyPointsForPaidOrder(updated.orderId).catch((err) =>
+      console.error("loyalty award after paymob", err),
+    );
   }
 
   return Response.json({ ok: true });

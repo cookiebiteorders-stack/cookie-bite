@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PdpMediaGallery } from "@/components/shop/pdp-media-gallery";
 import { PdpActions } from "@/components/shop/pdp-actions";
 import { ProductCard } from "@/components/product/product-card";
@@ -19,6 +19,7 @@ import {
   buildProductMetadata,
 } from "@/lib/seo";
 import { getLangFromCookies } from "@/lib/seo/server";
+import { getServerT } from "@/lib/i18n/server-translate";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -40,6 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const lang = await getLangFromCookies();
+  const t = getServerT(lang);
   const product = await getActivePdpProduct(slug, lang);
   if (!product) notFound();
 
@@ -71,8 +73,12 @@ export default async function ProductPage({ params }: Props) {
           href="/shop"
           className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-cb-terracotta-dark hover:underline"
         >
-          <ChevronLeft className="h-4 w-4" aria-hidden />
-          Back to shop
+          {lang === "ar" ? (
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          ) : (
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+          )}
+          {t("product.backToShop")}
         </Link>
 
         <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
@@ -102,8 +108,8 @@ export default async function ProductPage({ params }: Props) {
             {product.stock != null && product.stock <= 10 ? (
               <p className="mt-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
                 {product.stock === 0
-                  ? "Currently out of stock online — contact us on WhatsApp."
-                  : `Only ${product.stock} left in stock.`}
+                  ? t("product.stockOnlineOut")
+                  : t("product.stockLeft", { count: product.stock })}
               </p>
             ) : null}
 
@@ -113,7 +119,7 @@ export default async function ProductPage({ params }: Props) {
                   href="#pdp-addons"
                   className={buttonClassName("outline", "mb-3 inline-flex rounded-full px-5 py-2 text-sm")}
                 >
-                  View Add-ons
+                  {t("product.viewAddons")}
                 </a>
               ) : null}
               <PdpActions product={product} linkedAddons={linkedAddons} />
@@ -124,22 +130,22 @@ export default async function ProductPage({ params }: Props) {
 
             <div className="mt-10 space-y-4 rounded-3xl border border-cb-border bg-cb-surface p-6">
               <h2 className="font-serif text-lg font-semibold text-cb-text-strong">
-                Details
+                {t("product.pdpDetails")}
               </h2>
               <ul className="space-y-2 text-sm text-cb-text">
                 <li>
-                  <strong className="text-cb-text-strong">Ingredients:</strong> premium
-                  flour, butter, natural flavors — full list on packaging.
+                  <strong className="text-cb-text-strong">{t("product.pdpIngredients")}</strong>{" "}
+                  {t("product.pdpIngredientsBody")}
                 </li>
                 <li>
-                  <strong className="text-cb-text-strong">Storage:</strong> airtight
-                  container · enjoy within a few days for best texture.
+                  <strong className="text-cb-text-strong">{t("product.pdpStorage")}</strong>{" "}
+                  {t("product.pdpStorageBody")}
                 </li>
                 <li>
-                  <strong className="text-cb-text-strong">Delivery:</strong> New Cairo &
-                  surrounding areas — see{" "}
+                  <strong className="text-cb-text-strong">{t("product.pdpDelivery")}</strong>{" "}
+                  {t("product.pdpDeliveryBody")}{" "}
                   <Link href="/delivery/new-cairo" className="font-bold text-cb-terracotta-dark underline">
-                    delivery guide
+                    {t("product.pdpDeliveryLink")}
                   </Link>
                   .
                 </li>
@@ -151,7 +157,7 @@ export default async function ProductPage({ params }: Props) {
         {carousel.length > 0 ? (
           <section className="mt-20">
             <h2 className="font-serif text-2xl font-semibold text-cb-text-strong">
-              You might also love
+              {t("product.youMightAlsoLove")}
             </h2>
             <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {carousel.map((p) => (
@@ -163,7 +169,7 @@ export default async function ProductPage({ params }: Props) {
 
         <div className="mt-12 text-center">
           <Link href="/shop" className={buttonClassName("outline", "inline-flex rounded-full px-8")}>
-            View all cookies
+            {t("product.viewAllCookies")}
           </Link>
         </div>
       </div>

@@ -1,25 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { motion, useReducedMotion } from "motion/react";
-import {
-  Bell,
-  ChevronDown,
-  Download,
-  Mail,
-  RefreshCw,
-  Sparkles,
-  Upload,
-  UserPlus,
-  Users,
-  Zap,
-} from "lucide-react";
-import type { AdminCustomerRow } from "@/lib/admin/crm-types";
+import { Loader2, Mail, RefreshCw, Sparkles, UserPlus, Users, Zap } from "lucide-react";
 import { useCustomersCrmStore } from "@/stores/customers-crm-store";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/providers/language-provider";
-import { parseCsv } from "@/lib/csv/parse-csv";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { CrmHeroStats } from "@/components/admin/customers/crm-hero-stats";
 import { CrmAnalyticsStrip } from "@/components/admin/customers/crm-analytics-strip";
@@ -27,39 +16,20 @@ import { CrmMainWorkspace } from "@/components/admin/customers/crm-main-workspac
 import { CustomerProfileDrawer } from "@/components/admin/customers/customer-profile-drawer";
 import { CrmCommandPalette } from "@/components/admin/customers/crm-command-palette";
 import { CrmToasts } from "@/components/admin/customers/crm-toasts";
-
-function exportCustomersCsv(rows: AdminCustomerRow[]) {
-  const headers = ["id", "email", "full_name", "points", "tier", "orders", "spent", "last_order", "created_at"];
-  const lines = [
-    headers.join(","),
-    ...rows.map((c) =>
-      [
-        c.id,
-        `"${c.email.replace(/"/g, '""')}"`,
-        `"${(c.full_name ?? "").replace(/"/g, '""')}"`,
-        c.points,
-        c.loyalty_tier,
-        c.total_orders,
-        c.total_spent_egp,
-        c.last_order_at ?? "",
-        c.created_at,
-      ].join(","),
-    ),
-  ];
-  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `customers-page-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+import { ImportExportToolbar } from "@/components/admin/import-export/import-export-toolbar";
+import { ExportModal } from "@/components/admin/import-export/export-modal";
+import { CrmCampaignModal } from "@/components/admin/customers/crm-campaign-modal";
+import {
+  CrmQuickActionsMenu,
+  type QuickActionId,
+} from "@/components/admin/customers/crm-quick-actions-menu";
 
 export function CustomersCrmDashboard() {
   const reduceMotion = useReducedMotion();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useLanguage();
   const searchRef = useRef<HTMLInputElement>(null);
-  const importRef = useRef<HTMLInputElement>(null);
   const loadCustomers = useCustomersCrmStore((s) => s.loadCustomers);
   const customers = useCustomersCrmStore((s) => s.customers);
   const stats = useCustomersCrmStore((s) => s.stats);
@@ -78,7 +48,9 @@ export function CustomersCrmDashboard() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [cmdkOpen, setCmdkOpen] = useState(false);
-  const [quickOpen, setQuickOpen] = useState(false);
+  const [campaignOpen, setCampaignOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   const canWrite = Boolean(meta?.can_write);
 
@@ -87,46 +59,28 @@ export function CustomersCrmDashboard() {
     setProfileOpen(true);
   }, []);
 
-  const exportPage = useCallback(() => {
-    exportCustomersCsv(customers);
-    pushToast("تم تصدير الصفحة الحالية إلى CSV.", "success");
-  }, [customers, pushToast]);
+  const recipientEmails = customers.map((c) => c.email);
 
-  const importNewsletterCsv = useCallback(
-    async (file: File) => {
-      const text = await file.text();
-      const grid = parseCsv(text);
-      if (!grid.length) {
-        pushToast("ملف فارغ.", "error");
-        return;
-      }
-      const header = grid[0]!.map((h) => h.trim().toLowerCase());
-      const emailIdx = header.findIndex((h) => h === "email" || h === "e-mail");
-      if (emailIdx < 0) {
-        pushToast("CSV يحتاج عمود email", "error");
-        return;
-      }
-      const emails: string[] = [];
-      for (let r = 1; r < grid.length; r++) {
-        const cell = grid[r]![emailIdx]?.trim();
-        if (cell && cell.includes("@")) emails.push(cell);
-      }
-      if (!emails.length) {
-        pushToast("لا توجد عناوين بريد.", "error");
-        return;
-      }
-      try {
-        await fetchJson("/api/admin/customers/import-newsletter", {
-          method: "POST",
-          jsonBody: { emails },
-        });
-        pushToast(`تم استيراد ${emails.length} بريد للحملات (اشتراك).`, "success");
-      } catch (e) {
-        pushToast(e instanceof Error ? e.message : "فشل الاستيراد", "error");
-      }
-    },
-    [pushToast],
-  );
+  const runSync = useCallback(async () => {
+    if (!canWrite) {
+      pushToast("صلاحية الكتابة مطلوبة للمزامنة.", "error");
+      return;
+    }
+    setSyncing(true);
+    try {
+      const res = await fetchJson<{
+        message?: { ar?: string };
+        customers: number;
+        resendSynced: number;
+      }>("/api/admin/customers/sync", { method: "POST" });
+      await loadCustomers();
+      pushToast(res.message?.ar ?? `تمت مزامنة ${res.customers} عميل.`, "success");
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "فشلت المزامنة", "error");
+    } finally {
+      setSyncing(false);
+    }
+  }, [canWrite, loadCustomers, pushToast]);
 
   const aiBatchInsight = useCallback(() => {
     const atRisk = stats.at_risk_proxy;
@@ -136,6 +90,43 @@ export function CustomersCrmDashboard() {
       "info",
     );
   }, [pushToast, stats.at_risk_proxy, stats.vip_gold_plus]);
+
+  const handleQuickAction = useCallback(
+    (id: QuickActionId) => {
+      switch (id) {
+        case "bulk_email":
+          setCampaignOpen(true);
+          break;
+        case "bulk_sms":
+          pushToast("SMS: فعّل مزوّد Sinch من الإعدادات لإرسال رسائل جماعية.", "info");
+          break;
+        case "tags":
+          setAdvancedFiltersOpen(true);
+          pushToast("استخدم الفلاتر المتقدمة لتجميع الشريحة ثم صدّر أو أرسل حملة.", "info");
+          break;
+        case "tier":
+          if (customers[0]) openProfile(customers[0].id);
+          else pushToast("لا يوجد عملاء في القائمة — عدّل الفلاتر.", "info");
+          break;
+        case "export":
+          setExportModalOpen(true);
+          break;
+        case "insights":
+          aiBatchInsight();
+          break;
+        default:
+          break;
+      }
+    },
+    [aiBatchInsight, customers, openProfile, pushToast, setAdvancedFiltersOpen],
+  );
+
+  useEffect(() => {
+    if (searchParams.get("created")) {
+      pushToast("تم إنشاء العميل بنجاح.", "success");
+      router.replace("/admin/customers");
+    }
+  }, [searchParams, pushToast, router]);
 
   useEffect(() => {
     const cancel = scheduleEffectTask(() => {
@@ -165,12 +156,12 @@ export function CustomersCrmDashboard() {
       }
       if ((e.key === "n" || e.key === "N") && !typing && !profileOpen && !cmdkOpen) {
         e.preventDefault();
-        pushToast("إضافة عميل — اربط بنموذج التسجيل أو استيراد CSV لاحقاً.", "info");
+        router.push("/admin/customers/new");
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [profileOpen, cmdkOpen, pushToast]);
+  }, [profileOpen, cmdkOpen, pushToast, router]);
 
   return (
     <section className="relative space-y-6 pb-20" aria-labelledby="crm-dashboard-title">
@@ -178,7 +169,7 @@ export function CustomersCrmDashboard() {
         initial={reduceMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          "admin-panel-surface relative flex flex-col gap-4 overflow-hidden rounded-2xl p-5 shadow-sm",
+          "admin-panel-surface relative flex flex-col gap-4 overflow-visible rounded-2xl p-5 shadow-sm",
         )}
       >
         <div className="admin-panel-scrim" aria-hidden />
@@ -206,47 +197,25 @@ export function CustomersCrmDashboard() {
         </div>
         <div className="relative z-[1] w-full overflow-x-auto">
           <div className="flex min-w-max flex-nowrap items-center gap-2 pb-1">
-            <button
-              type="button"
-              onClick={() => pushToast("إضافة عميل — استخدم لوحة المستخدمين أو الاستيراد.", "info")}
+            <Link
+              href="/admin/customers/new"
               className="admin-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
             >
               <UserPlus className="h-4 w-4 shrink-0" aria-hidden />
               إضافة عميل
-            </button>
-            <button
-              type="button"
-              disabled={!canWrite}
-              title={canWrite ? "استيراد عمود email إلى قائمة النشرة للحملات" : "صلاحية الكتابة مطلوبة"}
-              onClick={() => importRef.current?.click()}
-              className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-50"
-            >
-              <Upload className="h-4 w-4 shrink-0" aria-hidden />
-              استيراد
-            </button>
-            <input
-              ref={importRef}
-              type="file"
-              accept=".csv,text/csv"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                if (f) void importNewsletterCsv(f);
-              }}
+            </Link>
+            <ImportExportToolbar
+              module="customers"
+              canWrite={canWrite}
+              showHistory={false}
+              buttonClassName="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
+              onImportSuccess={() => void loadCustomers()}
             />
             <button
               type="button"
-              onClick={exportPage}
-              className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
-            >
-              <Download className="h-4 w-4 shrink-0" aria-hidden />
-              تصدير CSV
-            </button>
-            <button
-              type="button"
-              onClick={() => pushToast("إرسال حملة — اربط بـ Resend/Sinch لاحقاً.", "info")}
-              className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
+              disabled={!canWrite}
+              onClick={() => setCampaignOpen(true)}
+              className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-50"
             >
               <Mail className="h-4 w-4 shrink-0" aria-hidden />
               حملة
@@ -264,10 +233,15 @@ export function CustomersCrmDashboard() {
             </button>
             <button
               type="button"
-              onClick={() => void loadCustomers()}
-              className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
+              disabled={syncing || !canWrite}
+              onClick={() => void runSync()}
+              className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-50"
             >
-              <Zap className="h-4 w-4 shrink-0" aria-hidden />
+              {syncing ? (
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+              ) : (
+                <Zap className="h-4 w-4 shrink-0" aria-hidden />
+              )}
               مزامنة
             </button>
             <button
@@ -278,60 +252,7 @@ export function CustomersCrmDashboard() {
               <RefreshCw className="h-4 w-4 shrink-0" aria-hidden />
               تحديث
             </button>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setQuickOpen((o) => !o)}
-                className="admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
-                aria-expanded={quickOpen}
-                aria-haspopup="true"
-              >
-                <Bell className="h-4 w-4 shrink-0" aria-hidden />
-                إجراءات سريعة
-                <ChevronDown className={cn("h-3.5 w-3.5 transition", quickOpen && "rotate-180")} aria-hidden />
-              </button>
-              {quickOpen ? (
-                <ul
-                  className="absolute end-0 z-30 mt-1 min-w-[220px] overflow-hidden rounded-xl border border-cb-border bg-cb-surface-elevated py-1 text-start shadow-xl"
-                  onMouseLeave={() => setQuickOpen(false)}
-                  role="menu"
-                >
-                  {(
-                    [
-                      "بريد جماعي",
-                      "SMS جماعي",
-                      "تعيين وسوم",
-                      "تحديث المستوى",
-                      "تصدير تقارير",
-                      "توليد رؤى",
-                    ] as const
-                  ).map((label) => (
-                    <li key={label}>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="flex w-full px-3 py-2 text-xs font-semibold text-stone-800 hover:bg-amber-50"
-                        onClick={() => {
-                          setQuickOpen(false);
-                          if (label === "تصدير تقارير") exportPage();
-                          else if (label === "تعيين وسوم") {
-                            setAdvancedFiltersOpen(true);
-                            pushToast("استخدم الفلاتر المتقدمة ثم صدّر CSV لتجميع الشريحة.", "info");
-                          } else if (label === "توليد رؤى") void aiBatchInsight();
-                          else
-                            pushToast(
-                              `${label}: يتطلب ربط مزوّد رسائل — استخدم الحملة أو البريد لاحقاً.`,
-                              "info",
-                            );
-                        }}
-                      >
-                        {label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
+            <CrmQuickActionsMenu onAction={handleQuickAction} />
             <button
               type="button"
               onClick={() => aiBatchInsight()}
@@ -364,8 +285,24 @@ export function CustomersCrmDashboard() {
         onFocusSearch={() => searchRef.current?.focus()}
         onRefresh={() => void loadCustomers()}
         onOpenAdvanced={() => setAdvancedFiltersOpen(true)}
-        onExport={exportPage}
+        onExport={() => setExportModalOpen(true)}
+        onAddCustomer={() => router.push("/admin/customers/new")}
+        onCampaign={() => setCampaignOpen(true)}
         onAiInsight={aiBatchInsight}
+      />
+
+      <CrmCampaignModal
+        open={campaignOpen}
+        onClose={() => setCampaignOpen(false)}
+        recipientEmails={recipientEmails}
+        canWrite={canWrite}
+        onSent={() => pushToast("انتهت الحملة — راجع سجل التدقيق للتفاصيل.", "success")}
+      />
+
+      <ExportModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        module="customers"
       />
 
       <CrmToasts />

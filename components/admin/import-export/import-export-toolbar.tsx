@@ -16,6 +16,9 @@ type Props = {
   onImportSuccess?: () => void;
   className?: string;
   size?: "sm" | "md";
+  /** Override button classes (e.g. admin-btn-outline on orders toolbar) */
+  buttonClassName?: string;
+  showHistory?: boolean;
 };
 
 export function ImportExportToolbar({
@@ -25,6 +28,8 @@ export function ImportExportToolbar({
   onImportSuccess,
   className,
   size = "sm",
+  buttonClassName,
+  showHistory = true,
 }: Props) {
   const config = MODULE_IMPORT_EXPORT_REGISTRY[module];
   const [importOpen, setImportOpen] = useState(false);
@@ -32,9 +37,10 @@ export function ImportExportToolbar({
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const btn =
-    size === "sm"
+    buttonClassName ??
+    (size === "sm"
       ? "admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold"
-      : "admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold";
+      : "admin-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold");
 
   if (!config.importEnabled && !config.exportEnabled) return null;
 
@@ -59,15 +65,17 @@ export function ImportExportToolbar({
             تصدير
           </button>
         ) : null}
-        <button
-          type="button"
-          className={cn(btn, "opacity-90")}
-          onClick={() => setHistoryOpen(true)}
-          title="سجل الاستيراد والتصدير"
-        >
-          <History className="h-4 w-4" aria-hidden />
-          السجل
-        </button>
+        {showHistory ? (
+          <button
+            type="button"
+            className={cn(btn, "opacity-90")}
+            onClick={() => setHistoryOpen(true)}
+            title="سجل الاستيراد والتصدير"
+          >
+            <History className="h-4 w-4" aria-hidden />
+            السجل
+          </button>
+        ) : null}
       </div>
 
       <ImportModal

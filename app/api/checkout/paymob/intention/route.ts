@@ -17,7 +17,7 @@ import { resolvePaymobHmacSecret } from "@/lib/paymob/env";
 import { siteConfig } from "@/lib/site-config";
 import {
   fetchActivePromoByCode,
-  validatePromoForCart,
+  validatePromoForCartAsync,
 } from "@/lib/promo/validate-promo";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { checkoutDeliverySchema } from "@/lib/checkout/delivery-scheduling";
@@ -149,18 +149,25 @@ export async function POST(req: Request) {
   }
 
   const threshold = siteConfig.freeDeliveryThresholdEgp;
-  const deliveryFee = subtotal >= threshold ? 0 : siteConfig.standardDeliveryFeeEgp;
 
   let discountAmount = 0;
   let appliedPromoCode: string | null = null;
   let appliedPromoId: string | null = null;
   let isRecoveryPromo = false;
+  let promoFreeShipping = false;
+
+  const promoUserId = await resolveSupabaseUserId();
 
   if (promoCodeRaw?.trim()) {
     try {
       const supabase = createSupabaseAdminClient();
       const promo = await fetchActivePromoByCode(supabase, promoCodeRaw.trim());
-      let validation = validatePromoForCart(promo, subtotal);
+      let validation = await validatePromoForCartAsync(promo, {
+        cartSubtotal: subtotal,
+        cartProductIds: resolved.map((l) => l.id),
+        userId: promoUserId,
+        supabase,
+      });
       if (!validation.valid) {
         const recovery = await fetchRecoveryDiscountByCode(supabase, promoCodeRaw.trim());
         validation = validateRecoveryDiscountForCart(recovery, subtotal);
@@ -172,6 +179,7 @@ export async function POST(req: Request) {
         discountAmount = validation.discount_amount;
         appliedPromoCode = validation.promo.code;
         appliedPromoId = isRecoveryPromo ? null : validation.promo.id;
+        promoFreeShipping = validation.free_shipping;
       } else {
         return Response.json(
           { ok: false, error: validation.error_en, error_ar: validation.error_ar },
@@ -183,6 +191,9 @@ export async function POST(req: Request) {
       return Response.json({ ok: false, error: "Promo validation failed" }, { status: 500 });
     }
   }
+
+  let deliveryFee = subtotal >= threshold ? 0 : siteConfig.standardDeliveryFeeEgp;
+  if (promoFreeShipping) deliveryFee = 0;
 
   const giftWrappingFee =
     deliveryPersist.isGift || giftBox ? GIFT_WRAP_FEE_EGP : 0;

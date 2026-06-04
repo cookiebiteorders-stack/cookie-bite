@@ -26,6 +26,7 @@ import { useDebounce } from "@/src/hooks/useDebounce";
 import type { AdminOrderRow } from "@/lib/admin/orders-operations-types";
 import { useOrdersOperationsStore } from "@/stores/orders-operations-store";
 import { cn } from "@/lib/utils";
+import { isUrgentOrder, urgencyLabel } from "@/lib/orders/urgency";
 
 function initialsFromEmail(email: string | null) {
   if (!email) return "?";
@@ -320,7 +321,19 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
       {
         id: "priority",
         header: "أولوية",
-        cell: () => <span className="text-[10px] font-bold text-cb-text-muted">عادي</span>,
+        cell: ({ row }) => {
+          const urgent = isUrgentOrder(row.original);
+          return (
+            <span
+              className={cn(
+                "text-[10px] font-bold",
+                urgent ? "text-red-700 dark:text-red-400" : "text-cb-text-muted",
+              )}
+            >
+              {urgencyLabel(urgent, "ar")}
+            </span>
+          );
+        },
       },
       {
         id: "actions",

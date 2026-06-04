@@ -9,6 +9,7 @@ import { fetchJson } from "@/lib/http/fetch-json";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import type { AnalyticsDashboardData } from "@/services/analytics";
 import { useLanguage } from "@/components/providers/language-provider";
+import { GiftAddonInsightsPanel } from "@/components/admin/reports/gift-addon-insights-panel";
 
 const ChartsSection = dynamic(
   () =>
@@ -464,6 +465,8 @@ export default function AdminReportsPage() {
           ) : null}
         </>
       ) : null}
+
+      <GiftAddonInsightsPanel />
     </section>
   );
 }

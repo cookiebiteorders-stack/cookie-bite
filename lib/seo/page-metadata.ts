@@ -328,7 +328,7 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
     en: {
       title: "Privacy Policy",
       description:
-        "How Cookie Bite collects, stores, and protects your order and account data — plain language privacy policy.",
+        "Full Cookie Bite privacy policy: data we collect, cookies, third parties (Paymob, Clerk, Resend), retention, and your rights.",
       keywords: [
         "cookie bite privacy policy",
         "data protection bakery website",
@@ -338,7 +338,7 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
     ar: {
       title: "سياسة الخصوصية | كوكي بايت",
       description:
-        "إزاي كوكي بايت بتجمع وتحمي بيانات طلباتك وحسابك — بلغة واضحة من غير تعقيد.",
+        "سياسة خصوصية كاملة: البيانات المجمّعة، الكوكيز، الأطراف الثالثة (Paymob، Clerk، Resend)، الاحتفاظ، وحقوقك.",
       keywords: [
         "سياسة الخصوصية كوكي بايت",
         "حماية البيانات مصر",
@@ -350,7 +350,7 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
     en: {
       title: "Terms & Conditions",
       description:
-        "Cookie Bite terms for using the site, placing orders, pricing in EGP, and delivery policies.",
+        "Complete Cookie Bite terms: orders, EGP pricing, Paymob & COD, New Cairo delivery, freshness guarantee, and refunds.",
       keywords: [
         "cookie bite terms",
         "website terms and conditions egypt",
@@ -360,7 +360,7 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
     ar: {
       title: "الشروط والأحكام | كوكي بايت",
       description:
-        "شروط استخدام موقع كوكي بايت، الطلب، الأسعار بالجنيه، وسياسات التوصيل.",
+        "شروط كوكي بايت الكاملة: الطلب، الأسعار بالجنيه، Paymob وCOD، التوصيل، ضمان الطزّة، والاسترجاع.",
       keywords: [
         "شروط الاستخدام كوكي بايت",
         "شروط الطلب اونلاين مصر",

@@ -14,7 +14,7 @@ import {
 import { AccountOrdersList } from "@/components/account/account-orders-list";
 import { AccountSidebar } from "@/components/account/account-sidebar";
 import { AccountTestimonialForm } from "@/components/account/account-testimonial-form";
-import { RedeemPointsCard } from "@/components/account/redeem-points-card";
+import { LoyaltyDashboard } from "@/components/account/loyalty-dashboard";
 import { buttonClassName } from "@/components/ui/button";
 import { getAccessibleAdminConsoleNav } from "@/lib/admin/admin-console-nav";
 import { resolveStaffRole } from "@/lib/admin/auth-role";
@@ -402,43 +402,14 @@ export default async function AccountPage() {
               id="rewards"
               className="rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="font-semibold text-cb-text-strong">
-                    {t("accountDashboard.rewardsTitle")}
-                  </h2>
-                  <p className="mt-1 text-xs text-cb-text-muted">
-                    {t("accountDashboard.tierLabel")}:{" "}
-                    <span className="font-semibold text-cb-terracotta-dark">
-                      {tierLabel}
-                    </span>
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-cb-cream px-3 py-2 ring-1 ring-cb-border/40">
-                  <p className="text-sm font-semibold text-cb-text-muted">
-                    {t("accountDashboard.totalLabel")}
-                  </p>
-                  <p className="text-lg font-bold text-cb-terracotta-dark">
-                    {loyaltyPoints} {t("accountDashboard.pointsUnit")}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5">
-                <progress
-                  className="h-2 w-full overflow-hidden rounded-full [&::-webkit-progress-bar]:bg-cb-peach [&::-webkit-progress-value]:bg-cb-terracotta-dark [&::-moz-progress-bar]:bg-cb-terracotta-dark"
-                  value={Math.round(loyaltyProgressPercent)}
-                  max={100}
-                />
-              </div>
-
-              <p className="mt-2 text-xs text-cb-text-muted">
-                {loyaltyTier === "cookie_monster"
-                  ? t("accountDashboard.topTier")
-                  : t("accountDashboard.nextTier", { points: nextTierPoints })}
-              </p>
-
-              <RedeemPointsCard points={loyaltyPoints} />
+              <LoyaltyDashboard
+                initialPoints={loyaltyPoints}
+                initialTier={loyaltyTier}
+                tierLabel={tierLabel}
+                progressPercent={loyaltyProgressPercent}
+                nextTierPoints={nextTierPoints}
+                isTopTier={loyaltyTier === "cookie_monster"}
+              />
             </section>
           </div>
 

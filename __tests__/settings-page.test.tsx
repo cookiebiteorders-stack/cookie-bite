@@ -1,6 +1,15 @@
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { LanguageProvider } from "@/components/providers/language-provider";
 import AdminSettingsPage from "@/app/(admin)/admin/settings/page";
+
+function renderSettings() {
+  return render(
+    <LanguageProvider initialLang="en">
+      <AdminSettingsPage />
+    </LanguageProvider>,
+  );
+}
 
 const fetchJsonMock = jest.fn();
 
@@ -41,11 +50,9 @@ describe("AdminSettingsPage", () => {
       return Promise.reject(new Error("unexpected url"));
     });
 
-    render(<AdminSettingsPage />);
+    renderSettings();
     await screen.findByText("network fail");
-    const retry = screen.getByRole("button", {
-      name: /Retry \/ إعادة المحاولة/i,
-    });
+    const retry = screen.getByRole("button", { name: /^Retry$/i });
     fireEvent.click(retry);
 
     await waitFor(() => {

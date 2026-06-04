@@ -29,6 +29,10 @@ async function fetchModuleRows(
   const cols = config.exportColumns.join(",");
   let q = supabase.from(config.table).select(cols);
 
+  if (module === "customers") {
+    q = q.eq("role", "customer");
+  }
+
   if (params.scope === "selected" && params.ids?.length) {
     q = q.in("id", params.ids);
   }

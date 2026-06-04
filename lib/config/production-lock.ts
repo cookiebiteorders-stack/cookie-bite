@@ -85,6 +85,8 @@ export type IntegrationEnvStatus = {
   whatsapp: boolean;
   /** BullMQ — اختياري؛ بدونه يُستخدم طابور DB + cron */
   redis_queue: boolean;
+  /** Cloudinary media — اختياري */
+  cloudinary: boolean;
 };
 
 export type ProductionEnvCheck = {
@@ -110,6 +112,7 @@ export function getIntegrationEnvStatus(check: ProductionEnvCheck): IntegrationE
       cms_sanity: true,
       whatsapp: true,
       redis_queue: true,
+      cloudinary: true,
     };
   }
   const m = new Set(check.missing);
@@ -134,6 +137,11 @@ export function getIntegrationEnvStatus(check: ProductionEnvCheck): IntegrationE
         process.env.WHATSAPP_PHONE_NUMBER_ID?.trim(),
     ),
     redis_queue: Boolean(process.env.REDIS_URL?.trim()),
+    cloudinary: Boolean(
+      process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim() &&
+        process.env.CLOUDINARY_API_KEY?.trim() &&
+        process.env.CLOUDINARY_API_SECRET?.trim(),
+    ),
   };
 }
 
