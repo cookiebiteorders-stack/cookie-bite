@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listLinkedAddonsForProduct } from "@/lib/db/addons";
 import { getRelatedStorefrontProducts } from "@/lib/storefront/pdp-data";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getActiveProductRowByRouteKey } from "@/lib/storefront/resolve-active-product";
 import type { Lang } from "@/lib/i18n/translations";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await ctx.params;
@@ -16,23 +17,7 @@ export async function GET(
     );
   }
 
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("products")
-    .select(
-      "id, slug, name, title_en, title_ar, description, description_en, description_ar, price_egp, compare_price_egp, image_url, images, video_url, badges, dietary, seasons, category, stock, weight_grams, pieces_count, sku, created_at",
-    )
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (error) {
-    console.error("/api/products/[slug] error", error);
-    return NextResponse.json(
-      { error: { en: "Database error", ar: "خطأ في قاعدة البيانات" } },
-      { status: 500 },
-    );
-  }
+  const data = await getActiveProductRowByRouteKey(slug);
   if (!data) {
     return NextResponse.json(
       { error: { en: "Product not found", ar: "المنتج غير موجود" } },
@@ -40,6 +25,8 @@ export async function GET(
     );
   }
 
+  const supabase = await createSupabaseServerClient();
+  const canonicalSlug = data.slug;
   const { data: reviewsAgg } = await supabase
     .from("reviews")
     .select("rating", { count: "exact" })
@@ -60,7 +47,12 @@ export async function GET(
   const [addons, related] = await Promise.all([
     wantAddons ? listLinkedAddonsForProduct(data.id) : Promise.resolve([]),
     wantRelated
-      ? getRelatedStorefrontProducts((data.category as string | null) ?? null, slug, 3, lang)
+      ? getRelatedStorefrontProducts(
+          (data.category as string | null) ?? null,
+          canonicalSlug,
+          3,
+          lang,
+        )
       : Promise.resolve([]),
   ]);
 

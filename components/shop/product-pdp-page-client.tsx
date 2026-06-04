@@ -12,6 +12,7 @@ import { buttonClassName } from "@/components/ui/button";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { ShareButtons } from "@/components/seo/share-buttons";
 import { PdpViewTracker } from "@/components/shop/pdp-view-tracker";
+import { PdpProductSpecs } from "@/components/shop/pdp-product-specs";
 import type { Addon } from "@/lib/addons/types";
 import type { Product } from "@/lib/data";
 import { fetchJson } from "@/lib/http/fetch-json";
@@ -55,6 +56,11 @@ export function ProductPdpPageClient({ slug }: Props) {
         if (cancelled) return;
         if (!data.product?.slug) {
           router.replace("/shop");
+          return;
+        }
+        const canonical = data.product.slug;
+        if (canonical !== slug) {
+          router.replace(`/shop/${encodeURIComponent(canonical)}`);
           return;
         }
         const mapped = productRowToStorefrontProduct(data.product, FALLBACK_DESC, lang);
@@ -169,29 +175,7 @@ export function ProductPdpPageClient({ slug }: Props) {
               <ShareButtons title={`${product.name} | Cookie Bite`} />
             </div>
 
-            <div className="mt-10 space-y-4 rounded-3xl border border-cb-border bg-cb-surface p-6">
-              <h2 className="font-serif text-lg font-semibold text-cb-text-strong">
-                {t("product.pdpDetails")}
-              </h2>
-              <ul className="space-y-2 text-sm text-cb-text">
-                <li>
-                  <strong className="text-cb-text-strong">{t("product.pdpIngredients")}</strong>{" "}
-                  {t("product.pdpIngredientsBody")}
-                </li>
-                <li>
-                  <strong className="text-cb-text-strong">{t("product.pdpStorage")}</strong>{" "}
-                  {t("product.pdpStorageBody")}
-                </li>
-                <li>
-                  <strong className="text-cb-text-strong">{t("product.pdpDelivery")}</strong>{" "}
-                  {t("product.pdpDeliveryBody")}{" "}
-                  <Link href="/delivery/new-cairo" className="font-bold text-cb-terracotta-dark underline">
-                    {t("product.pdpDeliveryLink")}
-                  </Link>
-                  .
-                </li>
-              </ul>
-            </div>
+            <PdpProductSpecs product={product} />
           </div>
         </div>
 

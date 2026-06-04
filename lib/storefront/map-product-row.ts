@@ -44,6 +44,9 @@ export function productRowToStorefrontProduct(
     (b): b is NonNullable<Product["badges"]>[number] => BADGE_SET.has(String(b)),
   );
 
+  const dietary = coerceStringArray(row.dietary);
+  const seasons = coerceStringArray(row.seasons);
+
   return {
     id: row.slug,
     productUuid: row.id,
@@ -60,5 +63,16 @@ export function productRowToStorefrontProduct(
     category: row.category ?? "Classic",
     badges: badges.length ? badges : undefined,
     stock: row.stock,
+    sku: row.sku?.trim() || null,
+    weightGrams:
+      row.weight_grams != null && Number.isFinite(Number(row.weight_grams))
+        ? Number(row.weight_grams)
+        : null,
+    piecesCount:
+      row.pieces_count != null && Number.isFinite(Number(row.pieces_count))
+        ? Number(row.pieces_count)
+        : null,
+    dietary: dietary.length ? dietary : undefined,
+    seasons: seasons.length ? seasons : undefined,
   };
 }

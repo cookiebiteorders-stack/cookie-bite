@@ -504,7 +504,6 @@ export function ShopClient({ initialTrending = [] }: ShopClientProps) {
                 <ProductCard
                   key={`trending-${p.id}`}
                   product={p}
-                  layout="compact"
                   wishlisted={p.productUuid ? wishlistUuids.has(p.productUuid) : false}
                   onWishlistToggled={onWishlistToggled}
                 />

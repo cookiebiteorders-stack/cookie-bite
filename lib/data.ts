@@ -69,6 +69,11 @@ export type Product = {
   badges?: ("bestseller" | "new" | "trending" | "featured")[];
   /** مخزون تقريبي لعرض حالة التوفر في الواجهة */
   stock?: number;
+  sku?: string | null;
+  weightGrams?: number | null;
+  piecesCount?: number | null;
+  dietary?: string[];
+  seasons?: string[];
 };
 
 export const PRODUCTS: Product[] = [];

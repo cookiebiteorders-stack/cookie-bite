@@ -11,6 +11,7 @@ import { AddToCartButton } from "@/components/product/add-to-cart-button";
 import { ProductPriceDisplay } from "@/components/product/product-price-display";
 import { ProductSharedImage } from "@/components/product/product-shared-image";
 import { useLanguage } from "@/components/providers/language-provider";
+import { PRODUCT_PLACEHOLDER_IMAGE } from "@/lib/products/media";
 import { isProductOutOfStock } from "@/lib/products/stock";
 
 type Props = {
@@ -44,6 +45,7 @@ export function ProductCard({
 
   const uuid = product.productUuid;
   const outOfStock = isProductOutOfStock(product.stock);
+  const isPlaceholderImage = product.image === PRODUCT_PLACEHOLDER_IMAGE;
   const controlled = onWishlistToggled !== undefined;
   const saved = controlled ? wishlisted : uncontrolledSaved;
 
@@ -99,7 +101,10 @@ export function ProductCard({
             src={product.image}
             alt={product.name}
             sizes="(max-width:768px) 100vw, 25vw"
-            imgClassName="transition-transform duration-200 group-hover:scale-[1.01]"
+            imgClassName={cn(
+              "transition-transform duration-200 group-hover:scale-[1.01]",
+              isPlaceholderImage && "object-contain p-3",
+            )}
           />
         </Link>
         <button
@@ -154,8 +159,8 @@ export function ProductCard({
         <div className="mt-auto flex items-center justify-between gap-3">
           <ProductPriceDisplay price={product.price} comparePrice={product.comparePrice} size="sm" />
         </div>
-        {layout === "grid" ? (
-          outOfStock ? (
+        <div className="flex flex-col gap-2">
+          {outOfStock ? (
             <p className="w-full rounded-full border border-cb-border bg-cb-surface-2 py-3 text-center text-sm font-bold text-cb-text-muted">
               {t("product.outOfStock")}
             </p>
@@ -167,15 +172,16 @@ export function ProductCard({
               <ShoppingBag className="h-4 w-4" aria-hidden />
               {t("product.addToCart")}
             </AddToCartButton>
-          )
-        ) : (
-          <Link
-            href={`/shop/${product.id}`}
-            className="text-sm font-semibold text-cb-terracotta-dark hover:underline"
-          >
-            {t("product.viewDetails")}
-          </Link>
-        )}
+          )}
+          {layout === "compact" ? (
+            <Link
+              href={`/shop/${product.id}`}
+              className="text-center text-sm font-semibold text-cb-terracotta-dark hover:underline"
+            >
+              {t("product.viewDetails")}
+            </Link>
+          ) : null}
+        </div>
       </div>
     </article>
   );

@@ -846,7 +846,8 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     <p className="text-xs font-medium text-red-600">{formErrors.slug}</p>
                   ) : (
                     <p className="text-[11px] text-cb-text-muted">
-                      رابط المتجر: /shop/{form.slug.trim() || "—"}
+                      رابط المتجر (يُنشأ تلقائياً عند الحفظ): /shop/
+                      {form.slug.trim() || "يُولَّد من الاسم"}
                     </p>
                   )}
                 </label>

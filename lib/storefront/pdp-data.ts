@@ -4,52 +4,17 @@ import type { ProductRow } from "@/lib/db/types";
 import type { Product } from "@/lib/data";
 import type { Lang } from "@/lib/i18n/translations";
 import { productRowToStorefrontProduct } from "@/lib/storefront/map-product-row";
+import { getActiveProductRowByRouteKey } from "@/lib/storefront/resolve-active-product";
 
 const FALLBACK_DESC = "Fresh handcrafted treats from Cookie Bite — New Cairo.";
-
-const PDP_PRODUCT_SELECT =
-  "id, slug, name, title_en, title_ar, description, description_en, description_ar, price_egp, compare_price_egp, image_url, images, video_url, badges, category, stock, is_active, created_at, updated_at";
 
 export async function getActivePdpProduct(
   slug: string,
   lang: Lang = "en",
 ): Promise<Product | null> {
-  if (!slug || !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return null;
-  }
-  try {
-    const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
-      .from("products")
-      .select(PDP_PRODUCT_SELECT)
-      .eq("slug", slug)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (error) {
-      const msg = String(error.message ?? "");
-      if (/video_url|column/i.test(msg)) {
-        const legacy = await supabase
-          .from("products")
-          .select(
-            "id, slug, name, title_en, title_ar, description, description_en, description_ar, price_egp, compare_price_egp, image_url, images, badges, category, stock, is_active, created_at, updated_at",
-          )
-          .eq("slug", slug)
-          .eq("is_active", true)
-          .maybeSingle();
-        if (!legacy.error && legacy.data) {
-          return productRowToStorefrontProduct(legacy.data as ProductRow, FALLBACK_DESC, lang);
-        }
-      }
-      console.error("getActivePdpProduct", error.message);
-      return null;
-    }
-    if (!data) return null;
-    return productRowToStorefrontProduct(data as ProductRow, FALLBACK_DESC, lang);
-  } catch (e) {
-    console.error("getActivePdpProduct", e);
-    return null;
-  }
+  const row = await getActiveProductRowByRouteKey(slug);
+  if (!row) return null;
+  return productRowToStorefrontProduct(row, FALLBACK_DESC, lang);
 }
 
 export async function getRelatedStorefrontProducts(

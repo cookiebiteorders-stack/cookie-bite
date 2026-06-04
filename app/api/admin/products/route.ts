@@ -124,6 +124,15 @@ function applyPatchMedia(
   return next;
 }
 
+/** يولّد slug تلقائياً عند الحفظ إذا كان الحقل فارغاً (منتجات قديمة). */
+function ensureSlugInCreatePayload(
+  payload: z.infer<typeof createProductSchema>,
+): string | undefined {
+  const trimmed = payload.slug?.trim();
+  if (trimmed && trimmed.length >= 2) return trimmed;
+  return undefined;
+}
+
 const deleteSchema = z.object({
   ids: z.array(z.string().uuid()).min(1),
 });
@@ -295,7 +304,7 @@ export async function POST(req: NextRequest) {
   const inserted = await insertProductWithSlugRetry(
     supabase,
     payload.name.trim(),
-    payload.slug?.trim(),
+    ensureSlugInCreatePayload(payload),
     buildRow,
   );
 

@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { backfillMissingProductSlugs } from "@/lib/products/backfill-slugs";
 
 export async function POST(req: NextRequest) {
   const actor = await requireAdminAccess("products");
@@ -16,6 +17,8 @@ export async function POST(req: NextRequest) {
   });
 
   const supabase = createSupabaseAdminClient();
+  const slugBackfill = await backfillMissingProductSlugs(supabase);
+
   const { data: slugRows } = await supabase
     .from("products")
     .select("slug")
@@ -39,10 +42,12 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
+    slugs_backfilled: slugBackfill.updated,
+    slug_backfill_errors: slugBackfill.errors,
     revalidated_product_pages: revalidatedProductPages,
     message: {
-      en: `Storefront cache revalidated (${revalidatedProductPages} product pages). CMS webhooks still apply for Sanity-driven content.`,
-      ar: `تم تحديث كاش المتجر (${revalidatedProductPages} صفحة منتج). تحديثات Sanity/CMS ما زالت عبر الويبهوك.`,
+      en: `Storefront synced: ${slugBackfill.updated} slug(s) backfilled, ${revalidatedProductPages} PDP cache paths refreshed.`,
+      ar: `تم مزامنة المتجر: ${slugBackfill.updated} رابط منتج، وتحديث ${revalidatedProductPages} صفحة تفاصيل.`,
     },
   });
 }
