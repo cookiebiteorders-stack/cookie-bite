@@ -48,6 +48,7 @@ export type MrBrownieAnalyticsSnapshot = {
   };
   /** استعلامات بلا نتائج RAG — للمراجعة */
   knowledge_gaps: Array<{
+    id: string;
     query_text: string;
     locale: string | null;
     occurrence_count: number;
@@ -78,7 +79,7 @@ export async function fetchMrBrownieAnalytics(
       .gte("created_at", since),
     supabase
       .from("mr_brownie_knowledge_gaps")
-      .select("query_text, locale, occurrence_count, last_seen_at")
+      .select("id, query_text, locale, occurrence_count, last_seen_at")
       .eq("resolved", false)
       .order("occurrence_count", { ascending: false })
       .limit(10),
@@ -217,6 +218,7 @@ export async function fetchMrBrownieAnalytics(
       : null;
 
   const knowledge_gaps = (gapsRes.data ?? []).map((g) => ({
+    id: String(g.id),
     query_text: String(g.query_text),
     locale: g.locale ? String(g.locale) : null,
     occurrence_count: Number(g.occurrence_count) || 1,

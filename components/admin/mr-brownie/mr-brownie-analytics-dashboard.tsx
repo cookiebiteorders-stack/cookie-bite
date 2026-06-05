@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { MrBrownieAnalyticsSnapshot } from "@/lib/mr-brownie/brain/analytics";
 import type { MrBrownieWeeklyReport } from "@/lib/mr-brownie/admin/weekly-report";
@@ -11,6 +12,7 @@ export function MrBrownieAnalyticsDashboard({ embedded = false }: { embedded?: b
   const [days, setDays] = useState(30);
   const [weekly, setWeekly] = useState<MrBrownieWeeklyReport | null>(null);
   const [weeklyLoading, setWeeklyLoading] = useState(false);
+  const [deletingGapId, setDeletingGapId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,6 +38,37 @@ export function MrBrownieAnalyticsDashboard({ embedded = false }: { embedded?: b
   useEffect(() => {
     void load();
   }, [load]);
+
+  const deleteKnowledgeGap = useCallback(async (id: string, queryText: string) => {
+    const preview = queryText.length > 80 ? `${queryText.slice(0, 80)}…` : queryText;
+    const ok = window.confirm(`حذف فجوة المعرفة؟\n«${preview}»\nلا يمكن التراجع عن هذا الإجراء.`);
+    if (!ok) return;
+
+    setDeletingGapId(id);
+    try {
+      const res = await fetch(`/api/admin/mr-brownie/knowledge/gaps/${id}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        window.alert(json?.error?.ar ?? json?.error?.en ?? "تعذر الحذف");
+        return;
+      }
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              knowledge_gaps: prev.knowledge_gaps.filter((g) => g.id !== id),
+            }
+          : prev,
+      );
+    } catch {
+      window.alert("تعذر الحذف");
+    } finally {
+      setDeletingGapId(null);
+    }
+  }, []);
 
   const loadWeekly = useCallback(async () => {
     setWeeklyLoading(true);
@@ -172,14 +205,30 @@ export function MrBrownieAnalyticsDashboard({ embedded = false }: { embedded?: b
               <ul className="mt-3 space-y-2 text-sm text-amber-950">
                 {data.knowledge_gaps.map((g) => (
                   <li
-                    key={`${g.query_text}:${g.locale ?? ""}`}
-                    className="flex justify-between gap-4 rounded-lg bg-white/60 px-3 py-2"
+                    key={g.id}
+                    className="flex items-start justify-between gap-3 rounded-lg bg-white/60 px-3 py-2"
                   >
-                    <span className="line-clamp-2">{g.query_text}</span>
-                    <span className="shrink-0 text-amber-900/70">
-                      ×{g.occurrence_count}
-                      {g.locale ? ` · ${g.locale}` : ""}
-                    </span>
+                    <span className="min-w-0 flex-1 line-clamp-2">{g.query_text}</span>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="text-amber-900/70">
+                        ×{g.occurrence_count}
+                        {g.locale ? ` · ${g.locale}` : ""}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void deleteKnowledgeGap(g.id, g.query_text)}
+                        disabled={deletingGapId === g.id}
+                        className="rounded-md p-1 text-amber-900/60 transition hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                        title="حذف"
+                        aria-label="حذف فجوة المعرفة"
+                      >
+                        {deletingGapId === g.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                        ) : (
+                          <Trash2 className="h-4 w-4" aria-hidden />
+                        )}
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>

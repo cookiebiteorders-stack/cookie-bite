@@ -54,3 +54,17 @@ export async function recordKnowledgeGap(
     resolved: false,
   });
 }
+
+export async function deleteKnowledgeGap(id: string): Promise<{ ok: boolean; error?: string }> {
+  const supabase = tryCreateSupabaseAdminClient();
+  if (!supabase) return { ok: false, error: "Supabase unavailable" };
+
+  const { error, count } = await supabase
+    .from("mr_brownie_knowledge_gaps")
+    .delete({ count: "exact" })
+    .eq("id", id);
+
+  if (error) return { ok: false, error: error.message };
+  if (!count) return { ok: false, error: "Not found" };
+  return { ok: true };
+}
