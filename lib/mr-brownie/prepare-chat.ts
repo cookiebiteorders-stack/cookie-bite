@@ -7,6 +7,9 @@ import type { CartLine } from "@/lib/cart/types";
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 import { CHAT_IMAGE_MAX_COUNT, isAllowedChatImageUrl } from "@/lib/chat/image-attachments";
 import type { MrBrownieChatMessage } from "@/lib/mr-brownie/gemini";
+import type { ChatActionCard } from "@/lib/mr-brownie/action-cards";
+import type { ChatClientAction } from "@/lib/mr-brownie/chat-client-actions";
+import type { ChatPersona, ChatProductCard, PersonaPreference } from "@/lib/mr-brownie/personas";
 
 export const mrBrownieChatBodySchema = z.object({
   messages: z
@@ -49,6 +52,8 @@ export const mrBrownieChatBodySchema = z.object({
       locale: z.enum(["ar", "en", "auto"]).optional(),
     })
     .optional(),
+  /** المتجر: Mr. Brownie فقط — Mrs. Cookie في /admin/copilot */
+  persona: z.enum(["auto", "mr_brownie"]).optional(),
 });
 
 export function temperatureForRole(role: UserRole | "guest"): number {
@@ -78,6 +83,15 @@ export type MrBrowniePreparedChat = {
     pathname: string;
     locale: string;
     catalogTotal: number;
+    activePersona: ChatPersona;
+    promptVariant: "a" | "b";
+    ragSource: "vector" | "keyword" | "none" | null;
+    ragHitCount: number;
+    sentimentScore: number;
+    followUpOptions: string[];
+    productCards: ChatProductCard[];
+    actionCards: ChatActionCard[];
+    clientActions: ChatClientAction[];
   };
 };
 
@@ -92,6 +106,7 @@ export async function prepareMrBrownieChat(params: {
     lastName?: string | null;
     username?: string | null;
   } | null;
+  persona?: PersonaPreference;
 }): Promise<MrBrowniePreparedChat> {
   let resolvedRole: UserRole | "guest" = "guest";
   let email: string | null = null;
@@ -176,12 +191,16 @@ export async function prepareMrBrownieChat(params: {
       role: m.role,
       content: m.content,
     })),
+    personaPreference: params.persona ?? "auto",
+    clerkUserId: params.userId,
   });
 
   const contextJson = JSON.stringify(contextPayload);
   const systemInstruction = getMrBrownieSystemInstruction(
     resolvedRole,
     contextPayload.brain?.active_personality,
+    contextPayload.session.locale,
+    contextPayload.brain?.active_persona,
   );
 
   const rawMessages: MrBrownieChatMessage[] = params.messages.map((m, i, arr) => {
@@ -215,6 +234,15 @@ export async function prepareMrBrownieChat(params: {
       pathname: contextPayload.session.pathname,
       locale: contextPayload.session.locale,
       catalogTotal: contextPayload.catalog_meta.total_active,
+      activePersona: contextPayload.brain.active_persona,
+      promptVariant: contextPayload.brain.prompt_variant,
+      ragSource: contextPayload.brain.rag_source,
+      ragHitCount: contextPayload.brain.rag_hit_count,
+      sentimentScore: contextPayload.brain.sentiment_score,
+      followUpOptions: contextPayload.brain.follow_up_options,
+      productCards: contextPayload.brain.product_cards,
+      actionCards: contextPayload.brain.action_cards,
+      clientActions: contextPayload.brain.client_actions,
     },
   };
 }

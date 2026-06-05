@@ -1,0 +1,28 @@
+/* Seasonal accent overrides — activated via data-season on <html> */
+
+[data-season="ramadan"] {
+  --cb-terracotta: #c9a227;
+  --cb-terracotta-dark: #9a7b1a;
+  --cb-brand-600: #9a7b1a;
+  --cb-peach: #f5ecd8;
+  --cb-peach-deep: #e8d9a8;
+}
+
+[data-season="eid-fitr"],
+[data-season="eid-adha"] {
+  --cb-terracotta: #2d8f6f;
+  --cb-terracotta-dark: #1f6b52;
+  --cb-brand-600: #1f6b52;
+  --cb-peach: #e8f5ef;
+  --cb-peach-deep: #b8e0ce;
+}
+
+[data-season="ramadan"] .cb-pl-shop-header,
+[data-season="eid-fitr"] .cb-pl-shop-header,
+[data-season="eid-adha"] .cb-pl-shop-header {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--cb-peach) 55%, transparent),
+    transparent
+  );
+}

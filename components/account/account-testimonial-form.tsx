@@ -60,7 +60,7 @@ export function AccountTestimonialForm({ initialItems, enabled = true }: Props) 
       }
       setComment("");
       setRating(5);
-      setMessage("Thanks! Your comment was sent for review.");
+      setMessage("Thanks! Your comment is now on the homepage.");
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -78,7 +78,7 @@ export function AccountTestimonialForm({ initialItems, enabled = true }: Props) 
           Comments & testimonial
         </h2>
         <p className="mt-1 text-xs text-cb-text-muted">
-          Share your experience. New submissions are reviewed before publishing.
+          Share your experience. Your comment appears on the homepage after you submit.
         </p>
       </div>
 

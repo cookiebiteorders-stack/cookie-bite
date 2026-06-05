@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import { Send, Square, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, History, Send, Square, X } from "lucide-react";
 import {
   ChatImageAttachButton,
   ChatImagePreviewStrip,
@@ -16,7 +16,26 @@ import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 import { buttonClassName } from "@/components/ui/button";
+import { MrBrownieChatActionStrip } from "@/components/mr-brownie/chat-action-card";
+import { MrBrownieChatClientActionStrip } from "@/components/mr-brownie/chat-client-action-strip";
+import { MrBrownieChatProductStrip } from "@/components/mr-brownie/chat-product-card";
+import type { ChatClientAction } from "@/lib/mr-brownie/chat-client-actions";
+import type { Product } from "@/lib/data";
+import { VoiceInputButton } from "@/components/mr-brownie/voice-input-button";
+import type { ChatActionCard } from "@/lib/mr-brownie/action-cards";
+import { trackMrBrownieFunnel } from "@/lib/analytics/mr-brownie-funnel";
 import { streamMrBrownieChat } from "@/lib/mr-brownie/stream-client";
+import {
+  PERSONA_CONFIG,
+  type ChatPersona,
+  type ChatProductCard,
+} from "@/lib/mr-brownie/personas";
+import { STOREFRONT_PERSONA } from "@/lib/mr-brownie/storefront-persona";
+import {
+  loadGuestToneVector,
+  saveGuestToneVector,
+  shiftToneFromFeedback,
+} from "@/lib/mr-brownie/tone-vector";
 import { MessageBubble } from "@/components/ai-chat/message-bubble";
 import {
   BUBBLE_AUTO_HIDE_MS,
@@ -61,48 +80,129 @@ function findPrecedingUserMessage(messages: ChatMessage[], assistantIndex: numbe
   return "";
 }
 
-/** شعار Mr. Brownie — PNG بخلفية شفافة في `public/brand/` */
-const MR_BROWNIE_MASCOT_SRC = "/brand/mr-brownie-mascot.png";
-
 const DRAG_THRESHOLD_PX = 8;
 
-const ASSISTANT_FOR_ROLE_AR: Record<string, string> = {
-  guest: "المساعد للزائر",
-  customer: "المساعد للعميل",
-  staff: "المساعد لفريق التشغيل",
-  admin: "المساعد للأدمن",
-  owner: "المساعد للأونر",
-};
-
-function assistantSubtitleAr(role: string | null, signedIn: boolean): string {
-  if (!signedIn) return ASSISTANT_FOR_ROLE_AR.guest;
-  const line = role ? ASSISTANT_FOR_ROLE_AR[role] : null;
-  return line ?? "المساعد لحسابك";
+function isShopAssistantRole(role: string | null): boolean {
+  return !role || role === "guest" || role === "customer";
 }
 
-const SUGGESTIONS_SHOP = [
-  "رشّح لي هدية مناسبة 🎁",
-  "إيش أنسب منتج مع القهوة؟",
-  "متى يكون التوصيل مجاني؟",
-  "وين الكوكيز الأكثر طلباً؟",
-] as const;
+function parseProductCards(meta: Record<string, unknown> | undefined): ChatProductCard[] {
+  const raw = meta?.product_cards;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+    .map((item) => ({
+      id: String(item.id ?? ""),
+      name: String(item.name ?? ""),
+      price_egp: Number(item.price_egp) || 0,
+      shop_path: String(item.shop_path ?? "/shop"),
+      image_url: typeof item.image_url === "string" ? item.image_url : null,
+      in_stock: item.in_stock !== false,
+    }))
+    .filter((p) => p.id && p.name);
+}
 
-const SUGGESTIONS_STAFF = [
-  "ملخص سريع لما أحتاجه في الطلبات اليوم",
-  "خطوات التحقق قبل الشحن",
-  "إيش أذكر للعميل عن وقت التجهيز؟",
-] as const;
+function parseFollowUps(meta: Record<string, unknown> | undefined): string[] {
+  const raw = meta?.follow_up_options;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((s): s is string => typeof s === "string" && s.trim().length > 0);
+}
 
-const SUGGESTIONS_EXEC = [
-  "ملخص اليوم مقارنة بالأسبوع (من البيانات المتاحة)",
-  "أكثر المنتجات مبيعاً حسب السياق",
-  "إيش أنصح أعمل أولاً كخطوة تشغيلية؟",
-] as const;
+function parseClientActions(meta: Record<string, unknown> | undefined): ChatClientAction[] {
+  const raw = meta?.client_actions;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+    .map((item) => {
+      const type = item.type;
+      if (type === "add_to_cart") {
+        return {
+          type: "add_to_cart" as const,
+          id: String(item.id ?? ""),
+          product_slug: String(item.product_slug ?? ""),
+          product_name: String(item.product_name ?? ""),
+          price_egp: Number(item.price_egp) || 0,
+          image_url: typeof item.image_url === "string" ? item.image_url : null,
+          quantity: Number(item.quantity) || 1,
+          label_en: String(item.label_en ?? "Add to cart"),
+          label_ar: String(item.label_ar ?? "أضف للسلة"),
+        };
+      }
+      if (type === "apply_promo") {
+        return {
+          type: "apply_promo" as const,
+          code: String(item.code ?? ""),
+          discount_egp:
+            typeof item.discount_egp === "number" ? item.discount_egp : null,
+          label_en: String(item.label_en ?? "Apply promo"),
+          label_ar: String(item.label_ar ?? "تطبيق الكود"),
+        };
+      }
+      return null;
+    })
+    .filter((a): a is ChatClientAction => {
+      if (!a) return false;
+      if (a.type === "add_to_cart") return Boolean(a.product_slug && a.product_name);
+      return Boolean(a.code);
+    });
+}
 
-function suggestionsForRole(role: string | null): readonly string[] {
-  if (role === "staff") return SUGGESTIONS_STAFF;
-  if (role === "admin" || role === "owner") return SUGGESTIONS_EXEC;
-  return SUGGESTIONS_SHOP;
+function parseActionCards(meta: Record<string, unknown> | undefined): ChatActionCard[] {
+  const raw = meta?.action_cards;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+    .map((item) => ({
+      id: String(item.id ?? ""),
+      path: String(item.path ?? "/"),
+      label_en: String(item.label_en ?? item.label ?? "Open"),
+      label_ar: String(item.label_ar ?? item.label ?? "فتح"),
+      icon: (["help", "cart", "gift", "package"] as const).includes(
+        item.icon as ChatActionCard["icon"],
+      )
+        ? (item.icon as ChatActionCard["icon"])
+        : "package",
+    }))
+    .filter((c) => c.id && c.path);
+}
+
+type TranslateFn = (key: string, vars?: Record<string, string | number>) => string;
+
+const ASSISTANT_ROLE_KEYS = ["guest", "customer", "staff", "admin", "owner"] as const;
+
+function assistantSubtitle(
+  role: string | null,
+  signedIn: boolean,
+  t: TranslateFn,
+): string {
+  if (!signedIn) return t("mrBrownieChat.assistant.guest");
+  if (role && ASSISTANT_ROLE_KEYS.includes(role as (typeof ASSISTANT_ROLE_KEYS)[number])) {
+    return t(`mrBrownieChat.assistant.${role}`);
+  }
+  return t("mrBrownieChat.assistant.default");
+}
+
+function suggestionsForRole(role: string | null, t: TranslateFn): string[] {
+  if (role === "staff") {
+    return [
+      t("mrBrownieChat.suggestions.staff0"),
+      t("mrBrownieChat.suggestions.staff1"),
+      t("mrBrownieChat.suggestions.staff2"),
+    ];
+  }
+  if (role === "admin" || role === "owner") {
+    return [
+      t("mrBrownieChat.suggestions.exec0"),
+      t("mrBrownieChat.suggestions.exec1"),
+      t("mrBrownieChat.suggestions.exec2"),
+    ];
+  }
+  return [
+    t("mrBrownieChat.suggestions.shop0"),
+    t("mrBrownieChat.suggestions.shop1"),
+    t("mrBrownieChat.suggestions.shop2"),
+    t("mrBrownieChat.suggestions.shop3"),
+  ];
 }
 
 function isMobileViewport() {
@@ -149,9 +249,10 @@ type MrBrownieChatProps = {
 };
 
 export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrownieChatProps) {
-  const { lines } = useCart();
+  const { lines, addItem, applyPromo, subtotalEgp } = useCart();
   const pathname = usePathname() ?? "/";
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
+  const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
   const { isSignedIn, user } = useUser();
   const clerkKey = isSignedIn && user?.id ? user.id : null;
   const [open, setOpen] = useState(initialOpen);
@@ -161,9 +262,16 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  /** رسائل قبل فتح اللوحة الحالية — تُعرض في «السجل» فقط */
+  const [sessionCutoff, setSessionCutoff] = useState(0);
+  const [viewMode, setViewMode] = useState<"chat" | "history">("chat");
+  const sessionAnchoredRef = useRef(false);
   const skipLsSaveRef = useRef(true);
   const streamAbortRef = useRef<AbortController | null>(null);
   const [streamingIndex, setStreamingIndex] = useState<number | null>(null);
+  const [clientActionBusyId, setClientActionBusyId] = useState<string | null>(null);
+  const pdpDwellRef = useRef(0);
+  const CART_ACTIVITY_KEY = "cb-cart-last-activity";
 
   const [fabPos, setFabPos] = useState<MrBrownieFabPosition>(() => {
     if (typeof window === "undefined") return defaultFabPosition(false);
@@ -186,6 +294,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
   const [bubbleText, setBubbleText] = useState("");
   const [showNotifDot, setShowNotifDot] = useState(true);
   const [sessionRole, setSessionRole] = useState<string | null>(null);
+  const [dynamicChips, setDynamicChips] = useState<string[]>([]);
   const [feedbackByMessage, setFeedbackByMessage] = useState<Record<string, 1 | -1>>({});
   const fabRef = useRef<HTMLButtonElement>(null);
   const dragSession = useRef<{
@@ -212,6 +321,12 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
   useEffect(() => {
     clerkUserIdRef.current = user?.id;
   }, [user?.id]);
+
+  const shopAssistant = isShopAssistantRole(sessionRole);
+  const displayPersona: ChatPersona = STOREFRONT_PERSONA;
+  const personaCfg = PERSONA_CONFIG[displayPersona];
+  const chipSuggestions =
+    dynamicChips.length > 0 ? dynamicChips : suggestionsForRole(sessionRole, t);
 
   const flushPendingDrag = useCallback(() => {
     dragFlushRafRef.current = null;
@@ -265,16 +380,46 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
     }, BUBBLE_AUTO_HIDE_MS);
   }, []);
 
+  useEffect(() => {
+    pdpDwellRef.current = 0;
+    if (!pathname.startsWith("/shop/") || pathname === "/shop") return;
+    const tick = window.setInterval(() => {
+      pdpDwellRef.current += 5;
+    }, 5000);
+    return () => window.clearInterval(tick);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || lines.length === 0) return;
+    sessionStorage.setItem(CART_ACTIVITY_KEY, String(Date.now()));
+  }, [lines]);
+
   const postMrBrownieAmbient = useCallback(async () => {
     const uidAtStart = clerkUserIdRef.current;
     try {
       const L = linesRef.current;
+      const productSlug =
+        pathname.startsWith("/shop/") && pathname !== "/shop"
+          ? pathname.split("/").filter(Boolean)[1]
+          : undefined;
+      let cartIdleMinutes: number | undefined;
+      if (typeof window !== "undefined" && L.length > 0) {
+        const raw = sessionStorage.getItem(CART_ACTIVITY_KEY);
+        const ts = raw ? Number(raw) : NaN;
+        if (Number.isFinite(ts)) {
+          cartIdleMinutes = Math.floor((Date.now() - ts) / 60_000);
+        }
+      }
       const res = await fetch("/api/mr-brownie/ambient", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cartItems: L.length,
           cartSubtotalEgp: subtotalFromLines(L),
+          locale: lang,
+          pdpDwellSeconds: pdpDwellRef.current,
+          productSlug,
+          cartIdleMinutes,
         }),
       });
       if (!res.ok) return { message: null as string | null, role: null as string | null };
@@ -293,7 +438,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
     } catch {
       return { message: null, role: null };
     }
-  }, []);
+  }, [lang, pathname]);
 
   const fetchDynamicAmbientMessage = useCallback(async (): Promise<string | null> => {
     const { message } = await postMrBrownieAmbient();
@@ -381,6 +526,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
         const pool = buildAmbientMessages(
           isSignedInRef.current,
           linesRef.current.length,
+          lang,
         );
         if (pool.length === 0) return;
 
@@ -415,6 +561,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
     pickRoamingTargetCb,
     showBubble,
     fetchDynamicAmbientMessage,
+    lang,
   ]);
 
   const submitFeedback = useCallback(
@@ -430,7 +577,23 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
 
       setFeedbackByMessage((prev) => ({ ...prev, [msgKey]: rating }));
 
+      const msgPersona = assistant.persona ?? displayPersona;
+
+      trackMrBrownieFunnel(rating === 1 ? "feedback_up" : "feedback_down", {
+        pathname,
+        persona: msgPersona,
+      });
+
       const sid = getOrCreateChatSessionId();
+
+      if (!isSignedIn) {
+        const nextTone = shiftToneFromFeedback(loadGuestToneVector(), {
+          rating,
+          activePersona: msgPersona,
+        });
+        saveGuestToneVector(nextTone);
+      }
+
       void fetch("/api/mr-brownie/feedback", {
         method: "POST",
         credentials: "same-origin",
@@ -442,10 +605,67 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
           sessionId: sid ?? undefined,
           pathname,
           locale: lang,
+          activePersona: msgPersona,
         }),
       }).catch(() => {});
     },
-    [messages, feedbackByMessage, pathname, lang],
+    [messages, feedbackByMessage, pathname, lang, displayPersona, isSignedIn],
+  );
+
+  const runClientAddToCart = useCallback(
+    (action: Extract<ChatClientAction, { type: "add_to_cart" }>) => {
+      setClientActionBusyId(action.id);
+      const product: Product = {
+        id: action.product_slug,
+        name: action.product_name,
+        description: "",
+        price: action.price_egp,
+        image: action.image_url ?? "/placeholder-cookie.png",
+        category: "cookies",
+      };
+      addItem(product, action.quantity);
+      trackMrBrownieFunnel("add_to_cart_from_chat", {
+        pathname,
+        product_slug: action.product_slug,
+      });
+      setClientActionBusyId(null);
+    },
+    [addItem, pathname],
+  );
+
+  const runClientApplyPromo = useCallback(
+    async (action: Extract<ChatClientAction, { type: "apply_promo" }>) => {
+      setClientActionBusyId(action.code);
+      try {
+        const res = await fetch("/api/promo/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: action.code, cart_total: subtotalEgp }),
+        });
+        const data = (await res.json()) as {
+          valid?: boolean;
+          discount_amount?: number;
+          type?: "percent" | "fixed";
+          value?: number;
+          code?: string;
+        };
+        if (data.valid) {
+          applyPromo({
+            code: data.code ?? action.code,
+            discount_amount: data.discount_amount ?? 0,
+            type: data.type ?? "percent",
+            value: data.value ?? 0,
+          });
+          trackMrBrownieFunnel("promo_apply_from_chat", {
+            pathname,
+            promo_code: action.code,
+          });
+        }
+      } finally {
+        setClientActionBusyId(null);
+      }
+    },
+    [applyPromo, pathname, subtotalEgp],
   );
 
   const enqueueSaveMessage = useCallback((role: "user" | "assistant", content: string) => {
@@ -513,6 +733,9 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
       if (!res.ok) return;
       setMessages([]);
       savePersistedMessages(key, []);
+      setSessionCutoff(0);
+      setViewMode("chat");
+      sessionAnchoredRef.current = false;
     } catch {
       /* ignore */
     }
@@ -530,6 +753,17 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
       void pullRemoteHistory();
     });
   }, [open, pullRemoteHistory]);
+
+  useEffect(() => {
+    if (!open) {
+      sessionAnchoredRef.current = false;
+      setViewMode("chat");
+      return;
+    }
+    if (historyLoading || sessionAnchoredRef.current) return;
+    setSessionCutoff(messages.length);
+    sessionAnchoredRef.current = true;
+  }, [open, historyLoading, messages.length]);
 
   useEffect(() => {
     if (skipLsSaveRef.current) return;
@@ -576,6 +810,10 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
     return () => window.removeEventListener("resize", onResize);
   }, [embedded]);
 
+  const historyMessages = messages.slice(0, sessionCutoff);
+  const sessionMessages = messages.slice(sessionCutoff);
+  const displayedMessages = viewMode === "history" ? historyMessages : sessionMessages;
+
   useLayoutEffect(() => {
     if (historyLoading || !open) return;
     const el = scrollRef.current;
@@ -583,7 +821,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
     requestAnimationFrame(() => {
       el.scrollTop = el.scrollHeight;
     });
-  }, [historyLoading, messages, open]);
+  }, [historyLoading, displayedMessages, open, viewMode]);
 
   useEffect(() => {
     if (embedded || !open) return;
@@ -592,6 +830,11 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
       document.body.style.overflow = "";
     };
   }, [embedded, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    trackMrBrownieFunnel("chat_open", { pathname, embedded: embedded ? 1 : 0 });
+  }, [open, pathname, embedded]);
 
   /** إغلاق عند الضغط أو اللمس خارج لوحة الشات */
   useEffect(() => {
@@ -616,7 +859,9 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
       if ((!trimmed && attachments.length === 0) || loading) return;
       if (hasUploadingAttachments(pendingImages)) return;
 
-      const userContent = trimmed || "انظر الصورة المرفقة";
+      trackMrBrownieFunnel("chat_message", { pathname, locale: lang });
+
+      const userContent = trimmed || t("mrBrownieChat.imageFallback");
       const imageUrls = attachments.map((a) => a.url);
       const userTs = Date.now();
       const nextMessages: ChatMessage[] = [
@@ -653,6 +898,8 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
             ? pathname.split("/").filter(Boolean)[1]
             : undefined;
 
+        let streamMeta: Record<string, unknown> | undefined;
+
         const reply = await streamMrBrownieChat({
           messages: nextMessages.map(({ role, content, imageUrls: imgs }) => ({
             role,
@@ -665,6 +912,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
             locale: lang,
             productSlug,
           },
+          persona: shopAssistant ? "auto" : undefined,
           signal: controller.signal,
           callbacks: {
             onToken: (fullText) => {
@@ -677,10 +925,13 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
               });
             },
             onDone: (meta) => {
+              streamMeta = meta;
               const metaRole = meta?.role;
               if (typeof metaRole === "string" && metaRole.length > 0) {
                 setSessionRole(metaRole);
               }
+              const followUps = parseFollowUps(meta);
+              if (followUps.length > 0) setDynamicChips(followUps);
             },
             onError: (msg) => setError(msg),
           },
@@ -692,10 +943,32 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
           return;
         }
 
+        const productCards = parseProductCards(streamMeta);
+        const actionCards = parseActionCards(streamMeta);
+        const clientActions = parseClientActions(streamMeta);
+        const replyPersona = STOREFRONT_PERSONA;
+
+        trackMrBrownieFunnel("assistant_reply", {
+          pathname,
+          has_products: productCards.length > 0 ? 1 : 0,
+          has_actions: actionCards.length > 0 ? 1 : 0,
+          prompt_variant:
+            typeof streamMeta?.prompt_variant === "string"
+              ? streamMeta.prompt_variant
+              : undefined,
+        });
+
         setMessages((prev) => {
           const copy = [...prev];
           if (copy[streamingIdx]) {
-            copy[streamingIdx] = { ...copy[streamingIdx], content: reply };
+            copy[streamingIdx] = {
+              ...copy[streamingIdx],
+              content: reply,
+              productCards: productCards.length ? productCards : undefined,
+              actionCards: actionCards.length ? actionCards : undefined,
+              clientActions: clientActions.length ? clientActions : undefined,
+              persona: replyPersona,
+            };
           }
           return copy;
         });
@@ -726,7 +999,17 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
         setLoading(false);
       }
     },
-    [loading, messages, lines, enqueueSaveMessage, pendingImages],
+    [
+      loading,
+      messages,
+      lines,
+      enqueueSaveMessage,
+      pendingImages,
+      t,
+      pathname,
+      lang,
+      shopAssistant,
+    ],
   );
 
   const send = useCallback(() => {
@@ -890,14 +1173,14 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={MR_BROWNIE_MASCOT_SRC}
-                  alt="Mr. Brownie"
+                  src={personaCfg.mascotSrc}
+                  alt={personaCfg.displayName}
                   width={56}
                   height={56}
                   decoding="async"
                   draggable={false}
                   className={cn(
-                    "shrink-0 object-contain object-center",
+                    "shrink-0 object-contain object-center transition-opacity duration-300",
                     embedded ? "h-12 w-12" : "h-14 w-14",
                   )}
                 />
@@ -909,7 +1192,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
                       embedded ? "text-lg" : "text-xl",
                     )}
                   >
-                    Mr. Brownie
+                    {personaCfg.displayName}
                   </p>
                   <p
                     className={cn(
@@ -917,23 +1200,50 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
                       embedded ? "text-xs" : "text-sm",
                     )}
                   >
-                    {assistantSubtitleAr(sessionRole, Boolean(isSignedIn))}
+                    {shopAssistant
+                      ? t("mrBrownieChat.storefrontSubtitle")
+                      : assistantSubtitle(sessionRole, Boolean(isSignedIn), t)}
                   </p>
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
+                {viewMode === "history" ? (
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("chat")}
+                    className="cb-mr-brownie-header__btn inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold"
+                  >
+                    <BackIcon className="h-3.5 w-3.5" aria-hidden />
+                    {t("mrBrownieChat.currentChat")}
+                  </button>
+                ) : historyMessages.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("history")}
+                    className="cb-mr-brownie-header__btn inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold"
+                    aria-label={t("mrBrownieChat.historyAria", {
+                      count: historyMessages.length,
+                    })}
+                  >
+                    <History className="h-3.5 w-3.5" aria-hidden />
+                    {t("mrBrownieChat.history")}
+                    <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] tabular-nums">
+                      {historyMessages.length}
+                    </span>
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => void clearConversation()}
                   className="cb-mr-brownie-header__btn rounded-full px-3 py-1.5 text-xs font-semibold"
                 >
-                  مسح المحادثة
+                  {t("mrBrownieChat.clearConversation")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
                   className="cb-mr-brownie-header__btn rounded-full p-2"
-                  aria-label={embedded ? "طي المحادثة" : "إغلاق المحادثة"}
+                  aria-label={embedded ? t("mrBrownieChat.collapseChat") : t("mrBrownieChat.closeChat")}
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -948,9 +1258,13 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
               )}
             >
               {historyLoading ? (
-                <div className="space-y-3 px-0.5" aria-busy="true" aria-label="جاري تحميل السجل">
+                <div
+                  className="space-y-3 px-0.5"
+                  aria-busy="true"
+                  aria-label={t("mrBrownieChat.loadingHistoryAria")}
+                >
                   <p className="text-center text-xs font-medium text-cb-text-muted">
-                    جاري تحميل السجل…
+                    {t("mrBrownieChat.loadingHistory")}
                   </p>
                   {[1, 2, 3, 4].map((i) => (
                     <div
@@ -964,29 +1278,92 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
                 </div>
               ) : (
                 <>
-                  {messages.length === 0 ? (
+                  {viewMode === "history" ? (
+                    <p className="text-center text-xs font-medium text-cb-text-muted">
+                      {t("mrBrownieChat.historyReadOnly")}
+                    </p>
+                  ) : displayedMessages.length === 0 ? (
                     <p className="me-auto max-w-[92%] rounded-2xl border border-[#6b3a1f]/15 bg-white/80 px-3.5 py-2.5 text-sm leading-relaxed text-[#2a1505] shadow-sm">
-                      مرحباً — أنا Mr. Brownie. اسأل عن النكهات، الهدايا، التوصيل، أو صندوق الهدايا.
+                      {t("mrBrownieChat.welcome")}
                     </p>
                   ) : null}
-                  {messages.map((m, i) => {
+                  {displayedMessages.length === 0 && viewMode === "history" ? (
+                    <p className="text-center text-sm text-cb-text-muted">
+                      {t("mrBrownieChat.historyEmpty")}
+                    </p>
+                  ) : null}
+                  {displayedMessages.map((m, vi) => {
+                    const i = viewMode === "history" ? vi : sessionCutoff + vi;
                     const msgKey = String(m.createdAt ?? i);
+                    const isStreamingMsg =
+                      viewMode === "chat" &&
+                      loading &&
+                      streamingIndex === i &&
+                      m.role === "assistant";
                     return (
-                      <MessageBubble
-                        key={`${m.role}-${msgKey}`}
-                        role={m.role}
-                        content={m.content}
-                        isStreaming={loading && streamingIndex === i && m.role === "assistant"}
-                        imageUrls={m.imageUrls}
-                        variant="mr-brownie"
-                        showFeedback={m.role === "assistant" && Boolean(m.content.trim())}
-                        feedbackRating={feedbackByMessage[msgKey] ?? null}
-                        onFeedback={
-                          m.role === "assistant"
-                            ? (rating) => submitFeedback(i, rating)
-                            : undefined
-                        }
-                      />
+                      <div key={`${m.role}-${msgKey}`} className="flex flex-col gap-0">
+                        <MessageBubble
+                          role={m.role}
+                          content={m.content}
+                          isStreaming={isStreamingMsg}
+                          imageUrls={m.imageUrls}
+                          variant="mr-brownie"
+                          showFeedback={
+                            viewMode === "history"
+                              ? false
+                              : m.role === "assistant" && Boolean(m.content.trim())
+                          }
+                          feedbackRating={feedbackByMessage[msgKey] ?? null}
+                          onFeedback={
+                            m.role === "assistant" && viewMode === "chat"
+                              ? (rating) => submitFeedback(i, rating)
+                              : undefined
+                          }
+                        />
+                        {m.role === "assistant" && m.productCards?.length ? (
+                          <MrBrownieChatProductStrip
+                            products={m.productCards}
+                            locale={lang}
+                            viewLabel={t("mrBrownieChat.productCard.view")}
+                            outOfStockLabel={t("mrBrownieChat.productCard.outOfStock")}
+                            onProductClick={(p) =>
+                              trackMrBrownieFunnel("product_card_click", {
+                                pathname,
+                                product_id: p.id,
+                                product_name: p.name.slice(0, 80),
+                              })
+                            }
+                          />
+                        ) : null}
+                        {m.role === "assistant" && m.clientActions?.length ? (
+                          <MrBrownieChatClientActionStrip
+                            actions={m.clientActions}
+                            locale={lang}
+                            busyId={clientActionBusyId}
+                            onAddToCart={runClientAddToCart}
+                            onApplyPromo={(a) => void runClientApplyPromo(a)}
+                          />
+                        ) : null}
+                        {m.role === "assistant" && m.actionCards?.length ? (
+                          <MrBrownieChatActionStrip
+                            cards={m.actionCards}
+                            locale={lang}
+                            onCardClick={(card) =>
+                              trackMrBrownieFunnel("action_card_click", {
+                                pathname,
+                                action_id: card.id,
+                              })
+                            }
+                          />
+                        ) : null}
+                        {isStreamingMsg && !m.content.trim() ? (
+                          <p className="cb-mr-brownie-typing me-auto px-1 text-xs font-medium text-cb-text-muted">
+                            {t("mrBrownieChat.typing", {
+                              name: personaCfg.displayName,
+                            })}
+                          </p>
+                        ) : null}
+                      </div>
                     );
                   })}
                   {error ? (
@@ -994,13 +1371,13 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
                       role="alert"
                       className="rounded-2xl border border-red-200/90 bg-red-50/95 px-3.5 py-3 text-sm leading-relaxed text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100"
                     >
-                      <p className="font-semibold">تعذر الرد الآن</p>
+                      <p className="font-semibold">{t("mrBrownieChat.errorTitle")}</p>
                       <p className="mt-1.5 text-[13px] opacity-95">{error}</p>
                       {error.includes("GEMINI") ||
                       error.includes("Google AI Studio") ||
                       error.includes("aistudio") ? (
                         <p className="mt-2 text-xs opacity-90">
-                          رابط الحصول على المفتاح:{" "}
+                          {t("mrBrownieChat.errorApiKeyHint")}{" "}
                           <a
                             href="https://aistudio.google.com/apikey"
                             target="_blank"
@@ -1017,6 +1394,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
               )}
             </div>
 
+            {viewMode === "chat" ? (
             <div
               className={cn(
                 "cb-mr-brownie-composer relative z-[2] shrink-0",
@@ -1025,6 +1403,14 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
             >
               <ChatImagePreviewStrip pending={pendingImages} onChange={setPendingImages} />
               <div className="flex gap-2">
+                <VoiceInputButton
+                  locale={lang}
+                  disabled={loading || historyLoading}
+                  onTranscript={(text) => setInput((prev) => (prev ? `${prev} ${text}` : text))}
+                  labelStart={t("mrBrownieChat.voice.start")}
+                  labelStop={t("mrBrownieChat.voice.stop")}
+                  unsupportedLabel={t("mrBrownieChat.voice.unsupported")}
+                />
                 <ChatImageAttachButton
                   context="store"
                   pending={pendingImages}
@@ -1042,7 +1428,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
                     }
                   }}
                   rows={2}
-                  placeholder="اكتب سؤالك…"
+                  placeholder={t("mrBrownieChat.inputPlaceholder")}
                   disabled={loading || historyLoading}
                   className="min-h-[48px] flex-1 resize-none rounded-2xl border border-cb-border bg-cb-surface px-3 py-2.5 text-sm text-cb-text-strong shadow-inner outline-none transition-shadow focus:border-cb-border-strong focus:ring-2 focus:ring-cb-focus/20 disabled:cursor-not-allowed disabled:opacity-60"
                 />
@@ -1066,7 +1452,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
                     buttonClassName("primary", "shrink-0 self-end px-4 py-3"),
                     "min-h-[48px] rounded-2xl shadow-[var(--shadow-card)]",
                   )}
-                  aria-label={loading ? "إيقاف التوليد" : "إرسال"}
+                  aria-label={loading ? t("mrBrownieChat.stopGenerating") : t("mrBrownieChat.send")}
                 >
                   {loading ? (
                     <Square className="h-4 w-4 fill-current" />
@@ -1081,7 +1467,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
                   embedded ? "text-xs" : "text-sm",
                 )}
               >
-                اقتراحات سريعة
+                {t("mrBrownieChat.quickSuggestions")}
               </p>
               <div
                 className={cn(
@@ -1089,19 +1475,26 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
                   embedded ? "max-h-[11rem]" : "max-h-[10rem] sm:max-h-[12rem]",
                 )}
               >
-                {suggestionsForRole(sessionRole).map((s) => (
+                {chipSuggestions.map((s) => (
                   <button
                     key={s}
                     type="button"
                     disabled={loading || historyLoading}
-                    onClick={() => void submitMessage(s)}
+                    onClick={() => {
+                      trackMrBrownieFunnel("chip_click", {
+                        pathname,
+                        chip: s.slice(0, 80),
+                      });
+                      void submitMessage(s);
+                    }}
                     className={cn(
-                      "rounded-full border border-cb-border/90 bg-cb-cream/80 text-left font-medium leading-snug text-cb-text-strong",
+                      "cb-mr-brownie-chip rounded-full border text-left font-medium leading-snug",
+                      "cb-mr-brownie-chip--brownie",
                       embedded
                         ? "px-3.5 py-2 text-[13px]"
                         : "px-4 py-2 text-sm",
-                      "transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-px hover:bg-cb-peach/55 hover:shadow-sm",
-                      "disabled:pointer-events-none disabled:opacity-50 dark:bg-cb-surface-2/90 dark:hover:bg-cb-peach-deep/35",
+                      "transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-sm",
+                      "disabled:pointer-events-none disabled:opacity-50",
                     )}
                   >
                     {s}
@@ -1109,9 +1502,31 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
                 ))}
               </div>
               <p className="mt-2 text-xs text-cb-text-muted">
-                Google Gemini · {assistantSubtitleAr(sessionRole, Boolean(isSignedIn))}
+                {t("mrBrownieChat.footerPowered", {
+                  role: assistantSubtitle(sessionRole, Boolean(isSignedIn), t),
+                })}
               </p>
             </div>
+            ) : (
+              <div
+                className={cn(
+                  "shrink-0 border-t border-cb-border/60 bg-cb-cream/90 px-4 py-3 text-center",
+                  embedded ? "p-3.5" : "p-4 sm:p-5",
+                )}
+              >
+                <button
+                  type="button"
+                  onClick={() => setViewMode("chat")}
+                  className={cn(
+                    buttonClassName("outline", "w-full gap-2"),
+                    "rounded-2xl py-2.5 text-sm font-semibold",
+                  )}
+                >
+                  <BackIcon className="h-4 w-4" aria-hidden />
+                  {t("mrBrownieChat.backToCurrentChat")}
+                </button>
+              </div>
+            )}
     </aside>
   );
 
@@ -1126,7 +1541,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={MR_BROWNIE_MASCOT_SRC}
+              src={PERSONA_CONFIG.mr_brownie.mascotSrc}
               alt=""
               width={44}
               height={44}
@@ -1136,7 +1551,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
             />
             <span className="gb-assistant__teaser-copy">
               <strong>Mr. Brownie</strong>
-              <span>اسأل عن الهدايا، المنتجات، أو التوصيل</span>
+              <span>{t("mrBrownieChat.embeddedTeaser")}</span>
             </span>
           </button>
         ) : (
@@ -1211,7 +1626,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
           ) : null}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={MR_BROWNIE_MASCOT_SRC}
+            src={PERSONA_CONFIG.mr_brownie.mascotSrc}
             alt=""
             width={92}
             height={92}
@@ -1249,7 +1664,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
               {bubbleText}
             </p>
             <p className="relative z-[1] mt-1 break-words text-start text-[10px] text-cb-text-muted">
-              اضغط على الأيقونة للرد 💬
+              {t("mrBrownieChat.ambientTapHint")}
             </p>
           </div>
         </span>
@@ -1260,7 +1675,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
           <button
             type="button"
             className="cb-mr-brownie-scrim"
-            aria-label="إغلاق المحادثة"
+            aria-label={t("mrBrownieChat.closeChat")}
             onClick={() => setOpen(false)}
           />
           {chatPanel}

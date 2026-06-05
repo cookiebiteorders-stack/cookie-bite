@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { MysteryBoxClient } from "@/components/mystery-box/mystery-box-client";
 import {
   buildBreadcrumbJsonLd,
@@ -8,6 +9,7 @@ import {
 import { getLangFromCookies } from "@/lib/seo/server";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { translations } from "@/lib/i18n/translations";
+import { listActiveMysteryRules } from "@/lib/mystery-box/rules";
 
 export async function generateMetadata(): Promise<Metadata> {
   const lang = await getLangFromCookies();
@@ -24,6 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function MysteryBoxPage() {
   const lang = await getLangFromCookies();
   const dict = translations[lang];
+  const rules = await listActiveMysteryRules();
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: (dict.tabs as { home: string }).home, path: "/" },
     { name: (dict.userMenu as { giftBox: string }).giftBox, path: "/gift-box" },
@@ -36,7 +39,13 @@ export default async function MysteryBoxPage() {
   return (
     <>
       <JsonLdScript id="mystery-box-breadcrumb" json={breadcrumbJsonLd} />
-      <MysteryBoxClient />
+      <Suspense
+        fallback={
+          <div className="mystery-page min-h-[75vh] animate-pulse bg-cb-peach/20 py-16" />
+        }
+      >
+        <MysteryBoxClient initialRules={rules} />
+      </Suspense>
     </>
   );
 }

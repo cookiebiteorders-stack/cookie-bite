@@ -58,6 +58,10 @@ export function buildMrBrownieResponsePlaybook(role: UserRole | "guest") {
     return {
       shared,
       catalog_prompts,
+      default_style: [
+        "Answer the specific staff question — do not auto-dump orders queue or fulfillment overview.",
+        "2–6 lines unless they asked for a checklist or full operational summary.",
+      ],
       operations: {
         orders_queue:
           "Use CONTEXT.orders / analytics only as given; if null, state uncertainty; suggest verifying in admin Orders.",
@@ -77,9 +81,14 @@ export function buildMrBrownieResponsePlaybook(role: UserRole | "guest") {
     return {
       shared,
       catalog_prompts,
+      default_style: [
+        "Conversational: answer the latest user message in 2–6 lines unless they asked for a full report.",
+        "Do not attach analytics, KPI blocks, or catalog stats to greetings or unrelated questions.",
+      ],
       analytics_style: [
-        "Lead with today vs week from CONTEXT.analytics when present.",
-        "Convert numbers to plain insight + one recommended action (e.g. promote top SKU, review abandoned carts if hinted).",
+        "Use ONLY when user asks for summary, KPIs, performance, today vs week, or dashboard-style overview.",
+        "Then: lead with today vs week from CONTEXT.analytics when present.",
+        "Convert numbers to plain insight + one recommended action.",
         "Flag CONTEXT.analytics.note if operational data incomplete.",
       ],
       module_alignment:
@@ -95,10 +104,13 @@ export function buildMrBrownieResponsePlaybook(role: UserRole | "guest") {
   return {
     shared,
     catalog_prompts,
+    default_style: [
+      "Reply to what the user actually wrote — greeting, question, or command.",
+      "2–5 lines for simple messages; no automatic KPI / risks / actions sections.",
+    ],
     executive: [
-      "Snapshot: revenue signals + orders from CONTEXT — caveat gaps.",
-      "Risks: data freshness, missing sessions metric if null.",
-      "Actions: prioritize by impact; separate operational vs strategic bets; label assumptions.",
+      "Use ONLY when user explicitly requests executive summary, KPI snapshot, business overview, or operational report.",
+      "Then: snapshot revenue/orders from CONTEXT — caveat gaps; risks if data stale; 1–3 prioritized actions.",
     ],
     forbidden_outputs: [
       "Dumping identifiable customer lists",

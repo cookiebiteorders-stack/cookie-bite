@@ -3,21 +3,35 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Cake, Briefcase, PartyPopper, Gift, Snowflake } from "lucide-react";
-import { GIFT_BOXES, IMAGES } from "@/lib/data";
+import type { LucideIcon } from "lucide-react";
+import { IMAGES } from "@/lib/data";
+import type { Product } from "@/lib/data";
 import { ProductCard } from "@/components/product/product-card";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { buttonClassName } from "@/components/ui/button";
 import { useLanguage } from "@/components/providers/language-provider";
+import {
+  GIFT_OCCASION_CATEGORIES,
+  resolveGiftOccasionHref,
+  type GiftOccasionCategoryId,
+} from "@/lib/gift-box/occasion-categories";
+import type { OccasionTemplate } from "@/lib/occasion-templates/types";
+import { cn } from "@/lib/utils";
 
-const giftCategoryKeys = [
-  { key: "pages.giftBox.catBirthday", icon: Cake },
-  { key: "pages.giftBox.catCelebrations", icon: PartyPopper },
-  { key: "pages.giftBox.catThankYou", icon: Gift },
-  { key: "pages.giftBox.catCorporate", icon: Briefcase },
-  { key: "pages.giftBox.catHoliday", icon: Snowflake },
-] as const;
+const categoryIcons: Record<GiftOccasionCategoryId, LucideIcon> = {
+  birthday: Cake,
+  celebrations: PartyPopper,
+  thanks: Gift,
+  corporate: Briefcase,
+  seasonal: Snowflake,
+};
 
-export function GiftBoxClient() {
+type GiftBoxClientProps = {
+  giftProducts: Product[];
+  occasionTemplates: OccasionTemplate[];
+};
+
+export function GiftBoxClient({ giftProducts, occasionTemplates }: GiftBoxClientProps) {
   const { t } = useLanguage();
 
   return (
@@ -71,16 +85,26 @@ export function GiftBoxClient() {
             subtitle={t("pages.giftBox.findSubtitle")}
           />
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {giftCategoryKeys.map(({ key, icon: Icon }) => (
-              <button
-                key={key}
-                type="button"
-                className="flex min-h-[48px] flex-col items-center gap-3 rounded-3xl border border-cb-peach-deep bg-cb-peach/60 p-6 text-center transition hover:-translate-y-1 hover:bg-cb-peach hover:shadow-md"
-              >
-                <Icon className="h-8 w-8 text-cb-terracotta-dark" aria-hidden />
-                <span className="text-sm font-bold text-cb-text-strong">{t(key)}</span>
-              </button>
-            ))}
+            {GIFT_OCCASION_CATEGORIES.map((category) => {
+              const Icon = categoryIcons[category.id];
+              const href = resolveGiftOccasionHref(category, occasionTemplates);
+              return (
+                <Link
+                  key={category.id}
+                  href={href}
+                  className={cn(
+                    "flex min-h-[48px] flex-col items-center gap-3 rounded-3xl border border-cb-peach-deep bg-cb-peach/60 p-6 text-center transition",
+                    "hover:-translate-y-1 hover:border-cb-terracotta/40 hover:bg-cb-peach hover:shadow-md",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cb-terracotta focus-visible:ring-offset-2",
+                  )}
+                >
+                  <Icon className="h-8 w-8 text-cb-terracotta-dark" aria-hidden />
+                  <span className="text-sm font-bold text-cb-text-strong">
+                    {t(category.translationKey)}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -92,11 +116,23 @@ export function GiftBoxClient() {
             title={t("pages.giftBox.boxesTitle")}
             subtitle={t("pages.giftBox.boxesSubtitle")}
           />
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {GIFT_BOXES.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
+          {giftProducts.length > 0 ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {giftProducts.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-3xl border border-cb-peach-deep bg-cb-surface p-10 text-center">
+              <p className="text-cb-text">{t("pages.giftBox.emptyBoxes")}</p>
+              <Link
+                href="/gift-box/build"
+                className={cn(buttonClassName("primary", "mt-6 rounded-full px-8"))}
+              >
+                {t("pages.giftBox.buildCustom")}
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
@@ -149,7 +185,7 @@ export function GiftBoxClient() {
             <p className="text-cb-text">{t("pages.giftBox.corporateBody")}</p>
           </div>
           <Link
-            href="/contact"
+            href="/corporate-gifting"
             className={buttonClassName("primary", "whitespace-nowrap rounded-full px-8")}
           >
             {t("pages.giftBox.contactCorporate")}

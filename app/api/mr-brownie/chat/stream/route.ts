@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
       session: parsed.data.session,
       userId: userId ?? null,
       clerkUser,
+      persona: parsed.data.persona,
     });
 
     return createGeminiStreamResponse(
@@ -67,7 +68,16 @@ export async function POST(req: NextRequest) {
         temperature: prepared.temperature,
         maxOutputTokens: prepared.maxOutputTokens,
       },
-      { role: prepared.resolvedRole },
+      {
+        role: prepared.resolvedRole,
+        persona: prepared.turnLogMeta.activePersona,
+        prompt_variant: prepared.turnLogMeta.promptVariant,
+        sentiment_score: prepared.turnLogMeta.sentimentScore,
+        follow_up_options: prepared.turnLogMeta.followUpOptions,
+        product_cards: prepared.turnLogMeta.productCards,
+        action_cards: prepared.turnLogMeta.actionCards,
+        client_actions: prepared.turnLogMeta.clientActions,
+      },
       {
         onComplete: async (draft) => {
           await finalizeAgentResponse({
@@ -82,6 +92,11 @@ export async function POST(req: NextRequest) {
               intent: prepared.turnLogMeta.intent,
               confidencePct: prepared.turnLogMeta.confidencePct,
               personalityMode: prepared.turnLogMeta.personalityMode,
+              activePersona: prepared.turnLogMeta.activePersona,
+              promptVariant: prepared.turnLogMeta.promptVariant,
+              ragSource: prepared.turnLogMeta.ragSource,
+              ragHitCount: prepared.turnLogMeta.ragHitCount,
+              sentimentScore: prepared.turnLogMeta.sentimentScore,
               pageIntent: prepared.turnLogMeta.pageIntent,
               pathname: prepared.turnLogMeta.pathname,
               locale: prepared.turnLogMeta.locale,

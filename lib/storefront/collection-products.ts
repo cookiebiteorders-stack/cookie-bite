@@ -1,5 +1,5 @@
 import "server-only";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { ProductRow } from "@/lib/db/types";
 import type { Product } from "@/lib/data";
 import type { Lang } from "@/lib/i18n/translations";
@@ -21,11 +21,11 @@ export async function listProductsForCollection(
   lang: Lang = "en",
 ): Promise<Product[]> {
   const categories = COLLECTION_CATEGORY_MAP[slug];
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return [];
   }
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
       .from("products")
       .select("*")

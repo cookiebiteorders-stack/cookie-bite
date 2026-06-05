@@ -95,6 +95,7 @@ describe("Mr. Brownie brain", () => {
         dietary: [],
         pieces_count: 1,
         shop_path: "/shop/choc-chip",
+        image_url: null,
       },
     ]);
     expect(hits[0]?.id).toBe("choc-chip");

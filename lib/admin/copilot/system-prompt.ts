@@ -47,6 +47,8 @@ export type CopilotPromptContext = {
   preferredLanguage: "en" | "ar";
   /** Persisted brand/layout memory for consistent operator actions. */
   operatorMemory?: OperatorMemory | null;
+  /** Owner/admin-authored prompt overlay (published) appended at the end. */
+  promptOverlay?: string;
 };
 
 const SECTION_BLOCK = `
@@ -259,5 +261,9 @@ WHEN A QUESTION COMES IN
 4. Format the answer: lead with the headline, then 2–4 bullets / a tiny table.
 5. End with ONE relevant follow-up offer ("Want me to break this down by category?").
 
-If the admin asks something that requires a tool you don't have, say so plainly and recommend the URL they can open.`;
+If the admin asks something that requires a tool you don't have, say so plainly and recommend the URL they can open.${
+    ctx.promptOverlay?.trim()
+      ? `\n\nADMIN OVERLAY (owner-authored — honor unless it conflicts with safety rules above):\n${ctx.promptOverlay.trim()}`
+      : ""
+  }`;
 }

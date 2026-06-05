@@ -1,4 +1,10 @@
 import { detectTrainingIntent } from "@/lib/mr-brownie/training/detect-intent";
+import type { ChatPersona } from "@/lib/mr-brownie/personas";
+import {
+  loadToneVectorForUser,
+  persistToneVector,
+  shiftToneFromFeedback,
+} from "@/lib/mr-brownie/tone-vector";
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function storeMrBrownieFeedback(input: {
@@ -11,6 +17,7 @@ export async function storeMrBrownieFeedback(input: {
   locale?: string;
   clerkUserId?: string | null;
   guestSessionId?: string | null;
+  activePersona?: ChatPersona;
 }): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) {
@@ -39,6 +46,20 @@ export async function storeMrBrownieFeedback(input: {
   if (error || !data?.id) {
     console.error("[training] store feedback", error);
     return { ok: false, error: error?.message ?? "Insert failed" };
+  }
+
+  if (input.clerkUserId) {
+    const current = (await loadToneVectorForUser(input.clerkUserId)) ?? {
+      formal_casual: 0,
+      serious_playful: 0,
+      concise_detailed: 0,
+      interaction_count: 0,
+    };
+    const next = shiftToneFromFeedback(current, {
+      rating: input.rating,
+      activePersona: input.activePersona,
+    });
+    void persistToneVector(input.clerkUserId, next);
   }
 
   return { ok: true, id: String(data.id) };

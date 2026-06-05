@@ -1,14 +1,13 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ViewReveal } from "@/components/motion/view-reveal";
 import type { Product } from "@/lib/data";
+import { CarouselProductCard } from "@/components/sections/carousel-product-card";
 import { SectionHeading } from "@/components/sections/section-heading";
-import { ProductPriceDisplay } from "@/components/product/product-price-display";
 import { buttonClassName } from "@/components/ui/button";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
@@ -92,7 +91,7 @@ export function ProductCarousel({ products = [] }: ProductCarouselProps) {
         <div className="grid gap-6 lg:grid-cols-4">
           <AnimatePresence mode="popLayout">
             {triple.map((product, i) => (
-              <motion.article
+              <motion.div
                 key={`${product.id}-${index}-${i}`}
                 layout
                 initial={{ opacity: 0, y: 22 }}
@@ -103,35 +102,10 @@ export function ProductCarousel({ products = [] }: ProductCarouselProps) {
                   delay: i * 0.06,
                   ease: [0.33, 1, 0.68, 1],
                 }}
-                className={cn(
-                  "overflow-hidden rounded-2xl border border-cb-peach-deep/80 bg-cb-cream cb-shadow-editorial cb-shadow-editorial-hover",
-                  i === 1 && "lg:mt-8",
-                  i === 2 && "lg:-mt-4",
-                )}
+                className={cn(i === 1 && "lg:mt-8", i === 2 && "lg:-mt-4")}
               >
-                <div className="relative aspect-square">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width:1024px) 100vw, 25vw"
-                  />
-                </div>
-                <div className="space-y-1 px-5 pb-6 pt-5 text-center">
-                  <h3 className="font-serif text-lg font-semibold text-cb-text-strong">
-                    {product.name}
-                  </h3>
-                  <div className="flex justify-center">
-                    <ProductPriceDisplay
-                      price={product.price}
-                      comparePrice={product.comparePrice}
-                      size="sm"
-                      className="items-center text-center"
-                    />
-                  </div>
-                </div>
-              </motion.article>
+                <CarouselProductCard product={product} />
+              </motion.div>
             ))}
           </AnimatePresence>
           <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-cb-terracotta-dark/35 bg-gradient-to-br from-cb-mint/40 via-cb-cream to-cb-peach/50 p-8 text-center lg:min-h-[min(100%,22rem)]">

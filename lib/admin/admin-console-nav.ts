@@ -32,9 +32,14 @@ export const ADMIN_CONSOLE_NAV_ITEMS: AdminConsoleNavItem[] = [
   { href: "/admin/settings", navKey: "settings", module: "settings" },
 ];
 
+export function canAccessMrsCookieCopilot(role: UserRole): boolean {
+  return role === "owner" || role === "admin";
+}
+
 export function getAccessibleAdminConsoleNav(role: UserRole): AdminConsoleNavItem[] {
   const seen = new Set<string>();
   return ADMIN_CONSOLE_NAV_ITEMS.filter((item) => {
+    if (item.navKey === "copilot" && !canAccessMrsCookieCopilot(role)) return false;
     if (!canAccess(role, item.module)) return false;
     if (seen.has(item.href)) return false;
     seen.add(item.href);

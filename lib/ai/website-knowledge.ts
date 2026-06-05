@@ -23,6 +23,7 @@ export type AiCatalogProduct = {
   dietary: string[];
   pieces_count: number | null;
   shop_path: string;
+  image_url: string | null;
 };
 
 export type WebsiteKnowledgeSnapshot = {
@@ -162,6 +163,7 @@ function productRowToAiCatalog(row: ProductRow): AiCatalogProduct {
     dietary: Array.isArray(row.dietary) ? row.dietary : [],
     pieces_count: row.pieces_count ?? null,
     shop_path: `/shop/${slug}`,
+    image_url: row.image_url?.trim() || null,
   };
 }
 
@@ -181,7 +183,7 @@ async function fetchLiveCatalog(): Promise<LiveCatalogSnapshot> {
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id, slug, name, title_en, title_ar, description, description_en, description_ar, price_egp, compare_price_egp, category, badges, stock, dietary, pieces_count",
+      "id, slug, name, title_en, title_ar, description, description_en, description_ar, price_egp, compare_price_egp, image_url, category, badges, stock, dietary, pieces_count",
     )
     .eq("is_active", true)
     .order("created_at", { ascending: false })

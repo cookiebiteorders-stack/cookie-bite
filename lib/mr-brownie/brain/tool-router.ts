@@ -22,9 +22,9 @@ const ROUTES: Array<{
     reason: "Gift intent — builder or curated boxes.",
   },
   {
-    match: (i) => i === "cart_help",
+    match: (i) => i === "cart_help" || i === "promo_help",
     tool: "cart_summary",
-    reason: "Cart intent — summarize lines and shipping gap.",
+    reason: "Cart/promo intent — summarize lines and validate codes.",
   },
   {
     match: (i) =>

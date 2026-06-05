@@ -26,6 +26,38 @@ import {
   type PersonalityMode,
 } from "@/lib/mr-brownie/brain/personality-router";
 import {
+  buildProductCardsFromSearch,
+  type ChatPersona,
+  type ChatProductCard,
+  type PersonaPreference,
+} from "@/lib/mr-brownie/personas";
+import { buildActionCardsForIntent, type ChatActionCard } from "@/lib/mr-brownie/action-cards";
+import {
+  buildEmotionTrajectory,
+  emotionTrajectoryInstruction,
+  type EmotionTrajectory,
+} from "@/lib/mr-brownie/emotion-trajectory";
+import { resolveRagMeta, type RagSource } from "@/lib/mr-brownie/brain/knowledge-gaps";
+import type { KnowledgeSnippet } from "@/lib/mr-brownie/brain/vector-retrieval";
+import { buildEscalationActionCards } from "@/lib/mr-brownie/escalation";
+import { giftOccasionHint, detectGiftOccasion } from "@/lib/mr-brownie/gift-occasion";
+import { buildProactiveSuggestions } from "@/lib/mr-brownie/proactive-suggestions";
+import {
+  resolvePersonaInstruction,
+  type PersonaPromptOverrides,
+} from "@/lib/mr-brownie/persona-prompts";
+import type { PromptVariant } from "@/lib/mr-brownie/prompt-variant";
+import {
+  getStorefrontPersonaInstruction,
+  STOREFRONT_PERSONA,
+} from "@/lib/mr-brownie/storefront-persona";
+import {
+  buildSeasonalChatContext,
+  type SeasonalChatContext,
+} from "@/lib/mr-brownie/seasonal-context";
+import { scoreSentiment } from "@/lib/mr-brownie/sentiment";
+import { toneVectorInstruction, type ToneVector } from "@/lib/mr-brownie/tone-vector";
+import {
   routeTools,
   toolsToExecuteFromRoutes,
   type ToolRouteDecision,
@@ -33,6 +65,7 @@ import {
 import type { MrBrowniePageIntent } from "@/lib/mr-brownie/page-intent";
 import type { AiCatalogProduct } from "@/lib/ai/website-knowledge";
 import type { CustomerMemorySnapshot } from "@/lib/mr-brownie/fetch-customer-memory";
+import type { ChatClientAction } from "@/lib/mr-brownie/chat-client-actions";
 
 export type BrainPipelineMeta = {
   input: {
@@ -44,7 +77,22 @@ export type BrainPipelineMeta = {
   intent_engine: IntentEngineResult;
   classified_intent: string;
   active_personality: PersonalityMode;
+  active_persona: ChatPersona;
+  prompt_variant: PromptVariant;
+  sentiment_score: number;
+  persona_preference: PersonaPreference;
   personality_instruction: string;
+  persona_instruction: string;
+  product_cards: ChatProductCard[];
+  action_cards: ChatActionCard[];
+  client_actions: ChatClientAction[];
+  emotion_trajectory: EmotionTrajectory;
+  seasonal_context: SeasonalChatContext;
+  tone_vector: ToneVector | null;
+  knowledge_snippets: KnowledgeSnippet[];
+  rag_source: RagSource | null;
+  rag_hit_count: number;
+  gift_occasion: ReturnType<typeof detectGiftOccasion>;
   layered_thinking: LayeredThinkingPlan;
   memory_graph: ConversationMemoryGraph;
   conversation_window: ReturnType<typeof buildConversationWindowSummary>;
@@ -77,7 +125,19 @@ export function buildBrainPipelineMeta(params: {
     last_order_hint: string | null;
   } | null;
   loyaltyTier?: string | null;
+  personaPreference?: PersonaPreference;
+  personaPromptOverrides?: PersonaPromptOverrides;
+  promptVariant?: PromptVariant;
+  toneVector?: ToneVector | null;
+  faqEntries?: Array<{ question: string; answer: string; lang: string }>;
+  knowledgeSnippets?: KnowledgeSnippet[];
+  clientActions?: ChatClientAction[];
+  promoPreview?: MrBrownieToolResults["promo_preview"];
 }): BrainPipelineMeta {
+  const prompt_variant: PromptVariant = params.promptVariant ?? "a";
+  const persona_preference = params.personaPreference ?? "auto";
+  const sentiment_score = scoreSentiment(params.lastUserMessage ?? "");
+
   const intent_engine = runIntentEngine({
     userMessage: params.lastUserMessage ?? "",
     pageIntent: params.pageIntent,
@@ -99,17 +159,37 @@ export function buildBrainPipelineMeta(params: {
                 ? "general"
                 : intent_engine.primary === "custom_request"
                   ? "gift_request"
-                  : intent_engine.primary,
+                  : intent_engine.primary === "promo_help"
+                    ? "cart_help"
+                    : intent_engine.primary,
           pageIntent: params.pageIntent,
         })
       : "friendly";
+
+  const emotion_trajectory = buildEmotionTrajectory(params.conversationMessages ?? []);
+
+  const isStorefront = params.role === "guest" || params.role === "customer";
+  const active_persona: ChatPersona = isStorefront ? STOREFRONT_PERSONA : STOREFRONT_PERSONA;
+
+  const gift_occasion = detectGiftOccasion(params.lastUserMessage ?? "");
+  const knowledge_snippets = params.knowledgeSnippets ?? [];
+  const rag_meta = resolveRagMeta(
+    knowledge_snippets,
+    Boolean(params.lastUserMessage?.trim()),
+  );
+
+  const seasonal_context = buildSeasonalChatContext(params.locale);
+  const tone_vector = params.toneVector ?? null;
 
   const tool_results = executeMrBrownieTools({
     intent: intent_engine,
     userMessage: params.lastUserMessage ?? "",
     products: params.products,
     cartLines: params.cartLines,
+    promoPreview: params.promoPreview ?? null,
   });
+
+  const client_actions = params.clientActions ?? [];
 
   const conversation_window = buildConversationWindowSummary(
     params.conversationMessages ?? [],
@@ -134,7 +214,45 @@ export function buildBrainPipelineMeta(params: {
     ? buildSmartFallback(intent_engine.primary, params.locale)
     : null;
 
-  const follow_up_options = buildSmartFollowUps(intent_engine.primary, params.locale);
+  const intentFollowUps = buildSmartFollowUps(intent_engine.primary, params.locale);
+  const proactive = isStorefront
+    ? buildProactiveSuggestions({
+        locale: params.locale,
+        pageIntent: params.pageIntent,
+        pathname: params.pathname,
+        cartLines: params.cartLines,
+        seasonal: seasonal_context,
+        lastUserMessage: params.lastUserMessage,
+      })
+    : [];
+  const follow_up_options = [...new Set([...intentFollowUps, ...proactive])].slice(0, 4);
+
+  const product_cards =
+    tool_results.search_products.length > 0
+      ? buildProductCardsFromSearch(tool_results.search_products)
+      : [];
+
+  const action_cards = isStorefront
+    ? [
+        ...buildActionCardsForIntent(intent_engine.primary, params.locale),
+        ...buildEscalationActionCards(params.locale, emotion_trajectory.crisis_mode),
+      ].filter((c, i, arr) => arr.findIndex((x) => x.id === c.id) === i)
+    : [];
+
+  const persona_instruction = isStorefront
+    ? getStorefrontPersonaInstruction(
+        active_personality,
+        emotion_trajectory.crisis_mode,
+        params.locale,
+        params.personaPromptOverrides ?? {},
+        prompt_variant,
+      )
+    : resolvePersonaInstruction(
+        active_persona,
+        params.locale,
+        params.personaPromptOverrides ?? {},
+        prompt_variant,
+      );
 
   const conversion_hints: string[] = [];
   if (active_personality === "sales") {
@@ -147,6 +265,32 @@ export function buildBrainPipelineMeta(params: {
         `Free delivery gap: ${tool_results.cart_summary.amount_to_free_delivery_egp} EGP.`,
       );
     }
+    for (const hook of seasonal_context.sales_hooks) {
+      conversion_hints.push(hook);
+    }
+  }
+
+  if (client_actions.length) {
+    conversion_hints.push(
+      `client_actions available (${client_actions.length}) — tell user they can tap the button to add to cart or apply promo.`,
+    );
+  }
+  if (tool_results.promo_preview?.valid) {
+    conversion_hints.push(
+      `Promo ${tool_results.promo_preview.code} valid — discount ${tool_results.promo_preview.discount_egp ?? 0} EGP.`,
+    );
+  }
+  if (tone_vector) {
+    conversion_hints.push(toneVectorInstruction(tone_vector));
+  }
+  conversion_hints.push(emotionTrajectoryInstruction(emotion_trajectory));
+  const occasionHint = giftOccasionHint(gift_occasion, params.locale);
+  if (occasionHint) conversion_hints.push(occasionHint);
+  if (knowledge_snippets.length) {
+    const ragSource = knowledge_snippets[0]?.source ?? "keyword";
+    conversion_hints.push(
+      `FAQ snippets retrieved (${knowledge_snippets.length}, ${ragSource}) — cite if relevant; do not contradict.`,
+    );
   }
 
   return {
@@ -159,7 +303,22 @@ export function buildBrainPipelineMeta(params: {
     intent_engine,
     classified_intent: intent_engine.primary,
     active_personality,
+    active_persona,
+    prompt_variant,
+    sentiment_score,
+    persona_preference,
     personality_instruction: getPersonalityModeInstruction(active_personality),
+    persona_instruction,
+    product_cards,
+    action_cards,
+    client_actions,
+    emotion_trajectory,
+    seasonal_context,
+    tone_vector,
+    knowledge_snippets,
+    rag_source: rag_meta.rag_source,
+    rag_hit_count: rag_meta.rag_hit_count,
+    gift_occasion,
     layered_thinking,
     memory_graph,
     conversation_window,
@@ -175,7 +334,11 @@ export function buildBrainPipelineMeta(params: {
       "If clarification_mode, use clarification_prompt pattern with choices — do not guess.",
       "If confidence_pct >= 90, answer directly; if 50–89, brief answer + one question; if <50, clarify first.",
       "Pick one string from follow_up_options as closing question when possible.",
-    ],
+      emotionTrajectoryInstruction(emotion_trajectory),
+      seasonal_context.season_id !== "default"
+        ? `Seasonal context: ${seasonal_context.label_en} — ${seasonal_context.proactive_offers.join(" ")}`
+        : "",
+    ].filter(Boolean),
     conversion_hints,
     supervisor: {
       enabled: true,

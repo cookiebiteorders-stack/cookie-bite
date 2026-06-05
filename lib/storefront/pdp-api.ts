@@ -13,10 +13,16 @@ function appOrigin(): string {
   return raw.replace(/\/$/, "");
 }
 
+export type PdpReview = import("@/lib/storefront/pdp-data").PdpReview;
+
 export type PdpApiPayload = {
   product: Product;
   addons: import("@/lib/addons/types").Addon[];
   related: Product[];
+  fbt: Product[];
+  reviews: PdpReview[];
+  reviewCount: number;
+  avgRating: number | null;
 };
 
 /** جلب PDP عبر مسار API العام (نفس المصدر الذي يعمل على الإنتاج). */
@@ -24,7 +30,7 @@ export async function fetchPdpPayloadFromApi(
   slug: string,
   lang: Lang = "en",
 ): Promise<PdpApiPayload | null> {
-  const url = `${appOrigin()}/api/products/${encodeURIComponent(slug)}?lang=${lang}&related=1&addons=1`;
+  const url = `${appOrigin()}/api/products/${encodeURIComponent(slug)}?lang=${lang}&related=1&addons=1&fbt=1&reviews=1`;
   try {
     const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok) return null;
@@ -32,14 +38,23 @@ export async function fetchPdpPayloadFromApi(
       product?: ProductRow;
       addons?: import("@/lib/addons/types").Addon[];
       related?: Product[];
+      fbt?: Product[];
+      reviews?: PdpReview[];
+      review_count?: number;
+      avg_rating?: number | null;
     };
     if (!json.product?.slug) return null;
     const product = productRowToStorefrontProduct(json.product, FALLBACK_DESC, lang);
     const related = (json.related ?? []).filter((p) => p.id !== product.id);
+    const fbt = (json.fbt ?? []).filter((p) => p.id !== product.id);
     return {
       product,
       addons: json.addons ?? [],
       related,
+      fbt,
+      reviews: json.reviews ?? [],
+      reviewCount: json.review_count ?? 0,
+      avgRating: json.avg_rating ?? null,
     };
   } catch (e) {
     console.error("[fetchPdpPayloadFromApi]", slug, e);

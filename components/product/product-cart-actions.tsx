@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
-import { Minus, Plus, ShoppingBag } from "lucide-react";
+import { forwardRef, useEffect, useMemo, useState } from "react";
+import { Check, Minus, Plus, ShoppingBag } from "lucide-react";
 import type { Addon, CartSelectedAddon } from "@/lib/addons/types";
 import type { AddonSelectedMap } from "@/lib/addons/selection";
 import { validateAddonSelection } from "@/lib/addons/selection";
 import { buildCartLineId } from "@/lib/cart/types";
 import type { Product } from "@/lib/data";
 import { isProductOutOfStock } from "@/lib/products/stock";
+import { trackGa4Event } from "@/lib/analytics/ga4";
 import { trackProductEvent } from "@/lib/analytics/track-event";
 import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
@@ -55,7 +56,9 @@ function trackAdd(product: Product, quantity: number) {
   }
 }
 
-export function ProductCartActions({
+export const ProductCartActions = forwardRef<HTMLButtonElement, ProductCartActionsProps>(
+  function ProductCartActions(
+    {
   product,
   addons,
   selected,
@@ -64,10 +67,19 @@ export function ProductCartActions({
   variant = "card",
   addQuantity = 1,
   onAddonError,
-}: ProductCartActionsProps) {
+},
+    ref,
+  ) {
   const { addItem, setQuantity } = useCart();
   const { t, formatPrice } = useLanguage();
   const { lineId, cartLine } = useCartLine(product, selectedAddons);
+  const [justAdded, setJustAdded] = useState(false);
+
+  useEffect(() => {
+    if (!justAdded) return;
+    const id = window.setTimeout(() => setJustAdded(false), 2000);
+    return () => window.clearTimeout(id);
+  }, [justAdded]);
 
   const outOfStock = isProductOutOfStock(product.stock);
   const maxQty =
@@ -96,6 +108,23 @@ export function ProductCartActions({
       );
     }
     return null;
+  }
+
+  if (justAdded) {
+    return (
+      <div
+        className={cn(
+          buttonClassName("primary"),
+          "inline-flex w-full cursor-default items-center justify-center gap-2 rounded-full bg-emerald-700 ring-emerald-700",
+          variant === "pdp" ? "min-h-12 flex-1 sm:max-w-xs" : "py-3 text-sm",
+        )}
+        role="status"
+        aria-live="polite"
+      >
+        <Check className={cn("shrink-0", variant === "pdp" ? "h-5 w-5" : "h-4 w-4")} aria-hidden />
+        {t("product.addedSuccess")}
+      </div>
+    );
   }
 
   if (cartLine) {
@@ -139,6 +168,7 @@ export function ProductCartActions({
 
   return (
     <button
+      ref={ref}
       type="button"
       className={cn(
         buttonClassName("primary"),
@@ -154,6 +184,14 @@ export function ProductCartActions({
         onAddonError?.(null);
         addItem(product, qty, selectedAddons, addonsTotal);
         trackAdd(product, qty);
+        trackGa4Event("add_to_cart", {
+          currency: "EGP",
+          value: unitPrice * qty,
+          items: 1,
+          item_id: product.id,
+          item_name: product.name,
+        });
+        setJustAdded(true);
       }}
     >
       <ShoppingBag
@@ -169,4 +207,5 @@ export function ProductCartActions({
           : t("product.addToCart")}
     </button>
   );
-}
+},
+);

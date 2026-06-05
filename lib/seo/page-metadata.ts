@@ -220,9 +220,9 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
       ],
     },
     ar: {
-      title: "نكهاتنا ومجموعات الكوكيز | كوكي بايت — القاهرة الجديدة",
+      title: "تشكيلة الكوكيز — قائمة المجموعات | كوكي بايت القاهرة الجديدة",
       description:
-        "اكتشف مجموعات كوكي بايت — كلاسيكيات، محبّو الشوكولاتة، محشية، فاخرة، وموسمية. مخبوزة يدوياً في التجمع الخامس مع توصيل في القاهرة الجديدة.",
+        "تصفّح تشكيلة كوكي بايت — كلاسيكيات، محبّو الشوكولاتة، إبداعات مرحة، لمسات فاخرة، وإصدارات محدودة. مخبوزة يدوياً في التجمع الخامس مع توصيل في القاهرة الجديدة.",
       keywords: [
         "نكهات كوكيز القاهرة",
         "قائمة كوكيز مصر",
@@ -233,22 +233,25 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
   },
   "/our-story": {
     en: {
-      title: "Our Story",
+      title: "Our Story | Cookie Bite — Premium Cookies, Joyful Luxury",
       description:
-        "Read the Cookie Bite story and discover how our New Cairo kitchen crafts cookies, gift boxes, and memorable moments.",
+        "Discover the story behind Cookie Bite — where fun meets luxury in every perfectly crafted cookie. Indulge in accessible elegance, one bite at a time.",
       keywords: [
         "cookie bite story",
+        "premium cookies egypt",
+        "joyful luxury cookies",
         "new cairo bakery story",
         "handcrafted cookies egypt",
         "about cookie bite",
       ],
     },
     ar: {
-      title: "من نحن | كوكي بايت — ليس حلوى فقط، لحظة تستحقها",
+      title: "قصتنا | Cookie Bite — كوكيز فاخرة، فخامة مبهجة",
       description:
-        "بُنيت Cookie Bite على فكرة بسيطة: الكوكيز الجيد تجربة يومية تستحقها. مكونات مميزة، فخامة دافئة، وعلاقة حقيقية مع عملائنا في القاهرة الجديدة.",
+        "اكتشف قصة Cookie Bite — حيث يلتقي المرح بالفخامة في كل كوكي مصنوع بعناية. فخامة دافئة يسهل الوصول إليها، قضمة تلو الأخرى.",
       keywords: [
         "قصة كوكي بايت",
+        "كوكيز فاخرة مصر",
         "مخبوزات يدوية القاهرة الجديدة",
         "كوكيز التجمع الخامس",
       ],

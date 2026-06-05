@@ -17,6 +17,7 @@ const bodySchema = z.object({
   sessionId: z.string().max(64).optional(),
   pathname: z.string().max(500).optional(),
   locale: z.enum(["ar", "en", "auto"]).optional(),
+  activePersona: z.enum(["mr_brownie", "mrs_cookie"]).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
     locale: parsed.data.locale,
     clerkUserId: userId,
     guestSessionId,
+    activePersona: parsed.data.activePersona,
   });
 
   if (!result.ok) {

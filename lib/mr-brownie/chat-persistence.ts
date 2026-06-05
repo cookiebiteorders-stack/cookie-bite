@@ -5,10 +5,18 @@ export function mrBrownieChatLsKey(clerkUserId: string | null | undefined): stri
   return clerkUserId ? `${MR_BROWNIE_LS_PREFIX}:u:${clerkUserId}` : `${MR_BROWNIE_LS_PREFIX}:guest`;
 }
 
+import type { ChatActionCard } from "@/lib/mr-brownie/action-cards";
+import type { ChatClientAction } from "@/lib/mr-brownie/chat-client-actions";
+import type { ChatPersona, ChatProductCard } from "@/lib/mr-brownie/personas";
+
 export type ChatMessagePersisted = {
   role: "user" | "assistant";
   content: string;
   imageUrls?: string[];
+  productCards?: ChatProductCard[];
+  actionCards?: ChatActionCard[];
+  clientActions?: ChatClientAction[];
+  persona?: ChatPersona;
   /** وقت تقديري للدمج مع السيرفر */
   createdAt?: number;
 };

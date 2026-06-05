@@ -6,7 +6,8 @@ export type CommerceIntent =
   | TrainingIntent
   | "navigation"
   | "custom_request"
-  | "fast_gift";
+  | "fast_gift"
+  | "promo_help";
 
 export type IntentEngineResult = {
   primary: CommerceIntent;
@@ -29,8 +30,13 @@ function detectSubTags(message: string): string[] {
   return tags;
 }
 
+function detectPromoIntent(message: string): boolean {
+  return /كود|كوبون|خصم|برومو|promo|coupon|discount\s*code/i.test(message);
+}
+
 function refineIntent(base: TrainingIntent, message: string): CommerceIntent {
   const m = message.toLowerCase();
+  if (detectPromoIntent(message)) return "promo_help";
   if (base === "gift_request" && /بسرعة|سريع|fast|asap/.test(m)) {
     return "fast_gift";
   }
@@ -94,6 +100,11 @@ export function runIntentEngine(params: {
       break;
     case "delivery_faq":
       response_strategy = "Answer from knowledge_base.faq; WhatsApp for zone specifics.";
+      break;
+    case "promo_help":
+      response_strategy =
+        "Validate promo from tool_results.promo_preview; offer client_actions.apply_promo; never invent codes.";
+      tools_to_run.push("cart_summary");
       break;
     default:
       break;

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listLinkedAddonsForProduct } from "@/lib/db/addons";
-import { getRelatedStorefrontProducts } from "@/lib/storefront/pdp-data";
+import {
+  getApprovedProductReviews,
+  getFbtStorefrontProducts,
+  getRelatedStorefrontProducts,
+} from "@/lib/storefront/pdp-data";
 import { getActiveProductRowByRouteKey } from "@/lib/storefront/resolve-active-product";
 import type { Lang } from "@/lib/i18n/translations";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -43,8 +47,10 @@ export async function GET(
   const lang: Lang = req.nextUrl.searchParams.get("lang") === "ar" ? "ar" : "en";
   const wantAddons = req.nextUrl.searchParams.get("addons") === "1";
   const wantRelated = req.nextUrl.searchParams.get("related") === "1";
+  const wantFbt = req.nextUrl.searchParams.get("fbt") === "1";
+  const wantReviews = req.nextUrl.searchParams.get("reviews") === "1";
 
-  const [addons, related] = await Promise.all([
+  const [addons, related, fbt, reviews] = await Promise.all([
     wantAddons ? listLinkedAddonsForProduct(data.id) : Promise.resolve([]),
     wantRelated
       ? getRelatedStorefrontProducts(
@@ -54,6 +60,8 @@ export async function GET(
           lang,
         )
       : Promise.resolve([]),
+    wantFbt ? getFbtStorefrontProducts(data, lang) : Promise.resolve([]),
+    wantReviews ? getApprovedProductReviews(data.id) : Promise.resolve([]),
   ]);
 
   return NextResponse.json(
@@ -61,6 +69,8 @@ export async function GET(
       product: data,
       addons,
       related,
+      fbt,
+      reviews,
       review_count: ratings.length,
       avg_rating,
     },

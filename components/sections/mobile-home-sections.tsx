@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -12,11 +13,12 @@ import {
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
-import { CATEGORY_CARDS, IMAGES, INSTAGRAM_GRID, TESTIMONIALS, SITE } from "@/lib/data";
+import { CATEGORY_CARDS, IMAGES, TESTIMONIALS, SITE } from "@/lib/data";
+import type { InstagramFeedItem } from "@/lib/instagram/types";
+import type { ExploreCategoryCard } from "@/lib/storefront/explore-category-types";
+import { EXPLORE_CATEGORY_KEYS } from "@/lib/storefront/explore-category-types";
 import { BRAND } from "@/lib/brand";
 import { useLanguage } from "@/components/providers/language-provider";
-
-const EXPLORE_CARD_KEYS = ["classic", "seasonal", "gifts", "bites"] as const;
 
 function MobileHero() {
   const { t } = useLanguage();
@@ -89,6 +91,28 @@ function MobileFeaturePills() {
 
 function MobileCategoryCarousel() {
   const { t } = useLanguage();
+  const [cards, setCards] = useState<ExploreCategoryCard[]>(() =>
+    EXPLORE_CATEGORY_KEYS.map((key, i) => ({
+      key,
+      href: CATEGORY_CARDS[i].href,
+      image: CATEGORY_CARDS[i].image,
+    })),
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/explore/categories", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((data: { cards?: ExploreCategoryCard[] }) => {
+        if (!cancelled && Array.isArray(data.cards) && data.cards.length > 0) {
+          setCards(data.cards);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <section>
@@ -98,12 +122,11 @@ function MobileCategoryCarousel() {
       </div>
       <div className="mobile-spacer-sm" />
       <div className="mobile-cat-carousel">
-        {CATEGORY_CARDS.map((c, i) => {
-          const key = EXPLORE_CARD_KEYS[i];
-          const title = t(`explore.cards.${key}.title`);
-          const subtitle = t(`explore.cards.${key}.subtitle`);
+        {cards.map((c) => {
+          const title = t(`explore.cards.${c.key}.title`);
+          const subtitle = t(`explore.cards.${c.key}.subtitle`);
           return (
-            <Link key={c.href} href={c.href} className="mobile-cat-card">
+            <Link key={c.key} href={c.href} className="mobile-cat-card">
               <Image
                 src={c.image}
                 alt={title}
@@ -204,6 +227,22 @@ function MobileReviews() {
 
 function MobileInstagramGrid() {
   const { t } = useLanguage();
+  const [items, setItems] = useState<InstagramFeedItem[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/instagram/feed", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((data: { items?: InstagramFeedItem[] }) => {
+        if (!cancelled && Array.isArray(data.items)) {
+          setItems(data.items.slice(0, 6));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <section>
@@ -215,14 +254,23 @@ function MobileInstagramGrid() {
       </div>
       <div className="mobile-spacer-sm" />
       <div className="mobile-insta-grid">
-        {INSTAGRAM_GRID.slice(0, 6).map((url, i) => (
-          <Image
-            key={i}
-            src={url}
-            alt={t("instagram.galleryAlt", { n: i + 1 })}
-            width={200}
-            height={200}
-          />
+        {items.map((item, i) => (
+          <a
+            key={item.id}
+            href={item.permalink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block overflow-hidden rounded-xl"
+          >
+            <Image
+              src={item.imageUrl}
+              alt={t("instagram.galleryAlt", { n: i + 1 })}
+              width={200}
+              height={200}
+              className="h-full w-full object-cover"
+              unoptimized={item.source === "instagram"}
+            />
+          </a>
         ))}
       </div>
       <div className="mt-4 flex justify-center">

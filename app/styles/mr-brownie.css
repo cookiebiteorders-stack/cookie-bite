@@ -23,11 +23,13 @@
 }
 
 .cb-mr-brownie-drawer {
-  --mr-choco: #3b1f0e;
+  --mr-choco: #5c3317;
   --mr-choco-mid: #6b3a1f;
+  --mr-choco-deep: #3b1f0e;
   --mr-cream: #faf6ee;
-  --mr-gold: #e8c56a;
+  --mr-gold: #d4a055;
   --mr-gold-deep: #c9972a;
+  --mr-cookie-accent: #e8b4b8;
   --mr-text: #2a1505;
   --mr-text-muted: #7a5a3a;
 
@@ -178,10 +180,93 @@
   }
 }
 
+.cb-mr-brownie-persona-bar {
+  background: color-mix(in srgb, var(--mr-choco-deep) 88%, transparent);
+}
+
+.cb-mr-brownie-persona-btn--idle {
+  color: color-mix(in srgb, var(--mr-cream) 72%, transparent);
+  background: color-mix(in srgb, var(--mr-cream) 8%, transparent);
+}
+
+.cb-mr-brownie-persona-btn--idle:hover {
+  background: color-mix(in srgb, var(--mr-gold) 14%, transparent);
+  color: var(--mr-cream);
+}
+
+.cb-mr-brownie-persona-btn--active-brownie {
+  background: linear-gradient(135deg, var(--mr-gold) 0%, var(--mr-gold-deep) 100%);
+  color: var(--mr-choco-deep);
+  box-shadow: 0 2px 8px rgba(212, 160, 85, 0.35);
+}
+
+.cb-mr-brownie-persona-btn--active-cookie {
+  background: linear-gradient(135deg, var(--mr-cookie-accent) 0%, #f5d0d4 100%);
+  color: var(--mr-choco);
+  box-shadow: 0 2px 8px rgba(232, 180, 184, 0.4);
+}
+
+.cb-mr-brownie-persona-btn--active-auto {
+  background: color-mix(in srgb, var(--mr-cream) 22%, transparent);
+  color: var(--mr-cream);
+  border: 1px solid color-mix(in srgb, var(--mr-gold) 40%, transparent);
+}
+
+.cb-mr-brownie-chip--brownie {
+  border-color: color-mix(in srgb, var(--mr-gold) 45%, transparent);
+  background: color-mix(in srgb, var(--mr-cream) 88%, white);
+  color: var(--mr-text);
+}
+
+.cb-mr-brownie-chip--brownie:hover {
+  background: color-mix(in srgb, var(--mr-gold) 28%, var(--mr-cream));
+}
+
+.cb-mr-brownie-chip--cookie {
+  border-color: color-mix(in srgb, var(--mr-cookie-accent) 65%, transparent);
+  background: color-mix(in srgb, var(--mr-cookie-accent) 18%, white);
+  color: var(--mr-text);
+}
+
+.cb-mr-brownie-chip--cookie:hover {
+  background: color-mix(in srgb, var(--mr-cookie-accent) 35%, white);
+}
+
+.cb-mr-brownie-typing::after {
+  content: "";
+  display: inline-block;
+  width: 0.35em;
+  animation: cb-mr-brownie-typing-dots 1.2s steps(3, end) infinite;
+}
+
+@keyframes cb-mr-brownie-typing-dots {
+  0% {
+    content: "";
+  }
+  33% {
+    content: ".";
+  }
+  66% {
+    content: "..";
+  }
+  100% {
+    content: "...";
+  }
+}
+
+.cb-mr-brownie-product-strip {
+  scrollbar-width: thin;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cb-mr-brownie-scrim,
   .cb-mr-brownie-drawer--left,
   .cb-mr-brownie-drawer--right {
     animation: none;
+  }
+
+  .cb-mr-brownie-typing::after {
+    animation: none;
+    content: "...";
   }
 }

@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
       user_id: profile.id,
       rating: parsed.data.rating,
       comment: parsed.data.comment,
-      status: "pending",
+      status: "approved",
     })
     .select("id, rating, comment, status, created_at")
     .single();
@@ -82,5 +83,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  revalidatePath("/");
   return NextResponse.json({ ok: true, item: data });
 }

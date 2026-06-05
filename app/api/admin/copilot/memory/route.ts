@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminAccess } from "@/lib/admin/require-admin";
+import { requireMrsCookieAccess } from "@/lib/admin/require-admin";
 import { loadOperatorMemory, saveOperatorMemory } from "@/lib/admin/copilot/memory";
 import { bilingualError } from "@/lib/validations";
 
 export async function GET() {
   let actor;
   try {
-    actor = await requireAdminAccess("dashboard");
+    actor = await requireMrsCookieAccess();
   } catch (resp) {
     if (resp instanceof Response) return resp;
     throw resp;
@@ -19,7 +19,7 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   let actor;
   try {
-    actor = await requireAdminAccess("dashboard");
+    actor = await requireMrsCookieAccess();
   } catch (resp) {
     if (resp instanceof Response) return resp;
     throw resp;

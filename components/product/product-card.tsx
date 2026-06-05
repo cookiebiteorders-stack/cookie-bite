@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
@@ -54,6 +55,10 @@ export function ProductCard({
   const uuid = product.productUuid;
   const outOfStock = isProductOutOfStock(product.stock);
   const isPlaceholderImage = product.image === PRODUCT_PLACEHOLDER_IMAGE;
+  const hoverImage =
+    product.images?.[1] && product.images[1] !== product.image
+      ? product.images[1]
+      : null;
   const controlled = onWishlistToggled !== undefined;
   const saved = controlled ? wishlisted : uncontrolledSaved;
 
@@ -110,10 +115,21 @@ export function ProductCard({
             alt={product.name}
             sizes="(max-width:768px) 100vw, 25vw"
             imgClassName={cn(
-              "transition-transform duration-200 group-hover:scale-[1.01]",
+              "transition-all duration-300 group-hover:scale-[1.01]",
+              hoverImage && "group-hover:opacity-0",
               isPlaceholderImage && "object-contain p-3",
             )}
           />
+          {hoverImage ? (
+            <Image
+              src={hoverImage}
+              alt=""
+              fill
+              sizes="(max-width:768px) 100vw, 25vw"
+              className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              aria-hidden
+            />
+          ) : null}
         </Link>
         <button
           type="button"

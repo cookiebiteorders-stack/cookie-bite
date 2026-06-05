@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/providers/language-provider";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export function FreeDeliveryBar({ subtotalEgp, className, variant = "default" }: Props) {
+  const { t } = useLanguage();
   const threshold = siteConfig.freeDeliveryThresholdEgp;
   const remaining = Math.max(0, threshold - subtotalEgp);
   const pct = threshold <= 0 ? 100 : Math.min(100, (subtotalEgp / threshold) * 100);
@@ -29,7 +31,7 @@ export function FreeDeliveryBar({ subtotalEgp, className, variant = "default" }:
       {remaining > 0 ? (
         <>
           <p className="text-sm font-semibold text-cb-text-strong">
-            {remaining.toFixed(0)} EGP away from free delivery
+            {t("pages.cart.freeDeliveryAway", { remaining: remaining.toFixed(0) })}
           </p>
           <div
             className={cn(
@@ -46,12 +48,12 @@ export function FreeDeliveryBar({ subtotalEgp, className, variant = "default" }:
             />
           </div>
           <p className="mt-1.5 text-xs text-cb-text-muted">
-            Free delivery on orders over {threshold} EGP
+            {t("pages.cart.freeDeliveryThreshold", { threshold })}
           </p>
         </>
       ) : (
         <p className="text-sm font-bold text-cb-brand-600">
-          You unlocked free delivery
+          {t("pages.cart.freeDeliveryUnlocked")}
         </p>
       )}
     </div>

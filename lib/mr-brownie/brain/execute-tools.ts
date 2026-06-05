@@ -7,11 +7,19 @@ import { BRAND } from "@/lib/brand";
 import { siteConfig } from "@/lib/site-config";
 
 export type MrBrownieToolResults = {
+  promo_preview: {
+    code: string;
+    valid: boolean;
+    discount_egp: number | null;
+    error_en?: string;
+    error_ar?: string;
+  } | null;
   search_products: Array<{
     id: string;
     name: string;
     price_egp: number;
     shop_path: string;
+    image_url: string | null;
     in_stock: boolean;
   }>;
   gift_box_builder: {
@@ -30,6 +38,7 @@ export function executeMrBrownieTools(params: {
   userMessage: string;
   products: AiCatalogProduct[];
   cartLines: CartLine[];
+  promoPreview?: MrBrownieToolResults["promo_preview"];
 }): MrBrownieToolResults {
   const tools = new Set(params.intent.tools_to_run);
   const search_products = tools.has("search_products")
@@ -38,6 +47,7 @@ export function executeMrBrownieTools(params: {
         name: p.name,
         price_egp: p.price_egp,
         shop_path: p.shop_path,
+        image_url: p.image_url ?? null,
         in_stock: p.in_stock,
       }))
     : [];
@@ -63,6 +73,7 @@ export function executeMrBrownieTools(params: {
   }
 
   return {
+    promo_preview: params.promoPreview ?? null,
     search_products,
     gift_box_builder,
     cart_summary,
@@ -81,5 +92,13 @@ export const MR_BROWNIE_TOOL_CATALOG = [
   {
     name: "cart_summary",
     description: "Read CONTEXT cart subtotal and free-delivery gap.",
+  },
+  {
+    name: "promo_preview",
+    description: "Validate a promo code against current cart subtotal.",
+  },
+  {
+    name: "add_to_cart_offer",
+    description: "Offer one-tap add-to-cart via client_actions (UI executes).",
   },
 ] as const;

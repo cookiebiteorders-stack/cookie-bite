@@ -94,9 +94,9 @@ export function MobileHeader() {
   const mobileLinks = useMemo(
     () => [
       { href: "/shop", label: t("nav.shop") },
+      { href: "/our-cookies", label: t("nav.ourCookies") },
       { href: "/gift-box", label: t("nav.gifts") },
       { href: "/our-story", label: t("nav.ourStory") },
-      { href: "/our-cookies", label: t("nav.ourCookies") },
       { href: "/blog", label: t("nav.blog") },
       { href: "/help", label: t("nav.helpCenter") },
       { href: "/help/faq", label: t("nav.faq") },

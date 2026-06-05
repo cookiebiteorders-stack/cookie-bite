@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdminAccess } from "@/lib/admin/require-admin";
+import { requireMrsCookieAccess } from "@/lib/admin/require-admin";
 import { bilingualError } from "@/lib/validations";
 import { loadOperatorMemory } from "@/lib/admin/copilot/memory";
+import { loadCopilotPromptOverlay } from "@/lib/admin/copilot/copilot-prompt-config";
 import { buildCopilotBrainMeta } from "@/lib/admin/copilot/brain-pipeline";
 import { buildCopilotSystemPrompt, type CopilotPromptContext } from "@/lib/admin/copilot/system-prompt";
 import { runCopilot } from "@/lib/admin/copilot/runner";
@@ -113,10 +114,9 @@ function toolWarnings(toolCalls: CopilotToolCall[]): string[] {
 }
 
 export async function POST(req: NextRequest) {
-  // Any admin/owner/staff with at least dashboard access can use the copilot.
   let actor;
   try {
-    actor = await requireAdminAccess("dashboard");
+    actor = await requireMrsCookieAccess();
   } catch (resp) {
     if (resp instanceof Response) return resp;
     throw resp;
@@ -150,7 +150,10 @@ export async function POST(req: NextRequest) {
   const snapshot = await loadLiveSnapshot();
   const adminFirstName = (actor.email?.split("@")[0] ?? actor.role).split(/[._-]/)[0];
 
-  const operatorMemory = await loadOperatorMemory(actor.clerk_user_id);
+  const [operatorMemory, promptOverlay] = await Promise.all([
+    loadOperatorMemory(actor.clerk_user_id),
+    loadCopilotPromptOverlay(),
+  ]);
 
   const brain = buildCopilotBrainMeta({
     userMessage: message,
@@ -169,6 +172,7 @@ export async function POST(req: NextRequest) {
       snapshot,
       preferredLanguage: language,
       operatorMemory,
+      promptOverlay,
     }) +
     `\n\nBRAIN_CONTEXT (JSON — layered thinking, intent, window; internal rules):\n${JSON.stringify(brain)}`;
 

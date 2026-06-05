@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
@@ -16,7 +17,9 @@ import { DEFAULT_GIFT_BOX_STATE, GIFT_BOX_STORAGE_KEY, type GiftBoxBuilderState 
 import { formatBuilderPrice, getBoxCapacity, getItemsTotal, getTotalItems, trimItemsToCapacity } from "@/lib/gift-box-builder/utils";
 import { DEFAULT_GIFT_BOX_SIZES, type GiftBoxSizeConfig } from "@/lib/gift-box-builder/sizes";
 import { Box3DPreview } from "@/components/gift-box-builder/box-3d-preview";
+import { FreeDeliveryBar } from "@/components/cart/free-delivery-bar";
 import { ShareGiftBoxButton } from "@/components/gift-box/share-gift-box-button";
+import { trackGa4Event } from "@/lib/analytics/ga4";
 import { OccasionTemplatesBar } from "@/components/gift-box-builder/occasion-templates-bar";
 import { applyOccasionTemplateToState } from "@/lib/occasion-templates/apply";
 import type { OccasionTemplate } from "@/lib/occasion-templates/types";
@@ -33,6 +36,7 @@ const GiftBoxAssistant = dynamic(
 
 export function GiftBoxBuilder() {
   const { lang, t } = useLanguage();
+  const searchParams = useSearchParams();
   const { addGiftBoxItem, openDrawer } = useCart();
   const [state, setState] = useState<GiftBoxBuilderState>(loadStoredGiftBoxState);
   const [products, setProducts] = useState<BuilderProduct[]>([]);
@@ -43,6 +47,7 @@ export function GiftBoxBuilder() {
   const [videoFailed, setVideoFailed] = useState(false);
   const [preferReducedMotion, setPreferReducedMotion] = useState(false);
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
+  const urlBootstrapRef = useRef(false);
 
   const boxLabel = useCallback(
     (code: string, fallback: string) => {
@@ -139,6 +144,7 @@ export function GiftBoxBuilder() {
     if (n > state.currentStep && !validateStep(state.currentStep)) return;
     setError(null);
     patch({ currentStep: n });
+    trackGa4Event("gift_box_step", { step: n, box: state.box ?? undefined });
   };
 
   const prevStep = () => {
@@ -158,6 +164,53 @@ export function GiftBoxBuilder() {
     },
     [products, boxSizes, lang, updateState, t],
   );
+
+  useEffect(() => {
+    if (urlBootstrapRef.current || productsLoading || products.length === 0) return;
+
+    const occasion = searchParams.get("occasion");
+    const templateId = searchParams.get("template");
+    if (!occasion && !templateId) return;
+
+    urlBootstrapRef.current = true;
+
+    if (templateId) {
+      void fetch("/api/occasion-templates", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((data: { templates?: OccasionTemplate[] }) => {
+          const template = data.templates?.find((row) => row.id === templateId);
+          if (template) {
+            applyTemplate(template);
+            return;
+          }
+          if (occasion) {
+            patch({
+              occasion,
+              cardDesign: occasion,
+              currentStep: 2,
+            });
+          }
+        })
+        .catch(() => {
+          if (occasion) {
+            patch({
+              occasion,
+              cardDesign: occasion,
+              currentStep: 2,
+            });
+          }
+        });
+      return;
+    }
+
+    if (occasion) {
+      patch({
+        occasion,
+        cardDesign: occasion,
+        currentStep: 2,
+      });
+    }
+  }, [productsLoading, products.length, searchParams, applyTemplate, patch]);
 
   const selectBox = (id: string) => {
     const box = boxSizes.find((b) => b.code === id);
@@ -248,6 +301,12 @@ export function GiftBoxBuilder() {
     localStorage.removeItem(GIFT_BOX_STORAGE_KEY);
     setState({ ...DEFAULT_GIFT_BOX_STATE });
     setError(null);
+    trackGa4Event("gift_box_add_to_cart", {
+      currency: "EGP",
+      value: itemsSubtotal,
+      item_count: totalItems,
+      box_size: state.box ?? undefined,
+    });
     openDrawer();
   };
 
@@ -262,7 +321,9 @@ export function GiftBoxBuilder() {
       return;
     }
     setError(null);
-    patch({ currentStep: state.currentStep + 1 });
+    const next = state.currentStep + 1;
+    patch({ currentStep: next });
+    trackGa4Event("gift_box_step", { step: next, box: state.box ?? undefined });
   };
 
   const stepLabels = [
@@ -474,6 +535,14 @@ export function GiftBoxBuilder() {
               <strong>{formatBuilderPrice(itemsSubtotal, lang)}</strong>
             </div>
           </div>
+
+          {itemsSubtotal > 0 ? (
+            <FreeDeliveryBar subtotalEgp={itemsSubtotal} className="mt-3" variant="drawer" />
+          ) : null}
+
+          <p className="mt-3 text-center text-xs font-medium text-[var(--gb-text-muted)]">
+            {t("pages.giftBoxBuilder.deliveryTrust")}
+          </p>
 
           <GiftBoxAssistant />
 

@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { PdpMediaGallery } from "@/components/shop/pdp-media-gallery";
 import { PdpActions } from "@/components/shop/pdp-actions";
+import { PdpFbtModule } from "@/components/shop/pdp-fbt-module";
+import { PdpReviewsSection } from "@/components/shop/pdp-reviews-section";
+import { PdpTrustStrip } from "@/components/shop/pdp-trust-strip";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductPriceDisplay } from "@/components/product/product-price-display";
 import { buttonClassName } from "@/components/ui/button";
@@ -24,7 +27,8 @@ import {
   buildBreadcrumbJsonLd,
   buildProductJsonLd,
 } from "@/lib/seo";
-import type { PdpApiPayload } from "@/lib/storefront/pdp-api";
+import { useExperiment } from "@/hooks/use-experiment";
+import type { PdpApiPayload, PdpReview } from "@/lib/storefront/pdp-api";
 
 const FALLBACK_DESC = "Fresh handcrafted treats from Cookie Bite — New Cairo.";
 
@@ -32,6 +36,10 @@ type ApiResponse = {
   product: ProductRow;
   addons?: Addon[];
   related?: Product[];
+  fbt?: Product[];
+  reviews?: PdpReview[];
+  review_count?: number;
+  avg_rating?: number | null;
 };
 
 type Props = {
@@ -48,6 +56,12 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
     dedupeAddons(initialPayload?.addons ?? []),
   );
   const [related, setRelated] = useState<Product[]>(initialPayload?.related ?? []);
+  const [fbt, setFbt] = useState<Product[]>(initialPayload?.fbt ?? []);
+  const [reviews, setReviews] = useState<PdpReview[]>(initialPayload?.reviews ?? []);
+  const [reviewCount, setReviewCount] = useState(initialPayload?.reviewCount ?? 0);
+  const [avgRating, setAvgRating] = useState<number | null>(initialPayload?.avgRating ?? null);
+  const fbtPlacement = useExperiment("pdp_fbt_placement");
+  const fbtBelowReviews = fbtPlacement === "below_reviews";
 
   useEffect(() => {
     if (initialPayload?.product) return;
@@ -56,7 +70,7 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
     void (async () => {
       try {
         const data = await fetchJson<ApiResponse>(
-          `/api/products/${encodeURIComponent(slug)}?lang=${lang}&related=1&addons=1`,
+          `/api/products/${encodeURIComponent(slug)}?lang=${lang}&related=1&addons=1&fbt=1&reviews=1`,
           { cache: "no-store" },
         );
         if (cancelled) return;
@@ -73,6 +87,10 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
         setProduct(mapped);
         setAddons(dedupeAddons(data.addons ?? []));
         setRelated((data.related ?? []).filter((p) => p.id !== mapped.id));
+        setFbt((data.fbt ?? []).filter((p) => p.id !== mapped.id));
+        setReviews(data.reviews ?? []);
+        setReviewCount(data.review_count ?? 0);
+        setAvgRating(data.avg_rating ?? null);
       } catch {
         if (!cancelled) router.replace("/shop");
       } finally {
@@ -108,7 +126,7 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
   if (!product) return null;
 
   return (
-    <div className="bg-cb-cream pb-20 pt-8">
+    <div className="bg-cb-cream pb-28 pt-8 lg:pb-20">
       {product.productUuid ? <PdpViewTracker productUuid={product.productUuid} /> : null}
       <div className="mx-auto max-w-7xl cb-gutter">
         {jsonLd ? (
@@ -176,6 +194,7 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
                 </a>
               ) : null}
               <PdpActions product={product} linkedAddons={addons} />
+              <PdpTrustStrip />
             </div>
             <div className="mt-4">
               <ShareButtons title={`${product.name} | Cookie Bite`} />
@@ -184,6 +203,16 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
             <PdpProductSpecs product={product} />
           </div>
         </div>
+
+        {!fbtBelowReviews ? <PdpFbtModule product={product} companions={fbt} /> : null}
+
+        <PdpReviewsSection
+          reviews={reviews}
+          reviewCount={reviewCount}
+          avgRating={avgRating}
+        />
+
+        {fbtBelowReviews ? <PdpFbtModule product={product} companions={fbt} /> : null}
 
         {related.length > 0 ? (
           <section className="mt-20">

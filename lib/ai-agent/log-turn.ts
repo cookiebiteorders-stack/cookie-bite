@@ -9,6 +9,12 @@ export async function logAgentTurn(input: {
   assistantMessage: string;
   intent?: string;
   personalityMode?: PersonalityMode | string;
+  activePersona?: "mr_brownie" | "mrs_cookie";
+  promptVariant?: "a" | "b";
+  ragSource?: "vector" | "keyword" | "none" | null;
+  ragHitCount?: number;
+  sentimentScore?: number;
+  confidencePct?: number;
   pageIntent?: string;
   pathname?: string;
   locale?: string;
@@ -38,6 +44,26 @@ export async function logAgentTurn(input: {
       ["friendly", "sales", "support"].includes(input.personalityMode)
         ? input.personalityMode
         : null,
+    active_persona:
+      input.activePersona === "mr_brownie" || input.activePersona === "mrs_cookie"
+        ? input.activePersona
+        : null,
+    prompt_variant:
+      input.promptVariant === "a" || input.promptVariant === "b"
+        ? input.promptVariant
+        : null,
+    rag_source:
+      input.ragSource === "vector" ||
+      input.ragSource === "keyword" ||
+      input.ragSource === "none"
+        ? input.ragSource
+        : null,
+    rag_hit_count:
+      typeof input.ragHitCount === "number" ? input.ragHitCount : null,
+    sentiment_score:
+      typeof input.sentimentScore === "number" ? input.sentimentScore : null,
+    confidence_pct:
+      typeof input.confidencePct === "number" ? input.confidencePct : null,
     page_intent: input.pageIntent ?? null,
     pathname: input.pathname?.slice(0, 500) ?? null,
     locale: input.locale ?? null,

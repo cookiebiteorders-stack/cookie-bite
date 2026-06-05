@@ -1,4 +1,5 @@
 import { parseStreamResponse } from "@/lib/ai-chat/stream-parser";
+import type { PersonaPreference } from "@/lib/mr-brownie/personas";
 
 export type MrBrownieStreamCallbacks = {
   onToken: (fullText: string, delta: string) => void;
@@ -24,6 +25,7 @@ export async function streamMrBrownieChat(params: {
     locale?: "ar" | "en" | "auto";
   };
   signal?: AbortSignal;
+  persona?: PersonaPreference;
   callbacks: MrBrownieStreamCallbacks;
 }): Promise<string> {
   const res = await fetch("/api/mr-brownie/chat/stream", {
@@ -33,6 +35,7 @@ export async function streamMrBrownieChat(params: {
       messages: params.messages,
       cart: { lines: params.cartLines },
       session: params.session,
+      persona: params.persona,
     }),
     signal: params.signal,
   });

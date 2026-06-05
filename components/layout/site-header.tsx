@@ -111,13 +111,13 @@ export function SiteHeader() {
     "rounded-lg px-2.5 py-1.5 text-sm font-medium text-cb-text-strong transition-colors duration-300 hover:bg-cb-hover-overlay hover:text-cb-terracotta-dark dark:hover:text-cb-terracotta";
 
   const shopActive = pathname.startsWith("/shop");
+  const menuActive = pathname.startsWith("/our-cookies");
   const giftsActive =
     pathname.startsWith("/gift-box") || pathname.startsWith("/gift-ideas");
   const isRtl = lang === "ar";
   const discoverLinks = useMemo(
     () => [
       { href: "/our-story", label: t("nav.ourStory") },
-      { href: "/our-cookies", label: t("nav.ourCookies") },
       { href: "/blog", label: t("nav.blog") },
     ],
     [t],
@@ -143,6 +143,7 @@ export function SiteHeader() {
   const mobileFullLinks = useMemo(
     () => [
       { href: "/shop", label: t("nav.shop") },
+      { href: "/our-cookies", label: t("nav.ourCookies") },
       { href: "/gift-box", label: t("nav.gifts") },
       ...discoverLinks,
       ...helpLinks,
@@ -223,6 +224,12 @@ export function SiteHeader() {
               <div className={storeNavGroupClass}>
                 <Link href="/shop" className={cn(linkBase, shopActive && navLinkActive)}>
                   {t("nav.shop")}
+                </Link>
+                <Link
+                  href="/our-cookies"
+                  className={cn(linkBase, menuActive && navLinkActive)}
+                >
+                  {t("nav.ourCookies")}
                 </Link>
                 <Link href="/gift-box" className={cn(linkBase, giftsActive && navLinkActive)}>
                   {t("nav.gifts")}

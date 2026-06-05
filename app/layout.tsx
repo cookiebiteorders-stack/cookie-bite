@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { getClerkLocalization } from "@/lib/auth/clerk-auth-localization";
 import { SiteJsonLd } from "@/components/seo/site-jsonld";
 import { GA4Tracker } from "@/components/analytics/ga4-tracker";
+import { SeasonalThemeProvider } from "@/components/providers/seasonal-theme-provider";
 import { Cairo, DM_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { LanguageProvider } from "@/components/providers/language-provider";
@@ -194,6 +195,7 @@ export default async function RootLayout({
               <StoreFlagsProvider>
                 <SiteJsonLd />
                 <GA4Tracker />
+                <SeasonalThemeProvider />
                 <ErrorBoundary>{children}</ErrorBoundary>
               </StoreFlagsProvider>
             </LanguageProvider>

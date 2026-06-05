@@ -84,6 +84,23 @@ export function requireWritePermission(actor: AdminActor): void {
   }
 }
 
+/** Mrs. Cookie (copilot) — owner و admin فقط، ليس staff. */
+export async function requireMrsCookieAccess(): Promise<AdminActor> {
+  const actor = await requireAdminAccess("dashboard");
+  if (actor.role !== "owner" && actor.role !== "admin") {
+    throw new Response(
+      JSON.stringify({
+        error: {
+          en: "Mrs. Cookie is available to owners and admins only",
+          ar: "مسز كوكي متاحة للأونر والأدمن فقط",
+        },
+      }),
+      { status: 403, headers: { "Content-Type": "application/json" } },
+    );
+  }
+  return actor;
+}
+
 /** Owner فقط — لإعدادات حساسة (مفاتيح المتجر، feature flags). */
 export async function requireOwnerAccess(module: ModuleKey = "settings"): Promise<AdminActor> {
   const actor = await requireAdminAccess(module);

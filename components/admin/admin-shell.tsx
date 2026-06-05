@@ -15,6 +15,7 @@ import { CartProvider } from "@/components/providers/cart-provider";
 import { StaffAdminNavProvider } from "@/components/providers/staff-admin-nav-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { CopilotLauncher } from "@/components/admin/copilot/copilot-launcher";
+import { canAccessMrsCookieCopilot } from "@/lib/admin/admin-console-nav";
 import { DeferredTrackerBootstrap } from "@/components/tracking/deferred-tracker-bootstrap";
 import { cn } from "@/lib/utils";
 
@@ -91,7 +92,7 @@ export function AdminShell({ role, children }: AdminShellProps) {
 
         <CartDrawer />
         <DeferredTrackerBootstrap />
-        <CopilotLauncher />
+        {canAccessMrsCookieCopilot(role) ? <CopilotLauncher /> : null}
         </div>
       </AdminConsoleProvider>
     </CartProvider>

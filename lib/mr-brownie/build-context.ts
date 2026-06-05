@@ -6,6 +6,12 @@ import { loadAiWebsiteKnowledgeBundle } from "@/lib/ai/website-knowledge";
 import { fetchAdminAnalyticsSnapshot } from "@/lib/mr-brownie/analytics-snapshot";
 import { buildMrBrownieAgentCapabilities } from "@/lib/mr-brownie/agent-capabilities";
 import { fetchCustomerMemory } from "@/lib/mr-brownie/fetch-customer-memory";
+import {
+  buildCommerceClientActions,
+  extractPromoCodeFromMessage,
+  previewPromoForCart,
+} from "@/lib/mr-brownie/brain/commerce-tools";
+import { runIntentEngine } from "@/lib/mr-brownie/brain/intent-engine";
 import { buildBrainPipelineMeta } from "@/lib/mr-brownie/brain/pipeline";
 import { buildUserProfileSnapshot } from "@/lib/mr-brownie/brain/user-profile";
 import { getActiveBehaviorRules } from "@/lib/mr-brownie/training/behavior-rules";
@@ -16,6 +22,13 @@ import {
 } from "@/lib/mr-brownie/page-intent";
 import { buildMrBrowniePermissions } from "@/lib/mr-brownie/permissions-context";
 import { buildMrBrownieResponsePlaybook } from "@/lib/mr-brownie/response-playbook";
+import { recordKnowledgeGap } from "@/lib/mr-brownie/brain/knowledge-gaps";
+import { ensureKnowledgeIndexed } from "@/lib/mr-brownie/brain/knowledge-index";
+import { retrieveKnowledgeHybrid } from "@/lib/mr-brownie/brain/vector-retrieval";
+import { loadPublishedPersonaPrompts } from "@/lib/mr-brownie/persona-prompts";
+import type { PersonaPreference } from "@/lib/mr-brownie/personas";
+import { assignPromptVariant, type PromptVariant } from "@/lib/mr-brownie/prompt-variant";
+import { loadToneVectorForUser } from "@/lib/mr-brownie/tone-vector";
 import type { MrBrownieContextPayload } from "@/lib/mr-brownie/types";
 
 export async function buildMrBrownieContext(params: {
@@ -31,26 +44,37 @@ export async function buildMrBrownieContext(params: {
   dbUserId?: string | null;
   lastUserMessage?: string;
   conversationMessages?: Array<{ role: "user" | "assistant"; content: string }>;
+  personaPreference?: PersonaPreference;
+  clerkUserId?: string | null;
+  promptVariant?: PromptVariant;
 }): Promise<MrBrownieContextPayload> {
   const locale =
     params.session?.locale === "ar" || params.session?.locale === "en"
       ? params.session.locale
       : "auto";
 
-  const [{ catalog, website, promoOffers }, memory, few_shot_training, user_profile] =
-    await Promise.all([
-      loadAiWebsiteKnowledgeBundle(),
-      fetchCustomerMemory(params.dbUserId ?? null),
-      loadFewShotExamplesForChat({
-        lastUserMessage: params.lastUserMessage,
-        locale,
-      }),
-      buildUserProfileSnapshot({
-        dbUserId: params.dbUserId ?? null,
-        displayName: params.name,
-        loyaltyTier: params.loyaltyTier,
-      }),
-    ]);
+  const [
+    { catalog, website, promoOffers },
+    memory,
+    few_shot_training,
+    user_profile,
+    personaPromptOverrides,
+    toneVector,
+  ] = await Promise.all([
+    loadAiWebsiteKnowledgeBundle(),
+    fetchCustomerMemory(params.dbUserId ?? null),
+    loadFewShotExamplesForChat({
+      lastUserMessage: params.lastUserMessage,
+      locale,
+    }),
+    buildUserProfileSnapshot({
+      dbUserId: params.dbUserId ?? null,
+      displayName: params.name,
+      loyaltyTier: params.loyaltyTier,
+    }),
+    loadPublishedPersonaPrompts(),
+    loadToneVectorForUser(params.clerkUserId ?? null),
+  ]);
 
   const knowledgeRaw = buildStoreKnowledgeBase();
   const session = params.session?.pathname
@@ -73,6 +97,63 @@ export async function buildMrBrownieContext(params: {
           : knowledgeRaw.faq,
   };
 
+  await ensureKnowledgeIndexed();
+
+  const faqForRetrieval = knowledge_base.faq.map((f) => ({
+    question: f.question,
+    answer: f.answer,
+    lang: f.lang,
+  }));
+
+  const knowledgeSnippets = params.lastUserMessage?.trim()
+    ? await retrieveKnowledgeHybrid(
+        params.lastUserMessage,
+        faqForRetrieval,
+        session.locale,
+        4,
+      )
+    : [];
+
+  if (params.lastUserMessage?.trim() && knowledgeSnippets.length === 0) {
+    void recordKnowledgeGap(params.lastUserMessage, session.locale);
+  }
+
+  const interimIntent = runIntentEngine({
+    userMessage: params.lastUserMessage ?? "",
+    pageIntent: session.page_intent,
+  });
+
+  const promoCode = extractPromoCodeFromMessage(params.lastUserMessage ?? "");
+  let promoPreview: {
+    code: string;
+    valid: boolean;
+    discount_egp: number | null;
+    error_en?: string;
+    error_ar?: string;
+  } | null = null;
+  if (promoCode) {
+    const preview = await previewPromoForCart({
+      code: promoCode,
+      cartLines: params.cartLines,
+    });
+    promoPreview = {
+      code: preview.code,
+      valid: preview.valid,
+      discount_egp: preview.discount_egp,
+      error_en: preview.error_en,
+      error_ar: preview.error_ar,
+    };
+  }
+
+  const clientActions = await buildCommerceClientActions({
+    intent: interimIntent.primary,
+    userMessage: params.lastUserMessage ?? "",
+    products: catalog.products,
+    cartLines: params.cartLines,
+    promoOffers: promoOffers,
+    locale: session.locale,
+  });
+
   const brain = buildBrainPipelineMeta({
     lastUserMessage: params.lastUserMessage,
     locale: session.locale,
@@ -93,6 +174,18 @@ export async function buildMrBrownieContext(params: {
         }
       : null,
     loyaltyTier: params.loyaltyTier,
+    personaPreference: params.personaPreference ?? "auto",
+    personaPromptOverrides,
+    promptVariant:
+      params.promptVariant ??
+      assignPromptVariant(
+        params.clerkUserId ?? params.dbUserId ?? params.userId ?? null,
+      ),
+    toneVector,
+    faqEntries: faqForRetrieval,
+    knowledgeSnippets,
+    clientActions,
+    promoPreview,
   });
 
   const behavior_rules = getActiveBehaviorRules();
@@ -114,7 +207,7 @@ export async function buildMrBrownieContext(params: {
       id: params.userId,
       role: params.role === "guest" ? "guest" : params.role,
       name: params.name,
-      language: "auto",
+      language: locale === "ar" || locale === "en" ? locale : "auto",
       loyalty_tier: params.loyaltyTier ?? "standard",
       past_orders_summary: params.pastOrdersHint || "No recent order history in context.",
     },

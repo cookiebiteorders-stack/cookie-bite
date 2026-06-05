@@ -25,6 +25,7 @@
     "mr-brownie:auto-improve": "node scripts/mr-brownie-auto-improve.mjs",
     "mr-brownie:bot-test": "node scripts/mr-brownie-bot-tester.mjs",
     "mr-brownie:rewrite-weak": "node scripts/mr-brownie-rewrite-weak-logs.mjs",
+    "mr-brownie:weekly-report": "node scripts/mr-brownie-weekly-report.mjs",
     "email:check": "node scripts/email-diagnostics.mjs",
     "email:finalize-dns": "node scripts/resend-dns-finalize.mjs",
     "copilot:check": "node scripts/copilot-check.mjs",

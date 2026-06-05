@@ -1,10 +1,10 @@
-import { MrBrownieAnalyticsDashboard } from "@/components/admin/mr-brownie/mr-brownie-analytics-dashboard";
+import { MrBrownieAdminHub } from "@/components/admin/mr-brownie/mr-brownie-admin-hub";
 
 export const metadata = {
-  title: "Mr. Brownie AI · Analytics",
-  description: "Response quality, intents, and training loop for the storefront assistant.",
+  title: "Mr. Brownie AI · Admin",
+  description: "Analytics, conversations, and persona prompts for the storefront assistant.",
 };
 
 export default function AdminMrBrowniePage() {
-  return <MrBrownieAnalyticsDashboard />;
+  return <MrBrownieAdminHub />;
 }

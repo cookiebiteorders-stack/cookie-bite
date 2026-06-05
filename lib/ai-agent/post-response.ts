@@ -9,6 +9,11 @@ export type AgentTurnLogMeta = {
   intent: string;
   confidencePct: number;
   personalityMode?: PersonalityMode | string;
+  activePersona?: "mr_brownie" | "mrs_cookie";
+  promptVariant?: "a" | "b";
+  ragSource?: "vector" | "keyword" | "none" | null;
+  ragHitCount?: number;
+  sentimentScore?: number;
   pageIntent?: string;
   pathname?: string;
   locale?: string;
@@ -61,6 +66,12 @@ export async function finalizeAgentResponse(params: {
       assistantMessage: result.text,
       intent: params.turnLog.intent,
       personalityMode: params.turnLog.personalityMode,
+      activePersona: params.turnLog.activePersona,
+      promptVariant: params.turnLog.promptVariant,
+      ragSource: params.turnLog.ragSource,
+      ragHitCount: params.turnLog.ragHitCount,
+      sentimentScore: params.turnLog.sentimentScore,
+      confidencePct: params.turnLog.confidencePct,
       pageIntent: params.turnLog.pageIntent,
       pathname: params.turnLog.pathname,
       locale: params.turnLog.locale,

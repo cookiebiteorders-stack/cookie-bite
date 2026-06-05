@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
-import { ExploreCategories } from "@/components/sections/explore-categories";
 import { HomeStorySnippet } from "@/components/sections/home-story-snippet";
 import { TrustBar } from "@/components/sections/trust-bar";
 import { buildLocalizedPageMetadata } from "@/lib/seo";
@@ -28,6 +27,14 @@ const HeroSection5 = dynamic(
   },
 );
 
+const HomeExploreCategories = dynamic(
+  () =>
+    import("@/components/sections/home-explore-categories").then((m) => ({
+      default: m.HomeExploreCategories,
+    })),
+  { loading: () => <div className="h-96 animate-pulse bg-cb-peach/30" /> },
+);
+
 const HomeProductCarousel = dynamic(
   () =>
     import("@/components/sections/home-product-carousel").then((m) => ({
@@ -36,17 +43,15 @@ const HomeProductCarousel = dynamic(
   { loading: () => <div className="h-40 animate-pulse bg-cb-peach/30" /> },
 );
 
-const TestimonialSlider = dynamic(
+const HomeTestimonials = dynamic(
   () =>
-    import("@/components/sections/testimonial-slider").then(
-      (m) => m.TestimonialSlider,
-    ),
+    import("@/components/sections/home-testimonials").then((m) => m.HomeTestimonials),
   { loading: () => <div className="h-64 animate-pulse bg-cb-peach/30" /> },
 );
 
-const InstagramGrid = dynamic(
+const HomeInstagramGrid = dynamic(
   () =>
-    import("@/components/sections/instagram-grid").then((m) => m.InstagramGrid),
+    import("@/components/sections/home-instagram-grid").then((m) => m.HomeInstagramGrid),
   { loading: () => <div className="h-48 animate-pulse bg-cb-peach/30" /> },
 );
 
@@ -68,11 +73,11 @@ export default function HomePage() {
       </p>
       <HeroSection5 />
       <TrustBar />
-      <ExploreCategories />
+      <HomeExploreCategories />
       <HomeProductCarousel />
       <HomeStorySnippet />
-      <TestimonialSlider />
-      <InstagramGrid />
+      <HomeTestimonials />
+      <HomeInstagramGrid />
       <NewsletterBanner />
     </>
   );
