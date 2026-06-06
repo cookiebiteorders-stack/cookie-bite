@@ -16,6 +16,8 @@ import {
   resolveClerkUIScriptUrl,
 } from "@/lib/auth/clerk-js-fallback";
 import { CssRecoveryBootstrap } from "@/components/pwa/css-recovery-bootstrap";
+import { PreloadProbe } from "@/components/debug/preload-probe";
+import { ClickBlockProbe } from "@/components/debug/click-block-probe";
 import { CRITICAL_SHELL_CSS } from "@/lib/pwa/critical-shell-css";
 import { getPublicStoreFlags } from "@/lib/store/owner-flags-server";
 import "./globals.css";
@@ -161,7 +163,11 @@ export default async function RootLayout({
     >
       <head>
         {/* Inline shell rules — survive main CSS load failures (PWA stale cache, static 503). */}
-        <style id="cb-critical-shell" dangerouslySetInnerHTML={{ __html: CRITICAL_SHELL_CSS }} />
+        <style
+          id="cb-critical-shell"
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: CRITICAL_SHELL_CSS }}
+        />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -174,6 +180,12 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full bg-background font-sans text-foreground">
         <CssRecoveryBootstrap />
+        {process.env.NODE_ENV === "development" ? (
+          <>
+            <PreloadProbe />
+            <ClickBlockProbe />
+          </>
+        ) : null}
         <ClerkProvider
           {...(clerkJsScriptUrl
             ? { __internal_clerkJSUrl: clerkJsScriptUrl }

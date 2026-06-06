@@ -2,6 +2,19 @@ import type { Addon, CartSelectedAddon } from "@/lib/addons/types";
 
 export type AddonSelectedMap = Record<string, Record<string, number>>;
 
+/** مفتاح مستقر لمقارنة قوائم الإضافات دون الاعتماد على مرجع المصفوفة */
+export function addonSelectionKey(addons: Addon[]): string {
+  if (addons.length === 0) return "";
+  return addons
+    .map((addon) => {
+      const opts = addon.options
+        .map((o) => `${o.id}:${o.default_selected ? 1 : 0}`)
+        .join(",");
+      return `${addon.id}:${addon.required ? 1 : 0}:${opts}`;
+    })
+    .join("|");
+}
+
 export function buildInitialAddonSelection(
   addons: Addon[],
   opts?: { emptyOptional?: boolean },

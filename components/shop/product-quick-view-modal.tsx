@@ -8,6 +8,7 @@ import { ExternalLink, X } from "lucide-react";
 import type { Product } from "@/lib/data";
 import { useLanguage } from "@/components/providers/language-provider";
 import { ProductCartActions } from "@/components/product/product-cart-actions";
+import { EMPTY_LINKED_ADDONS } from "@/lib/addons/constants";
 import {
   ProductAddonPicker,
   useAddonSelectionState,
@@ -28,7 +29,7 @@ type Props = {
 export function ProductQuickViewModal({ product, open, onClose }: Props) {
   const { t, lang } = useLanguage();
   const isRtl = lang === "ar";
-  const linkedAddons = product?.linkedAddons ?? [];
+  const linkedAddons = product?.linkedAddons ?? EMPTY_LINKED_ADDONS;
   const { addons, selected, setSelected, selectedAddons, addonsTotal } =
     useAddonSelectionState(linkedAddons, { emptyOptional: true });
 

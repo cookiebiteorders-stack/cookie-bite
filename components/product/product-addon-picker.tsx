@@ -15,6 +15,7 @@ import {
   toggleMultiAddonOption,
   type AddonSelectedMap,
 } from "@/lib/addons/selection";
+import { addonSelectionKey } from "@/lib/addons/selection";
 import type { Addon } from "@/lib/addons/types";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
@@ -397,6 +398,7 @@ export function useAddonSelectionState(
   opts?: { emptyOptional?: boolean },
 ) {
   const addons = useMemo(() => dedupeAddonsByName(linkedAddons), [linkedAddons]);
+  const addonKey = useMemo(() => addonSelectionKey(addons), [addons]);
   const emptyOptional = opts?.emptyOptional ?? false;
   const [selected, setSelected] = useState<AddonSelectedMap>(() =>
     buildInitialAddonSelection(addons, { emptyOptional }),
@@ -404,7 +406,9 @@ export function useAddonSelectionState(
 
   useEffect(() => {
     setSelected(buildInitialAddonSelection(addons, { emptyOptional }));
-  }, [addons, emptyOptional]);
+    // addonKey يعكس المحتوى — لا نعتمد على مرجع addons (?? [] ينشئ مصفوفة جديدة كل render)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- addons مشتق من addonKey
+  }, [addonKey, emptyOptional]);
 
   const selectedAddons = useMemo(
     () => buildCartAddonsFromSelection(addons, selected),

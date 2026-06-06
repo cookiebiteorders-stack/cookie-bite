@@ -14,6 +14,13 @@ type InternalEvent = ParsedTrackEvent;
 
 const REALTIME_KEY = "tracking:realtime:visitors";
 const REALTIME_TTL_SECONDS = 5 * 60;
+const PASSIVE_TRACK_EVENTS = new Set(["page_view", "heartbeat", "time_on_page"]);
+
+type RealtimeEventSnippet = {
+  name: string;
+  path: string | null;
+  occurred_at: string;
+};
 
 function asString(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -55,7 +62,7 @@ export async function ingestBatch(
     upsertVisitor(supabase, batch, ctx, isBot),
     upsertSession(supabase, batch, ctx, isBot),
     insertEvents(supabase, batch, ctx, isBot),
-    upsertRealtime(batch, isBot),
+    upsertRealtime(batch, ctx, isBot),
   ]);
 
   return { events: batch.events.length, bot: isBot, persisted: true };
@@ -297,19 +304,109 @@ async function rollUpHeatmap(
   );
 }
 
-async function upsertRealtime(batch: ParsedTrackBatch, isBot: boolean): Promise<void> {
+function buildRealtimeMetaPayload(
+  batch: ParsedTrackBatch,
+  ctx: IngestContext,
+  now: number,
+  existingRaw: string | null,
+): Record<string, unknown> {
+  let existing: Record<string, unknown> = {};
+  if (existingRaw) {
+    try {
+      existing = JSON.parse(existingRaw) as Record<string, unknown>;
+    } catch {
+      existing = {};
+    }
+  }
+
+  const sessionId = batch.visitor.session_id;
+  const path = batch.page?.path ?? "/";
+  const clerkUserId = batch.visitor.user_id ?? null;
+  const prevSessionId = asString(existing.session_id);
+  const prevPath = asString(existing.path);
+  const isNewSession = !prevSessionId || prevSessionId !== sessionId;
+  const isNewPath = !isNewSession && prevPath !== path;
+
+  const sessionStartedAt = isNewSession ? now : Number(existing.session_started_at ?? now);
+  const firstSeenAt = Number(existing.first_seen_at ?? now);
+  const currentPageStartedAt =
+    isNewSession || isNewPath ? now : Number(existing.current_page_started_at ?? now);
+
+  let firstInteractionAt: number | null =
+    existing.first_interaction_at != null ? Number(existing.first_interaction_at) : null;
+
+  const recentMap = new Map<string, RealtimeEventSnippet>();
+  if (Array.isArray(existing.recent_events)) {
+    for (const row of existing.recent_events) {
+      if (!row || typeof row !== "object") continue;
+      const snippet = row as RealtimeEventSnippet;
+      if (!snippet.occurred_at) continue;
+      recentMap.set(`${snippet.name}:${snippet.occurred_at}`, snippet);
+    }
+  }
+
+  for (const event of batch.events) {
+    const occurredAt = event.timestamp;
+    const ts = new Date(occurredAt).getTime();
+    const snippet: RealtimeEventSnippet = {
+      name: event.name,
+      path: event.page?.path ?? null,
+      occurred_at: occurredAt,
+    };
+    recentMap.set(`${snippet.name}:${snippet.occurred_at}`, snippet);
+    if (!firstInteractionAt && !PASSIVE_TRACK_EVENTS.has(event.name)) {
+      firstInteractionAt = ts;
+    }
+    if (event.name === "session_start" && isNewSession) {
+      // session_start is the authoritative session boundary when present
+    }
+  }
+
+  const recentEvents = [...recentMap.values()]
+    .sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime())
+    .slice(0, 20);
+
+  const lastEvent = batch.events[batch.events.length - 1];
+
+  return {
+    session_id: sessionId,
+    clerk_user_id: clerkUserId,
+    user_id: clerkUserId,
+    path,
+    country: ctx.geo.country,
+    device_type: batch.device.device_type,
+    last_event_at: now,
+    last_event_name: lastEvent?.name ?? null,
+    session_started_at: sessionStartedAt,
+    first_seen_at: firstSeenAt,
+    first_interaction_at: firstInteractionAt,
+    current_page_started_at: currentPageStartedAt,
+    recent_events: recentEvents,
+  };
+}
+
+async function upsertRealtime(
+  batch: ParsedTrackBatch,
+  ctx: IngestContext,
+  isBot: boolean,
+): Promise<void> {
   if (isBot) return;
   const redis = await getTrackingRedis();
   const now = Date.now();
   const member = batch.visitor.visitor_id;
-  const meta = JSON.stringify({
-    session_id: batch.visitor.session_id,
-    user_id: batch.visitor.user_id ?? null,
-    path: batch.page?.path ?? "/",
-    country: null,
-    device_type: batch.device.device_type,
-    last_event_at: now,
-  });
+  const clerkUserId = batch.visitor.user_id ?? null;
+
+  let existingRaw: string | null = null;
+  if (redis) {
+    try {
+      existingRaw = await redis.get(`tracking:realtime:meta:${member}`);
+    } catch {
+      existingRaw = null;
+    }
+  }
+
+  const metaPayload = buildRealtimeMetaPayload(batch, ctx, now, existingRaw);
+  const meta = JSON.stringify(metaPayload);
 
   if (redis) {
     try {
@@ -325,23 +422,57 @@ async function upsertRealtime(batch: ParsedTrackBatch, isBot: boolean): Promise<
 
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return;
+  let dbUserId: string | null = null;
+  if (clerkUserId) {
+    const { data: userRow } = await supabase
+      .from("users")
+      .select("id")
+      .eq("clerk_user_id", clerkUserId)
+      .maybeSingle();
+    dbUserId = userRow?.id ? String(userRow.id) : null;
+  }
+
   await supabase
     .from("tracking_realtime_users")
     .upsert(
       {
         visitor_id: batch.visitor.visitor_id,
         session_id: batch.visitor.session_id,
+        user_id: dbUserId,
         last_event_at: new Date(now).toISOString(),
         path: batch.page?.path ?? null,
+        country: ctx.geo.country,
         device_type: batch.device.device_type,
       },
       { onConflict: "visitor_id", ignoreDuplicates: false },
     );
 }
 
+export type RealtimeEventEntry = {
+  name: string;
+  path: string | null;
+  occurred_at: string;
+};
+
+export type RealtimeVisitorSnapshot = {
+  visitor_id: string;
+  session_id?: string | null;
+  clerk_user_id?: string | null;
+  path?: string | null;
+  device_type?: string | null;
+  country?: string | null;
+  last_event_at: number;
+  last_event_name?: string | null;
+  session_started_at?: number | null;
+  first_seen_at?: number | null;
+  first_interaction_at?: number | null;
+  current_page_started_at?: number | null;
+  recent_events?: RealtimeEventEntry[];
+};
+
 export async function readRealtimeUsers(windowSeconds = 300): Promise<{
   count: number;
-  visitors: Array<{ visitor_id: string; path?: string | null; device_type?: string | null; last_event_at: number }>;
+  visitors: RealtimeVisitorSnapshot[];
 }> {
   const redis = await getTrackingRedis();
   if (redis) {
@@ -357,11 +488,26 @@ export async function readRealtimeUsers(windowSeconds = 300): Promise<{
         } catch {
           meta = {};
         }
+        const recentEvents = Array.isArray(meta.recent_events)
+          ? (meta.recent_events as RealtimeEventEntry[])
+          : [];
         return {
           visitor_id,
+          session_id: asString(meta.session_id),
+          clerk_user_id: asString(meta.clerk_user_id) ?? asString(meta.user_id),
           path: asString(meta.path),
           device_type: asString(meta.device_type),
+          country: asString(meta.country),
           last_event_at: Number(meta.last_event_at ?? Date.now()),
+          last_event_name: asString(meta.last_event_name),
+          session_started_at:
+            meta.session_started_at != null ? Number(meta.session_started_at) : null,
+          first_seen_at: meta.first_seen_at != null ? Number(meta.first_seen_at) : null,
+          first_interaction_at:
+            meta.first_interaction_at != null ? Number(meta.first_interaction_at) : null,
+          current_page_started_at:
+            meta.current_page_started_at != null ? Number(meta.current_page_started_at) : null,
+          recent_events: recentEvents,
         };
       });
       return { count: visitors.length, visitors };
@@ -375,15 +521,45 @@ export async function readRealtimeUsers(windowSeconds = 300): Promise<{
   const cutoff = new Date(Date.now() - windowSeconds * 1000).toISOString();
   const { data } = await supabase
     .from("tracking_realtime_users")
-    .select("visitor_id, path, device_type, last_event_at")
+    .select("visitor_id, session_id, user_id, path, country, device_type, last_event_at")
     .gte("last_event_at", cutoff)
     .order("last_event_at", { ascending: false })
     .limit(500);
-  const visitors = (data ?? []).map((row) => ({
-    visitor_id: String(row.visitor_id),
-    path: row.path as string | null,
-    device_type: row.device_type as string | null,
-    last_event_at: new Date(row.last_event_at).getTime(),
-  }));
+  const dbUserIds = [
+    ...new Set(
+      (data ?? [])
+        .map((row) => (row.user_id ? String(row.user_id) : null))
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const clerkByDbId = new Map<string, string>();
+  if (dbUserIds.length > 0) {
+    const { data: users } = await supabase
+      .from("users")
+      .select("id, clerk_user_id")
+      .in("id", dbUserIds);
+    for (const user of users ?? []) {
+      clerkByDbId.set(String(user.id), String(user.clerk_user_id));
+    }
+  }
+
+  const visitors = (data ?? []).map((row) => {
+    const dbUserId = row.user_id ? String(row.user_id) : null;
+    return {
+      visitor_id: String(row.visitor_id),
+      session_id: row.session_id as string | null,
+      clerk_user_id: dbUserId ? (clerkByDbId.get(dbUserId) ?? null) : null,
+      path: row.path as string | null,
+      device_type: row.device_type as string | null,
+      country: row.country as string | null,
+      last_event_at: new Date(row.last_event_at).getTime(),
+      last_event_name: null,
+      session_started_at: null,
+      first_seen_at: null,
+      first_interaction_at: null,
+      current_page_started_at: null,
+      recent_events: [],
+    };
+  });
   return { count: visitors.length, visitors };
 }

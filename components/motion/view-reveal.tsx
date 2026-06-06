@@ -18,7 +18,14 @@ type Props = {
 } & Omit<HTMLAttributes<HTMLDivElement>, "children">;
 
 /** غلاف بسيط — بدون حركة دخول (أُزيلت انتقالات scroll-reveal). */
-export function ViewReveal({ children, className, ...rest }: Props) {
+export function ViewReveal({
+  children,
+  className,
+  variant: _variant,
+  delay: _delay,
+  staggerIndex: _staggerIndex,
+  ...rest
+}: Props) {
   return (
     <div className={cn(className)} {...rest}>
       {children}

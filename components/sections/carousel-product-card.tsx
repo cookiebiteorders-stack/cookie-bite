@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/lib/data";
+import { EMPTY_LINKED_ADDONS } from "@/lib/addons/constants";
 import {
   ProductAddonPicker,
   useAddonSelectionState,
@@ -19,7 +20,7 @@ type Props = {
 
 export function CarouselProductCard({ product, className }: Props) {
   const [addonError, setAddonError] = useState<string | null>(null);
-  const linkedAddons = product.linkedAddons ?? [];
+  const linkedAddons = product.linkedAddons ?? EMPTY_LINKED_ADDONS;
   const { addons, selected, setSelected, selectedAddons, addonsTotal } =
     useAddonSelectionState(linkedAddons, { emptyOptional: true });
 

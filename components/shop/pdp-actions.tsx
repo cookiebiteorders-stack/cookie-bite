@@ -9,6 +9,7 @@ import { PdpStickyBar } from "@/components/shop/pdp-sticky-bar";
 import { useLanguage } from "@/components/providers/language-provider";
 import { buildCartLineId } from "@/lib/cart/types";
 import { useCart } from "@/components/providers/cart-provider";
+import { EMPTY_LINKED_ADDONS } from "@/lib/addons/constants";
 import type { Addon } from "@/lib/addons/types";
 
 type Props = {
@@ -16,7 +17,7 @@ type Props = {
   linkedAddons?: Addon[];
 };
 
-export function PdpActions({ product, linkedAddons = [] }: Props) {
+export function PdpActions({ product, linkedAddons = EMPTY_LINKED_ADDONS }: Props) {
   const { t, formatPrice } = useLanguage();
   const { lines } = useCart();
   const { addons, selected, setSelected, selectedAddons, addonsTotal } =

@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/components/providers/language-provider";
+import { formatDurationSeconds } from "@/lib/admin/realtime-display";
+import {
+  PresenceActivityTimeline,
+  PresenceTimingGrid,
+} from "@/components/admin/tracking/presence-timing-ui";
 
 type PresenceStaff = {
   clerk_user_id: string;
@@ -14,7 +19,11 @@ type PresenceStaff = {
   device_label: string | null;
   ip: string | null;
   last_seen_at: string;
+  session_started_at: string;
+  first_interaction_at: string | null;
+  current_page_started_at: string | null;
   online_seconds: number;
+  page_seconds: number;
   recent_actions: Array<{ action: string; module: string; created_at: string }>;
 };
 
@@ -24,24 +33,6 @@ type PresenceResponse = {
   staff: PresenceStaff[];
 };
 
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  const mins = Math.floor(seconds / 60);
-  if (mins < 60) return `${mins}m`;
-  const hours = Math.floor(mins / 60);
-  const rem = mins % 60;
-  return rem ? `${hours}h ${rem}m` : `${hours}h`;
-}
-
-function formatRelativeTime(iso: string): string {
-  const diff = Math.max(0, Date.now() - new Date(iso).getTime());
-  const secs = Math.round(diff / 1000);
-  if (secs < 60) return `${secs}s`;
-  const mins = Math.round(secs / 60);
-  if (mins < 60) return `${mins}m`;
-  return `${Math.round(mins / 60)}h`;
-}
-
 const ROLE_RING: Record<PresenceStaff["role"], string> = {
   owner: "ring-amber-400/80",
   admin: "ring-sky-400/80",
@@ -49,7 +40,7 @@ const ROLE_RING: Record<PresenceStaff["role"], string> = {
 };
 
 export function AdminPresencePanel({ intervalMs = 12_000 }: { intervalMs?: number }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [data, setData] = useState<PresenceResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,7 +103,6 @@ export function AdminPresencePanel({ intervalMs = 12_000 }: { intervalMs?: numbe
           const pageLabel = member.current_page_key
             ? t(`adminNav.${member.current_page_key}`)
             : member.current_path ?? "—";
-          const lastAudit = member.recent_actions[0];
 
           return (
             <li
@@ -137,10 +127,16 @@ export function AdminPresencePanel({ intervalMs = 12_000 }: { intervalMs?: numbe
                 </div>
                 <div className="text-right text-xs text-cb-text-muted">
                   <p>
-                    {t("adminPresence.activeAgo")} {formatRelativeTime(member.last_seen_at)}
+                    {t("presenceTiming.sessionDuration")}:{" "}
+                    <span className="font-semibold text-cb-text">
+                      {formatDurationSeconds(member.online_seconds, lang)}
+                    </span>
                   </p>
                   <p>
-                    {t("adminPresence.session")} {formatDuration(member.online_seconds)}
+                    {t("presenceTiming.onPageDuration")}:{" "}
+                    <span className="font-semibold text-cb-text">
+                      {formatDurationSeconds(member.page_seconds, lang)}
+                    </span>
                   </p>
                 </div>
               </div>
@@ -168,23 +164,27 @@ export function AdminPresencePanel({ intervalMs = 12_000 }: { intervalMs?: numbe
                 </div>
               </div>
 
-              {lastAudit ? (
-                <div className="mt-2 rounded-lg border border-cb-border/70 bg-cb-surface px-3 py-2 text-xs">
-                  <p className="font-semibold text-cb-text-muted">{t("adminPresence.lastAction")}</p>
-                  <p className="mt-0.5 text-cb-text">
-                    <span className="font-medium">{lastAudit.action}</span>
-                    <span className="text-cb-text-muted"> · {lastAudit.module}</span>
-                    <span className="text-cb-text-muted">
-                      {" "}
-                      · {formatRelativeTime(lastAudit.created_at)} {t("adminPresence.ago")}
-                    </span>
-                  </p>
-                </div>
-              ) : member.last_action ? (
-                <p className="mt-2 text-xs text-cb-text-muted">
-                  {t("adminPresence.lastAction")}: {member.last_action}
-                </p>
-              ) : null}
+              <PresenceTimingGrid
+                lang={lang}
+                fields={[
+                  { label: t("presenceTiming.sessionStarted"), at: member.session_started_at },
+                  { label: t("presenceTiming.firstInteraction"), at: member.first_interaction_at },
+                  { label: t("presenceTiming.pageStarted"), at: member.current_page_started_at },
+                  { label: t("presenceTiming.lastActive"), at: member.last_seen_at },
+                ]}
+              />
+
+              <PresenceActivityTimeline
+                title={t("presenceTiming.activityTimeline")}
+                emptyLabel={t("presenceTiming.noActivity")}
+                lang={lang}
+                items={member.recent_actions.map((action, idx) => ({
+                  key: `${action.created_at}-${idx}`,
+                  title: action.action,
+                  subtitle: action.module,
+                  occurred_at: action.created_at,
+                }))}
+              />
             </li>
           );
         })}

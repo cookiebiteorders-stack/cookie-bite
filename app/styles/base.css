@@ -162,9 +162,10 @@ textarea,
   cursor: text;
 }
 
-/* Invisible / display:none elements must never block clicks */
+/* Truly hidden elements must never block clicks.
+   Do NOT target Tailwind `.hidden` — it stays on responsive nodes (`hidden lg:flex`)
+   and would disable all child links/buttons while the element is visible. */
 [hidden],
-.hidden,
 [style*="display: none"],
 [style*="display:none"] {
   pointer-events: none !important;

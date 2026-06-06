@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 import type { Product } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { EMPTY_LINKED_ADDONS } from "@/lib/addons/constants";
 import { useAddonSelectionState } from "@/components/product/product-addon-picker";
 
 const ProductAddonPicker = dynamic(
@@ -60,7 +61,7 @@ export function ProductCard({
   const [quickViewOpen, setQuickViewOpen] = useState(false);
   const [uncontrolledSaved, setUncontrolledSaved] = useState(false);
   const [addonError, setAddonError] = useState<string | null>(null);
-  const linkedAddons = product.linkedAddons ?? [];
+  const linkedAddons = product.linkedAddons ?? EMPTY_LINKED_ADDONS;
   const { addons, selected, setSelected, selectedAddons, addonsTotal } =
     useAddonSelectionState(linkedAddons, { emptyOptional: true });
 

@@ -1,6 +1,7 @@
 import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { RealtimeFeed } from "@/components/admin/tracking/RealtimeFeed";
 import { AdminPresencePanel } from "@/components/admin/tracking/AdminPresencePanel";
+import { VisitorPresencePanel } from "@/components/admin/tracking/VisitorPresencePanel";
 import { AdminPageIntro } from "@/components/admin/admin-page-intro";
 
 export default async function AdminAnalyticsRealtimePage() {
@@ -12,6 +13,7 @@ export default async function AdminAnalyticsRealtimePage() {
         subtitleKey="adminPages.analyticsRealtime.subtitle"
       />
       <AdminPresencePanel />
+      <VisitorPresencePanel />
       <RealtimeFeed />
     </div>
   );

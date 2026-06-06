@@ -20,6 +20,12 @@ export type AdminPresenceHeartbeat = {
   user_agent?: string | null;
 };
 
+type AdminPresenceMetaExtras = {
+  session_started_at: string;
+  first_interaction_at: string | null;
+  current_page_started_at: string;
+};
+
 export type AdminPresenceRecentAction = {
   action: string;
   module: string;
@@ -40,7 +46,10 @@ export type AdminPresenceRow = {
   device_label: string | null;
   last_seen_at: string;
   session_started_at: string;
+  first_interaction_at: string | null;
+  current_page_started_at: string | null;
   online_seconds: number;
+  page_seconds: number;
   recent_actions: AdminPresenceRecentAction[];
 };
 
@@ -83,24 +92,17 @@ export async function upsertAdminPresence(
   const redis = await getTrackingRedis();
   if (redis) {
     try {
-      const meta = JSON.stringify({
+      const existingMeta = await redis.get(`admin:presence:meta:${input.clerk_user_id}`);
+      const timing = resolveAdminPresenceTiming(
+        existingMeta,
+        input.current_path,
+        now,
+        input.last_action ?? null,
+      );
+      const metaWithSession = JSON.stringify({
         ...payload,
         current_page_key: pageKey,
-        session_started_at: null as string | null,
-      });
-      const existingMeta = await redis.get(`admin:presence:meta:${input.clerk_user_id}`);
-      let sessionStartedAt = new Date(now).toISOString();
-      if (existingMeta) {
-        try {
-          const parsed = JSON.parse(existingMeta) as { session_started_at?: string | null };
-          if (parsed.session_started_at) sessionStartedAt = parsed.session_started_at;
-        } catch {
-          // ignore
-        }
-      }
-      const metaWithSession = JSON.stringify({
-        ...JSON.parse(meta),
-        session_started_at: sessionStartedAt,
+        ...timing,
       });
       const pipeline = redis.multi();
       pipeline.zadd(PRESENCE_KEY, now, input.clerk_user_id);
@@ -135,6 +137,45 @@ export async function upsertAdminPresence(
   );
 }
 
+function resolveAdminPresenceTiming(
+  existingMetaRaw: string | null,
+  currentPath: string,
+  now: number,
+  lastAction: string | null,
+): AdminPresenceMetaExtras {
+  let existing: Record<string, unknown> = {};
+  if (existingMetaRaw) {
+    try {
+      existing = JSON.parse(existingMetaRaw) as Record<string, unknown>;
+    } catch {
+      existing = {};
+    }
+  }
+
+  const nowIso = new Date(now).toISOString();
+  const sessionStartedAt =
+    typeof existing.session_started_at === "string"
+      ? existing.session_started_at
+      : nowIso;
+  const prevPath = typeof existing.current_path === "string" ? existing.current_path : null;
+  const currentPageStartedAt =
+    prevPath && prevPath === currentPath && typeof existing.current_page_started_at === "string"
+      ? existing.current_page_started_at
+      : nowIso;
+
+  let firstInteractionAt =
+    typeof existing.first_interaction_at === "string" ? existing.first_interaction_at : null;
+  if (!firstInteractionAt && lastAction) {
+    firstInteractionAt = nowIso;
+  }
+
+  return {
+    session_started_at: sessionStartedAt,
+    first_interaction_at: firstInteractionAt,
+    current_page_started_at: currentPageStartedAt,
+  };
+}
+
 async function loadRecentActions(
   supabase: SupabaseClient,
   userIds: string[],
@@ -149,13 +190,13 @@ async function loadRecentActions(
     .in("actor_id", userIds)
     .gte("created_at", cutoff)
     .order("created_at", { ascending: false })
-    .limit(200);
+    .limit(300);
 
   for (const row of data ?? []) {
     const actorId = row.actor_id as string | null;
     if (!actorId) continue;
     const list = map.get(actorId) ?? [];
-    if (list.length >= 5) continue;
+    if (list.length >= 20) continue;
     list.push({
       action: String(row.action),
       module: String(row.module),
@@ -166,16 +207,55 @@ async function loadRecentActions(
   return map;
 }
 
+async function loadFirstInteractions(
+  supabase: SupabaseClient,
+  rows: Array<{ user_id: string | null; session_started_at: string }>,
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const pairs = rows.filter((r): r is { user_id: string; session_started_at: string } =>
+    Boolean(r.user_id),
+  );
+  if (pairs.length === 0) return map;
+
+  await Promise.all(
+    pairs.map(async ({ user_id, session_started_at }) => {
+      const { data } = await supabase
+        .from("audit_logs")
+        .select("created_at")
+        .eq("actor_id", user_id)
+        .gte("created_at", session_started_at)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (data?.created_at) {
+        map.set(user_id, String(data.created_at));
+      }
+    }),
+  );
+
+  return map;
+}
+
 function rowFromMeta(
   clerkUserId: string,
   meta: Record<string, unknown>,
   recentActions: AdminPresenceRecentAction[],
+  firstInteractionOverride?: string | null,
 ): AdminPresenceRow {
   const lastSeen = String(meta.last_seen_at ?? new Date().toISOString());
   const sessionStarted = String(meta.session_started_at ?? lastSeen);
+  const currentPageStarted = String(meta.current_page_started_at ?? sessionStarted);
   const lastSeenMs = new Date(lastSeen).getTime();
   const startedMs = new Date(sessionStarted).getTime();
+  const pageStartedMs = new Date(currentPageStarted).getTime();
   const ua = (meta.user_agent as string | null) ?? null;
+  const firstFromMeta =
+    typeof meta.first_interaction_at === "string" ? meta.first_interaction_at : null;
+  const firstFromAudit = recentActions.length
+    ? recentActions[recentActions.length - 1].created_at
+    : null;
+  const firstInteractionAt =
+    firstInteractionOverride ?? firstFromMeta ?? firstFromAudit ?? sessionStarted;
 
   return {
     clerk_user_id: clerkUserId,
@@ -191,7 +271,10 @@ function rowFromMeta(
     device_label: parseUserAgent(ua),
     last_seen_at: lastSeen,
     session_started_at: sessionStarted,
+    first_interaction_at: firstInteractionAt,
+    current_page_started_at: currentPageStarted,
     online_seconds: Math.max(0, Math.round((lastSeenMs - startedMs) / 1000)),
+    page_seconds: Math.max(0, Math.round((lastSeenMs - pageStartedMs) / 1000)),
     recent_actions: recentActions,
   };
 }
@@ -225,10 +308,25 @@ export async function readOnlineAdminStaff(windowSeconds = 300): Promise<{
       });
 
       const recentMap = supabase ? await loadRecentActions(supabase, userIds) : new Map();
+      const firstInteractionMap = supabase
+        ? await loadFirstInteractions(
+            supabase,
+            parsedRows.map(({ meta }) => ({
+              user_id: (meta.user_id as string | null) ?? null,
+              session_started_at: String(meta.session_started_at ?? meta.last_seen_at ?? new Date().toISOString()),
+            })),
+          )
+        : new Map<string, string>();
       const staff = parsedRows
-        .map(({ clerkUserId, meta }) =>
-          rowFromMeta(clerkUserId, meta, recentMap.get((meta.user_id as string) ?? "") ?? []),
-        )
+        .map(({ clerkUserId, meta }) => {
+          const uid = (meta.user_id as string) ?? "";
+          return rowFromMeta(
+            clerkUserId,
+            meta,
+            recentMap.get(uid) ?? [],
+            uid ? firstInteractionMap.get(uid) ?? null : null,
+          );
+        })
         .sort((a, b) => {
           const roleOrder = { owner: 0, admin: 1, staff: 2, customer: 3 };
           const ra = roleOrder[a.role] ?? 9;
@@ -257,14 +355,27 @@ export async function readOnlineAdminStaff(windowSeconds = 300): Promise<{
     .map((row) => row.user_id as string | null)
     .filter((id): id is string => Boolean(id));
   const recentMap = await loadRecentActions(supabase, userIds);
+  const firstInteractionMap = await loadFirstInteractions(
+    supabase,
+    (data ?? []).map((row) => ({
+      user_id: (row.user_id as string | null) ?? null,
+      session_started_at: String(row.session_started_at ?? row.last_seen_at),
+    })),
+  );
 
   const staff = (data ?? []).map((row) => {
     const path = (row.current_path as string | null) ?? "/admin";
     const { pageKey } = resolveModuleFromPath(path);
     const lastSeen = String(row.last_seen_at);
     const sessionStarted = String(row.session_started_at ?? lastSeen);
+    const currentPageStarted = sessionStarted;
     const ua = (row.user_agent as string | null) ?? null;
     const userId = (row.user_id as string | null) ?? null;
+    const recentActions = userId ? (recentMap.get(userId) ?? []) : [];
+    const firstInteractionAt =
+      (userId ? firstInteractionMap.get(userId) : null)
+      ?? (recentActions.length ? recentActions[recentActions.length - 1].created_at : null)
+      ?? sessionStarted;
 
     return {
       clerk_user_id: String(row.clerk_user_id),
@@ -280,13 +391,21 @@ export async function readOnlineAdminStaff(windowSeconds = 300): Promise<{
       device_label: parseUserAgent(ua),
       last_seen_at: lastSeen,
       session_started_at: sessionStarted,
+      first_interaction_at: firstInteractionAt,
+      current_page_started_at: currentPageStarted,
       online_seconds: Math.max(
         0,
         Math.round(
           (new Date(lastSeen).getTime() - new Date(sessionStarted).getTime()) / 1000,
         ),
       ),
-      recent_actions: userId ? (recentMap.get(userId) ?? []) : [],
+      page_seconds: Math.max(
+        0,
+        Math.round(
+          (new Date(lastSeen).getTime() - new Date(currentPageStarted).getTime()) / 1000,
+        ),
+      ),
+      recent_actions: recentActions,
     } satisfies AdminPresenceRow;
   });
 

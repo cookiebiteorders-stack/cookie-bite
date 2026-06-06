@@ -17,18 +17,21 @@ function useDevCdnFallback(): boolean {
   return process.env.NODE_ENV === "development";
 }
 
-/** يُمرَّر إلى ClerkProvider — يجب أن يكون معرّفاً صراحةً لأن المفتاح live قد يتجاهل env */
+/**
+ * في التطوير نُجبر زوج CDN مُثبَّت (@clerk/nextjs@7 يتوقع clerk-js 6.12.1 + ui 1.13.1).
+ * تجاهل NEXT_PUBLIC_CLERK_JS_URL=@6 من .env — يحمّل أحدث 6.x ويكسر mount لواجهة UI.
+ */
 export function resolveClerkJsScriptUrl(): string | undefined {
+  if (useDevCdnFallback()) return CLERK_JS_CDN_FALLBACK;
   const custom = process.env.NEXT_PUBLIC_CLERK_JS_URL?.trim();
   if (custom) return custom;
-  if (useDevCdnFallback()) return CLERK_JS_CDN_FALLBACK;
   return undefined;
 }
 
 export function resolveClerkUIScriptUrl(): string | undefined {
+  if (useDevCdnFallback()) return CLERK_UI_CDN_FALLBACK;
   const custom = process.env.NEXT_PUBLIC_CLERK_UI_URL?.trim();
   if (custom) return custom;
-  if (useDevCdnFallback()) return CLERK_UI_CDN_FALLBACK;
   return undefined;
 }
 
