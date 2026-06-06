@@ -1,7 +1,7 @@
 import { translations, type Lang } from "@/lib/i18n/translations";
 
-/** الحركة العشوائية صارت أبطأ: كل 4 دقائق */
-export const ROAM_INTERVAL_MS = 4 * 60_000;
+/** الحركة العشوائية + رسالة فقاعة: كل دقيقة */
+export const ROAM_INTERVAL_MS = 60_000;
 export const BUBBLE_AUTO_HIDE_MS = 10_000;
 /** عند سحب الأيقونة لمكان معيّن: تبقى ثابتة 10 دقائق قبل استئناف الحركة */
 export const DRAG_HOLD_MS = 10 * 60_000;

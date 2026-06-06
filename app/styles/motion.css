@@ -157,6 +157,11 @@
   mix-blend-mode: screen;
 }
 
+/* popLayout يبقي الصفحة الخارجة فوق المحتوى — لا تسرق النقرات أثناء الخروج */
+.cb-page-route-shell {
+  pointer-events: auto;
+}
+
 @keyframes loki-theme-ring {
   0% {
     transform: scale(0.82) rotate(0deg);

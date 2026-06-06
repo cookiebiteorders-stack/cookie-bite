@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { FileText, Search } from "lucide-react";
 import { ReorderGiftBoxButton } from "@/components/account/reorder-gift-box-button";
 import { GiftRevealLinkButton } from "@/components/account/gift-reveal-link-button";
 import { useLanguage } from "@/components/providers/language-provider";
@@ -11,12 +11,14 @@ import { cn } from "@/lib/utils";
 export type AccountOrderRow = {
   id: string;
   order_number: number;
+  order_code?: string | null;
   total_egp: number;
   payment_status: string;
   status: string;
   order_type?: string | null;
   gift_box_snapshot?: unknown;
   reveal_token?: string | null;
+  created_at?: string | null;
 };
 
 const STATUS_BADGE: Record<string, string> = {
@@ -30,10 +32,25 @@ const STATUS_BADGE: Record<string, string> = {
 
 type Props = {
   orders: AccountOrderRow[];
+  /** Show order date on each row (full orders page). */
+  showDate?: boolean;
+  /** Slightly roomier layout for the dedicated orders page. */
+  detailed?: boolean;
 };
 
-export function AccountOrdersList({ orders }: Props) {
-  const { t, formatPrice } = useLanguage();
+function formatOrderDate(iso: string, lang: string) {
+  try {
+    return new Intl.DateTimeFormat(lang === "ar" ? "ar-EG" : "en-GB", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
+}
+
+export function AccountOrdersList({ orders, showDate = false, detailed = false }: Props) {
+  const { t, lang, formatPrice } = useLanguage();
 
   return (
     <>
@@ -45,12 +62,20 @@ export function AccountOrdersList({ orders }: Props) {
             return (
               <li
                 key={o.id}
-                className="rounded-2xl border border-cb-border px-4 py-3"
+                className={cn(
+                  "rounded-2xl border border-cb-border",
+                  detailed ? "px-5 py-4" : "px-4 py-3",
+                )}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-cb-text-strong">
                       {t("accountOrders.orderNumber", { n: o.order_number })}
+                      {o.order_code ? (
+                        <span className="ms-2 font-mono text-[10px] text-cb-text-muted">
+                          {o.order_code}
+                        </span>
+                      ) : null}
                       {o.order_type === "gift_box" ? (
                         <span className="ms-2 text-[10px] font-bold uppercase text-cb-terracotta-dark">
                           {t("accountOrders.giftBox")}
@@ -60,8 +85,23 @@ export function AccountOrdersList({ orders }: Props) {
                     <p className="mt-1 text-xs text-cb-text-muted">
                       {formatPrice(Number(o.total_egp))} · {o.payment_status}
                     </p>
+                    {showDate && o.created_at ? (
+                      <p className="mt-1 text-[11px] text-cb-text-muted">
+                        {t("accountOrders.placedOn", {
+                          date: formatOrderDate(o.created_at, lang),
+                        })}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/track?order=${encodeURIComponent(String(o.order_number))}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-cb-border bg-cb-surface px-3 py-1 text-[11px] font-semibold text-cb-text-strong transition hover:bg-cb-peach/40"
+                      title={t("accountOrders.trackOrder")}
+                    >
+                      <Search className="h-3.5 w-3.5" />
+                      {t("accountOrders.track")}
+                    </Link>
                     <ReorderGiftBoxButton
                       orderId={o.id}
                       orderType={o.order_type}

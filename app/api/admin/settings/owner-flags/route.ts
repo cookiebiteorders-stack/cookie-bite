@@ -104,5 +104,13 @@ export async function POST(request: Request) {
     request,
   });
 
+  if (key === "smart_retries" && body.enabled) {
+    void import("@/lib/admin/automation/run-job").then((m) =>
+      m.runAutomationJob("email_worker", 25).catch((err) => {
+        console.error("[owner-flags] smart_retries drain failed", err);
+      }),
+    );
+  }
+
   return NextResponse.json({ flags, ok: true });
 }

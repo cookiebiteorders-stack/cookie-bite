@@ -20,6 +20,43 @@ function retryDelayMs(attempt: number): number {
 }
 
 /**
+ * يُرسل رسالة الطابور تلقائياً بعد الإدراج — دون انتظار cron أو زر يدوي.
+ * يستخدم `after()` عند توفره حتى لا يبطّئ استجابة الطلب.
+ */
+export function scheduleEmailQueueProcessing(queueId: string): void {
+  const execute = async () => {
+    try {
+      const { createSupabaseAdminClient } = await import("@/lib/supabase/admin");
+      const supabase = createSupabaseAdminClient();
+      const { data: row } = await supabase
+        .from("email_queue")
+        .select("*")
+        .eq("id", queueId)
+        .maybeSingle();
+      if (!row) return;
+      const status = String(row.status ?? "");
+      if (status === "sent" || status === "processing") return;
+
+      await processEmailQueueRow(row);
+      const { removeEmailBullJob } = await import("@/lib/email/automation/bull-queue");
+      await removeEmailBullJob(queueId);
+      await drainEmailQueue(20);
+    } catch (e) {
+      console.error("[email-queue] auto-process failed", queueId, e);
+    }
+  };
+
+  void (async () => {
+    try {
+      const { after } = await import("next/server");
+      after(execute);
+    } catch {
+      await execute();
+    }
+  })();
+}
+
+/**
  * Unified email send — queues when configured, otherwise sends with provider fallback.
  */
 export async function sendAutomatedEmail(
@@ -31,12 +68,13 @@ export async function sendAutomatedEmail(
 
   const queueId = await insertEmailQueue(payload);
   const { addEmailBullJob } = await import("@/lib/email/automation/bull-queue");
-  const bullOk = await addEmailBullJob(queueId);
-  if (!bullOk && isEmailDbQueueEnabled()) {
-    /* DB cron أو «عامل طابور البريد» في مركز الأتمتة */
-  } else if (!bullOk) {
+  await addEmailBullJob(queueId);
+
+  if (!isEmailDbQueueEnabled()) {
     return sendAutomatedEmailNow({ ...payload, metadata: { ...payload.metadata, queueId } });
   }
+
+  scheduleEmailQueueProcessing(queueId);
   return { ok: true, queueId };
 }
 
@@ -87,11 +125,12 @@ export async function sendAutomatedEmailNow(
   const smartRetries = await isSmartRetriesEnabled();
   if (queueId) {
     const attempts = 1;
+    const maxAttempts = 5;
     await updateQueueStatus(queueId, {
-      status: "failed",
+      status: smartRetries && attempts < maxAttempts ? "failed" : "cancelled",
       attempts,
       error_summary: err,
-      ...(smartRetries
+      ...(smartRetries && attempts < maxAttempts
         ? { next_retry_at: new Date(Date.now() + retryDelayMs(attempts)).toISOString() }
         : {}),
     });

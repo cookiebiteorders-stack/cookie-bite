@@ -3,14 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import {
-  CreditCard,
-  Heart,
-  MapPin,
-  Package,
-  Star,
-} from "lucide-react";
+import { Heart, MapPin, Package, Star } from "lucide-react";
 
+import { AccountHashScroll } from "@/components/account/account-hash-scroll";
 import { AccountOrdersList } from "@/components/account/account-orders-list";
 import { AccountSidebar } from "@/components/account/account-sidebar";
 import { AccountTestimonialForm } from "@/components/account/account-testimonial-form";
@@ -23,7 +18,15 @@ import {
   ACCOUNT_ROLE_DASHBOARD_COPY,
 } from "@/lib/account/account-role-dashboard";
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
-import { listRecentOrdersForUser } from "@/lib/db/orders";
+import { mapOrderRowToAccountOrder } from "@/lib/account/map-order-row";
+import { formatPaymentMethodSummary } from "@/lib/account/payment-method-display";
+import { countAddressesForUser } from "@/lib/db/addresses";
+import {
+  countPaymentMethodsForUser,
+  listPaymentMethodsForUser,
+  type SavedPaymentMethodRow,
+} from "@/lib/db/payment-methods";
+import { countOrdersForUser, listRecentOrdersForUser } from "@/lib/db/orders";
 import { requireCustomerProfileComplete } from "@/lib/account/require-complete-profile";
 import { trySendWelcomeEmailOnce } from "@/lib/email/welcome-onboarding";
 import { getUserByClerkId } from "@/lib/db/users";
@@ -144,7 +147,14 @@ export default async function AccountPage() {
     accountRole !== "customer" ? getAccessibleAdminConsoleNav(accountRole) : [];
   const roleCopy = ACCOUNT_ROLE_DASHBOARD_COPY[accountRole];
 
-  const orders = dbUser ? await listRecentOrdersForUser(dbUser.id, 3) : [];
+  const [orders, orderCount, addressCount, paymentMethodCount, paymentMethodsItems] =
+    await Promise.all([
+      dbUser ? listRecentOrdersForUser(dbUser.id, 3) : [],
+      dbUser ? countOrdersForUser(dbUser.id) : 0,
+      dbUser ? countAddressesForUser(dbUser.id) : 0,
+      dbUser ? countPaymentMethodsForUser(dbUser.id) : 0,
+      dbUser ? listPaymentMethodsForUser(dbUser.id) : [],
+    ]);
 
   const supabase = dbUser ? tryCreateSupabaseAdminClient() : null;
   const [loyaltyAccount, wishlistItems, addressesItems, notificationsItems, testimonialItems] =
@@ -256,6 +266,7 @@ export default async function AccountPage() {
 
   return (
     <div className="bg-cb-cream pb-20 pt-8">
+      <AccountHashScroll />
       <div className="mx-auto flex max-w-7xl flex-col gap-8 cb-gutter lg:flex-row">
         <AccountSidebar
           userName={fullName}
@@ -331,9 +342,9 @@ export default async function AccountPage() {
                 </p>
                 <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
                   {[
-                    { label: t("accountDashboard.statOrders"), value: String(orders.length), icon: Package },
+                    { label: t("accountDashboard.statOrders"), value: String(orderCount), icon: Package },
                     { label: t("accountDashboard.statPoints"), value: String(loyaltyPoints), icon: Star },
-                    { label: t("accountDashboard.statAddresses"), value: String(addressesItems.length), icon: MapPin },
+                    { label: t("accountDashboard.statAddresses"), value: String(addressCount), icon: MapPin },
                     { label: t("accountDashboard.statWishlist"), value: String(wishlistItems.length), icon: Heart },
                   ].map(({ label, value, icon: Icon }) => (
                     <div
@@ -366,7 +377,7 @@ export default async function AccountPage() {
           <div className="grid gap-8 lg:grid-cols-2">
             <section
               id="orders"
-              className="rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
+              className="scroll-mt-28 rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
             >
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
@@ -377,31 +388,31 @@ export default async function AccountPage() {
                       : t("accountDashboard.ordersEmpty")}
                   </p>
                 </div>
-                <Link
-                  href="/shop"
-                  className="text-xs font-semibold text-cb-terracotta-dark hover:underline"
-                >
-                  {t("accountDashboard.explore")}
-                </Link>
+                {orderCount > 0 ? (
+                  <Link
+                    href="/account/orders"
+                    className="text-xs font-semibold text-cb-terracotta-dark hover:underline"
+                  >
+                    {t("accountDashboard.viewAllOrders")}
+                  </Link>
+                ) : (
+                  <Link
+                    href="/shop"
+                    className="text-xs font-semibold text-cb-terracotta-dark hover:underline"
+                  >
+                    {t("accountDashboard.explore")}
+                  </Link>
+                )}
               </div>
 
               <AccountOrdersList
-                orders={orders.map((o) => ({
-                  id: o.id,
-                  order_number: o.order_number,
-                  total_egp: o.total_egp,
-                  payment_status: o.payment_status,
-                  status: o.status,
-                  order_type: o.order_type,
-                  gift_box_snapshot: o.gift_box_snapshot,
-                  reveal_token: o.reveal_token ?? null,
-                }))}
+                orders={orders.map(mapOrderRowToAccountOrder)}
               />
             </section>
 
             <section
               id="rewards"
-              className="rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
+              className="scroll-mt-28 rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
             >
               <LoyaltyDashboard
                 initialPoints={loyaltyPoints}
@@ -416,7 +427,7 @@ export default async function AccountPage() {
 
           <section
             id="addresses"
-            className="rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
+            className="scroll-mt-28 rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -430,10 +441,12 @@ export default async function AccountPage() {
                 </p>
               </div>
               <Link
-                href="/checkout"
+                href="/account/addresses"
                 className="text-xs font-semibold text-cb-terracotta-dark hover:underline"
               >
-                {t("accountDashboard.addLink")}
+                {addressCount > 0
+                  ? t("accountDashboard.manageAddresses")
+                  : t("accountDashboard.addAddress")}
               </Link>
             </div>
 
@@ -477,7 +490,7 @@ export default async function AccountPage() {
 
           <section
             id="pay"
-            className="rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
+            className="scroll-mt-28 rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -485,49 +498,58 @@ export default async function AccountPage() {
                   {t("accountDashboard.paymentTitle")}
                 </h2>
                 <p className="mt-1 text-xs text-cb-text-muted">
-                  {t("accountDashboard.paymentSub")}
+                  {paymentMethodsItems.length
+                    ? t("accountDashboard.paymentMethodsSaved", {
+                        count: paymentMethodsItems.length,
+                      })
+                    : t("accountDashboard.paymentMethodsEmpty")}
                 </p>
               </div>
               <Link
-                href="/checkout"
+                href="/account/payment-methods"
                 className="text-xs font-semibold text-cb-terracotta-dark hover:underline"
               >
-                {t("accountDashboard.checkoutLink")}
+                {paymentMethodCount > 0
+                  ? t("accountDashboard.managePaymentMethods")
+                  : t("accountDashboard.addPaymentMethod")}
               </Link>
             </div>
-            <div className="rounded-2xl bg-cb-cream p-4 ring-1 ring-cb-border/40">
-              <div className="flex items-start gap-3">
-                <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-xl bg-cb-surface ring-1 ring-cb-border/60">
-                  <CreditCard className="h-5 w-5 text-cb-terracotta-dark" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-cb-text-strong">
-                    {t("accountDashboard.paymentAvailable")}
-                  </p>
-                  <p className="mt-1 text-xs text-cb-text-muted">
-                    {t("accountDashboard.paymentMethodsDesc")}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {["card", "wallet", "cod"].map((k) => {
-                      const label = k === "cod" ? "COD" : k.toUpperCase();
-                      return (
-                        <span
-                          key={k}
-                          className="rounded-full bg-cb-surface-elevated px-3 py-1 text-[11px] font-semibold text-cb-terracotta-dark ring-1 ring-cb-border/60"
-                        >
-                          {label}
+
+            {paymentMethodsItems.length ? (
+              <div className="space-y-3">
+                {(paymentMethodsItems as SavedPaymentMethodRow[]).map((m) => (
+                  <div
+                    key={m.id}
+                    className="rounded-2xl border border-cb-border p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-semibold text-cb-text-strong">
+                        {formatPaymentMethodSummary(m, t)}
+                      </p>
+                      {m.is_default ? (
+                        <span className="rounded-full bg-cb-peach px-2 py-0.5 text-[10px] font-bold text-cb-terracotta-dark">
+                          {t("accountPaymentMethods.defaultBadge")}
                         </span>
-                      );
-                    })}
+                      ) : null}
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
-            </div>
+            ) : (
+              <div className="rounded-2xl bg-cb-cream p-6 text-center">
+                <p className="text-sm font-semibold text-cb-text-strong">
+                  {t("accountDashboard.paymentMethodsReadyTitle")}
+                </p>
+                <p className="mt-1 text-xs text-cb-text-muted">
+                  {t("accountDashboard.paymentMethodsReadyBody")}
+                </p>
+              </div>
+            )}
           </section>
 
           <section
             id="notifications"
-            className="rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
+            className="scroll-mt-28 rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -597,7 +619,7 @@ export default async function AccountPage() {
 
           <section
             id="wish"
-            className="rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
+            className="scroll-mt-28 rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>

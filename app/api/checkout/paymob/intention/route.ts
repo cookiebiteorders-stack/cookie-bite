@@ -63,7 +63,7 @@ const BodySchema = z
     notes: z.string().optional(),
     email: z.union([z.string().email(), z.literal("")]).optional(),
   }),
-  paymentMethod: z.enum(["card", "wallet", "cod"]),
+  paymentMethod: z.enum(["card", "wallet", "instapay", "fawry", "cod"]),
   promo_code: z.string().min(3).max(20).optional(),
   delivery: checkoutDeliverySchema,
   gift_box: giftBoxOrderSnapshotSchema.optional(),
@@ -265,7 +265,8 @@ export async function POST(req: Request) {
     guestRef,
   };
 
-  if (paymentMethod === "cod") {
+  const offlinePaymentMethods = ["cod", "instapay", "fawry"] as const;
+  if (offlinePaymentMethods.includes(paymentMethod as (typeof offlinePaymentMethods)[number])) {
     const inserted = await insertCheckoutOrder({
       userId: dbUserId,
       lines: orderLines,
@@ -275,7 +276,7 @@ export async function POST(req: Request) {
       promoCode: appliedPromoCode,
       promoId: appliedPromoId,
       totalEgp: total,
-      paymentMethod: "cod",
+      paymentMethod,
       paymentStatus: "unpaid",
       shippingAddress,
       notes: `Web checkout · ${guestRef}`,
@@ -328,7 +329,7 @@ export async function POST(req: Request) {
     return Response.json({
       ok: true,
       configured: false,
-      paymentMethod: "cod",
+      paymentMethod,
       orderId,
       persisted: Boolean(inserted),
       subtotalEgp: subtotal,

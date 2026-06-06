@@ -31,6 +31,7 @@
     "copilot:check": "node scripts/copilot-check.mjs",
     "hostinger:export-gemini-env": "node scripts/hostinger-export-gemini-env.mjs",
     "env:ensure-secrets": "node scripts/append-missing-env-secrets.mjs",
+    "health:diagnose": "node scripts/diagnose-store-health.mjs",
     "hostinger:env-audit": "node scripts/hostinger-production-env-audit.mjs",
     "hostinger:checklist": "node scripts/hostinger-sync-checklist.mjs",
     "supabase:list-migrations": "node scripts/supabase-list-migrations.mjs",
@@ -50,7 +51,10 @@
     "backup:supabase": "node scripts/supabase-backup.mjs",
     "backup:supabase:restore": "node scripts/supabase-restore.mjs",
     "python:up": "docker compose -f cookie-bite-python/docker-compose.yml up --build",
+    "python:dev": "node scripts/python-dev.mjs",
     "python:down": "docker compose -f cookie-bite-python/docker-compose.yml down",
+    "python:setup": "node scripts/python-setup.mjs",
+    "python:health": "node -e \"fetch((process.env.PYTHON_API_URL||'http://127.0.0.1:8000')+'/health').then(r=>r.json()).then(console.log).catch(e=>console.error(e.message))\"",
     "python:retrain": "node scripts/python-retrain.mjs"
   },
   "dependencies": {

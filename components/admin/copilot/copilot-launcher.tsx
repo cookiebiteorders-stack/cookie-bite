@@ -240,7 +240,7 @@ export function CopilotLauncher() {
           !dragPx &&
             "motion-safe:transition-[left,top,right,bottom,transform,filter] motion-safe:duration-500 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
           dragPx && "!transition-none scale-[1.05]",
-          open && "pointer-events-none opacity-0",
+          open && "pointer-events-none invisible opacity-0",
         )}
         style={{ width: fabSize, height: fabSize }}
       >

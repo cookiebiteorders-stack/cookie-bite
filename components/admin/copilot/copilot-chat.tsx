@@ -214,9 +214,18 @@ export function CopilotChat({
         {messages.length === 0 ? (
           <div className="flex min-h-full flex-col justify-center gap-4 py-2">
             <div className="rounded-2xl border border-dashed border-cb-border-strong bg-cb-peach/30 p-4 text-center sm:p-5">
-              <MrsCookieAvatar size={72} className="mx-auto sm:hidden" />
-              <MrsCookieAvatar size={84} className="mx-auto hidden sm:block" />
-              <p className="mt-3 text-sm font-semibold text-cb-text-strong">
+              {!hideHeader ? (
+                <MrsCookieAvatar size={72} className="mx-auto sm:hidden" />
+              ) : null}
+              {!hideHeader ? (
+                <MrsCookieAvatar size={84} className="mx-auto hidden sm:block" />
+              ) : null}
+              <p
+                className={cn(
+                  "text-sm font-semibold text-cb-text-strong",
+                  !hideHeader ? "mt-3" : undefined,
+                )}
+              >
                 {greeting ?? t("copilot.greeting")}
               </p>
               <p className="mt-1 text-xs leading-relaxed text-cb-text-soft">

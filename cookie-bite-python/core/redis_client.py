@@ -21,3 +21,17 @@ async def ping_redis() -> bool:
         return (await client.ping()) is True
     except Exception:
         return False
+
+
+async def cache_get(key: str) -> str | None:
+    try:
+        return await get_redis_pool().get(key)
+    except Exception:
+        return None
+
+
+async def cache_setex(key: str, ttl: int, value: str) -> None:
+    try:
+        await get_redis_pool().setex(key, ttl, value)
+    except Exception:
+        pass

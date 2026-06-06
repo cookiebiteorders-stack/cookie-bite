@@ -47,5 +47,22 @@ for (const destRoot of [path.join(root, "public"), publicDest]) {
   fs.writeFileSync(path.join(destRoot, "build-version.txt"), `${buildVersion}\n`, "utf8");
 }
 
+const serverMjs = path.join(root, "server.mjs");
+const serverDest = path.join(standaloneDir, "server.mjs");
+const loopbackSrc = path.join(root, "scripts", "background-workers-loopback.mjs");
+const loopbackDestDir = path.join(standaloneDir, "scripts");
+const loopbackDest = path.join(loopbackDestDir, "background-workers-loopback.mjs");
+
+if (fs.existsSync(serverMjs)) {
+  fs.copyFileSync(serverMjs, serverDest);
+}
+if (fs.existsSync(loopbackSrc)) {
+  fs.mkdirSync(loopbackDestDir, { recursive: true });
+  fs.copyFileSync(loopbackSrc, loopbackDest);
+}
+
 console.log(`[copy-standalone-assets] Copied into .next/standalone: public/, .next/static/`);
+if (fs.existsSync(serverDest)) {
+  console.log("[copy-standalone-assets] Also copied server.mjs + background-workers-loopback.mjs");
+}
 console.log(`[copy-standalone-assets] build-version.txt → ${buildVersion}`);

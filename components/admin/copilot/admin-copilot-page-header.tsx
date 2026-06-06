@@ -8,8 +8,7 @@ export function AdminCopilotPageHeader() {
 
   return (
     <header className="flex shrink-0 items-start gap-3 sm:gap-4">
-      <MrsCookieAvatar size={56} className="shrink-0 sm:hidden" />
-      <MrsCookieAvatar size={72} className="hidden shrink-0 sm:block" />
+      <MrsCookieAvatar size={56} className="shrink-0 sm:scale-[1.15]" />
       <div className="min-w-0 flex-1">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-cb-peach/60 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-cb-brand-logo">
           AI · Beta

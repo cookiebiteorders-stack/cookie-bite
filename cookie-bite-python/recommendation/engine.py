@@ -7,7 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.logger import get_logger
-from core.redis_client import get_redis_pool
+from core.redis_client import cache_get, cache_setex
 from recommendation.collaborative import CollaborativeFilter
 from recommendation.content_based import ContentBasedFilter
 
@@ -67,9 +67,8 @@ async def train_models(db: AsyncSession) -> dict:
 
 
 async def trending_product_ids(db: AsyncSession, limit: int = 10) -> list[str]:
-    redis = get_redis_pool()
     cache_key = f"rec:trending:{limit}"
-    cached = await redis.get(cache_key)
+    cached = await cache_get(cache_key)
     if cached:
         return json.loads(cached)
 
@@ -128,7 +127,7 @@ async def trending_product_ids(db: AsyncSession, limit: int = 10) -> list[str]:
             if pid not in ids:
                 ids.append(pid)
 
-    await redis.setex(cache_key, 1800, json.dumps(ids[:limit]))
+    await cache_setex(cache_key, 1800, json.dumps(ids[:limit]))
     return ids[:limit]
 
 
@@ -153,9 +152,8 @@ async def recommend_for_user(
     limit: int = 10,
     lang: str = "en",
 ) -> list[str]:
-    redis = get_redis_pool()
     cache_key = f"rec:user:{user_id}:{lang}:{limit}"
-    cached = await redis.get(cache_key)
+    cached = await cache_get(cache_key)
     if cached:
         return json.loads(cached)
 
@@ -189,7 +187,7 @@ async def recommend_for_user(
         else:
             ids = _merge_ranked(weighted_collab or weighted_content, limit=limit)
 
-    await redis.setex(cache_key, 3600, json.dumps(ids))
+    await cache_setex(cache_key, 3600, json.dumps(ids))
     return ids
 
 

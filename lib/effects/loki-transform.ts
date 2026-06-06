@@ -162,6 +162,7 @@ export class LokiTransform {
       el.removeEventListener(type, fn);
     }
     this.boundEls = [];
+    document.querySelectorAll(".loki-particle-canvas").forEach((node) => node.remove());
   }
 
   /** Full interactive sequence (hover/click/scroll). */

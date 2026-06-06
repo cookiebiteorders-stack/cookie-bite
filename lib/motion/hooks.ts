@@ -73,18 +73,21 @@ export type PageTransitionMotion =
         y: number;
         scale: number;
         filter: string;
+        pointerEvents: "auto";
       };
       animate: {
         opacity: number;
         y: number;
         scale: number;
         filter: string;
+        pointerEvents: "auto";
       };
       exit: {
         opacity: number;
         y: number;
         scale: number;
         filter: string;
+        pointerEvents: "none";
       };
       transition: { duration: number; ease: readonly [number, number, number, number] };
     };
@@ -104,19 +107,33 @@ export function usePageTransitionMotion(): PageTransitionMotion {
   return {
     reduced: false,
     initial: useLightEnter
-      ? { opacity: 0, y: 6, scale: 1, filter: "blur(0px)" }
+      ? {
+          opacity: 0,
+          y: 6,
+          scale: 1,
+          filter: "blur(0px)",
+          pointerEvents: "auto" as const,
+        }
       : {
           opacity: 0,
           y: 12,
           scale: 0.994,
           filter: `blur(${blurIn})`,
+          pointerEvents: "auto" as const,
         },
-    animate: { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" },
+    animate: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      filter: "blur(0px)",
+      pointerEvents: "auto" as const,
+    },
     exit: {
       opacity: 0,
       y: -8,
       scale: 0.997,
       filter: `blur(${blurOut})`,
+      pointerEvents: "none" as const,
     },
     transition: {
       duration: cinematic ? duration.page : duration.short,

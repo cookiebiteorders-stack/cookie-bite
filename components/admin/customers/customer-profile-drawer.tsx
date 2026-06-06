@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Gift, MapPin, Sparkles, StickyNote, X } from "lucide-react";
+import { Ban, Gift, MapPin, ShieldAlert, Sparkles, StickyNote, Trash2, X } from "lucide-react";
 import type { CustomerDetailResponse, OrderSummaryRow } from "@/lib/admin/crm-types";
 import { useCustomersCrmStore } from "@/stores/customers-crm-store";
 import { cn } from "@/lib/utils";
@@ -12,19 +12,31 @@ type Props = {
   onOpenChange: (v: boolean) => void;
   customerId: string | null;
   canWrite: boolean;
+  canDelete: boolean;
 };
 
-export function CustomerProfileDrawer({ open, onOpenChange, customerId, canWrite }: Props) {
+export function CustomerProfileDrawer({
+  open,
+  onOpenChange,
+  customerId,
+  canWrite,
+  canDelete,
+}: Props) {
   const reduceMotion = useReducedMotion();
   const fetchCustomerDetail = useCustomersCrmStore((s) => s.fetchCustomerDetail);
   const patchCustomer = useCustomersCrmStore((s) => s.patchCustomer);
+  const blockCustomerEmail = useCustomersCrmStore((s) => s.blockCustomerEmail);
+  const unblockCustomerEmail = useCustomersCrmStore((s) => s.unblockCustomerEmail);
+  const deleteCustomer = useCustomersCrmStore((s) => s.deleteCustomer);
   const pushToast = useCustomersCrmStore((s) => s.pushToast);
 
   const [loading, setLoading] = useState(false);
+  const [moderating, setModerating] = useState(false);
   const [detail, setDetail] = useState<CustomerDetailResponse | null>(null);
   const [fullName, setFullName] = useState("");
   const [points, setPoints] = useState("");
   const [notes, setNotes] = useState("");
+  const [blockReason, setBlockReason] = useState("");
 
   const load = useCallback(async () => {
     if (!customerId) return;
@@ -81,6 +93,60 @@ export function CustomerProfileDrawer({ open, onOpenChange, customerId, canWrite
     if (!customerId || !canWrite) return;
     const ok = await patchCustomer(customerId, { admin_notes: notes });
     if (ok) void load();
+  };
+
+  const handleBlockEmail = async () => {
+    if (!customerId || !canDelete || !c?.email) return;
+    const typed = window.prompt(
+      `لتأكيد حظر البريد، اكتب بريد العميل بالكامل:\n${c.email}`,
+      "",
+    );
+    if (!typed || typed.trim().toLowerCase() !== c.email.trim().toLowerCase()) {
+      pushToast("لم يتم التأكيد — تم إلغاء الحظر.", "info");
+      return;
+    }
+    setModerating(true);
+    const ok = await blockCustomerEmail(customerId, {
+      confirm_email: typed.trim(),
+      reason: blockReason.trim() || undefined,
+    });
+    setModerating(false);
+    if (ok) void load();
+  };
+
+  const handleUnblockEmail = async () => {
+    if (!customerId || !canDelete) return;
+    if (!window.confirm("إلغاء حظر هذا البريد؟ سيتمكن صاحبه من التسجيل مجدداً.")) return;
+    setModerating(true);
+    const ok = await unblockCustomerEmail(customerId);
+    setModerating(false);
+    if (ok) void load();
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!customerId || !canDelete || !c?.email) return;
+    if (
+      !window.confirm(
+        "حذف العميل نهائياً؟ سيتم حظر بريده ومنع تسجيل الدخول. الطلبات السابقة تبقى في النظام.",
+      )
+    ) {
+      return;
+    }
+    const typed = window.prompt(
+      `لتأكيد الحذف، اكتب بريد العميل بالكامل:\n${c.email}`,
+      "",
+    );
+    if (!typed || typed.trim().toLowerCase() !== c.email.trim().toLowerCase()) {
+      pushToast("لم يتم التأكيد — تم إلغاء الحذف.", "info");
+      return;
+    }
+    setModerating(true);
+    const ok = await deleteCustomer(customerId, {
+      confirm_email: typed.trim(),
+      reason: blockReason.trim() || undefined,
+    });
+    setModerating(false);
+    if (ok) onOpenChange(false);
   };
 
   return (
@@ -281,6 +347,79 @@ export function CustomerProfileDrawer({ open, onOpenChange, customerId, canWrite
                       بريد تسويقي: مفعّل (وهمي) · SMS: اطلب موافقة صريحة · اللغة: حسب الموقع.
                     </p>
                   </section>
+
+                  {canDelete ? (
+                    <section className="rounded-2xl border border-red-200/80 bg-red-50/50 p-4 dark:border-red-900/50 dark:bg-red-950/20">
+                      <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-red-800 dark:text-red-200">
+                        <ShieldAlert className="h-4 w-4" aria-hidden />
+                        إجراءات حساسة
+                      </h3>
+                      <p className="mt-2 text-xs leading-relaxed text-red-900/80 dark:text-red-100/80">
+                        للمالك والأدمن فقط. الحظر يمنع تسجيل الدخول وإعادة التسجيل بنفس البريد. الحذف يزيل
+                        ملف العميل مع الإبقاء على سجل الطلبات.
+                      </p>
+
+                      {detail.email_blocked ? (
+                        <div className="mt-3 rounded-xl border border-red-300/70 bg-white/80 px-3 py-2 text-xs text-red-900 dark:bg-stone-900/40 dark:text-red-100">
+                          <p className="font-bold">البريد محظور</p>
+                          {detail.blocked_reason ? (
+                            <p className="mt-1 text-red-800/90 dark:text-red-100/90">
+                              السبب: {detail.blocked_reason}
+                            </p>
+                          ) : null}
+                          {detail.blocked_at ? (
+                            <p className="mt-1 text-red-700/80 dark:text-red-200/80">
+                              {new Date(detail.blocked_at).toLocaleString("ar-EG")}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <label className="mt-3 block text-xs font-semibold text-red-900 dark:text-red-100">
+                          سبب الحظر (اختياري)
+                          <input
+                            className="mt-1 w-full rounded-xl border border-red-200 bg-white px-3 py-2 text-sm text-stone-900 dark:border-red-900 dark:bg-stone-900"
+                            value={blockReason}
+                            onChange={(e) => setBlockReason(e.target.value)}
+                            placeholder="مثال: احتيال، إساءة، طلب العميل"
+                            disabled={moderating}
+                          />
+                        </label>
+                      )}
+
+                      <div className="mt-3 flex flex-col gap-2">
+                        {detail.email_blocked ? (
+                          <button
+                            type="button"
+                            disabled={moderating}
+                            onClick={() => void handleUnblockEmail()}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-bold text-red-800 hover:bg-red-100 disabled:opacity-60 dark:border-red-800 dark:bg-stone-900 dark:text-red-100"
+                          >
+                            <Ban className="h-4 w-4" aria-hidden />
+                            إلغاء حظر البريد
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={moderating}
+                            onClick={() => void handleBlockEmail()}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-400 bg-red-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-60"
+                          >
+                            <Ban className="h-4 w-4" aria-hidden />
+                            حظر البريد
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          disabled={moderating}
+                          onClick={() => void handleDeleteCustomer()}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-500 bg-red-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-800 disabled:opacity-60"
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden />
+                          حذف العميل
+                        </button>
+                      </div>
+                    </section>
+                  ) : null}
                 </div>
               )}
             </div>

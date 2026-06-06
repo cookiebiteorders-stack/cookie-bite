@@ -53,6 +53,7 @@ export function CustomersCrmDashboard() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
 
   const canWrite = Boolean(meta?.can_write);
+  const canDelete = Boolean(meta?.can_delete);
 
   const openProfile = useCallback((id: string) => {
     setProfileId(id);
@@ -278,6 +279,7 @@ export function CustomersCrmDashboard() {
         }}
         customerId={profileId}
         canWrite={canWrite}
+        canDelete={canDelete}
       />
 
       <CrmCommandPalette

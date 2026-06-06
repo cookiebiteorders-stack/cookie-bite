@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { LokiTransform } from "@/lib/effects/loki-transform";
-import { usePageTransitionMotion } from "@/lib/motion/hooks";
+import { useAdaptiveMotion, usePageTransitionMotion } from "@/lib/motion/hooks";
 
 type Props = {
   children: React.ReactNode;
@@ -13,6 +13,7 @@ type Props = {
 export function PageTransition({ children }: Props) {
   const pathname = usePathname();
   const prefersReducedMotion = useReducedMotion();
+  const { lowPower } = useAdaptiveMotion();
   const pageMotion = usePageTransitionMotion();
   const shellRef = useRef<HTMLDivElement>(null);
   const prevPathRef = useRef<string | null>(null);
@@ -24,12 +25,12 @@ export function PageTransition({ children }: Props) {
     const prev = prevPathRef.current;
     prevPathRef.current = pathname;
     if (prev === null || prev === pathname) return;
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion || lowPower) return;
     if (pathname.startsWith("/checkout") || pathname.startsWith("/cart")) return;
     const el = shellRef.current;
     if (!el) return;
     void new LokiTransform({ particleCount: 72 }).playRouteArrival(el);
-  }, [pathname, prefersReducedMotion]);
+  }, [pathname, prefersReducedMotion, lowPower]);
 
   return (
     <AnimatePresence mode="popLayout">
@@ -37,7 +38,7 @@ export function PageTransition({ children }: Props) {
         ref={shellRef}
         key={pathname}
         data-loki="page-route"
-        className="min-h-0 w-full will-change-[opacity,transform]"
+        className="cb-page-route-shell min-h-0 w-full will-change-[opacity,transform]"
         {...(pageMotion.reduced || isFirstPaintRef.current
           ? { initial: false, transition: { duration: 0.01 } }
           : {

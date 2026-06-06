@@ -123,6 +123,19 @@ export async function writeProviderHealth(params: {
   });
 }
 
+export async function countPendingEmailQueue(): Promise<number> {
+  const supabase = createSupabaseAdminClient();
+  const now = new Date().toISOString();
+  const { count, error } = await supabase
+    .from("email_queue")
+    .select("id", { count: "exact", head: true })
+    .in("status", ["pending", "failed"])
+    .lte("scheduled_at", now)
+    .or(`next_retry_at.is.null,next_retry_at.lte.${now}`);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
 export async function fetchPendingQueue(limit = 20) {
   const supabase = createSupabaseAdminClient();
   const now = new Date().toISOString();
@@ -134,9 +147,16 @@ export async function fetchPendingQueue(limit = 20) {
     .or(`next_retry_at.is.null,next_retry_at.lte.${now}`)
     .order("priority", { ascending: true })
     .order("scheduled_at", { ascending: true })
-    .limit(limit);
+    .limit(Math.max(limit * 3, 30));
   if (error) throw new Error(error.message);
-  return data ?? [];
+
+  return (data ?? [])
+    .filter((row) => {
+      const attempts = Number(row.attempts ?? 0);
+      const maxAttempts = Number(row.max_attempts ?? 5);
+      return attempts < maxAttempts;
+    })
+    .slice(0, limit);
 }
 
 export async function fetchRetryableFailed(limit = 20) {

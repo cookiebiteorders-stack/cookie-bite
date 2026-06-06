@@ -3,6 +3,7 @@
 import { SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AccountSectionLink } from "@/components/account/account-section-link";
 import {
   Bell,
   CreditCard,
@@ -25,9 +26,9 @@ import { cn } from "@/lib/utils";
 const customerNavItems = [
   { key: "dashboard", href: "/account", icon: LayoutDashboard },
   { key: "settings", href: "/account/settings", icon: Settings },
-  { key: "orders", href: "/account#orders", icon: Package },
-  { key: "addresses", href: "/account#addresses", icon: MapPin },
-  { key: "pay", href: "/account#pay", icon: CreditCard },
+  { key: "orders", href: "/account/orders", icon: Package },
+  { key: "addresses", href: "/account/addresses", icon: MapPin },
+  { key: "pay", href: "/account/payment-methods", icon: CreditCard },
   { key: "wishlist", href: "/account#wish", icon: Heart },
   { key: "rewards", href: "/account#rewards", icon: Star },
   { key: "feedback", href: "/account#feedback", icon: MessageSquare },
@@ -109,26 +110,32 @@ export function AccountSidebar({
       >
         <ul className="space-y-1">
           {customerNavItems.map((item) => {
+            const isHashLink = item.href.includes("#");
             const active =
               item.href === "/account/settings"
                 ? pathname.startsWith("/account/settings")
-                : item.href === "/account"
-                  ? pathname === "/account"
-                  : false;
+                : item.href === "/account/orders"
+                  ? pathname.startsWith("/account/orders")
+                  : item.href === "/account/addresses"
+                    ? pathname.startsWith("/account/addresses")
+                    : item.href === "/account/payment-methods"
+                      ? pathname.startsWith("/account/payment-methods")
+                      : item.href === "/account"
+                    ? pathname === "/account"
+                    : false;
+            const linkClass = cn(
+              "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition",
+              active
+                ? "bg-cb-terracotta-dark text-white shadow-sm"
+                : "text-cb-text hover:bg-cb-peach/60 hover:text-cb-text-strong dark:hover:bg-cb-hover-overlay",
+            );
+            const NavLink = isHashLink ? AccountSectionLink : Link;
             return (
               <li key={item.key}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition",
-                    active
-                      ? "bg-cb-terracotta-dark text-white shadow-sm"
-                      : "text-cb-text hover:bg-cb-peach/60 hover:text-cb-text-strong dark:hover:bg-cb-hover-overlay",
-                  )}
-                >
+                <NavLink href={item.href} className={linkClass}>
                   <item.icon className="h-4 w-4 shrink-0" aria-hidden />
                   {labels[item.key]}
-                </Link>
+                </NavLink>
               </li>
             );
           })}

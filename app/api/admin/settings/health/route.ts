@@ -6,6 +6,7 @@ import {
   PRODUCTION_HOST,
 } from "@/lib/config/production-lock";
 import { probeAdminRlsHelper, probeAppDatabaseTables } from "@/lib/db/schema-health";
+import { computeStoreHealth } from "@/lib/config/store-health";
 
 export async function GET() {
   const actor = await requireAdminAccess("settings");
@@ -15,9 +16,16 @@ export async function GET() {
   const rls_helper = await probeAdminRlsHelper();
 
   const cronConfigured = Boolean(process.env.INTERNAL_API_SECRET?.trim());
+  const store_health = computeStoreHealth({
+    env,
+    database,
+    cronConfigured,
+    integrations,
+  });
 
   return NextResponse.json({
     canonical_host: PRODUCTION_HOST,
+    store_health,
     env,
     integrations,
     cron: {

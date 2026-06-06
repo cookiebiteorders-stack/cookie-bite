@@ -58,6 +58,7 @@ describe("api/admin/settings/health GET", () => {
     const body = await res.json();
     expect(body.canonical_host).toBe("cookie-bite.com");
     expect(body.env.ok).toBe(true);
+    expect(body.store_health?.status).toBe("healthy");
     expect(body.integrations.supabase).toBe(true);
     expect(body.database.ok).toBe(true);
     expect(body.cron.endpoints).toContain("POST /api/cron/notification-jobs");

@@ -178,6 +178,7 @@ export async function POST(req: NextRequest) {
       addr,
       { recipient: fallbackRecipient, phone: fallbackPhone },
       { latitude: lat, longitude: lng },
+      { isDefault: true },
     );
 
     let { error: addrError } = await supabase.from("addresses").insert(addressRow);

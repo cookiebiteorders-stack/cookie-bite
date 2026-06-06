@@ -259,9 +259,15 @@ type MrBrownieChatProps = {
   embedded?: boolean;
   /** Open chat panel on mount (after user tapped lazy launch FAB). */
   initialOpen?: boolean;
+  /** Fired once the floating FAB is mounted (lazy host keeps launch button until then). */
+  onFabReady?: () => void;
 };
 
-export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrownieChatProps) {
+export function MrBrownieChat({
+  embedded = false,
+  initialOpen = false,
+  onFabReady,
+}: MrBrownieChatProps) {
   const { lines, addItem, applyPromo, subtotalEgp } = useCart();
   const pathname = usePathname() ?? "/";
   const { lang, t } = useLanguage();
@@ -328,7 +334,8 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
   const panelRef = useRef<HTMLDivElement>(null);
   const bubbleHideTimerRef = useRef<number | null>(null);
   const lastBubbleIndexRef = useRef(-1);
-  const openRef = useRef(false);
+  const openRef = useRef(initialOpen);
+  const openedAtRef = useRef(initialOpen ? Date.now() : 0);
   const linesRef = useRef(lines);
   const isSignedInRef = useRef(Boolean(isSignedIn));
   const clerkUserIdRef = useRef<string | undefined>(undefined);
@@ -393,6 +400,17 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
       setBubbleVisible(false);
       bubbleHideTimerRef.current = null;
     }, BUBBLE_AUTO_HIDE_MS);
+  }, []);
+
+  useEffect(() => {
+    if (embedded) return;
+    onFabReady?.();
+  }, [embedded, onFabReady]);
+
+  const openChat = useCallback(() => {
+    openedAtRef.current = Date.now();
+    openRef.current = true;
+    setOpen(true);
   }, []);
 
   useEffect(() => {
@@ -789,7 +807,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
     return () => window.clearTimeout(id);
   }, [messages, clerkKey]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     openRef.current = open;
   }, [open]);
 
@@ -856,10 +874,12 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
     if (embedded || !open) return;
 
     const closeIfOutside = (e: PointerEvent) => {
+      if (Date.now() - openedAtRef.current < 350) return;
       const panel = panelRef.current;
       if (!panel) return;
       const t = e.target;
       if (t instanceof Node && panel.contains(t)) return;
+      openRef.current = false;
       setOpen(false);
     };
 
@@ -1154,7 +1174,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
       setDragPx(null);
       setShowNotifDot(false);
       hideBubble();
-      setOpen(true);
+      openChat();
       return;
     }
 
@@ -1648,7 +1668,7 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
           <button
             type="button"
             className="gb-assistant__teaser"
-            onClick={() => setOpen(true)}
+            onClick={() => openChat()}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

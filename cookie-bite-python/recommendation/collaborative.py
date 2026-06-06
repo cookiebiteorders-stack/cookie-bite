@@ -58,8 +58,14 @@ class CollaborativeFilter:
             shape=(len(users), len(products)),
         )
 
-        self.user_factors = self.svd.fit_transform(matrix)
-        self.product_factors = self.svd.components_.T
+        n_components = min(self.svd.n_components, min(matrix.shape) - 1)
+        if n_components < 1:
+            self._ready = False
+            return
+
+        svd = TruncatedSVD(n_components=n_components, random_state=42)
+        self.user_factors = svd.fit_transform(matrix)
+        self.product_factors = svd.components_.T
         self._ready = True
 
     def recommend(self, user_id: str, top_n: int = 10) -> list[str]:

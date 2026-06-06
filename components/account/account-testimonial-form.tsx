@@ -71,7 +71,7 @@ export function AccountTestimonialForm({ initialItems, enabled = true }: Props) 
   return (
     <section
       id="feedback"
-      className="rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
+      className="scroll-mt-28 rounded-3xl bg-cb-surface-elevated p-6 shadow-sm ring-1 ring-cb-border"
     >
       <div className="mb-4">
         <h2 className="font-semibold text-cb-text-strong">

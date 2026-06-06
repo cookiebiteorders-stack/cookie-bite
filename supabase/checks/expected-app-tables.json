@@ -5,6 +5,7 @@
   "order_items",
   "addresses",
   "wishlists",
+  "wishlist_shares",
   "addons",
   "product_addons",
   "promo_codes",
@@ -28,5 +29,7 @@
   "reviews",
   "schema_migrations",
   "abandoned_carts",
-  "recovery_discount_codes"
+  "recovery_discount_codes",
+  "saved_payment_methods",
+  "blocked_emails"
 ]

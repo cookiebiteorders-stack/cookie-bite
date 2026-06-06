@@ -1,5 +1,6 @@
 import { runMrBrownieGemini } from "@/lib/mr-brownie/gemini";
 import { extractJsonObject } from "@/lib/admin/json-from-model";
+import { PERSONAL_OR_CONTEXT_VARS } from "@/lib/email/automation/template-default-vars";
 
 const MAX_VAR_LENGTH = 280;
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -59,15 +60,16 @@ export async function fillMissingTemplateVariablesWithAi(input: {
   userData?: Record<string, unknown>;
   context: string;
 }): Promise<Record<string, string>> {
-  if (!input.templateVariables.length) return {};
-  const cacheKey = makeCacheKey(input);
+  const safeVariables = input.templateVariables.filter((key) => !PERSONAL_OR_CONTEXT_VARS.has(key));
+  if (!safeVariables.length) return {};
+  const cacheKey = makeCacheKey({ ...input, templateVariables: safeVariables });
   const cached = readCache(cacheKey);
   if (cached) return cached;
 
   const promptPayload = JSON.stringify(
     {
       template_name: input.templateName,
-      template_variables: input.templateVariables,
+      template_variables: safeVariables,
       provided_data: input.providedData,
       user_data: input.userData ?? {},
       context: input.context,
@@ -78,7 +80,7 @@ export async function fillMissingTemplateVariablesWithAi(input: {
 
   const raw = await runMrBrownieGemini({
     systemInstruction:
-      "Fill ONLY missing variables from the given list. Do NOT modify provided values. Do NOT create full email content. Do NOT add new keys. Do NOT invent order facts, prices, products, or identifiers. Return JSON object only.",
+      "Fill ONLY missing variables from the given list. Do NOT modify provided values. Do NOT create full email content. Do NOT add new keys. Do NOT invent customer names, emails, addresses, order facts, prices, products, or identifiers. Never use placeholder names like Sara. Return JSON object only.",
     messages: [
       {
         role: "user",
@@ -90,7 +92,7 @@ export async function fillMissingTemplateVariablesWithAi(input: {
   });
 
   const parsed = extractJsonObject(raw) ?? {};
-  const allowed = new Set(input.templateVariables);
+  const allowed = new Set(safeVariables);
   const output: Record<string, string> = {};
   for (const [k, v] of Object.entries(parsed)) {
     if (!allowed.has(k)) continue;

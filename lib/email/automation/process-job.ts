@@ -58,7 +58,10 @@ export async function processEmailQueueRow(row: Record<string, unknown>): Promis
   const err = result.error ?? "failed";
   const smartRetries = await isSmartRetriesEnabled();
   if (attempts >= maxAttempts || !smartRetries) {
-    await updateQueueStatus(id, { status: "failed", error_summary: err });
+    await updateQueueStatus(id, {
+      status: attempts >= maxAttempts ? "cancelled" : "failed",
+      error_summary: err,
+    });
     await writeFailedEmail({
       queueId: id,
       recipient: payload.to,

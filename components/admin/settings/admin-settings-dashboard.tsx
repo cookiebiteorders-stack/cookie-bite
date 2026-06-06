@@ -24,6 +24,7 @@ import { fetchJson } from "@/lib/http/fetch-json";
 import { renderTemplateString } from "@/lib/notifications/template-vars";
 import { WHATSAPP_TEMPLATE_CATALOG } from "@/lib/notifications/whatsapp-template-catalog";
 import type { IntegrationEnvStatus } from "@/lib/config/production-lock";
+import type { StoreHealthIssue, StoreHealthStatus } from "@/lib/config/store-health";
 import {
   CORE_HEALTH_CARD_DEFS,
   INTEGRATION_FIX_HINTS,
@@ -43,6 +44,7 @@ type SettingsTab = "overview" | "automations" | "templates" | "integrations" | "
 type HealthResponse = {
   canonical_host: string;
   node_env: string;
+  store_health?: { status: StoreHealthStatus; issues: StoreHealthIssue[] };
   env: { ok: boolean; missing: string[]; warnings: string[] };
   integrations: IntegrationEnvStatus;
   database?: {
@@ -305,9 +307,14 @@ export function AdminSettingsDashboard() {
   const isOwner = health?.actor?.role === "owner";
   const warningCount = health?.env.warnings.length ?? 0;
   const missingCount = health?.env.missing.length ?? 0;
-  const serviceHealth = health?.env.ok
-    ? adminT("settings.stats.healthy")
-    : adminT("settings.stats.degraded");
+  const storeStatus: StoreHealthStatus =
+    health?.store_health?.status ?? (health?.env.ok ? "healthy" : "critical");
+  const serviceHealth =
+    storeStatus === "healthy"
+      ? adminT("settings.stats.healthy")
+      : storeStatus === "degraded"
+        ? adminT("settings.stats.degraded")
+        : adminT("settings.stats.critical");
 
   const statusRows = useMemo(() => {
     if (!health) return [];
@@ -491,7 +498,32 @@ export function AdminSettingsDashboard() {
                     {adminT("settings.healthTitle")}
                   </h2>
                   <p className="mt-1 text-sm text-stone-700">{adminT("settings.healthSub")}</p>
-                  {health.env.missing.length > 0 ? (
+                  {health.store_health?.issues?.length ? (
+                    <div className="mt-4 space-y-3">
+                      {health.store_health.issues.map((issue) => (
+                        <div
+                          key={issue.id}
+                          className={cn(
+                            "admin-alert rounded-2xl border p-4 text-sm",
+                            issue.severity === "critical"
+                              ? "admin-alert--danger"
+                              : "admin-alert--warning",
+                          )}
+                        >
+                          <p className="font-bold">{adminT(`settings.healthIssues.${issue.titleKey}`)}</p>
+                          <p className="mt-1 text-xs leading-relaxed">
+                            {adminT(`settings.healthIssues.${issue.fixKey}`)}
+                          </p>
+                          {issue.keys?.length ? (
+                            <p className="mt-2 font-mono text-[10px] opacity-90">{issue.keys.join(", ")}</p>
+                          ) : null}
+                          {issue.tables?.length ? (
+                            <p className="mt-2 font-mono text-[10px] opacity-90">{issue.tables.join(", ")}</p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : health.env.missing.length > 0 ? (
                     <div className="admin-alert admin-alert--danger mt-4 rounded-2xl border p-4 text-sm">
                       <p className="font-bold">{adminT("settings.missingEnv")}</p>
                       <ul className="mt-2 list-inside list-disc font-mono text-xs">

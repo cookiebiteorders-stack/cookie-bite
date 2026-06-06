@@ -1,12 +1,22 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_PY_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _resolve_env_file() -> str:
+    for candidate in (_PY_ROOT / ".env", Path.cwd() / ".env"):
+        if candidate.is_file():
+            return str(candidate)
+    return str(_PY_ROOT / ".env")
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_resolve_env_file(),
         env_file_encoding="utf-8",
         extra="ignore",
     )

@@ -5,7 +5,9 @@ import {
   clerkWebhookSecretMisconfigurationHint,
   resolveClerkWebhookSigningSecret,
 } from "@/lib/auth/clerk-webhook-secret";
+import { isEmailBlocked } from "@/lib/db/blocked-emails";
 import { deleteUserByClerkId, upsertUserFromClerk } from "@/lib/db/users";
+import { clerkClient } from "@clerk/nextjs/server";
 import { trySendWelcomeEmailOnce } from "@/lib/email/welcome-onboarding";
 import { tryNotifyStaffNewCustomer } from "@/lib/notifications/new-customer-staff-alert";
 
@@ -78,6 +80,18 @@ export async function POST(req: Request) {
   if (evt.type === "user.created" || evt.type === "user.updated") {
     const email = pickPrimaryEmail(evt.data);
     if (!email) return Response.json({ ok: false, reason: "no email" });
+
+    if (await isEmailBlocked(email)) {
+      if (evt.type === "user.created" && evt.data.id) {
+        try {
+          const client = await clerkClient();
+          await client.users.deleteUser(evt.data.id);
+        } catch (err) {
+          console.error("clerk webhook: failed to remove blocked signup", err);
+        }
+      }
+      return Response.json({ ok: false, reason: "email_blocked" });
+    }
 
     const fullName = [evt.data.first_name, evt.data.last_name]
       .filter(Boolean)

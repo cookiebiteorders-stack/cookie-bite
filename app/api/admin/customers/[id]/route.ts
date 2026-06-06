@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-admin";
+import {
+  assertCustomerModerationAllowed,
+  deleteCustomerAccount,
+  loadCustomerModerationTarget,
+} from "@/lib/admin/customer-moderation";
+import {
+  requireAdminAccess,
+  requireFullPermission,
+  requireWritePermission,
+} from "@/lib/admin/require-admin";
 import { writeAuditLog } from "@/lib/admin/audit";
+import { getBlockedEmail } from "@/lib/db/blocked-emails";
 import { bilingualError } from "@/lib/validations";
 import type { AdminCustomerRow, AddressRow, OrderSummaryRow } from "@/lib/admin/crm-types";
 
@@ -78,11 +88,16 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     loyalty_tier: tierFromPoints(user.points as number),
   };
 
+  const blocked = await getBlockedEmail(user.email as string);
+
   return NextResponse.json({
     customer: { ...customer, clerk_user_id: user.clerk_user_id as string },
     orders: orderRows,
     addresses: (addresses ?? []) as AddressRow[],
     admin_notes,
+    email_blocked: Boolean(blocked),
+    blocked_reason: blocked?.reason ?? null,
+    blocked_at: blocked?.blocked_at ?? null,
   });
 }
 
@@ -159,4 +174,70 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   });
 
   return NextResponse.json({ ok: true, customer: finalRow });
+}
+
+const deleteSchema = z.object({
+  reason: z.string().max(500).optional(),
+  confirm_email: z.string().email(),
+});
+
+export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const actor = await requireAdminAccess("customers");
+  requireFullPermission(actor);
+
+  const { id } = await ctx.params;
+  if (!z.string().uuid().safeParse(id).success) {
+    return NextResponse.json(bilingualError("Invalid customer id", "معرّف العميل غير صالح"), {
+      status: 400,
+    });
+  }
+
+  const parsed = deleteSchema.safeParse(await req.json().catch(() => ({})));
+  if (!parsed.success) {
+    return NextResponse.json(bilingualError("Invalid payload", "بيانات غير صالحة"), { status: 400 });
+  }
+
+  const target = await loadCustomerModerationTarget(id);
+  if (!target) {
+    return NextResponse.json(bilingualError("Customer not found", "العميل غير موجود"), { status: 404 });
+  }
+
+  const denied = assertCustomerModerationAllowed(target, actor);
+  if (denied) return denied;
+
+  if (parsed.data.confirm_email.trim().toLowerCase() !== target.email.trim().toLowerCase()) {
+    return NextResponse.json(
+      bilingualError(
+        "Confirmation email does not match",
+        "البريد التأكيدي لا يطابق بريد العميل",
+      ),
+      { status: 400 },
+    );
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data: before } = await supabase.from("users").select("*").eq("id", id).maybeSingle();
+
+  const result = await deleteCustomerAccount({
+    target,
+    actor,
+    reason: parsed.data.reason,
+  });
+
+  if (!result.ok) {
+    return NextResponse.json(bilingualError(result.message.en, result.message.ar), { status: 500 });
+  }
+
+  await writeAuditLog({
+    actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
+    action: "customers.delete",
+    module: "customers",
+    entity_id: id,
+    before: before ?? null,
+    after: null,
+    metadata: { email: target.email, reason: parsed.data.reason ?? null },
+    request: req,
+  });
+
+  return NextResponse.json({ ok: true, deleted: true, email_blocked: true });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -39,6 +39,17 @@ type AutomationStatus = {
   mappingIssues: string[];
   eventLogs24h: { sent: number; failed: number; skipped: number };
   notificationFailures24h: number;
+  backgroundWorkers?: {
+    enabled: boolean;
+    started?: boolean;
+    loopback?: boolean;
+    schedules: Array<{
+      id: string;
+      intervalMs: number;
+      lastRunAt: string | null;
+      running: boolean;
+    }>;
+  };
 };
 
 export function AutomationCenterPanel() {
@@ -48,6 +59,7 @@ export function AutomationCenterPanel() {
   const [busyJob, setBusyJob] = useState<AutomationJobId | "sync" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [lastRun, setLastRun] = useState<Record<string, string>>({});
+  const autoDrainedRef = useRef(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -66,6 +78,11 @@ export function AutomationCenterPanel() {
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    const timer = setInterval(() => void load(), 45_000);
+    return () => clearInterval(timer);
   }, [load]);
 
   async function runJob(jobId: AutomationJobId) {
@@ -88,6 +105,21 @@ export function AutomationCenterPanel() {
       setBusyJob(null);
     }
   }
+
+  useEffect(() => {
+    if (!status || autoDrainedRef.current || loading) return;
+    const emailPending = status.queues.emailQueuePending ?? 0;
+    const notifPending = status.queues.notificationJobsPending ?? 0;
+    const failedOpen = status.queues.failedEmailsOpen ?? 0;
+    if (emailPending === 0 && notifPending === 0 && failedOpen === 0) return;
+
+    autoDrainedRef.current = true;
+    void (async () => {
+      if (emailPending > 0 || failedOpen > 0) await runJob("email_worker");
+      if (notifPending > 0) await runJob("notification_jobs");
+      if (failedOpen > 0) await runJob("email_health");
+    })();
+  }, [loading, status]);
 
   async function syncEmailTemplates() {
     setBusyJob("sync");
@@ -195,7 +227,24 @@ export function AutomationCenterPanel() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <AdminBadge tone={s?.cronConfigured ? "success" : "danger"}>
+        <AdminBadge
+          tone={
+            s?.backgroundWorkers?.started || s?.backgroundWorkers?.loopback
+              ? "success"
+              : s?.backgroundWorkers?.enabled
+                ? "info"
+                : "warning"
+          }
+        >
+          {s?.backgroundWorkers?.started
+            ? adminT("settings.automation.autoWorkersOn")
+            : s?.backgroundWorkers?.loopback
+              ? adminT("settings.automation.autoWorkersLoopback")
+              : s?.backgroundWorkers?.enabled
+                ? adminT("settings.automation.autoWorkersBooting")
+                : adminT("settings.automation.autoWorkersOff")}
+        </AdminBadge>
+        <AdminBadge tone={s?.cronConfigured ? "success" : "info"}>
           {s?.cronConfigured
             ? adminT("settings.cronConfigured")
             : adminT("settings.cronNotConfigured")}
@@ -280,8 +329,15 @@ export function AutomationCenterPanel() {
           {adminT("settings.automation.jobsTitle")}
         </h3>
         <p className="mt-1 text-xs text-stone-600">{adminT("settings.automation.jobsSub")}</p>
+        {s?.backgroundWorkers?.enabled ? (
+          <p className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-xs text-emerald-900">
+            {adminT("settings.automation.autoWorkersHint")}
+          </p>
+        ) : null}
         <div className="mt-4 space-y-3">
-          {AUTOMATION_JOBS.map((job) => (
+          {AUTOMATION_JOBS.map((job) => {
+            const worker = s?.backgroundWorkers?.schedules.find((w) => w.id === job.id);
+            return (
             <article
               key={job.id}
               className="flex flex-col gap-3 rounded-2xl border border-cb-border bg-white/90 p-4 sm:flex-row sm:items-center sm:justify-between"
@@ -293,8 +349,16 @@ export function AutomationCenterPanel() {
                   POST {job.cronPath} · {adminT(job.scheduleKey)}
                 </p>
                 <p className="text-[10px] text-stone-500">{adminT(job.triggerKey)}</p>
+                {worker?.lastRunAt ? (
+                  <p className="mt-1 text-[10px] text-emerald-800">
+                    {adminT("settings.automation.lastAutoRun", {
+                      time: new Date(worker.lastRunAt).toLocaleString(),
+                    })}
+                    {worker.running ? ` · ${adminT("settings.automation.running")}` : ""}
+                  </p>
+                ) : null}
                 {lastRun[job.id] ? (
-                  <p className="mt-1 font-mono text-[10px] text-emerald-800">{lastRun[job.id]}</p>
+                  <p className="mt-1 font-mono text-[10px] text-stone-600">{lastRun[job.id]}</p>
                 ) : null}
               </div>
               <button
@@ -311,7 +375,8 @@ export function AutomationCenterPanel() {
                 {adminT("settings.automation.runNow")}
               </button>
             </article>
-          ))}
+          );
+          })}
         </div>
         <p className="mt-4 text-xs text-stone-600">{adminT("settings.automation.cronHint")}</p>
       </section>

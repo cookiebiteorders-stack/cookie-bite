@@ -96,7 +96,7 @@ export function ProductCarousel({ products = [] }: ProductCarouselProps) {
                 layout
                 initial={{ opacity: 0, y: 22 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -18 }}
+                exit={{ opacity: 0, y: -18, pointerEvents: "none" }}
                 transition={{
                   duration: 0.42,
                   delay: i * 0.06,

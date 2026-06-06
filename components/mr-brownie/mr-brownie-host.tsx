@@ -3,12 +3,12 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const MrBrownieChat = dynamic(
   () => import("@/components/mr-brownie/mr-brownie-chat").then((m) => m.MrBrownieChat),
-  { ssr: false, loading: () => null },
+  { ssr: false },
 );
 
 const MR_BROWNIE_MASCOT_SRC = "/brand/mr-brownie-mascot.png";
@@ -16,25 +16,13 @@ const MR_BROWNIE_MASCOT_SRC = "/brand/mr-brownie-mascot.png";
 /** مسارات فيها Mr. Brownie مضمّن في الصفحة — لا نعرض الـ FAB العائم فوقها */
 const HIDE_FLOATING_PATHS = ["/gift-box/build"];
 
-export function MrBrownieHost() {
-  const pathname = usePathname();
-  const [chatLoaded, setChatLoaded] = useState(false);
-
-  const hide = HIDE_FLOATING_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`),
-  );
-  if (hide) return null;
-
-  if (chatLoaded) {
-    return <MrBrownieChat initialOpen />;
-  }
-
+function LaunchFab({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
       data-mr-brownie-launch
       aria-label="Open Mr. Brownie assistant"
-      onClick={() => setChatLoaded(true)}
+      onClick={onClick}
       className={cn(
         "cb-mr-brownie-fab fixed z-[90] flex h-[68px] w-[68px] cursor-pointer items-center justify-center rounded-full bg-transparent p-0 shadow-lg sm:h-[92px] sm:w-[92px]",
         "end-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:end-6 sm:bottom-8",
@@ -51,5 +39,31 @@ export function MrBrownieHost() {
         loading="lazy"
       />
     </button>
+  );
+}
+
+export function MrBrownieHost() {
+  const pathname = usePathname();
+  const [activated, setActivated] = useState(false);
+  const [initialOpen, setInitialOpen] = useState(false);
+
+  const hide = HIDE_FLOATING_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
+
+  const handleLaunch = useCallback(() => {
+    setInitialOpen(true);
+    setActivated(true);
+  }, []);
+
+  if (hide) return null;
+
+  return (
+    <>
+      {!activated && <LaunchFab onClick={handleLaunch} />}
+      {activated && (
+        <MrBrownieChat initialOpen={initialOpen} />
+      )}
+    </>
   );
 }

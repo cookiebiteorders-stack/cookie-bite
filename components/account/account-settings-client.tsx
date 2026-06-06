@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AccountSectionLink } from "@/components/account/account-section-link";
 import { ClerkUserProfileEmbed } from "@/components/account/clerk-user-profile-embed";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -255,19 +256,19 @@ export function AccountSettingsClient({
           >
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/account#addresses"
+                href="/account/addresses"
                 className="rounded-xl border border-cb-border bg-cb-cream px-4 py-2.5 text-sm font-semibold text-cb-text-strong hover:bg-cb-peach/50"
               >
                 {t("accountNav.addresses")}
               </Link>
               <Link
-                href="/account#orders"
+                href="/account/orders"
                 className="rounded-xl border border-cb-border bg-cb-cream px-4 py-2.5 text-sm font-semibold text-cb-text-strong hover:bg-cb-peach/50"
               >
                 {t("accountNav.orders")}
               </Link>
               <Link
-                href="/account#pay"
+                href="/account/payment-methods"
                 className="rounded-xl border border-cb-border bg-cb-cream px-4 py-2.5 text-sm font-semibold text-cb-text-strong hover:bg-cb-peach/50"
               >
                 {t("accountNav.payment")}

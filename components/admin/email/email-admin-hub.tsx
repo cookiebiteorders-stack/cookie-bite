@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -77,6 +77,7 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
   const [testEmail, setTestEmail] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [contactsReadOnly, setContactsReadOnly] = useState<string | null>(null);
+  const autoDrainedRef = useRef(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -165,22 +166,45 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
     }
   };
 
-  const processQueue = async () => {
-    setBusy(true);
-    try {
-      const r = await fetchJson<{
-        processed: { database: number; bull: number; requeued: number };
-      }>("/api/admin/email/queue?limit=50", { method: "POST" });
-      setToast(
-        `تمت المعالجة: DB=${r.processed.database} · Bull=${r.processed.bull} · إعادة طابور=${r.processed.requeued}`,
-      );
-      void load();
-    } catch (e) {
-      setToast(e instanceof Error ? e.message : "فشل معالجة الطابور");
-    } finally {
-      setBusy(false);
+  const processQueue = useCallback(
+    async (options?: { silent?: boolean }) => {
+      setBusy(true);
+      try {
+        const r = await fetchJson<{
+          processed: { database: number; bull: number; requeued: number };
+        }>("/api/admin/email/queue?limit=50", { method: "POST" });
+        if (!options?.silent) {
+          setToast(
+            `تمت المعالجة: DB=${r.processed.database} · Bull=${r.processed.bull} · إعادة طابور=${r.processed.requeued}`,
+          );
+        }
+        void load();
+        return r;
+      } catch (e) {
+        if (!options?.silent) {
+          setToast(e instanceof Error ? e.message : "فشل معالجة الطابور");
+        }
+        return null;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [load],
+  );
+
+  useEffect(() => {
+    if (autoDrainedRef.current || loading) return;
+    const pending =
+      activeTab === "dashboard"
+        ? (dash?.stats.queuePending ?? 0)
+        : activeTab === "queue"
+          ? queue.filter((r) => r.status === "pending" || r.status === "processing").length
+          : 0;
+    if (pending > 0) {
+      autoDrainedRef.current = true;
+      void processQueue({ silent: true });
     }
-  };
+  }, [activeTab, dash?.stats.queuePending, loading, processQueue, queue]);
 
   const toggleUnsubscribed = async (c: ResendContactRow) => {
     setBusy(true);

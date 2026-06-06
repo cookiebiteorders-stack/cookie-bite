@@ -5,6 +5,7 @@ import { writeAuditLog } from "@/lib/admin/audit";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { bilingualError } from "@/lib/validations";
 import { renderTemplate } from "@/lib/notification-library";
+import { resolveRecipientTemplateVars } from "@/lib/notification-library/resolve-recipient-vars";
 import { renderTemplateContent } from "@/lib/email/automation/template-renderer";
 import { sendInternalEmail } from "@/lib/email/send";
 import { isEmailConfigured } from "@/lib/email/resend";
@@ -92,14 +93,15 @@ export async function POST(req: NextRequest) {
     recipients = recipients.slice(0, MAX_RECIPIENTS);
   }
 
-  const rendered = await resolveRendered(
+  const baseVars = parsed.data.vars ?? {};
+  const templateShell = await resolveRendered(
     parsed.data.source,
     parsed.data.templateKey,
     parsed.data.lang,
-    parsed.data.vars ?? {},
+    baseVars,
   );
 
-  if (!rendered) {
+  if (!templateShell) {
     return NextResponse.json(
       bilingualError("Template not found", "القالب غير موجود أو غير نشط"),
       { status: 404 },
@@ -112,10 +114,27 @@ export async function POST(req: NextRequest) {
 
   for (const to of recipients) {
     try {
+      const recipientVars = await resolveRecipientTemplateVars(to);
+      const mergedVars = { ...recipientVars, ...baseVars };
+      const subject =
+        parsed.data.source === "db"
+          ? renderTemplateContent(templateShell.subject, mergedVars)
+          : (
+              renderTemplate(parsed.data.templateKey, mergedVars, {
+                lang: parsed.data.lang,
+              })?.subject ?? templateShell.subject
+            );
+      const html =
+        parsed.data.source === "db"
+          ? renderTemplateContent(templateShell.html, mergedVars)
+          : (renderTemplate(parsed.data.templateKey, mergedVars, {
+              lang: parsed.data.lang,
+            })?.html ?? templateShell.html);
+
       await sendInternalEmail({
         to,
-        subject: rendered.subject,
-        html: rendered.html,
+        subject,
+        html,
         emailType: "marketing",
         templateKey: parsed.data.templateKey,
         immediate: true,

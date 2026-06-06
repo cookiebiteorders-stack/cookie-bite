@@ -33,6 +33,17 @@ export async function addEmailBullJob(queueId: string): Promise<boolean> {
   return true;
 }
 
+export async function removeEmailBullJob(queueId: string): Promise<void> {
+  const queue = await getQueue();
+  if (!queue) return;
+  try {
+    const job = await queue.getJob(queueId);
+    if (job) await job.remove();
+  } catch {
+    /* job may already be gone */
+  }
+}
+
 export async function drainEmailBullJobs(max = 15): Promise<number> {
   const queue = await getQueue();
   if (!queue) return 0;

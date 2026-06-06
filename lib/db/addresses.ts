@@ -1,3 +1,7 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { AddressUpsertInput } from "@/lib/account/address-schema";
+
 /** شكل العنوان في واجهة إكمال الملف / الحساب */
 export type AddressInput = {
   label?: string | null;
@@ -58,6 +62,7 @@ export function buildAddressInsertRow(
   addr: AddressInput,
   fallback: { recipient: string; phone: string },
   coords: { latitude: number; longitude: number },
+  options?: { isDefault?: boolean },
 ): Record<string, string | number | boolean | null> {
   const recipient =
     (addr.recipient ?? fallback.recipient).trim() || fallback.recipient;
@@ -76,7 +81,7 @@ export function buildAddressInsertRow(
     city,
     latitude: coords.latitude,
     longitude: coords.longitude,
-    is_default: true,
+    is_default: options?.isDefault ?? false,
   };
 
   if (addr.phone_secondary) row.phone_secondary = addr.phone_secondary;
@@ -129,4 +134,135 @@ export function stripMissingAddressColumns(
     delete next[col];
   }
   return Object.keys(next).length > 0 ? next : null;
+}
+
+export function buildAddressUpdateRow(
+  addr: AddressUpsertInput,
+  coords: { latitude: number; longitude: number },
+): Record<string, string | number | boolean | null> {
+  const row: Record<string, string | number | boolean | null> = {
+    label: addr.label.trim() || "Home",
+    recipient: addr.recipient.trim(),
+    phone: addr.phone,
+    street: addr.street.trim(),
+    building: addr.building?.trim() || "-",
+    city: addr.city.trim(),
+    governorate: addr.governorate.trim() || "Cairo",
+    latitude: coords.latitude,
+    longitude: coords.longitude,
+  };
+  if (addr.phone_secondary) row.phone_secondary = addr.phone_secondary;
+  if (addr.floor) row.floor = addr.floor;
+  if (addr.apartment) row.apartment = addr.apartment;
+  if (addr.delivery_notes) row.delivery_notes = addr.delivery_notes;
+  if (addr.is_default != null) row.is_default = addr.is_default;
+  return row;
+}
+
+export async function insertAddressWithFallback(
+  supabase: SupabaseClient,
+  row: Record<string, string | number | boolean | null>,
+) {
+  let { data, error } = await supabase.from("addresses").insert(row).select("*").single();
+  if (error) {
+    const stripped = stripMissingAddressColumns(row, error.message ?? "");
+    if (stripped) {
+      const retry = await supabase.from("addresses").insert(stripped).select("*").single();
+      data = retry.data;
+      error = retry.error;
+    }
+  }
+  if (error) {
+    const minimal = minimalAddressInsertRow(row);
+    const retry = await supabase.from("addresses").insert(minimal).select("*").single();
+    data = retry.data;
+    error = retry.error;
+  }
+  return { data: data as AddressRowCompat | null, error };
+}
+
+export async function updateAddressWithFallback(
+  supabase: SupabaseClient,
+  id: string,
+  userId: string,
+  row: Record<string, string | number | boolean | null>,
+) {
+  let { data, error } = await supabase
+    .from("addresses")
+    .update(row)
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select("*")
+    .single();
+  if (error) {
+    const stripped = stripMissingAddressColumns(row, error.message ?? "");
+    if (stripped) {
+      const retry = await supabase
+        .from("addresses")
+        .update(stripped)
+        .eq("id", id)
+        .eq("user_id", userId)
+        .select("*")
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+  }
+  return { data: data as AddressRowCompat | null, error };
+}
+
+export async function listAddressesForUser(userId: string): Promise<AddressRowCompat[]> {
+  const supabase = tryCreateSupabaseAdminClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("addresses")
+    .select("*")
+    .eq("user_id", userId)
+    .order("is_default", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("listAddressesForUser error", error);
+    return [];
+  }
+  return (data as AddressRowCompat[]).map((row) => normalizeAddressRow(row)!);
+}
+
+export async function countAddressesForUser(userId: string): Promise<number> {
+  const supabase = tryCreateSupabaseAdminClient();
+  if (!supabase) return 0;
+  const { count, error } = await supabase
+    .from("addresses")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  if (error) {
+    console.error("countAddressesForUser error", error);
+    return 0;
+  }
+  return count ?? 0;
+}
+
+export async function getAddressOwnedByUser(
+  userId: string,
+  addressId: string,
+): Promise<AddressRowCompat | null> {
+  const supabase = tryCreateSupabaseAdminClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("addresses")
+    .select("*")
+    .eq("id", addressId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) {
+    console.error("getAddressOwnedByUser error", error);
+    return null;
+  }
+  return normalizeAddressRow(data ?? undefined);
+}
+
+export async function clearDefaultAddressesForUser(
+  supabase: SupabaseClient,
+  userId: string,
+) {
+  await supabase.from("addresses").update({ is_default: false }).eq("user_id", userId);
 }

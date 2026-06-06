@@ -1,8 +1,12 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { formatPaymentMethodSummary } from "@/lib/account/payment-method-display";
+import type { PaymentMethodType } from "@/lib/account/payment-method-schema";
+import type { SavedPaymentMethodRow } from "@/lib/db/payment-methods";
 import { useCart } from "@/components/providers/cart-provider";
 import { FreeDeliveryBar } from "@/components/cart/free-delivery-bar";
 import { PromoCodeField } from "@/components/checkout/promo-code-field";
@@ -26,8 +30,11 @@ const GIFT_WRAP_FEE_EGP = 30;
 
 type Step = 1 | 2 | 3;
 
+const OFFLINE_PAYMENT_METHODS = new Set<PaymentMethodType>(["cod", "instapay", "fawry"]);
+
 export default function CheckoutPage() {
   const router = useRouter();
+  const { isSignedIn } = useAuth();
   const { lang, t, formatPrice } = useLanguage();
   const { lines, subtotalEgp, discountEgp, itemCount, clearCart, promo, applyPromo, clearPromo } =
     useCart();
@@ -41,7 +48,9 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState("");
   const [city, setCity] = useState(lang === "ar" ? "القاهرة الجديدة" : "New Cairo");
   const [notes, setNotes] = useState("");
-  const [payment, setPayment] = useState<"card" | "wallet" | "cod">("cod");
+  const [payment, setPayment] = useState<PaymentMethodType>("cod");
+  const [savedMethods, setSavedMethods] = useState<SavedPaymentMethodRow[]>([]);
+  const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
   const [delivery, setDelivery] = useState<DeliverySchedulingState>(emptyDeliveryScheduling);
   const giftBoxLine = lines.find((l) => Boolean(l.giftBox));
   const regularLines = lines.filter((l) => !l.giftBox);
@@ -51,6 +60,35 @@ export default function CheckoutPage() {
       router.replace("/cart");
     }
   }, [itemCount, router]);
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      setSavedMethods([]);
+      setSelectedSavedId(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/account/payment-methods");
+        if (!res.ok) return;
+        const data = (await res.json()) as { methods?: SavedPaymentMethodRow[] };
+        if (cancelled) return;
+        const methods = data.methods ?? [];
+        setSavedMethods(methods);
+        const preferred = methods.find((m) => m.is_default) ?? methods[0];
+        if (preferred) {
+          setPayment(preferred.method_type);
+          setSelectedSavedId(preferred.id);
+        }
+      } catch {
+        /* ignore — guest-style checkout still works */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn]);
 
   async function onPaymobPrepare() {
     const giftBoxSnapshot = giftBoxLine
@@ -102,7 +140,10 @@ export default function CheckoutPage() {
         window.location.href = data.paymentUrl as string;
         return;
       }
-      if (data.paymentMethod === "cod") {
+      if (
+        typeof data.paymentMethod === "string" &&
+        OFFLINE_PAYMENT_METHODS.has(data.paymentMethod as PaymentMethodType)
+      ) {
         const oid =
           typeof data.orderId === "string" && data.orderId.length > 0
             ? data.orderId
@@ -151,7 +192,19 @@ export default function CheckoutPage() {
     ["cod", t("pages.checkout.payCod")],
     ["card", t("pages.checkout.payCard")],
     ["wallet", t("pages.checkout.payWallet")],
+    ["instapay", t("pages.checkout.payInstapay")],
+    ["fawry", t("pages.checkout.payFawry")],
   ] as const;
+
+  function selectSavedMethod(method: SavedPaymentMethodRow) {
+    setSelectedSavedId(method.id);
+    setPayment(method.method_type);
+  }
+
+  function selectGenericMethod(value: PaymentMethodType) {
+    setSelectedSavedId(null);
+    setPayment(value);
+  }
 
   return (
     <div className="bg-cb-cream pb-24 pt-10" dir={lang === "ar" ? "rtl" : "ltr"}>
@@ -286,8 +339,47 @@ export default function CheckoutPage() {
         {step === 2 && (
           <div className="mt-8 space-y-4 text-start">
             <p className="text-sm text-cb-text">{t("pages.checkout.paymentIntro")}</p>
+            {savedMethods.length ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-cb-text-muted">
+                    {t("pages.checkout.savedMethodsTitle")}
+                  </p>
+                  <Link
+                    href="/account/payment-methods"
+                    className="text-xs font-semibold text-cb-terracotta-dark hover:underline"
+                  >
+                    {t("pages.checkout.manageSavedMethods")}
+                  </Link>
+                </div>
+                <fieldset className="space-y-3">
+                  <legend className="sr-only">{t("pages.checkout.savedMethodsTitle")}</legend>
+                  {savedMethods.map((method) => (
+                    <label
+                      key={method.id}
+                      className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-cb-border bg-cb-surface px-4 py-3 has-[:checked]:border-cb-terracotta-dark"
+                    >
+                      <input
+                        type="radio"
+                        name="pay-saved"
+                        checked={selectedSavedId === method.id}
+                        onChange={() => selectSavedMethod(method)}
+                        className="h-4 w-4 shrink-0 accent-cb-terracotta-dark"
+                      />
+                      <span className="font-semibold text-cb-text-strong">
+                        {formatPaymentMethodSummary(method, t)}
+                      </span>
+                    </label>
+                  ))}
+                </fieldset>
+              </div>
+            ) : null}
             <fieldset className="space-y-3">
-              <legend className="sr-only">{t("pages.checkout.paymentLegend")}</legend>
+              <legend className="text-xs font-bold uppercase tracking-wide text-cb-text-muted">
+                {savedMethods.length
+                  ? t("pages.checkout.otherPaymentTitle")
+                  : t("pages.checkout.paymentLegend")}
+              </legend>
               {paymentOptions.map(([value, label]) => (
                 <label
                   key={value}
@@ -297,8 +389,8 @@ export default function CheckoutPage() {
                     type="radio"
                     name="pay"
                     value={value}
-                    checked={payment === value}
-                    onChange={() => setPayment(value)}
+                    checked={selectedSavedId === null && payment === value}
+                    onChange={() => selectGenericMethod(value)}
                     className="h-4 w-4 shrink-0 accent-cb-terracotta-dark"
                   />
                   <span className="font-semibold text-cb-text-strong">{label}</span>
@@ -409,12 +501,12 @@ export default function CheckoutPage() {
               >
                 {status === "loading"
                   ? t("pages.checkout.processing")
-                  : payment === "cod"
+                  : OFFLINE_PAYMENT_METHODS.has(payment)
                     ? t("pages.checkout.placeOrderCod")
                     : t("pages.checkout.payPaymob")}
               </button>
             </div>
-            {payment === "cod" && step === 3 ? (
+            {OFFLINE_PAYMENT_METHODS.has(payment) && step === 3 ? (
               <p className="text-center text-xs text-cb-text-muted">{t("pages.checkout.codNote")}</p>
             ) : null}
           </div>

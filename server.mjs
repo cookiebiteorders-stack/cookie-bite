@@ -101,3 +101,12 @@ console.info(
 );
 
 await import(pathToFileURL(standaloneEntry).href);
+
+try {
+  const { startBackgroundWorkersLoopback } = await import(
+    pathToFileURL(path.join(__dirname, "scripts", "background-workers-loopback.mjs")).href
+  );
+  startBackgroundWorkersLoopback();
+} catch (err) {
+  console.warn("[cookie-bite] background loopback workers not started:", err?.message ?? err);
+}

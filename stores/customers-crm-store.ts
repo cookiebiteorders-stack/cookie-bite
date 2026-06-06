@@ -68,6 +68,15 @@ export interface CustomersCrmState {
   loadCustomers: () => Promise<void>;
   fetchCustomerDetail: (id: string) => Promise<CustomerDetailResponse | null>;
   patchCustomer: (id: string, body: Record<string, unknown>) => Promise<boolean>;
+  blockCustomerEmail: (
+    id: string,
+    body: { confirm_email: string; reason?: string },
+  ) => Promise<boolean>;
+  unblockCustomerEmail: (id: string) => Promise<boolean>;
+  deleteCustomer: (
+    id: string,
+    body: { confirm_email: string; reason?: string },
+  ) => Promise<boolean>;
 }
 
 function buildQuery(state: CustomersCrmState): string {
@@ -170,6 +179,42 @@ export const useCustomersCrmStore = create<CustomersCrmState>((set, get) => ({
       return true;
     } catch (e) {
       get().pushToast(e instanceof Error ? e.message : "فشل الحفظ", "error");
+      return false;
+    }
+  },
+
+  blockCustomerEmail: async (id, body) => {
+    try {
+      await fetchJson(`/api/admin/customers/${id}/block`, { method: "POST", jsonBody: body });
+      get().pushToast("تم حظر بريد العميل.", "success");
+      await get().loadCustomers();
+      return true;
+    } catch (e) {
+      get().pushToast(e instanceof Error ? e.message : "تعذّر حظر البريد", "error");
+      return false;
+    }
+  },
+
+  unblockCustomerEmail: async (id) => {
+    try {
+      await fetchJson(`/api/admin/customers/${id}/block`, { method: "DELETE" });
+      get().pushToast("تم إلغاء حظر البريد.", "success");
+      await get().loadCustomers();
+      return true;
+    } catch (e) {
+      get().pushToast(e instanceof Error ? e.message : "تعذّر إلغاء الحظر", "error");
+      return false;
+    }
+  },
+
+  deleteCustomer: async (id, body) => {
+    try {
+      await fetchJson(`/api/admin/customers/${id}`, { method: "DELETE", jsonBody: body });
+      get().pushToast("تم حذف العميل وحظر بريده.", "success");
+      await get().loadCustomers();
+      return true;
+    } catch (e) {
+      get().pushToast(e instanceof Error ? e.message : "تعذّر حذف العميل", "error");
       return false;
     }
   },

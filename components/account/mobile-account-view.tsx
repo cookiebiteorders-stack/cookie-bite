@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { SignOutButton } from "@clerk/nextjs";
+import { AccountSectionLink } from "@/components/account/account-section-link";
 import { ChevronRight, Package, MapPin, Heart, Star, User, MessageSquare, Bell, LogOut, LayoutDashboard, CreditCard, HelpCircle } from "lucide-react";
 
 type MobileAccountViewProps = {
@@ -29,9 +30,9 @@ export function MobileAccountView({
   const initial = (fullName || email || "?").trim().slice(0, 1).toUpperCase();
 
   const navItems = [
-    { label: "My Orders", href: "/account#orders", icon: Package },
-    { label: "My Addresses", href: "/account#addresses", icon: MapPin },
-    { label: "Payment Methods", href: "/account#pay", icon: CreditCard },
+    { label: "My Orders", href: "/account/orders", icon: Package },
+    { label: "My Addresses", href: "/account/addresses", icon: MapPin },
+    { label: "Payment Methods", href: "/account/payment-methods", icon: CreditCard },
     { label: "Wishlist", href: "/account#wish", icon: Heart },
     { label: "Rewards & Points", href: "/account#rewards", icon: Star },
     { label: "Profile & Security", href: "/account/settings", icon: User },
@@ -96,13 +97,16 @@ export function MobileAccountView({
 
       {/* Navigation List */}
       <nav className="mobile-account-nav">
-        {navItems.map((item) => (
-          <Link key={item.label} href={item.href} className="mobile-account-nav__item">
-            <item.icon className="mobile-account-nav__icon" />
-            {item.label}
-            <ChevronRight className="mobile-account-nav__chevron" />
-          </Link>
-        ))}
+        {navItems.map((item) => {
+          const NavLink = item.href.includes("#") ? AccountSectionLink : Link;
+          return (
+            <NavLink key={item.label} href={item.href} className="mobile-account-nav__item">
+              <item.icon className="mobile-account-nav__icon" />
+              {item.label}
+              <ChevronRight className="mobile-account-nav__chevron" />
+            </NavLink>
+          );
+        })}
         
         {/* Logout */}
         <div className="mobile-account-nav__item mobile-account-nav__item--danger cursor-pointer">

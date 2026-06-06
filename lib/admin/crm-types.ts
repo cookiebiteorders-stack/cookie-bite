@@ -77,4 +77,7 @@ export type CustomerDetailResponse = {
   addresses: AddressRow[];
   /** ملاحظات داخلية محفوظة في customer_admin_notes */
   admin_notes?: string;
+  email_blocked?: boolean;
+  blocked_reason?: string | null;
+  blocked_at?: string | null;
 };

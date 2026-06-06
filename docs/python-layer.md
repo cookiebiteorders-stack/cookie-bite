@@ -26,7 +26,30 @@
 ## أوامر مفيدة
 
 ```bash
+npm run python:setup       # يربط .env الرئيسي → cookie-bite-python/.env
 npm run python:up          # docker compose
+npm run python:health      # GET /health
+npm run python:retrain     # إعادة تدريب التوصيات
 npm run supabase:migrate   # يطبّق 0023_user_events
 npm run security:audit     # فحص أمني للمشروع كاملاً
 ```
+
+## تفعيل على الموقع (Production)
+
+Hostinger يشغّل **Next.js فقط**. Python يحتاج **سيرفر منفصل** (VPS أو Railway/Render):
+
+1. `npm run python:setup` محلياً — يضبط `INTERNAL_API_SECRET` و`PYTHON_API_URL`
+2. انشر `cookie-bite-python/` عبر Docker على VPS:
+   ```bash
+   cd cookie-bite-python && docker compose up -d --build
+   ```
+3. في **hPanel → Environment variables** (Node.js):
+   ```env
+   PYTHON_API_URL=https://python-api.cookie-bite.com
+   INTERNAL_API_SECRET=<نفس القيمة في Python .env>
+   ```
+4. **Redeploy** Next.js
+5. تحقق: `curl https://python-api.cookie-bite.com/health`
+6. جدولة إعادة التدريب (cron أسبوعي): `POST /recommendations/retrain` + header `x-internal-secret`
+
+بدون `PYTHON_API_URL` الموقع يعمل بـ fallback (آخر منتجات من Supabase).

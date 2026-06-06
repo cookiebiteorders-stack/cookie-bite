@@ -6,6 +6,7 @@ import {
 } from "@/lib/email/automation/template-repository";
 import { renderTemplateContent } from "@/lib/email/automation/template-renderer";
 import { getEmailLogIdByQueueId } from "@/lib/email/automation/db";
+import { mergeAutomationTemplateVars } from "@/lib/email/automation/merge-template-vars";
 
 export type EmailAutomationEvent =
   | "user_registered"
@@ -20,16 +21,6 @@ type TriggerParams = {
   providedData: Record<string, unknown>;
   userData?: Record<string, unknown>;
 };
-
-function toTemplateVarMap(input: Record<string, unknown>): Record<string, string | number | boolean> {
-  const out: Record<string, string | number | boolean> = {};
-  for (const [key, value] of Object.entries(input)) {
-    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-      out[key] = value;
-    }
-  }
-  return out;
-}
 
 export async function triggerEmailAutomationEvent(params: TriggerParams): Promise<{
   ok: boolean;
@@ -66,16 +57,20 @@ export async function triggerEmailAutomationEvent(params: TriggerParams): Promis
     return { ok: false, skipped: true, reason: "template_inactive" };
   }
 
-  const provided = toTemplateVarMap(params.providedData);
-  const missingVariables = template.variables.filter((key) => provided[key] === undefined);
+  const { merged: mergedVariables, missingForAi } = await mergeAutomationTemplateVars({
+    to: params.to,
+    templateKey: template.key,
+    templateVariables: template.variables,
+    providedData: params.providedData,
+  });
 
   let aiVariables: Record<string, string> = {};
-  if (missingVariables.length) {
+  if (missingForAi.length) {
     try {
       aiVariables = await fillMissingTemplateVariablesWithAi({
         templateName: template.key,
-        templateVariables: missingVariables,
-        providedData: params.providedData,
+        templateVariables: missingForAi,
+        providedData: { ...params.providedData, ...mergedVariables },
         userData: params.userData,
         context: params.eventName,
       });
@@ -84,20 +79,21 @@ export async function triggerEmailAutomationEvent(params: TriggerParams): Promis
     }
   }
 
-  const mergedVariables: Record<string, string | number | boolean | null | undefined> = {
+  const finalVariables: Record<string, string | number | boolean | null | undefined> = {
+    ...mergedVariables,
     ...aiVariables,
-    ...provided,
   };
-  const renderedHtml = renderTemplateContent(template.html_body, mergedVariables);
+  const renderedHtml = renderTemplateContent(template.html_body, finalVariables);
+  const renderedSubject = renderTemplateContent(template.subject, finalVariables);
 
   const sendResult = await sendAutomatedEmailNow({
     to: params.to,
-    subject: template.subject,
+    subject: renderedSubject,
     html: renderedHtml,
     templateKey: template.key,
     emailType: "transactional",
     userId: params.userId ?? undefined,
-    variables: mergedVariables,
+    variables: finalVariables,
     immediate: true,
     metadata: {
       eventName: params.eventName,

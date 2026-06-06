@@ -267,6 +267,11 @@ export async function updateOrderPaymentByPaymobAcceptOrderId(
 }
 
 export async function listRecentOrdersForUser(userId: string, limit = 5) {
+  return listOrdersForUser(userId, limit);
+}
+
+/** Full order history for account page (newest first). */
+export async function listOrdersForUser(userId: string, limit = 100) {
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return [] as OrderRow[];
   const { data, error } = await supabase
@@ -276,10 +281,24 @@ export async function listRecentOrdersForUser(userId: string, limit = 5) {
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) {
-    console.error("listRecentOrdersForUser error", error);
+    console.error("listOrdersForUser error", error);
     return [] as OrderRow[];
   }
   return (data as OrderRow[]) ?? [];
+}
+
+export async function countOrdersForUser(userId: string): Promise<number> {
+  const supabase = tryCreateSupabaseAdminClient();
+  if (!supabase) return 0;
+  const { count, error } = await supabase
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  if (error) {
+    console.error("countOrdersForUser error", error);
+    return 0;
+  }
+  return count ?? 0;
 }
 
 export async function listAllOrders(limit = 50) {
