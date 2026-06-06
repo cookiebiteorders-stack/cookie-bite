@@ -12,7 +12,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  AnimatePresence,
   motion,
   useMotionValueEvent,
   useScroll,
@@ -296,26 +295,22 @@ export function SiteHeader() {
         </div>
       </header>
 
-      <AnimatePresence>
-        {mobileOpen ? (
-          <motion.div
-            id="site-mobile-nav"
-            key="mobile-nav"
-            role="dialog"
-            aria-modal="true"
-            aria-label={admin ? `${t("nav.menu")} — ${consoleLabel} · ${storeLabel}` : t("nav.siteNavigation")}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1, pointerEvents: "auto" }}
-            exit={{ opacity: 0, pointerEvents: "none" }}
-            transition={{ duration: duration.short, ease: easeSoft }}
-            className="fixed inset-0 z-[110] lg:hidden"
-          >
-            <button
-              type="button"
-              className="absolute inset-0 bg-cb-scrim-strong/65 backdrop-blur-[2px] dark:bg-black/60 max-sm:bg-cb-scrim-strong/75 max-sm:backdrop-blur-none"
-              aria-label={t("nav.closeMenu")}
-              onClick={() => setMobileOpen(false)}
-            />
+      {/* Mobile nav — simple conditional render, no AnimatePresence to avoid inert overlay during exit */}
+      {mobileOpen ? (
+        <div
+          id="site-mobile-nav"
+          key="mobile-nav"
+          role="dialog"
+          aria-modal="true"
+          aria-label={admin ? `${t("nav.menu")} — ${consoleLabel} · ${storeLabel}` : t("nav.siteNavigation")}
+          className="fixed inset-0 z-[110] lg:hidden"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-cb-scrim-strong/65 backdrop-blur-[2px] dark:bg-black/60 max-sm:bg-cb-scrim-strong/75 max-sm:backdrop-blur-none"
+            aria-label={t("nav.closeMenu")}
+            onClick={() => setMobileOpen(false)}
+          />
             <motion.nav
               initial={{ x: isRtl ? "100%" : "-100%" }}
               animate={{ x: 0 }}
@@ -408,9 +403,8 @@ export function SiteHeader() {
                 ) : null}
               </div>
             </motion.nav>
-          </motion.div>
+          </div>
         ) : null}
-      </AnimatePresence>
     </>
   );
 }

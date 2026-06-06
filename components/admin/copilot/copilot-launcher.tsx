@@ -41,6 +41,7 @@ export function CopilotLauncher() {
     originTop: number;
   } | null>(null);
   const pointerMoved = useRef(false);
+  const capturedPointerIdRef = useRef<number | null>(null);
   const pendingDragRef = useRef<{ left: number; top: number } | null>(null);
   const dragFlushRafRef = useRef<number | null>(null);
 
@@ -109,7 +110,7 @@ export function CopilotLauncher() {
       originTop: rect.top,
     };
     pointerMoved.current = false;
-    el.setPointerCapture(e.pointerId);
+    // setPointerCapture is NOT called here — only after drag threshold is exceeded
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -118,6 +119,11 @@ export function CopilotLauncher() {
     const dx = e.clientX - session.startX;
     const dy = e.clientY - session.startY;
     if (!pointerMoved.current && Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+    const el = fabRef.current;
+    if (el && !el.hasPointerCapture(e.pointerId)) {
+      el.setPointerCapture(e.pointerId);
+      capturedPointerIdRef.current = e.pointerId;
+    }
     pointerMoved.current = true;
     const mobile = isMobileViewport();
     const { left, top } = clampCopilotDragPosition(
@@ -138,6 +144,7 @@ export function CopilotLauncher() {
     if (el?.hasPointerCapture(e.pointerId)) {
       el.releasePointerCapture(e.pointerId);
     }
+    if (capturedPointerIdRef.current === e.pointerId) capturedPointerIdRef.current = null;
     cancelDragRaf();
 
     const session = dragSession.current;
@@ -183,6 +190,7 @@ export function CopilotLauncher() {
     if (el?.hasPointerCapture(e.pointerId)) {
       el.releasePointerCapture(e.pointerId);
     }
+    if (capturedPointerIdRef.current === e.pointerId) capturedPointerIdRef.current = null;
     cancelDragRaf();
     dragSession.current = null;
     pointerMoved.current = false;

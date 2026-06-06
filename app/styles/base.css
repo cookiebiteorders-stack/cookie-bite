@@ -162,6 +162,14 @@ textarea,
   cursor: text;
 }
 
+/* Invisible / display:none elements must never block clicks */
+[hidden],
+.hidden,
+[style*="display: none"],
+[style*="display:none"] {
+  pointer-events: none !important;
+}
+
 @layer base {
   h1,
   h2,

@@ -3,7 +3,7 @@
 import { useAuth } from "@clerk/nextjs";
 import { Smartphone, Share, X } from "lucide-react";
 import Image from "next/image";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/providers/language-provider";
@@ -84,15 +84,11 @@ export function AddToHomeScreenPrompt() {
   }, [open]);
 
   return (
-    <AnimatePresence>
+    <>
       {open ? (
-        <motion.div
+        <div
           key="pwa-install-prompt"
           className="fixed inset-0 z-[65] flex items-end justify-center p-4 sm:items-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1, pointerEvents: "auto" }}
-          exit={{ opacity: 0, pointerEvents: "none" }}
-          transition={{ duration: 0.2, ease: easeSoft }}
           role="presentation"
         >
           <button
@@ -198,8 +194,8 @@ export function AddToHomeScreenPrompt() {
               </div>
             </div>
           </motion.div>
-        </motion.div>
+        </div>
       ) : null}
-    </AnimatePresence>
+    </>
   );
 }

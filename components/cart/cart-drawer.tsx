@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
+// AnimatePresence kept for inner item list animations
 import { ShoppingBag, X, Minus, Plus, Trash2 } from "lucide-react";
 import { useEffect } from "react";
 import { useCart } from "@/components/providers/cart-provider";
@@ -49,15 +50,11 @@ export function CartDrawer() {
   }, [isDrawerOpen]);
 
   return (
-    <AnimatePresence>
+    <>
       {isDrawerOpen ? (
-        <motion.div
+        <div
           key="cart-drawer-root"
           className="fixed inset-0 z-[60]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1, pointerEvents: "auto" }}
-          exit={{ opacity: 0, pointerEvents: "none" }}
-          transition={{ duration: 0.2, ease: easeSoft }}
         >
           <button
             type="button"
@@ -266,8 +263,8 @@ export function CartDrawer() {
               </div>
             ) : null}
           </motion.aside>
-        </motion.div>
+        </div>
       ) : null}
-    </AnimatePresence>
+    </>
   );
 }
