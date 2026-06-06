@@ -122,8 +122,8 @@
 }
 
 .cb-mr-brownie-drawer--embedded {
-  min-height: min(520px, 58vh);
-  max-height: min(680px, 78vh);
+  min-height: min(480px, 54vh);
+  max-height: min(640px, 72vh);
   animation: none !important;
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--mr-gold) 28%, transparent),
@@ -136,7 +136,7 @@
 
 .cb-mr-brownie-messages--embedded {
   flex: 1 1 auto;
-  min-height: min(280px, 36vh);
+  min-height: min(320px, 42vh);
 }
 
 .cb-mr-brownie-drawer--floating {
@@ -152,12 +152,12 @@
 
 @media (max-width: 900px) {
   .cb-mr-brownie-drawer--embedded {
-    min-height: min(440px, 56vh);
-    max-height: min(600px, 74vh);
+    min-height: min(400px, 52vh);
+    max-height: min(560px, 68vh);
   }
 
   .cb-mr-brownie-messages--embedded {
-    min-height: min(220px, 30vh);
+    min-height: min(260px, 38vh);
   }
 }
 

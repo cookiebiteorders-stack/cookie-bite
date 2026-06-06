@@ -79,7 +79,8 @@ function buildCookieBiteClerkLocalization(
       password: {
         ...base.signIn!.password,
         title: "Enter your password",
-        subtitle: "For your Cookie Bite account",
+        subtitle:
+          "Type it in the language you chose — Arabic or English. Min. 8 characters.",
       },
       forgotPassword: {
         ...base.signIn!.forgotPassword,
@@ -110,7 +111,8 @@ function buildCookieBiteClerkLocalization(
       continue: {
         ...base.signUp!.continue,
         title: "Almost there",
-        subtitle: "Add your details to finish your Cookie Bite account",
+        subtitle:
+          "Add your details to finish. Password: 8+ chars in Arabic or English as you type.",
       },
     },
     userProfile: {
@@ -141,7 +143,7 @@ function buildCookieBiteClerkLocalizationAr(
       password: {
         ...base.signIn!.password,
         title: "أدخل كلمة المرور",
-        subtitle: "لحسابك في كوكي بايت",
+        subtitle: "اكتبها بنفس لغة الكتابة — عربي أو إنجليزي. 8 أحرف على الأقل.",
       },
       forgotPassword: {
         ...base.signIn!.forgotPassword,
@@ -164,7 +166,8 @@ function buildCookieBiteClerkLocalizationAr(
       continue: {
         ...base.signUp!.continue,
         title: "خطوة أخيرة",
-        subtitle: "أكمل بياناتك لإنهاء حسابك في كوكي بايت",
+        subtitle:
+          "أكمل بياناتك. كلمة المرور: 8 أحرف على الأقل بالعربية أو الإنجليزية كما تكتب.",
       },
     },
     userProfile: {

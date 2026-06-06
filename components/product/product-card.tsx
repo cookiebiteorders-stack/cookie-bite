@@ -147,6 +147,8 @@ export function ProductCard({
               alt=""
               fill
               sizes="(max-width:768px) 100vw, 25vw"
+              loading="lazy"
+              decoding="async"
               className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
               aria-hidden
             />

@@ -1,0 +1,43 @@
+---
+description: بعد أي تغيير في migrations أو schema — شغّل npm run supabase:migrate على Supabase
+alwaysApply: true
+---
+
+# تطبيق migrations على Supabase
+
+عند **إضافة أو تعديل أو حذف** أي شيء يخص قاعدة البيانات في هذا المشروع:
+
+## متى تُشغّل الأمر
+
+- ملف جديد أو معدّل أو محذوف تحت `supabase/migrations/`
+- تغيير في `schema` أو `RLS` أو `RPC` أو `indexes` يتطلب migration
+- أي تعديل يذكر جداول Supabase (`public.*`) ويتوقع تطبيقه على الإنتاج/السحابة
+
+## المطلوب من الوكيل (إلزامي)
+
+1. بعد إنهاء التعديلات على الـ migrations، شغّل **`npm run supabase:migrate`** فعلياً (لا تكتفِ بطلب تشغيله من المستخدم).
+2. اقرأ المخرجات وأبلغ المستخدم:
+   - عدد الملفات **applied** (جديدة)
+   - **skipped** (مطبّقة مسبقاً)
+   - **failed** (أخطاء)
+3. إن فشل migration:
+   - صحّح SQL أو السكربت وأعد التشغيل
+   - لا تنتقل لـ commit/push قبل نجاح التطبيق أو توضيح سبب الفشل
+4. إن نقص `SUPABASE_ACCESS_TOKEN` أو `NEXT_PUBLIC_SUPABASE_URL`، اذكر للمستخدم ضبط `.env` ثم أعد المحاولة.
+
+## الأمر
+
+```bash
+npm run supabase:migrate
+```
+
+السكربت: `scripts/supabase-run-migrations.mjs` — يطبّق فقط الملفات غير المسجّلة في `public.schema_migrations`.
+
+## ترتيب مع باقي المهام
+
+- **قبل** `npm run type-check` / `npm run lint` إن كان الكود يعتمد على الجداول الجديدة
+- **قبل** السؤال عن دفع GitHub — اذكر في الملخص أن الـ migration طُبّقت (أو فشلت)
+
+## استثناء
+
+لا تشغّل migrate إذا طلب المستخدم **مراجعة فقط** أو **عدم لمس قاعدة البيانات** صراحةً.

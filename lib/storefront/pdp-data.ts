@@ -8,6 +8,7 @@ import {
   FBT_RULES_BY_CATEGORY,
   FBT_RULES_BY_SLUG,
 } from "@/lib/storefront/fbt-rules";
+import { PRODUCT_IMAGE_WIDTH_PDP } from "@/lib/products/media";
 import { productRowToStorefrontProduct } from "@/lib/storefront/map-product-row";
 import { getActiveProductRowByRouteKey } from "@/lib/storefront/resolve-active-product";
 
@@ -19,7 +20,9 @@ export async function getActivePdpProduct(
 ): Promise<Product | null> {
   const row = await getActiveProductRowByRouteKey(slug);
   if (!row) return null;
-  return productRowToStorefrontProduct(row, FALLBACK_DESC, lang);
+  return productRowToStorefrontProduct(row, FALLBACK_DESC, lang, {
+    imageWidth: PRODUCT_IMAGE_WIDTH_PDP,
+  });
 }
 
 export async function getRelatedStorefrontProducts(

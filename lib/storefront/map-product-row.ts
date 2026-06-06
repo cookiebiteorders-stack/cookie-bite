@@ -6,8 +6,13 @@ import {
   galleryUrlsFromProduct,
   normalizeProductImages,
   primaryImageFromProduct,
+  PRODUCT_IMAGE_WIDTH_LISTING,
   resolveProductImageUrl,
 } from "@/lib/products/media";
+
+export type StorefrontProductImageOptions = {
+  imageWidth?: number;
+};
 
 const BADGE_SET = new Set(["bestseller", "new", "trending", "featured"]);
 
@@ -19,7 +24,9 @@ export function productRowToStorefrontProduct(
   row: ProductRow,
   descriptionFallback: string,
   lang: Lang = "en",
+  options?: StorefrontProductImageOptions,
 ): Product {
+  const imageWidth = options?.imageWidth ?? PRODUCT_IMAGE_WIDTH_LISTING;
   const name =
     lang === "ar"
       ? row.title_ar?.trim() || row.title_en?.trim() || row.name || row.slug
@@ -35,9 +42,12 @@ export function productRowToStorefrontProduct(
         row.description?.trim() ||
         descriptionFallback;
   const imagesNormalized = normalizeProductImages(row.images, row.image_url);
-  const gallery = galleryUrlsFromProduct(imagesNormalized, row.image_url);
+  const gallery = galleryUrlsFromProduct(imagesNormalized, row.image_url).map((url) =>
+    resolveProductImageUrl(url, imageWidth),
+  );
   const mainImage = resolveProductImageUrl(
     primaryImageFromProduct(imagesNormalized, row.image_url),
+    imageWidth,
   );
   const videoUrl = row.video_url?.trim() || null;
   const badges = coerceStringArray(row.badges).filter(

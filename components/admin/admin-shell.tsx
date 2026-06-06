@@ -17,6 +17,7 @@ import { useLanguage } from "@/components/providers/language-provider";
 import { CopilotLauncher } from "@/components/admin/copilot/copilot-launcher";
 import { canAccessMrsCookieCopilot } from "@/lib/admin/admin-console-nav";
 import { DeferredTrackerBootstrap } from "@/components/tracking/deferred-tracker-bootstrap";
+import { AdminPresenceBeacon } from "@/components/admin/admin-presence-beacon";
 import { cn } from "@/lib/utils";
 
 type AdminShellProps = {
@@ -91,6 +92,7 @@ export function AdminShell({ role, children }: AdminShellProps) {
         </div>
 
         <CartDrawer />
+        <AdminPresenceBeacon />
         <DeferredTrackerBootstrap />
         {canAccessMrsCookieCopilot(role) ? <CopilotLauncher /> : null}
         </div>

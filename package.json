@@ -6,10 +6,16 @@
   "engines": {
     "node": ">=20.0.0"
   },
+  "browserslist": [
+    "chrome >= 111",
+    "edge >= 111",
+    "firefox >= 111",
+    "safari >= 16.4"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "postbuild": "node scripts/copy-standalone-assets.mjs && node scripts/verify-standalone-assets.mjs",
+    "postbuild": "node scripts/stub-legacy-polyfills.mjs && node scripts/copy-standalone-assets.mjs && node scripts/verify-standalone-assets.mjs",
     "verify:standalone-css": "node scripts/verify-standalone-css-serving.mjs",
     "start": "node server.mjs",
     "start:standalone": "node .next/standalone/server.js",
@@ -36,6 +42,7 @@
     "hostinger:env-audit": "node scripts/hostinger-production-env-audit.mjs",
     "hostinger:checklist": "node scripts/hostinger-sync-checklist.mjs",
     "supabase:list-migrations": "node scripts/supabase-list-migrations.mjs",
+    "auth:strip-oauth-passwords": "node scripts/strip-oauth-temp-passwords.mjs",
     "supabase:migrate": "node scripts/supabase-run-migrations.mjs",
     "loyalty:backfill": "node scripts/backfill-loyalty-points.mjs",
     "loyalty:backfill:dry": "node scripts/backfill-loyalty-points.mjs --dry-run",

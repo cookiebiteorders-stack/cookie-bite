@@ -84,7 +84,8 @@ export const translations: Record<Lang, Dictionary> = {
         },
       },
       securityTitle: "Profile & security",
-      securityDesc: "Name, email, password, and connected sign-in methods (secured by Clerk).",
+      securityDesc:
+        "Name, email, password, and connected sign-in methods. Password fields match your typing language.",
       shortcutsTitle: "Quick links",
       shortcutsDesc: "Jump to other sections of your account.",
       privacyTitle: "Privacy & data",
@@ -205,6 +206,35 @@ export const translations: Record<Lang, Dictionary> = {
       cms: "Content",
       templates: "Templates",
       email: "Email",
+    },
+    passwordRules: {
+      title: "Password rules",
+      authIntro:
+        "Signed up with Google or Apple? Use the same button to sign in — no password needed.",
+      settingsIntro:
+        "Optional: add a password here only if you want email + password sign-in.",
+      ruleLength: "At least 8 characters.",
+      ruleTyping:
+        "Type in Arabic or English — the field follows your keyboard (RTL or LTR).",
+      ruleMix: "Use letters and numbers; symbols like @ # are welcome.",
+      ruleOAuth:
+        "OAuth accounts (Google, etc.): sign in with the same provider — ignore any old temp password email.",
+      typingHint:
+        "Tip: pick one language for your password and stick to it when signing in.",
+    },
+    adminPresence: {
+      title: "Team online now",
+      subtitle: "Owners, admins, and staff currently active in the admin console.",
+      online: "online",
+      empty: "No team members are active in the admin panel right now.",
+      viewing: "Currently viewing",
+      device: "Device & IP",
+      lastAction: "Last action",
+      activeAgo: "Active",
+      session: "Session",
+      ago: "ago",
+      error: "Presence feed error",
+      unknownUser: "Team member",
     },
     adminShell: {
       consoleEyebrow: "Admin console",
@@ -333,7 +363,10 @@ export const translations: Record<Lang, Dictionary> = {
       },
       analyticsSessions: { title: "Recent sessions", subtitle: "Browse visitor sessions and replay paths." },
       analyticsSessionNotFound: { title: "Session not found", subtitle: "This session ID may have expired." },
-      analyticsRealtime: { title: "Realtime users", subtitle: "Who is on the site right now." },
+      analyticsRealtime: {
+        title: "Realtime",
+        subtitle: "Live storefront visitors and team members in the admin console.",
+      },
       analyticsHeatmap: { title: "Click heatmap", subtitle: "Aggregate click patterns across pages." },
       analyticsInsights: { title: "AI insights", subtitle: "Automated signals from session data." },
       analyticsFunnels: { title: "Funnels", subtitle: "Conversion steps and drop-offs." },
@@ -629,6 +662,7 @@ export const translations: Record<Lang, Dictionary> = {
         start: "Start voice input",
         stop: "Stop listening",
         unsupported: "Voice not supported in this browser",
+        permissionDenied: "Allow microphone access to use voice input",
       },
       inputPlaceholder: "Type your question…",
       send: "Send",
@@ -1837,7 +1871,8 @@ export const translations: Record<Lang, Dictionary> = {
         },
       },
       securityTitle: "الملف والأمان",
-      securityDesc: "الاسم والبريد وكلمة المرور وطرق الدخول (عبر Clerk).",
+      securityDesc:
+        "الاسم والبريد وكلمة المرور وطرق الدخول. حقول كلمة المرور تتبع لغة كتابتك.",
       shortcutsTitle: "روابط سريعة",
       shortcutsDesc: "انتقل لأقسام أخرى في حسابك.",
       privacyTitle: "الخصوصية والبيانات",
@@ -1958,6 +1993,34 @@ export const translations: Record<Lang, Dictionary> = {
       cms: "المحتوى",
       templates: "القوالب",
       email: "البريد",
+    },
+    passwordRules: {
+      title: "قواعد كلمة المرور",
+      authIntro:
+        "سجّلت عبر Google أو Apple؟ استخدم نفس الزر للدخول — لا حاجة لكلمة مرور.",
+      settingsIntro:
+        "اختياري: أضف كلمة مرور هنا فقط إن أردت الدخول بالبريد + كلمة المرور.",
+      ruleLength: "8 أحرف على الأقل.",
+      ruleTyping:
+        "اكتب بالعربية أو الإنجليزية — الحقل يتبع لغة لوحة المفاتيح (يميناً أو يساراً).",
+      ruleMix: "استخدم حروفاً وأرقاماً؛ الرموز مثل @ # مسموحة.",
+      ruleOAuth:
+        "حسابات OAuth (Google وغيرها): ادخل بنفس المزوّد — تجاهل أي بريد قديم بكلمة مرور مؤقتة.",
+      typingHint: "نصيحة: اختر لغة واحدة لكلمة المرور والتزم بها عند كل تسجيل دخول.",
+    },
+    adminPresence: {
+      title: "الفريق المتصل الآن",
+      subtitle: "المالك والأدمن والموظفون النشطون حالياً في لوحة الإدارة.",
+      online: "متصل",
+      empty: "لا يوجد أعضاء فريق نشطون في لوحة الإدارة الآن.",
+      viewing: "يتصفح حالياً",
+      device: "الجهاز وعنوان IP",
+      lastAction: "آخر إجراء",
+      activeAgo: "نشط منذ",
+      session: "الجلسة",
+      ago: "مضت",
+      error: "خطأ في تغذية الحضور",
+      unknownUser: "عضو فريق",
     },
     adminShell: {
       consoleEyebrow: "لوحة الإدارة",
@@ -2086,7 +2149,10 @@ export const translations: Record<Lang, Dictionary> = {
       },
       analyticsSessions: { title: "الجلسات الأخيرة", subtitle: "تصفّح جلسات الزوار ومساراتهم." },
       analyticsSessionNotFound: { title: "الجلسة غير موجودة", subtitle: "معرّف الجلسة قد يكون منتهياً." },
-      analyticsRealtime: { title: "المستخدمون الآن", subtitle: "من على الموقع في هذه اللحظة." },
+      analyticsRealtime: {
+        title: "المباشر",
+        subtitle: "زوار المتجر الآن وأعضاء الفريق في لوحة الإدارة.",
+      },
       analyticsHeatmap: { title: "خريطة النقرات", subtitle: "أنماط النقر المجمّعة عبر الصفحات." },
       analyticsInsights: { title: "رؤى الذكاء الاصطناعي", subtitle: "إشارات تلقائية من بيانات الجلسات." },
       analyticsFunnels: { title: "قمع التحويل", subtitle: "خطوات التحويل ونقاط التسرّب." },
@@ -2385,6 +2451,7 @@ export const translations: Record<Lang, Dictionary> = {
         start: "بدء الإدخال الصوتي",
         stop: "إيقاف الاستماع",
         unsupported: "الإدخال الصوتي غير مدعوم في هذا المتصفح",
+        permissionDenied: "اسمح بالوصول للميكروفون لاستخدام الإدخال الصوتي",
       },
       inputPlaceholder: "اكتب سؤالك…",
       send: "إرسال",

@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { DeferredTrackerBootstrap } from "@/components/tracking/deferred-tracker-bootstrap";
 import { DeferredGA4Tracker } from "@/components/analytics/deferred-ga4-tracker";
-import { LokiSvgFilters } from "@/components/effects/loki-svg-filters";
 
 const WebVitalsReporter = dynamic(
   () =>
@@ -12,29 +11,23 @@ const WebVitalsReporter = dynamic(
   { ssr: false },
 );
 
-const LokiBootstrap = dynamic(
-  () => import("@/components/effects/loki-bootstrap").then((m) => m.LokiBootstrap),
-  { ssr: false },
-);
-
-/** تأثيرات وتتبع المتجر فقط — لا تُحمَّل على sign-in / maintenance / admin. */
+/** تتبع المتجر — vitals بعد idle حتى لا يحجب TTI. */
 export function StorefrontRuntimeEffects() {
   const [vitalsReady, setVitalsReady] = useState(false);
 
   useEffect(() => {
-    const enable = () => setVitalsReady(true);
+    const enableVitals = () => setVitalsReady(true);
+
     if (typeof window.requestIdleCallback === "function") {
-      const id = window.requestIdleCallback(enable, { timeout: 10_000 });
-      return () => window.cancelIdleCallback(id);
+      const vitalsId = window.requestIdleCallback(enableVitals, { timeout: 10_000 });
+      return () => window.cancelIdleCallback(vitalsId);
     }
-    const timer = window.setTimeout(enable, 6000);
-    return () => window.clearTimeout(timer);
+    const vitalsTimer = window.setTimeout(enableVitals, 6000);
+    return () => window.clearTimeout(vitalsTimer);
   }, []);
 
   return (
     <>
-      <LokiSvgFilters />
-      <LokiBootstrap />
       <DeferredTrackerBootstrap />
       <DeferredGA4Tracker />
       {vitalsReady ? <WebVitalsReporter /> : null}

@@ -3,10 +3,19 @@ import { optimizeCloudinaryDeliveryUrl } from "@/lib/products/cloudinary-deliver
 
 export const MAX_PRODUCT_IMAGES = 5;
 
+/** عرض Cloudinary لبطاقات المتجر والقوائم (~2× لشبكة 50vw على الموبايل). */
+export const PRODUCT_IMAGE_WIDTH_LISTING = 720;
+
+/** عرض Cloudinary لصفحة المنتج (هيرو PDP). */
+export const PRODUCT_IMAGE_WIDTH_PDP = 1080;
+
 /** صورة افتراضية للمنتجات بدون صور — public/images/product-coming-soon.png */
 export const PRODUCT_PLACEHOLDER_IMAGE = "/images/product-coming-soon.png";
 
-export function resolveProductImageUrl(url?: string | null, width = 1200): string {
+export function resolveProductImageUrl(
+  url?: string | null,
+  width = PRODUCT_IMAGE_WIDTH_LISTING,
+): string {
   const trimmed = url?.trim();
   if (!trimmed) return PRODUCT_PLACEHOLDER_IMAGE;
   return optimizeCloudinaryDeliveryUrl(trimmed, width) || PRODUCT_PLACEHOLDER_IMAGE;

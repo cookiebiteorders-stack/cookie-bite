@@ -1,3 +1,4 @@
+import { inferImageMimeType } from "@/lib/chat/image-mime";
 import { CLIENT_IMAGE_TARGET_BYTES, IMAGE_UPLOAD_MAX_EDGE } from "@/lib/cloudinary/upload-limits";
 
 const MIN_QUALITY = 0.5;
@@ -40,8 +41,9 @@ function needsProcessing(file: File, width: number, height: number): boolean {
  * يصغّر الصور الكبيرة على المتصفح قبل الرفع المباشر إلى Cloudinary.
  */
 export async function compressImageFileForUpload(file: File): Promise<File> {
-  if (!file.type.startsWith("image/") || file.type === "image/gif" || file.type === "image/svg+xml") {
-    return file;
+  const mimeType = inferImageMimeType(file);
+  if (!mimeType.startsWith("image/") || mimeType === "image/gif" || mimeType === "image/svg+xml") {
+    return file.type ? file : new File([file], file.name || "image.jpg", { type: mimeType });
   }
 
   const img = await loadImage(file);
@@ -61,7 +63,7 @@ export async function compressImageFileForUpload(file: File): Promise<File> {
   ctx.drawImage(img, 0, 0, w, h);
 
   const outType =
-    file.type === "image/png" || file.type === "image/jpeg" ? "image/webp" : file.type;
+    mimeType === "image/png" || mimeType === "image/jpeg" ? "image/webp" : mimeType;
   let quality = START_QUALITY;
   let blob = await canvasToBlob(canvas, outType, quality);
 

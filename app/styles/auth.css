@@ -90,3 +90,12 @@
     font-size: 0.9375rem !important;
   }
 }
+
+/* كلمة المرور تتبع لغة الكتابة (عربي RTL / إنجليزي LTR) */
+.clerk-auth-shell input[type="password"],
+.clerk-auth-shell .cl-formFieldInput[type="password"] {
+  direction: auto;
+  unicode-bidi: plaintext;
+  text-align: start;
+  font-variant-ligatures: none;
+}

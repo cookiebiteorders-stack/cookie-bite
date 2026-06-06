@@ -21,6 +21,9 @@ export function isAllowedChatImageUrl(url: string): boolean {
     if (u.protocol !== "https:") return false;
     if (u.hostname === "res.cloudinary.com") return true;
     if (u.hostname.endsWith(".cookie-bite.com") || u.hostname === "cookie-bite.com") return true;
+    if (u.hostname.endsWith(".supabase.co") && u.pathname.includes("/storage/v1/object/")) {
+      return true;
+    }
     return false;
   } catch {
     return false;

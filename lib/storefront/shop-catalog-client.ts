@@ -2,7 +2,10 @@ import type { Addon } from "@/lib/addons/types";
 import type { Product } from "@/lib/data";
 import { fetchJson } from "@/lib/http/fetch-json";
 import type { Lang } from "@/lib/i18n/translations";
-import { resolveProductImageUrl } from "@/lib/products/media";
+import {
+  PRODUCT_IMAGE_WIDTH_LISTING,
+  resolveProductImageUrl,
+} from "@/lib/products/media";
 import { isProductInStock } from "@/lib/products/stock";
 import { coerceStringArray } from "@/lib/products/coerce";
 
@@ -50,6 +53,7 @@ export function mapApiProductToCatalog(
       : p.description_en || p.description_ar || descFallback;
   const mainImage = resolveProductImageUrl(
     p.images?.find((img) => typeof img?.url === "string" && img.url)?.url || p.image_url,
+    PRODUCT_IMAGE_WIDTH_LISTING,
   );
   const badges = coerceStringArray(p.badges).filter(
     (b): b is NonNullable<Product["badges"]>[number] => BADGE_SET.has(String(b)),

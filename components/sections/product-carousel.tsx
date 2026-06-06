@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
 import { ViewReveal } from "@/components/motion/view-reveal";
 import type { Product } from "@/lib/data";
 import { CarouselProductCard } from "@/components/sections/carousel-product-card";
@@ -89,25 +88,14 @@ export function ProductCarousel({ products = [] }: ProductCarouselProps) {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-4">
-          <AnimatePresence mode="popLayout">
-            {triple.map((product, i) => (
-              <motion.div
-                key={`${product.id}-${index}-${i}`}
-                layout
-                initial={{ opacity: 0, y: 22 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -18, pointerEvents: "none" }}
-                transition={{
-                  duration: 0.42,
-                  delay: i * 0.06,
-                  ease: [0.33, 1, 0.68, 1],
-                }}
-                className={cn(i === 1 && "lg:mt-8", i === 2 && "lg:-mt-4")}
-              >
-                <CarouselProductCard product={product} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
+          {triple.map((product, i) => (
+            <div
+              key={`${product.id}-${index}-${i}`}
+              className={cn(i === 1 && "lg:mt-8", i === 2 && "lg:-mt-4")}
+            >
+              <CarouselProductCard product={product} />
+            </div>
+          ))}
           <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-cb-terracotta-dark/35 bg-gradient-to-br from-cb-mint/40 via-cb-cream to-cb-peach/50 p-8 text-center lg:min-h-[min(100%,22rem)]">
             <p className="font-serif text-2xl font-semibold leading-snug text-cb-text-strong">
               {t("carousel.sideTitle")}

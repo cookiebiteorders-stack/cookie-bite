@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -7,8 +7,6 @@ import { useEffect } from "react";
 import { AdminConsoleNavLinks } from "@/components/admin/admin-console-nav-links";
 import { useOptionalAdminConsole } from "@/components/admin/admin-console-context";
 import { useLanguage } from "@/components/providers/language-provider";
-import { cn } from "@/lib/utils";
-
 /**
  * لوحة الإدارة — قائمة الجوال المنزلقة فقط (تُفتح من شريط الموقع الموحّد).
  */
@@ -30,31 +28,22 @@ export function AdminConsoleNavbar() {
     };
   }, [adminNavOpen]);
 
-  if (!ctx) return null;
+  if (!ctx || !adminNavOpen) return null;
 
   return (
     <div
       id="admin-mobile-nav"
-      className={cn(
-        "fixed inset-0 z-[110] lg:hidden",
-        adminNavOpen ? "pointer-events-auto" : "pointer-events-none",
-      )}
-      aria-hidden={!adminNavOpen}
+      className="fixed inset-0 z-[110] lg:hidden"
+      aria-hidden={false}
     >
       <button
         type="button"
-        className={cn(
-          "absolute inset-0 bg-black/40 transition-opacity",
-          adminNavOpen ? "opacity-100" : "opacity-0",
-        )}
+        className="absolute inset-0 bg-black/40"
         aria-label={t("adminShell.closeAdminMenu")}
         onClick={() => setAdminNavOpen?.(false)}
       />
       <aside
-        className={cn(
-          "absolute inset-y-0 start-0 flex w-[min(100%,280px)] flex-col border-e border-cb-border bg-cb-surface-2 py-4 shadow-xl transition-transform duration-200",
-          adminNavOpen ? "translate-x-0" : "-translate-x-full rtl:translate-x-full",
-        )}
+        className="absolute inset-y-0 start-0 flex w-[min(100%,280px)] translate-x-0 flex-col border-e border-cb-border bg-cb-surface-2 py-4 shadow-xl rtl:translate-x-0"
       >
         <div className="mb-4 flex shrink-0 items-center justify-between gap-2 px-4">
           <div>

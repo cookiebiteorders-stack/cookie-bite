@@ -23,6 +23,7 @@ import type { Product } from "@/lib/data";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { useLanguage } from "@/components/providers/language-provider";
 import type { ProductRow } from "@/lib/db/types";
+import { PRODUCT_IMAGE_WIDTH_PDP } from "@/lib/products/media";
 import { productRowToStorefrontProduct } from "@/lib/storefront/map-product-row";
 import {
   buildBreadcrumbJsonLd,
@@ -90,7 +91,9 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
           router.replace(`/shop/${encodeURIComponent(canonical)}`);
           return;
         }
-        const mapped = productRowToStorefrontProduct(data.product, FALLBACK_DESC, lang);
+        const mapped = productRowToStorefrontProduct(data.product, FALLBACK_DESC, lang, {
+          imageWidth: PRODUCT_IMAGE_WIDTH_PDP,
+        });
         setProduct(mapped);
         setAddons(dedupeAddons(data.addons ?? []));
         setRelated((data.related ?? []).filter((p) => p.id !== mapped.id));

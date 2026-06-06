@@ -90,8 +90,8 @@ export function AddToHomeScreenPrompt() {
           key="pwa-install-prompt"
           className="fixed inset-0 z-[65] flex items-end justify-center p-4 sm:items-center"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          animate={{ opacity: 1, pointerEvents: "auto" }}
+          exit={{ opacity: 0, pointerEvents: "none" }}
           transition={{ duration: 0.2, ease: easeSoft }}
           role="presentation"
         >

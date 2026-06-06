@@ -188,15 +188,6 @@
   --fluid-heading-2: clamp(1.45rem, 2.4vw + 0.85rem, 2.65rem);
   --fluid-body: clamp(0.9375rem, 0.35vw + 0.88rem, 1.0625rem);
 
-  /* Loki palette — Asgardian sorcery overlay */
-  --loki-gold: #c9a84c;
-  --loki-green: #1f7a4a;
-  --loki-emerald: #00ff88;
-  --loki-void: #080c14;
-  --loki-illusion: rgba(0, 255, 136, 0.15);
-  --loki-glitch-r: rgba(255, 0, 60, 0.6);
-  --loki-glitch-b: rgba(0, 100, 255, 0.6);
-  --loki-particle: #b8ff6e;
 }
 @media (min-width: 1536px) {
   :root {

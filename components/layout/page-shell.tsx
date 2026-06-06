@@ -2,19 +2,22 @@
 
 import dynamic from "next/dynamic";
 import { ResponsiveStorefrontHeader } from "@/components/layout/responsive-storefront-header";
-import { StorefrontMotionShell } from "@/components/layout/storefront-motion-shell";
 import { CartProvider } from "@/components/providers/cart-provider";
 import { StaffAdminNavProvider } from "@/components/providers/staff-admin-nav-provider";
 import { cn } from "@/lib/utils";
+import { DeferredShellChrome } from "@/components/layout/deferred-shell-chrome";
 import { StorefrontRuntimeEffects } from "@/components/layout/storefront-runtime-effects";
 
-const AnnouncementBar = dynamic(
-  () => import("@/components/layout/announcement-bar").then((m) => m.AnnouncementBar),
+const DeferredAnnouncementBar = dynamic(
+  () =>
+    import("@/components/layout/deferred-announcement-bar").then((m) => ({
+      default: m.DeferredAnnouncementBar,
+    })),
   { ssr: false, loading: () => null },
 );
 
-const CartDrawer = dynamic(
-  () => import("@/components/cart/cart-drawer").then((m) => m.CartDrawer),
+const CartDrawerGate = dynamic(
+  () => import("@/components/layout/cart-drawer-gate").then((m) => m.CartDrawerGate),
   { ssr: false, loading: () => null },
 );
 
@@ -46,7 +49,7 @@ const MobileTabBar = dynamic(
 const AddToHomeScreenPrompt = dynamic(
   () =>
     import("@/components/pwa/add-to-home-screen-prompt").then((m) => m.AddToHomeScreenPrompt),
-  { ssr: false },
+  { ssr: false, loading: () => null },
 );
 
 export function PageShell({
@@ -73,12 +76,12 @@ export function PageShell({
         <a href="#main-content" className="cb-skip-link">
           {skipToMainLabel}
         </a>
-        <AnnouncementBar />
+        <DeferredAnnouncementBar />
 
         <ResponsiveStorefrontHeader />
 
         <main id="main-content" className="relative flex-1">
-          <StorefrontMotionShell>{children}</StorefrontMotionShell>
+          <div className="cb-page-route-shell min-h-0 w-full">{children}</div>
         </main>
 
         <div className="desktop-footer">
@@ -86,13 +89,14 @@ export function PageShell({
         </div>
         <MobileFooter />
         <MobileTabBar />
-        <div className="desktop-whatsapp-fab">
-          <WhatsAppFab />
-        </div>
-        <MrBrownieHost />
-
-        <CartDrawer />
-        <AddToHomeScreenPrompt />
+        <DeferredShellChrome>
+          <div className="desktop-whatsapp-fab">
+            <WhatsAppFab />
+          </div>
+          <MrBrownieHost />
+          <CartDrawerGate />
+          <AddToHomeScreenPrompt />
+        </DeferredShellChrome>
       </div>
     </CartProvider>
     </StaffAdminNavProvider>

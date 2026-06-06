@@ -1,58 +1,53 @@
 /**
- * Compress public/images/hero.webp for faster LCP (safe to re-run).
- * Usage: node scripts/optimize-hero-image.mjs
+ * Compress hero images for faster LCP (safe to re-run).
+ * Outputs:
+ *   public/images/hero-640.webp — mobile
+ *   public/images/hero.webp     — desktop (max 960px wide)
+ * Usage: npm run optimize:hero
  */
 import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 
-const heroPath = path.join(process.cwd(), "public", "images", "hero.webp");
+const imagesDir = path.join(process.cwd(), "public", "images");
+const heroPath = path.join(imagesDir, "hero.webp");
 
 if (!fs.existsSync(heroPath)) {
   console.error("hero.webp not found at", heroPath);
   process.exit(1);
 }
 
+const variants = [
+  { file: "hero-640.webp", width: 640, quality: 56 },
+  { file: "hero.webp", width: 960, quality: 64 },
+];
+
 const before = fs.statSync(heroPath).size;
-const input = await sharp(heroPath).metadata();
-const width = Math.min(input.width ?? 1920, 1920);
+const inputMeta = await sharp(heroPath).metadata();
 
-const output = await sharp(heroPath)
-  .resize(width, null, { withoutEnlargement: true, fit: "inside" })
-  .webp({ quality: 68, effort: 6, smartSubsample: true })
-  .toBuffer();
+for (const variant of variants) {
+  const outPath = path.join(imagesDir, variant.file);
+  const buffer = await sharp(heroPath)
+    .resize(variant.width, null, { withoutEnlargement: true, fit: "inside" })
+    .webp({ quality: variant.quality, effort: 6, smartSubsample: true })
+    .toBuffer();
 
-const backupPath = `${heroPath}.bak`;
-try {
-  if (fs.existsSync(heroPath)) {
-    try {
-      fs.unlinkSync(backupPath);
-    } catch {
-      /* no prior backup */
-    }
-    try {
-      fs.renameSync(heroPath, backupPath);
-    } catch {
-      /* locked — write sidecar instead */
-      const sidecar = path.join(path.dirname(heroPath), "hero.optimized.webp");
-      fs.writeFileSync(sidecar, output);
-      console.log(
-        `hero.webp locked; wrote ${sidecar} (${(output.length / 1024).toFixed(1)}KB). Replace hero.webp manually or close apps using the file.`,
-      );
-      process.exit(0);
-    }
-  }
-  fs.writeFileSync(heroPath, output);
   try {
-    fs.unlinkSync(backupPath);
-  } catch {
-    /* keep backup */
+    fs.writeFileSync(outPath, buffer);
+  } catch (err) {
+    const sidecar = path.join(imagesDir, `${variant.file}.optimized`);
+    fs.writeFileSync(sidecar, buffer);
+    console.warn(
+      `${variant.file} locked; wrote ${sidecar} (${(buffer.length / 1024).toFixed(1)}KB). Close apps using the file and re-run.`,
+    );
+    continue;
   }
-} catch (err) {
-  console.error("Failed to write hero.webp:", err.message);
-  process.exit(1);
+  console.log(
+    `${variant.file}: ${(buffer.length / 1024).toFixed(1)}KB (${variant.width}px max, was ${inputMeta.width ?? "?"}x${inputMeta.height ?? "?"})`,
+  );
 }
-const after = output.length;
+
+const afterDesktop = fs.statSync(heroPath).size;
 console.log(
-  `hero.webp: ${(before / 1024).toFixed(1)}KB → ${(after / 1024).toFixed(1)}KB (${width}px wide)`,
+  `Done. Previous hero.webp on disk: ${(before / 1024).toFixed(1)}KB → desktop ${(afterDesktop / 1024).toFixed(1)}KB`,
 );

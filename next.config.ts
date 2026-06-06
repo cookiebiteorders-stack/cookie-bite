@@ -126,6 +126,13 @@ const DEVELOPMENT_BASIC_HEADERS = [
   },
 ];
 
+/** Modern Baseline only — avoids shipping Next polyfill-module to every client (Lighthouse legacy-JS). */
+const emptyPolyfillPath = "./lib/build/empty-polyfill.js";
+const polyfillModuleAliases: Record<string, string> = {
+  "../build/polyfills/polyfill-module": emptyPolyfillPath,
+  "next/dist/build/polyfills/polyfill-module": emptyPolyfillPath,
+};
+
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
@@ -154,6 +161,17 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   turbopack: {
     root: path.resolve(process.cwd()),
+    resolveAlias: polyfillModuleAliases,
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve ??= {};
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        ...polyfillModuleAliases,
+      };
+    }
+    return config;
   },
   async redirects() {
     return [
@@ -173,6 +191,8 @@ const nextConfig: NextConfig = {
   },
   images: {
     formats: ["image/avif", "image/webp"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [32, 48, 64, 96, 128, 256, 384, 512],
     minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       {

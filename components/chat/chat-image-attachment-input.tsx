@@ -8,6 +8,7 @@ import {
   CHAT_IMAGE_TYPES,
   type ChatImageAttachment,
 } from "@/lib/chat/image-attachments";
+import { inferImageMimeType } from "@/lib/chat/image-mime";
 import { compressImageFileForUpload } from "@/lib/client/compress-image-file";
 import { cn } from "@/lib/utils";
 
@@ -128,8 +129,13 @@ export function ChatImageAttachButton({
 
       await Promise.all(
         batch.map(async (item, idx) => {
-          const file = picked[idx]!;
-          if (!CHAT_IMAGE_TYPES.has(file.type)) {
+          const raw = picked[idx]!;
+          const mimeType = inferImageMimeType(raw);
+          const file =
+            raw.type === mimeType
+              ? raw
+              : new File([raw], raw.name || "image.jpg", { type: mimeType });
+          if (!CHAT_IMAGE_TYPES.has(mimeType)) {
             onChange((prev) =>
               prev.map((p) =>
                 p.id === item.id
@@ -147,7 +153,7 @@ export function ChatImageAttachButton({
                   ? {
                       ...p,
                       uploading: false,
-                      uploaded: { url, mimeType: file.type, name: file.name },
+                      uploaded: { url, mimeType, name: file.name },
                     }
                   : p,
               ),
@@ -187,8 +193,8 @@ export function ChatImageAttachButton({
         disabled={disabled || pending.length >= CHAT_IMAGE_MAX_COUNT}
         onClick={() => inputRef.current?.click()}
         className={cn(
-          "inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-cb-border bg-cb-surface text-cb-text-strong transition hover:border-cb-brand-logo hover:bg-cb-peach/40 disabled:opacity-40",
-          className,
+          "inline-flex shrink-0 items-center justify-center rounded-xl border border-cb-border bg-cb-surface text-cb-text-strong transition hover:border-cb-brand-logo hover:bg-cb-peach/40 disabled:opacity-40",
+          className ?? "h-[42px] w-[42px]",
         )}
         aria-label="إرفاق صورة"
         title="إرفاق صورة"

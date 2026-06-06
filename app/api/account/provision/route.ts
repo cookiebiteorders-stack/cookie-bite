@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { provisionClerkUsernameAndPassword } from "@/lib/auth/clerk-provision-credentials";
+import { provisionClerkUsername } from "@/lib/auth/clerk-provision-credentials";
 import { ensureDbUserForClerk } from "@/lib/db/ensure-db-user";
 import { bilingualError } from "@/lib/validations";
 
@@ -12,7 +12,7 @@ export async function POST() {
   }
 
   try {
-    const result = await provisionClerkUsernameAndPassword(userId);
+    const result = await provisionClerkUsername(userId);
     const dbUser = await ensureDbUserForClerk(userId);
     return NextResponse.json({
       ok: true,

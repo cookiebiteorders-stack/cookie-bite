@@ -6,7 +6,8 @@
 2. اجعل Username **Optional** أو **Off** (لا يطلب من المستخدم اختياره)
 3. الموقع يولّد username تلقائياً عبر:
    - `POST /api/account/provision` بعد الدخول
-   - Webhook `user.created` → `provisionClerkUsernameAndPassword`
+   - Webhook `user.created` → `provisionClerkUsername` (بدون كلمة مرور مؤقتة لمسجّلي Google/OAuth)
+   - إزالة كلمات المرور المؤقتة القديمة: `npm run auth:strip-oauth-passwords` أو `POST /api/admin/auth/strip-oauth-passwords` (owner)
 
 ## بعد التسجيل / الدخول
 

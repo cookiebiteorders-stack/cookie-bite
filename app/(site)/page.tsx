@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
-import { preload } from "react-dom";
 import { HeroSection5 } from "@/components/ui/hero-section-5";
 import { buildLocalizedPageMetadata } from "@/lib/seo";
 import { getLangFromCookies } from "@/lib/seo/server";
-import { HERO_FALLBACK_IMAGE } from "@/lib/site-media";
 
 export const revalidate = 300;
 
@@ -30,8 +28,6 @@ const HomeBelowFold = dynamic(
 );
 
 export default function HomePage() {
-  preload(HERO_FALLBACK_IMAGE, { as: "image", fetchPriority: "high" });
-
   return (
     <>
       <p className="sr-only">

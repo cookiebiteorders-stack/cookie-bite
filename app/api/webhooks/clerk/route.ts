@@ -1,5 +1,5 @@
 import { Webhook } from "svix";
-import { provisionClerkUsernameAndPassword } from "@/lib/auth/clerk-provision-credentials";
+import { provisionClerkUsername } from "@/lib/auth/clerk-provision-credentials";
 import {
   clerkWebhookSecretLooksValid,
   clerkWebhookSecretMisconfigurationHint,
@@ -105,29 +105,18 @@ export async function POST(req: Request) {
       avatarUrl: evt.data.image_url ?? null,
     });
 
-    let provisioned: Awaited<
-      ReturnType<typeof provisionClerkUsernameAndPassword>
-    > | null = null;
     try {
-      provisioned = await provisionClerkUsernameAndPassword(evt.data.id);
+      await provisionClerkUsername(evt.data.id);
     } catch (err) {
-      console.error("clerk provision username/password failed", err);
+      console.error("clerk provision username failed", err);
     }
 
     if (evt.type === "user.created" && dbUser) {
       try {
-        const credentials =
-          provisioned?.username && provisioned.passwordForEmail
-            ? {
-                username: provisioned.username,
-                password: provisioned.passwordForEmail,
-              }
-            : undefined;
         const result = await trySendWelcomeEmailOnce({
           userId: dbUser.id,
           to: email,
           name: evt.data.first_name ?? undefined,
-          credentials,
           force: true,
         });
         if (!result.sent && result.reason !== "already_sent") {

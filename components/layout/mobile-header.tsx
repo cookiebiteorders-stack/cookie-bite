@@ -2,9 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import dynamic from "next/dynamic";
 import { ArrowLeft, ArrowRight, Menu, Search, ShoppingBag, Settings, SlidersHorizontal, X } from "lucide-react";
-import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
+
+const MobileHeaderNavDrawer = dynamic(
+  () =>
+    import("@/components/layout/mobile-header-nav-drawer").then((m) => ({
+      default: m.MobileHeaderNavDrawer,
+    })),
+  { ssr: false, loading: () => null },
+);
 import { LogoMark } from "@/components/brand/logo-mark";
 import { useCart } from "@/components/providers/cart-provider";
 import { cn } from "@/lib/utils";
@@ -57,12 +65,14 @@ export function MobileHeader() {
   const title = getTitle(pathname);
   const showBack = !isRootTab(pathname) && !admin;
 
-  const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
 
-  useMotionValueEvent(scrollY, "change", (y) => {
-    setScrolled(y > 80);
-  });
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const isTransparent =
     (variant === "home" || variant === "story") && !scrolled;
@@ -244,57 +254,15 @@ export function MobileHeader() {
         )}
       </div>
     </header>
-    <AnimatePresence>
-      {mobileMenuOpen ? (
-        <motion.div
-          id="site-mobile-nav"
-          role="dialog"
-          aria-modal="true"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[120] md:hidden"
-        >
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/55"
-            aria-label={t("nav.closeMenu")}
-            onClick={() => setMobileMenuOpen(false)}
-          />
-          <motion.nav
-            initial={{ x: lang === "ar" ? "100%" : "-100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: lang === "ar" ? "100%" : "-100%" }}
-            transition={{ type: "spring", stiffness: 320, damping: 34 }}
-            className="absolute inset-y-0 start-0 flex w-[min(88vw,340px)] flex-col border-e border-cb-border bg-cb-surface p-4 pt-6"
-          >
-            <div className="mb-3 flex items-center justify-between border-b border-cb-border pb-3">
-              <span className="text-xs font-bold uppercase tracking-[0.2em] text-cb-text-muted">{t("nav.menu")}</span>
-              <button
-                type="button"
-                className="mobile-header__icon-btn"
-                aria-label={t("nav.closeMenu")}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <X className="h-5 w-5" aria-hidden />
-              </button>
-            </div>
-            <div className="flex flex-1 flex-col gap-1 overflow-y-auto">
-              {mobileLinks.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="rounded-xl px-3 py-3 text-sm font-semibold text-cb-text-strong hover:bg-cb-peach/45"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </motion.nav>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
+    {mobileMenuOpen ? (
+      <MobileHeaderNavDrawer
+        links={mobileLinks}
+        lang={lang}
+        menuLabel={t("nav.menu")}
+        closeLabel={t("nav.closeMenu")}
+        onClose={() => setMobileMenuOpen(false)}
+      />
+    ) : null}
     </>
   );
 }

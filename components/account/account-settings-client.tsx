@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { AccountSectionLink } from "@/components/account/account-section-link";
 import { ClerkUserProfileEmbed } from "@/components/account/clerk-user-profile-embed";
+import { PasswordRulesCallout } from "@/components/auth/password-rules-callout";
 import { useCallback, useEffect, useState } from "react";
 import {
   Bell,
@@ -243,7 +244,8 @@ export function AccountSettingsClient({
             description={t("accountSettings.securityDesc")}
             icon={Lock}
           >
-            <div className="w-full min-w-0">
+            <div className="w-full min-w-0 space-y-4">
+              <PasswordRulesCallout variant="settings" />
               <ClerkUserProfileEmbed />
             </div>
           </SettingsSection>

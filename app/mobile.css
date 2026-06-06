@@ -99,6 +99,27 @@
 .mobile-tab-bar__fab-icon { width: 28px; height: 28px; }
 .mobile-tab-bar__label--fab { font-size: 10px; color: var(--cb-terracotta-dark); font-weight: 600; }
 
+.mobile-tab-bar__tap { transition: transform 0.15s ease; }
+.mobile-tab-bar__tap:active { transform: scale(0.88); }
+.mobile-tab-bar__icon-wrap--active { transform: scale(1.08); }
+
+/* --- Mobile nav drawer (CSS — no motion chunk) --- */
+@keyframes mobile-nav-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes mobile-nav-slide-in-ltr {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes mobile-nav-slide-in-rtl {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.mobile-nav-drawer__overlay { animation: mobile-nav-fade-in 0.2s ease-out both; }
+.mobile-nav-drawer__panel { animation: mobile-nav-slide-in-ltr 0.28s cubic-bezier(0.33, 1, 0.68, 1) both; }
+[dir="rtl"] .mobile-nav-drawer__panel { animation-name: mobile-nav-slide-in-rtl; }
+
 /* --- Mobile Footer --- */
 .mobile-footer { display: none; flex-direction: column; align-items: center; gap: 16px; padding: 20px 16px; }
 .mobile-footer__social { display: flex; gap: 12px; justify-content: center; }

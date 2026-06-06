@@ -316,6 +316,8 @@ export function MrBrownieChat({
   const [dynamicChips, setDynamicChips] = useState<string[]>([]);
   const [giftGuideOpen, setGiftGuideOpen] = useState(false);
   const [giftGuideLoading, setGiftGuideLoading] = useState(false);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(!embedded);
+  const [composerHint, setComposerHint] = useState<string | null>(null);
   const [feedbackByMessage, setFeedbackByMessage] = useState<Record<string, 1 | -1>>({});
   const fabRef = useRef<HTMLButtonElement>(null);
   const dragSession = useRef<{
@@ -325,6 +327,7 @@ export function MrBrownieChat({
     originTop: number;
   } | null>(null);
   const pointerMoved = useRef(false);
+  const capturedPointerIdRef = useRef<number | null>(null);
   const dragFlushRafRef = useRef<number | null>(null);
   const pendingDragRef = useRef<{ left: number; top: number } | null>(null);
   /** بعد السحب اليدوي: تبقى الأيقونة مكانها حتى هذا الوقت (epoch ms) قبل استئناف التجوّل */
@@ -887,8 +890,8 @@ export function MrBrownieChat({
       setOpen(false);
     };
 
-    document.addEventListener("pointerdown", closeIfOutside, true);
-    return () => document.removeEventListener("pointerdown", closeIfOutside, true);
+    document.addEventListener("pointerdown", closeIfOutside);
+    return () => document.removeEventListener("pointerdown", closeIfOutside);
   }, [embedded, open]);
 
   const submitMessage = useCallback(
@@ -1125,6 +1128,37 @@ export function MrBrownieChat({
     [lang, pathname, t, enqueueSaveMessage],
   );
 
+  const releaseFabPointerCapture = useCallback((pointerId?: number) => {
+    const el = fabRef.current;
+    if (!el) return;
+    const id = pointerId ?? capturedPointerIdRef.current;
+    if (id == null) return;
+    if (el.hasPointerCapture(id)) el.releasePointerCapture(id);
+    if (capturedPointerIdRef.current === id) capturedPointerIdRef.current = null;
+  }, []);
+
+  const resetFabDrag = useCallback(() => {
+    cancelDragRaf();
+    dragSession.current = null;
+    pointerMoved.current = false;
+    setDragPx(null);
+    releaseFabPointerCapture();
+  }, [releaseFabPointerCapture]);
+
+  useEffect(() => {
+    resetFabDrag();
+  }, [pathname, resetFabDrag]);
+
+  useEffect(() => {
+    const onRelease = () => resetFabDrag();
+    window.addEventListener("blur", onRelease);
+    document.addEventListener("visibilitychange", onRelease);
+    return () => {
+      window.removeEventListener("blur", onRelease);
+      document.removeEventListener("visibilitychange", onRelease);
+    };
+  }, [resetFabDrag]);
+
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (open) return;
     const el = fabRef.current;
@@ -1137,7 +1171,6 @@ export function MrBrownieChat({
       originTop: rect.top,
     };
     pointerMoved.current = false;
-    el.setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -1146,6 +1179,11 @@ export function MrBrownieChat({
     const dx = e.clientX - session.startX;
     const dy = e.clientY - session.startY;
     if (!pointerMoved.current && Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+    const el = fabRef.current;
+    if (el && !el.hasPointerCapture(e.pointerId)) {
+      el.setPointerCapture(e.pointerId);
+      capturedPointerIdRef.current = e.pointerId;
+    }
     pointerMoved.current = true;
     const rawLeft = session.originLeft + dx;
     const rawTop = session.originTop + dy;
@@ -1162,11 +1200,7 @@ export function MrBrownieChat({
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
-    const el = fabRef.current;
-    if (el && el.hasPointerCapture(e.pointerId)) {
-      el.releasePointerCapture(e.pointerId);
-    }
-
+    releaseFabPointerCapture(e.pointerId);
     cancelDragRaf();
 
     const session = dragSession.current;
@@ -1211,14 +1245,8 @@ export function MrBrownieChat({
   };
 
   const handlePointerCancel = (e: React.PointerEvent<HTMLButtonElement>) => {
-    const el = fabRef.current;
-    if (el?.hasPointerCapture(e.pointerId)) {
-      el.releasePointerCapture(e.pointerId);
-    }
-    cancelDragRaf();
-    dragSession.current = null;
-    pointerMoved.current = false;
-    setDragPx(null);
+    releaseFabPointerCapture(e.pointerId);
+    resetFabDrag();
   };
 
   /* موضع الـ FAB عبر DOM API */
@@ -1275,38 +1303,38 @@ export function MrBrownieChat({
     >
             <div
               className={cn(
-                "cb-mr-brownie-header flex shrink-0 items-center justify-between gap-3",
-                embedded ? "px-4 py-4" : "px-5 py-4",
+                "cb-mr-brownie-header flex shrink-0 items-center justify-between gap-2",
+                embedded ? "px-2.5 py-2" : "px-5 py-3.5",
               )}
             >
-              <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-2.5">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={personaCfg.mascotSrc}
                   alt={personaCfg.displayName}
-                  width={56}
-                  height={56}
+                  width={embedded ? 36 : 52}
+                  height={embedded ? 36 : 52}
                   decoding="async"
                   draggable={false}
                   className={cn(
                     "shrink-0 object-contain object-center transition-opacity duration-300",
-                    embedded ? "h-12 w-12" : "h-14 w-14",
+                    embedded ? "h-9 w-9" : "h-[52px] w-[52px]",
                   )}
                 />
                 <div className="min-w-0">
                   <p
                     id="mr-brownie-title"
                     className={cn(
-                      "cb-mr-brownie-header__title font-semibold",
-                      embedded ? "text-lg" : "text-xl",
+                      "cb-mr-brownie-header__title font-semibold leading-tight",
+                      embedded ? "text-sm" : "text-lg",
                     )}
                   >
                     {personaCfg.displayName}
                   </p>
                   <p
                     className={cn(
-                      "cb-mr-brownie-header__subtitle",
-                      embedded ? "text-xs" : "text-sm",
+                      "cb-mr-brownie-header__subtitle leading-snug",
+                      embedded ? "text-[11px]" : "text-xs",
                     )}
                   >
                     {shopAssistant
@@ -1344,17 +1372,23 @@ export function MrBrownieChat({
                 <button
                   type="button"
                   onClick={() => void clearConversation()}
-                  className="cb-mr-brownie-header__btn rounded-full px-3 py-1.5 text-xs font-semibold"
+                  className={cn(
+                    "cb-mr-brownie-header__btn rounded-full font-semibold",
+                    embedded ? "px-2 py-1 text-[10px]" : "px-2.5 py-1 text-[11px]",
+                  )}
                 >
                   {t("mrBrownieChat.clearConversation")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="cb-mr-brownie-header__btn rounded-full p-2"
+                  className={cn(
+                    "cb-mr-brownie-header__btn rounded-full",
+                    embedded ? "p-1.5" : "p-2",
+                  )}
                   aria-label={embedded ? t("mrBrownieChat.collapseChat") : t("mrBrownieChat.closeChat")}
                 >
-                  <X className="h-5 w-5" />
+                  <X className={embedded ? "h-4 w-4" : "h-5 w-5"} />
                 </button>
               </div>
             </div>
@@ -1362,8 +1396,10 @@ export function MrBrownieChat({
             <div
               ref={scrollRef}
               className={cn(
-                "cb-mr-brownie-messages flex min-h-0 flex-1 flex-col gap-3.5 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4 sm:gap-4 sm:px-5 sm:py-5",
-                embedded && "cb-mr-brownie-messages--embedded",
+                "cb-mr-brownie-messages flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain",
+                embedded
+                  ? "cb-mr-brownie-messages--embedded gap-2.5 px-2.5 py-2.5"
+                  : "gap-3.5 px-4 py-4 sm:gap-4 sm:px-5 sm:py-5",
               )}
             >
               {historyLoading ? (
@@ -1520,25 +1556,48 @@ export function MrBrownieChat({
             <div
               className={cn(
                 "cb-mr-brownie-composer relative z-[2] shrink-0",
-                embedded ? "p-3.5" : "p-4 sm:p-5",
+                embedded ? "p-2.5" : "p-3.5 sm:p-4",
               )}
             >
-              <ChatImagePreviewStrip pending={pendingImages} onChange={setPendingImages} />
-              <div className="flex gap-2">
+              <ChatImagePreviewStrip
+                pending={pendingImages}
+                onChange={setPendingImages}
+                className="mb-1.5"
+              />
+              {composerHint ? (
+                <p className="mb-1.5 text-[11px] font-medium text-amber-800" role="status">
+                  {composerHint}
+                </p>
+              ) : null}
+              <div className="flex gap-1.5">
                 <VoiceInputButton
                   locale={lang}
+                  compact={embedded}
                   disabled={loading || historyLoading}
-                  onTranscript={(text) => setInput((prev) => (prev ? `${prev} ${text}` : text))}
+                  onTranscript={(text) => {
+                    setComposerHint(null);
+                    setInput((prev) => (prev ? `${prev} ${text}` : text));
+                  }}
+                  onError={(message) => setComposerHint(message)}
                   labelStart={t("mrBrownieChat.voice.start")}
                   labelStop={t("mrBrownieChat.voice.stop")}
                   unsupportedLabel={t("mrBrownieChat.voice.unsupported")}
+                  permissionDeniedLabel={t("mrBrownieChat.voice.permissionDenied")}
                 />
                 <ChatImageAttachButton
-                  context="store"
+                  context={
+                    sessionRole === "admin" || sessionRole === "owner" ? "admin" : "store"
+                  }
                   pending={pendingImages}
-                  onChange={setPendingImages}
+                  onChange={(next) => {
+                    setComposerHint(null);
+                    setPendingImages(next);
+                  }}
                   disabled={loading || historyLoading}
-                  className="min-h-[48px] rounded-2xl"
+                  className={cn(
+                    "rounded-xl",
+                    embedded ? "h-9 w-9 min-h-0" : "h-10 w-10 min-h-0",
+                  )}
                 />
                 <textarea
                   value={input}
@@ -1549,10 +1608,15 @@ export function MrBrownieChat({
                       send();
                     }
                   }}
-                  rows={2}
+                  rows={embedded ? 1 : 2}
                   placeholder={t("mrBrownieChat.inputPlaceholder")}
                   disabled={loading || historyLoading}
-                  className="min-h-[48px] flex-1 resize-none rounded-2xl border border-cb-border bg-cb-surface px-3 py-2.5 text-sm text-cb-text-strong shadow-inner outline-none transition-shadow focus:border-cb-border-strong focus:ring-2 focus:ring-cb-focus/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={cn(
+                    "flex-1 resize-none rounded-xl border border-cb-border bg-cb-surface text-cb-text-strong shadow-inner outline-none transition-shadow focus:border-cb-border-strong focus:ring-2 focus:ring-cb-focus/20 disabled:cursor-not-allowed disabled:opacity-60",
+                    embedded
+                      ? "min-h-[36px] px-2.5 py-2 text-[13px]"
+                      : "min-h-[40px] px-3 py-2 text-sm",
+                  )}
                 />
                 <button
                   type="button"
@@ -1571,15 +1635,17 @@ export function MrBrownieChat({
                       readyAttachments(pendingImages).length === 0)
                   }
                   className={cn(
-                    buttonClassName("primary", "shrink-0 self-end px-4 py-3"),
-                    "min-h-[48px] rounded-2xl shadow-[var(--shadow-card)]",
+                    buttonClassName("primary", "shrink-0 self-end"),
+                    embedded
+                      ? "min-h-[36px] rounded-xl px-3 py-2"
+                      : "min-h-[40px] rounded-xl px-3.5 py-2.5 shadow-[var(--shadow-card)]",
                   )}
                   aria-label={loading ? t("mrBrownieChat.stopGenerating") : t("mrBrownieChat.send")}
                 >
                   {loading ? (
-                    <Square className="h-4 w-4 fill-current" />
+                    <Square className="h-3.5 w-3.5 fill-current" />
                   ) : (
-                    <Send className="h-4 w-4" />
+                    <Send className="h-3.5 w-3.5" />
                   )}
                 </button>
               </div>
@@ -1591,56 +1657,66 @@ export function MrBrownieChat({
                   />
                 </div>
               ) : null}
-              <p
+              <button
+                type="button"
+                onClick={() => setSuggestionsOpen((v) => !v)}
                 className={cn(
-                  "mb-2 mt-3 font-medium text-cb-text-muted",
-                  embedded ? "text-xs" : "text-sm",
+                  "mt-2 flex w-full items-center justify-between gap-2 rounded-lg py-1 text-start font-medium text-cb-text-muted transition hover:text-cb-text-strong",
+                  embedded ? "text-[11px]" : "text-xs",
                 )}
+                aria-expanded={suggestionsOpen}
               >
-                {t("mrBrownieChat.quickSuggestions")}
-              </p>
-              <div
-                className={cn(
-                  "flex flex-wrap gap-2.5 overflow-y-auto overscroll-contain",
-                  embedded ? "max-h-[11rem]" : "max-h-[10rem] sm:max-h-[12rem]",
-                )}
-              >
-                {chipSuggestions.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    disabled={loading || historyLoading || giftGuideLoading}
-                    onClick={() => {
-                      trackMrBrownieFunnel("chip_click", {
-                        pathname,
-                        chip: s.slice(0, 80),
-                      });
-                      if (isGiftGuideChip(s, t("mrBrownieChat.suggestions.shop0"))) {
-                        trackMrBrownieFunnel("gift_guide_start", { pathname });
-                        setGiftGuideOpen(true);
-                        return;
-                      }
-                      void submitMessage(s);
-                    }}
-                    className={cn(
-                      "cb-mr-brownie-chip rounded-full border text-left font-medium leading-snug",
-                      "cb-mr-brownie-chip--brownie",
-                      embedded
-                        ? "px-3.5 py-2 text-[13px]"
-                        : "px-4 py-2 text-sm",
-                      "transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-sm",
-                      "disabled:pointer-events-none disabled:opacity-50",
-                    )}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2 text-xs text-cb-text-muted">
-                {t("mrBrownieChat.footerPowered", {
-                  role: assistantSubtitle(sessionRole, Boolean(isSignedIn), t),
-                })}
-              </p>
+                <span>{t("mrBrownieChat.quickSuggestions")}</span>
+                <span className="text-[10px] opacity-70" aria-hidden>
+                  {suggestionsOpen ? "−" : "+"}
+                </span>
+              </button>
+              {suggestionsOpen ? (
+                <div
+                  className={cn(
+                    "flex flex-wrap gap-1.5 overflow-y-auto overscroll-contain",
+                    embedded ? "max-h-[5.5rem]" : "max-h-[7rem] sm:max-h-[8rem]",
+                  )}
+                >
+                  {chipSuggestions.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      disabled={loading || historyLoading || giftGuideLoading}
+                      onClick={() => {
+                        trackMrBrownieFunnel("chip_click", {
+                          pathname,
+                          chip: s.slice(0, 80),
+                        });
+                        if (isGiftGuideChip(s, t("mrBrownieChat.suggestions.shop0"))) {
+                          trackMrBrownieFunnel("gift_guide_start", { pathname });
+                          setGiftGuideOpen(true);
+                          return;
+                        }
+                        void submitMessage(s);
+                      }}
+                      className={cn(
+                        "cb-mr-brownie-chip rounded-full border text-left font-medium leading-snug",
+                        "cb-mr-brownie-chip--brownie",
+                        embedded
+                          ? "px-2.5 py-1 text-[11px]"
+                          : "px-3 py-1.5 text-xs",
+                        "transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-sm",
+                        "disabled:pointer-events-none disabled:opacity-50",
+                      )}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {!embedded ? (
+                <p className="mt-1.5 text-[10px] text-cb-text-muted">
+                  {t("mrBrownieChat.footerPowered", {
+                    role: assistantSubtitle(sessionRole, Boolean(isSignedIn), t),
+                  })}
+                </p>
+              ) : null}
             </div>
             ) : (
               <div
@@ -1741,7 +1817,7 @@ export function MrBrownieChat({
           "touch-none active:cursor-grabbing",
           dragPx && "!transition-none scale-[1.06] ring-2 ring-cb-focus/50 ring-offset-0",
           idleFab && !reduceMotion && "motion-safe:transform-gpu",
-          open && "pointer-events-none opacity-0",
+          open && "pointer-events-none invisible opacity-0",
         )}
         aria-label="Mr. Brownie — اضغط للدردشة أو اسحب للتحريك على الشاشة"
       >

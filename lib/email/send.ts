@@ -74,7 +74,6 @@ async function dispatch(opts: {
 export async function sendWelcomeEmail(opts: {
   to: string;
   name?: string;
-  credentials?: { username: string; password: string };
   lang?: "en" | "ar";
 }) {
   const firstName = opts.name?.split(/\s+/)[0] ?? "there";
@@ -88,21 +87,7 @@ export async function sendWelcomeEmail(opts: {
   );
   if (!rendered) throw new Error("Template 'welcome' missing from registry");
 
-  let html = rendered.html;
-  if (opts.credentials) {
-    const credsBlock = `<div style="margin:18px 0;padding:16px;background:#FFF8F0;border-radius:12px;border:1px solid #E8B896">
-  <p style="margin:0 0 8px;font-weight:600;color:#B25336">Your login details</p>
-  <p style="margin:0 0 4px;font-size:14px"><strong>Username:</strong> ${escape(opts.credentials.username)}</p>
-  <p style="margin:0 0 8px;font-size:14px"><strong>Temporary password:</strong> ${escape(opts.credentials.password)}</p>
-  <p style="margin:0;font-size:12px;color:#6b4a3a">You can sign in with email + this password, or continue with Google/social. Please change your password after signing in.</p>
-  <p style="margin:10px 0 0;font-size:12px;color:#6b4a3a" dir="rtl">بيانات الدخول: اسم المستخدم وكلمة المرور أعلاه — يُفضّل تغيير كلمة المرور بعد أول تسجيل دخول.</p>
-</div>`;
-    html = html.replace(
-      /<div class="info-box">/,
-      `${credsBlock}<div class="info-box">`,
-    );
-  }
-  return dispatch({ to: opts.to, subject: rendered.subject, html });
+  return dispatch({ to: opts.to, subject: rendered.subject, html: rendered.html });
 }
 
 export async function sendContactNotification(opts: {

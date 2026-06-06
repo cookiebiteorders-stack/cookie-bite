@@ -1,7 +1,6 @@
-import Image from "next/image";
-import { HERO_FALLBACK_IMAGE, HERO_VIDEO_SRC } from "@/lib/site-media";
+import { HERO_FALLBACK_IMAGE, HERO_LCP_SOURCES, HERO_VIDEO_SRC } from "@/lib/site-media";
 
-/** خلفية الهيرو — Server Component لتحسين LCP (تُرسَل في HTML بدون انتظار JS). */
+/** خلفية الهيرو — Server Component؛ ملفات ثابتة مضغوطة مسبقاً (أسرع LCP من `/_next/image`). */
 export function HeroLcpBackground() {
   return (
     <div
@@ -20,16 +19,20 @@ export function HeroLcpBackground() {
           src={HERO_VIDEO_SRC}
         />
       ) : (
-        <Image
-          src={HERO_FALLBACK_IMAGE}
-          alt=""
-          fill
-          priority
-          fetchPriority="high"
-          sizes="(max-width: 640px) 100vw, (max-width: 1200px) 100vw, 1920px"
-          quality={62}
-          className="object-cover"
-        />
+        <picture>
+          <source
+            media="(max-width: 640px)"
+            srcSet={HERO_LCP_SOURCES.mobile}
+            type="image/webp"
+          />
+          <img
+            src={HERO_LCP_SOURCES.desktop}
+            alt=""
+            fetchPriority="high"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </picture>
       )}
       <div className="pointer-events-none absolute inset-0 cb-pl-hero-overlay lg:hidden" />
       <div className="pointer-events-none absolute inset-0 cb-pl-hero-overlay hidden lg:block" />

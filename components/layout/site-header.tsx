@@ -156,7 +156,7 @@ export function SiteHeader() {
     <>
       <header
         className={cn(
-          "cb-pl-navbar fixed start-0 end-0 top-0 z-50 w-full border-b transition-[border-color,background-color,box-shadow,backdrop-filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "cb-pl-navbar fixed start-0 end-0 top-0 z-[100] w-full border-b transition-[border-color,background-color,box-shadow,backdrop-filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
           scrolled ? "is-scrolled" : "",
           scrolled
             ? "border-[color:var(--color-border-soft)] bg-white shadow-[var(--shadow-pl-nav)] backdrop-blur-xl"
@@ -305,10 +305,10 @@ export function SiteHeader() {
             aria-modal="true"
             aria-label={admin ? `${t("nav.menu")} — ${consoleLabel} · ${storeLabel}` : t("nav.siteNavigation")}
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            animate={{ opacity: 1, pointerEvents: "auto" }}
+            exit={{ opacity: 0, pointerEvents: "none" }}
             transition={{ duration: duration.short, ease: easeSoft }}
-            className="fixed inset-0 z-[60] lg:hidden"
+            className="fixed inset-0 z-[110] lg:hidden"
           >
             <button
               type="button"

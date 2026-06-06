@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { clerkClient } from "@clerk/nextjs/server";
+import { stripOAuthTempPassword } from "@/lib/auth/strip-oauth-password";
 
 function slugUsernameSegment(raw: string): string {
   const t = raw
@@ -37,30 +38,15 @@ function suggestUsernameBase(opts: {
   return base.slice(0, 28);
 }
 
-function generateTempPassword(): string {
-  const alpha = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz";
-  const num = "23456789";
-  const sym = "@#$%";
-  const buf = randomBytes(24);
-  let out = "";
-  for (let i = 0; i < 14; i++) {
-    const pool = i % 5 === 0 ? sym : i % 2 === 0 ? alpha : num + alpha;
-    out += pool[buf[i] % pool.length];
-  }
-  return `${out}Aa1`;
-}
-
 export type ProvisionResult = {
   username: string | null;
-  passwordForEmail: string | null;
 };
 
 /**
  * يضبط اسم مستخدم فريداً من البريد/الاسم إن وُجد فراغ.
- * لمسجلي OAuth فقط (بدون كلمة مرور في Clerk): يضيف كلمة مرور مؤقتة قوية
- * لتمكين تسجيل الدخول بالبريد + كلمة المرور أيضاً.
+ * مسجّلو OAuth (Google وغيرها) يبقون بدون كلمة مرور — الدخول عبر نفس مزوّد الحساب فقط.
  */
-export async function provisionClerkUsernameAndPassword(
+export async function provisionClerkUsername(
   userId: string,
 ): Promise<ProvisionResult> {
   const client = await clerkClient();
@@ -69,10 +55,6 @@ export async function provisionClerkUsernameAndPassword(
   const email = user.primaryEmailAddress?.emailAddress ?? null;
   const firstName = user.firstName ?? null;
   const lastName = user.lastName ?? null;
-
-  const passwordEnabled = user.passwordEnabled;
-  const externalCount = user.externalAccounts?.length ?? 0;
-  const oauthOnly = externalCount > 0 && !passwordEnabled;
 
   let username = user.username ?? null;
 
@@ -98,17 +80,14 @@ export async function provisionClerkUsernameAndPassword(
     }
   }
 
-  let passwordForEmail: string | null = null;
-
-  if (oauthOnly && email) {
-    const temp = generateTempPassword();
-    try {
-      await client.users.updateUser(userId, { password: temp });
-      passwordForEmail = temp;
-    } catch (err) {
-      console.error("provisionClerk: failed to set OAuth user password", err);
-    }
+  try {
+    await stripOAuthTempPassword(userId);
+  } catch (err) {
+    console.warn("provisionClerk: strip OAuth temp password failed", err);
   }
 
-  return { username, passwordForEmail };
+  return { username };
 }
+
+/** @deprecated استخدم provisionClerkUsername */
+export const provisionClerkUsernameAndPassword = provisionClerkUsername;

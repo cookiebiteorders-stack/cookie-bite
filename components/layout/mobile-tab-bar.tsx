@@ -11,7 +11,6 @@ import {
   ShoppingBag,
   User,
 } from "lucide-react";
-import { motion } from "motion/react";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 
@@ -99,13 +98,9 @@ export function MobileTabBar() {
                 aria-current={active ? "page" : undefined}
                 data-active={active ? "true" : undefined}
               >
-                <motion.span
-                  className="mobile-tab-bar__fab"
-                  whileTap={{ scale: 0.88 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                >
+                <span className="mobile-tab-bar__fab mobile-tab-bar__tap">
                   <Icon className="mobile-tab-bar__fab-icon" aria-hidden />
-                </motion.span>
+                </span>
                 <span
                   className={cn(
                     "mobile-tab-bar__label mobile-tab-bar__label--fab",
@@ -127,11 +122,11 @@ export function MobileTabBar() {
               aria-current={active ? "page" : undefined}
               data-active={active ? "true" : undefined}
             >
-              <motion.span
-                className="mobile-tab-bar__icon-wrap"
-                whileTap={{ scale: 0.88 }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                style={active ? { transform: "scale(1.08)" } : undefined}
+              <span
+                className={cn(
+                  "mobile-tab-bar__icon-wrap mobile-tab-bar__tap",
+                  active && "mobile-tab-bar__icon-wrap--active",
+                )}
               >
                 <Icon
                   className={cn(
@@ -141,7 +136,7 @@ export function MobileTabBar() {
                   fill={active ? "currentColor" : "none"}
                   aria-hidden
                 />
-              </motion.span>
+              </span>
               <span
                 className={cn(
                   "mobile-tab-bar__label",

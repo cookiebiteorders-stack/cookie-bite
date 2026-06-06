@@ -1,7 +1,6 @@
 /* Clerk UserProfile — تخطيط يعتمد على عرض الحاوية وليس الشاشة (انظر clerk#4920) */
 
 .cb-clerk-profile {
-  direction: ltr;
   width: 100%;
   min-width: 0;
   container-type: inline-size;
@@ -118,4 +117,12 @@
 .cb-clerk-profile .cl-navbarButton[data-localization-key="userProfile.navbar.apiKeys"],
 .cb-clerk-profile .cl-navbarButton:has([data-localization-key="userProfile.navbar.apiKeys"]) {
   display: none;
+}
+
+.cb-clerk-profile input[type="password"],
+.cb-clerk-profile .cl-formFieldInput[type="password"] {
+  direction: auto;
+  unicode-bidi: plaintext;
+  text-align: start;
+  font-variant-ligatures: none;
 }

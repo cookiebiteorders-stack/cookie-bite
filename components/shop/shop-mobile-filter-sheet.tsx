@@ -31,8 +31,8 @@ export function ShopMobileFilterSheet({
           key="shop-filter-sheet"
           className="fixed inset-0 z-50 lg:hidden"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          animate={{ opacity: 1, pointerEvents: "auto" }}
+          exit={{ opacity: 0, pointerEvents: "none" }}
           transition={{ duration: 0.2, ease: easeSoft }}
         >
           <button

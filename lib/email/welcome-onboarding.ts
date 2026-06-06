@@ -7,7 +7,6 @@ export type WelcomeEmailSendOpts = {
   userId: string;
   to: string;
   name?: string;
-  credentials?: { username: string; password: string };
   /** Skip age window — use for brand-new rows (webhook / first account upsert). */
   force?: boolean;
   createdAt?: string;
