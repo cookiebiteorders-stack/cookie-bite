@@ -59,6 +59,25 @@ export async function fetchMrBrownieConversations(params: {
   };
 }
 
+export async function deleteMrBrownieConversation(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = tryCreateSupabaseAdminClient();
+  if (!supabase) return { success: false, error: "no_client" };
+
+  const { error } = await supabase
+    .from("mr_brownie_turn_logs")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("[admin/conversations] delete error", error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
 export function conversationsToCsv(rows: MrBrownieConversationRow[]): string {
   const header =
     "created_at,intent,persona,sentiment,confidence,quality,user_message,assistant_message,pathname,locale,clerk_user_id";
