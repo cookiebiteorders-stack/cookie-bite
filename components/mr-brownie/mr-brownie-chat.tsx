@@ -874,11 +874,15 @@ export function MrBrownieChat({
     if (embedded || !open) return;
 
     const closeIfOutside = (e: PointerEvent) => {
-      if (Date.now() - openedAtRef.current < 350) return;
+      if (Date.now() - openedAtRef.current < 500) return;
       const panel = panelRef.current;
+      const fab = fabRef.current;
       if (!panel) return;
       const t = e.target;
-      if (t instanceof Node && panel.contains(t)) return;
+      if (t instanceof Node) {
+        if (panel.contains(t)) return;
+        if (fab?.contains(t)) return;
+      }
       openRef.current = false;
       setOpen(false);
     };
@@ -1223,7 +1227,7 @@ export function MrBrownieChat({
     const el = fabRef.current;
     if (!el) return;
     el.style.setProperty("position", "fixed");
-    el.style.setProperty("z-index", "38");
+    el.style.setProperty("z-index", "101");
     el.style.setProperty("touch-action", "none");
     const pos = dragPx ?? roamPx;
     if (pos) {
