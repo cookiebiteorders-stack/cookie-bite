@@ -39,8 +39,10 @@ export function CarouselProductCard({ product, className }: Props) {
           src={product.image}
           alt={product.name}
           fill
+          loading="lazy"
+          decoding="async"
           className="object-cover transition-transform duration-200 hover:scale-[1.02]"
-          sizes="(max-width:1024px) 100vw, 25vw"
+          sizes="(max-width:1024px) 50vw, 25vw"
         />
       </Link>
       <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-center">

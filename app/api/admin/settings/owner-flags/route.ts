@@ -2,13 +2,12 @@ import { NextResponse } from "next/server";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { requireOwnerAccess } from "@/lib/admin/require-admin";
 import {
-  getOwnerFlags,
   OWNER_FLAG_KEYS,
   OWNER_FLAG_LABELS,
   parseOwnerFlagsPatch,
-  updateOwnerFlags,
   type OwnerFlags,
 } from "@/lib/store/owner-flags";
+import { getOwnerFlags, updateOwnerFlags } from "@/lib/store/owner-flags-server";
 
 export async function GET() {
   const actor = await requireOwnerAccess("settings");

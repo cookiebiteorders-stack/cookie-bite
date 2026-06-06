@@ -1,14 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { MobileFooter } from "@/components/layout/mobile-footer";
-import { MobileHeader } from "@/components/layout/mobile-header";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
+import { ResponsiveStorefrontHeader } from "@/components/layout/responsive-storefront-header";
+import { StorefrontMotionShell } from "@/components/layout/storefront-motion-shell";
 import { CartProvider } from "@/components/providers/cart-provider";
 import { StaffAdminNavProvider } from "@/components/providers/staff-admin-nav-provider";
 import { cn } from "@/lib/utils";
-import { LayoutGroup } from "motion/react";
 import { StorefrontRuntimeEffects } from "@/components/layout/storefront-runtime-effects";
 
 const AnnouncementBar = dynamic(
@@ -31,14 +28,19 @@ const MrBrownieHost = dynamic(
   { ssr: false, loading: () => null },
 );
 
-const PageTransition = dynamic(
-  () => import("@/components/motion/page-transition").then((m) => m.PageTransition),
+const SiteFooter = dynamic(
+  () => import("@/components/layout/site-footer").then((m) => m.SiteFooter),
+  { ssr: true },
+);
+
+const MobileFooter = dynamic(
+  () => import("@/components/layout/mobile-footer").then((m) => m.MobileFooter),
   { ssr: true },
 );
 
 const MobileTabBar = dynamic(
   () => import("@/components/layout/mobile-tab-bar").then((m) => m.MobileTabBar),
-  { ssr: true },
+  { ssr: false, loading: () => null },
 );
 
 const AddToHomeScreenPrompt = dynamic(
@@ -73,16 +75,10 @@ export function PageShell({
         </a>
         <AnnouncementBar />
 
-        <div className="desktop-header">
-          <SiteHeader />
-        </div>
-        <div className="hidden h-16 lg:block" aria-hidden />
-        <MobileHeader />
+        <ResponsiveStorefrontHeader />
 
         <main id="main-content" className="relative flex-1">
-          <LayoutGroup id="storefront-shared">
-            <PageTransition>{children}</PageTransition>
-          </LayoutGroup>
+          <StorefrontMotionShell>{children}</StorefrontMotionShell>
         </main>
 
         <div className="desktop-footer">

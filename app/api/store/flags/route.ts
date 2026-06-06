@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getPublicStoreFlags } from "@/lib/store/owner-flags";
+import { getPublicStoreFlags } from "@/lib/store/owner-flags-server";
 
 export const revalidate = 30;
 

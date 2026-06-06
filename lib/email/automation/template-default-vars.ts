@@ -19,6 +19,9 @@ export const PERSONAL_OR_CONTEXT_VARS = new Set([
   "order_url",
   "tracking_url",
   "reset_link",
+  "email_address",
+  "action_date",
+  "action_reason",
 ]);
 
 export function getTemplateDefaultVars(

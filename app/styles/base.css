@@ -337,12 +337,13 @@ table[data-cb-zebra="true"] tbody tr:hover {
     );
 }
 
-@media (max-width: 639px) {
-  .cb-ambient-orbs {
-    opacity: 0.38;
+@media (max-width: 767px) {
+  body {
+    transition: none;
   }
-  .dark .cb-ambient-orbs {
-    opacity: 0.28;
+
+  .cb-ambient-orbs {
+    display: none;
   }
 }
 

@@ -7,7 +7,7 @@ import {
   writeFailedEmail,
 } from "@/lib/email/automation/db";
 import { processEmailQueueRow } from "@/lib/email/automation/process-job";
-import { isSmartRetriesEnabled } from "@/lib/store/owner-flags";
+import { isSmartRetriesEnabled } from "@/lib/store/owner-flags-server";
 import {
   isEmailDbQueueEnabled,
   isEmailQueueEnabled,

@@ -6,6 +6,7 @@ import {
   type HTMLMotionProps,
   type Variants,
 } from "motion/react";
+import { useAdaptiveMotion } from "@/lib/motion/hooks";
 import { cn } from "@/lib/utils";
 import { duration, easeOutExpo, easeSoft, spring } from "@/lib/motion/presets";
 
@@ -61,10 +62,11 @@ export function ViewReveal({
   ...rest
 }: Props) {
   const reduce = useReducedMotion();
+  const { lowPower, prefersReduced } = useAdaptiveMotion();
   const v = variantMap[variant];
   const stagger = staggerIndex * 0.07;
 
-  if (reduce) {
+  if (reduce || lowPower || prefersReduced) {
     return <div className={className}>{children}</div>;
   }
 

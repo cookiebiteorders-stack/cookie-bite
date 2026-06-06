@@ -1,22 +1,30 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
 import type { Product } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import {
-  ProductAddonPicker,
-  useAddonSelectionState,
-} from "@/components/product/product-addon-picker";
+import { useAddonSelectionState } from "@/components/product/product-addon-picker";
+
+const ProductAddonPicker = dynamic(
+  () =>
+    import("@/components/product/product-addon-picker").then((m) => m.ProductAddonPicker),
+  { ssr: false, loading: () => null },
+);
 import { ProductPriceDisplay } from "@/components/product/product-price-display";
 import { ProductSharedImage } from "@/components/product/product-shared-image";
 import { useLanguage } from "@/components/providers/language-provider";
 import { ProductCartActions } from "@/components/product/product-cart-actions";
-import { ProductQuickViewModal } from "@/components/shop/product-quick-view-modal";
+
+const ProductQuickViewModal = dynamic(
+  () =>
+    import("@/components/shop/product-quick-view-modal").then((m) => m.ProductQuickViewModal),
+  { ssr: false },
+);
 import { PRODUCT_PLACEHOLDER_IMAGE } from "@/lib/products/media";
 import { isProductOutOfStock } from "@/lib/products/stock";
 
@@ -27,6 +35,8 @@ type Props = {
   /** يُدار من صفحة المتجر لتفادي طلبات متكررة */
   wishlisted?: boolean;
   onWishlistToggled?: (productUuid: string, nowSaved: boolean) => void;
+  /** شبكة المتجر: بدون shared layout (أخف) */
+  sharedLayout?: boolean;
 };
 
 const badgeKey: Record<string, string> = {
@@ -42,10 +52,10 @@ export function ProductCard({
   className,
   wishlisted = false,
   onWishlistToggled,
+  sharedLayout = false,
 }: Props) {
   const { t } = useLanguage();
   const router = useRouter();
-  const { isSignedIn } = useAuth();
   const [busy, setBusy] = useState(false);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
   const [uncontrolledSaved, setUncontrolledSaved] = useState(false);
@@ -68,20 +78,19 @@ export function ProductCard({
     e.preventDefault();
     e.stopPropagation();
     if (!uuid || busy) return;
-    if (!isSignedIn) {
-      router.push(
-        `/sign-in?redirect_url=${encodeURIComponent(
-          typeof window !== "undefined"
-            ? `${window.location.pathname}${window.location.search}`
-            : "/shop",
-        )}`,
-      );
-      return;
-    }
     setBusy(true);
+    const redirectUrl = encodeURIComponent(
+      typeof window !== "undefined"
+        ? `${window.location.pathname}${window.location.search}`
+        : "/shop",
+    );
     try {
       if (saved) {
         const res = await fetch(`/api/wishlist/${uuid}`, { method: "DELETE" });
+        if (res.status === 401) {
+          router.push(`/sign-in?redirect_url=${redirectUrl}`);
+          return;
+        }
         if (res.ok) {
           if (controlled) onWishlistToggled!(uuid, false);
           else setUncontrolledSaved(false);
@@ -92,6 +101,10 @@ export function ProductCard({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ product_id: uuid }),
         });
+        if (res.status === 401) {
+          router.push(`/sign-in?redirect_url=${redirectUrl}`);
+          return;
+        }
         if (res.ok) {
           if (controlled) onWishlistToggled!(uuid, true);
           else setUncontrolledSaved(true);
@@ -120,7 +133,8 @@ export function ProductCard({
             productId={product.id}
             src={product.image}
             alt={product.name}
-            sizes="(max-width:768px) 100vw, 25vw"
+            sizes="(max-width:768px) 50vw, 25vw"
+            sharedLayout={sharedLayout}
             imgClassName={cn(
               "transition-all duration-300 group-hover:scale-[1.01]",
               hoverImage && "group-hover:opacity-0",

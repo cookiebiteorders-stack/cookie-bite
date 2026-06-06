@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { ShopLoadingFallback } from "@/components/i18n/suspense-loading";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
-import { ShopClient } from "@/components/shop/shop-client";
+
+const ShopClient = dynamic(
+  () => import("@/components/shop/shop-client").then((m) => ({ default: m.ShopClient })),
+  { loading: () => <ShopLoadingFallback /> },
+);
 import { getShopPageFaq } from "@/lib/content/shop-seo";
 import { translations } from "@/lib/i18n/translations";
 import {
@@ -49,9 +53,7 @@ export default async function ShopPage() {
     <>
       <JsonLdScript id="shop-breadcrumb-jsonld" json={breadcrumbJsonLd} />
       <JsonLdScript id="shop-faq-jsonld" json={faqJsonLd} />
-      <Suspense fallback={<ShopLoadingFallback />}>
-        <ShopClient initialTrending={trending} initialCatalog={initialCatalog} />
-      </Suspense>
+      <ShopClient initialTrending={trending} initialCatalog={initialCatalog} />
     </>
   );
 }

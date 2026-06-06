@@ -12,6 +12,8 @@ type Props = {
   alt: string;
   sizes: string;
   priority?: boolean;
+  /** false على شبكات المتجر — يتجنّب motion لكل بطاقة */
+  sharedLayout?: boolean;
   className?: string;
   imgClassName?: string;
 };
@@ -23,10 +25,12 @@ export function ProductSharedImage({
   alt,
   sizes,
   priority,
+  sharedLayout = true,
   className,
   imgClassName,
 }: Props) {
-  const layoutId = useSharedLayoutId(`product-photo-${productId}`);
+  const layoutIdRaw = useSharedLayoutId(`product-photo-${productId}`);
+  const layoutId = sharedLayout ? layoutIdRaw : null;
   const inner = (
     <Image
       src={src}
@@ -35,6 +39,7 @@ export function ProductSharedImage({
       sizes={sizes}
       priority={priority}
       fetchPriority={priority ? "high" : undefined}
+      loading={priority ? undefined : "lazy"}
       decoding="async"
       className={cn("object-cover", imgClassName)}
     />

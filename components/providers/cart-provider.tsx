@@ -22,7 +22,13 @@ import {
 import { persistGiftBoxState } from "@/lib/gift-box-builder/state";
 import { builderStateFromSnapshot, type GiftBoxOrderSnapshot } from "@/lib/gift-box/order-snapshot";
 
-import { AbandonedCartTracker } from "@/components/cart/abandoned-cart-tracker";
+import dynamic from "next/dynamic";
+
+const AbandonedCartTracker = dynamic(
+  () =>
+    import("@/components/cart/abandoned-cart-tracker").then((m) => m.AbandonedCartTracker),
+  { ssr: false },
+);
 import type { AppliedPromo } from "@/components/checkout/promo-code-field";
 
 const STORAGE_KEY = "cb-cart-v1";
@@ -161,6 +167,7 @@ function loadPromo(): AppliedPromo | null {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
+  const [trackAbandon, setTrackAbandon] = useState(false);
   const [promo, setPromo] = useState<AppliedPromo | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
@@ -187,6 +194,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    const enable = () => setTrackAbandon(true);
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(enable, { timeout: 12_000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = window.setTimeout(enable, 5000);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -377,7 +394,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CartContext.Provider value={value}>
-      <AbandonedCartTracker />
+      {trackAbandon ? <AbandonedCartTracker /> : null}
       {children}
     </CartContext.Provider>
   );

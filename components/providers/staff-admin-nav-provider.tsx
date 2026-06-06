@@ -40,27 +40,41 @@ export function StaffAdminNavProvider({ children }: { children: ReactNode }) {
     const ac = new AbortController();
     queueMicrotask(() => setReady(false));
 
-    fetch("/api/account/admin-nav", { signal: ac.signal })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("admin-nav"))))
-      .then((data: { items?: AdminNavMenuItem[] }) => {
-        const next = Array.isArray(data.items) ? data.items : [];
-        const safe = next.filter(
-          (x): x is AdminNavMenuItem =>
-            Boolean(x) &&
-            typeof x.href === "string" &&
-            typeof (x as AdminNavMenuItem).module === "string" &&
-            typeof (x as AdminNavMenuItem).navKey === "string",
-        );
-        setItems(safe);
-      })
-      .catch(() => {
-        if (!ac.signal.aborted) setItems([]);
-      })
-      .finally(() => {
-        if (!ac.signal.aborted) setReady(true);
-      });
+    const loadNav = () => {
+      fetch("/api/account/admin-nav", { signal: ac.signal })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error("admin-nav"))))
+        .then((data: { items?: AdminNavMenuItem[] }) => {
+          const next = Array.isArray(data.items) ? data.items : [];
+          const safe = next.filter(
+            (x): x is AdminNavMenuItem =>
+              Boolean(x) &&
+              typeof x.href === "string" &&
+              typeof (x as AdminNavMenuItem).module === "string" &&
+              typeof (x as AdminNavMenuItem).navKey === "string",
+          );
+          setItems(safe);
+        })
+        .catch(() => {
+          if (!ac.signal.aborted) setItems([]);
+        })
+        .finally(() => {
+          if (!ac.signal.aborted) setReady(true);
+        });
+    };
 
-    return () => ac.abort();
+    if (typeof window.requestIdleCallback === "function") {
+      const idleId = window.requestIdleCallback(loadNav, { timeout: 6000 });
+      return () => {
+        ac.abort();
+        window.cancelIdleCallback(idleId);
+      };
+    }
+
+    const timer = window.setTimeout(loadNav, 1200);
+    return () => {
+      ac.abort();
+      window.clearTimeout(timer);
+    };
   }, [isLoaded, userId]);
 
   const value = useMemo(() => ({ items, ready }), [items, ready]);

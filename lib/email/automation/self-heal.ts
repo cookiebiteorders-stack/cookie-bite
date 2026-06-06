@@ -8,7 +8,7 @@ import { switchActiveProvider } from "@/lib/email/automation/db";
 import type { EmailProviderId } from "@/lib/email/automation/types";
 
 export async function requeueFailedEmails(max = 25): Promise<number> {
-  const { isSmartRetriesEnabled } = await import("@/lib/store/owner-flags");
+  const { isSmartRetriesEnabled } = await import("@/lib/store/owner-flags-server");
   if (!(await isSmartRetriesEnabled())) return 0;
 
   const supabase = createSupabaseAdminClient();

@@ -29,7 +29,9 @@ export function PageTransition({ children }: Props) {
     if (pathname.startsWith("/checkout") || pathname.startsWith("/cart")) return;
     const el = shellRef.current;
     if (!el) return;
-    void new LokiTransform({ particleCount: 72 }).playRouteArrival(el);
+    const particles = lowPower ? 0 : 40;
+    if (particles <= 0) return;
+    void new LokiTransform({ particleCount: particles }).playRouteArrival(el);
   }, [pathname, prefersReducedMotion, lowPower]);
 
   return (

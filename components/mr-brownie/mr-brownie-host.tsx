@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const MrBrownieChat = dynamic(
@@ -46,10 +46,21 @@ export function MrBrownieHost() {
   const pathname = usePathname();
   const [activated, setActivated] = useState(false);
   const [initialOpen, setInitialOpen] = useState(false);
+  const [fabReady, setFabReady] = useState(false);
 
   const hide = HIDE_FLOATING_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
+
+  useEffect(() => {
+    const enable = () => setFabReady(true);
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(enable, { timeout: 12_000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = window.setTimeout(enable, 5000);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const handleLaunch = useCallback(() => {
     setInitialOpen(true);
@@ -60,7 +71,7 @@ export function MrBrownieHost() {
 
   return (
     <>
-      {!activated && <LaunchFab onClick={handleLaunch} />}
+      {!activated && fabReady ? <LaunchFab onClick={handleLaunch} /> : null}
       {activated && (
         <MrBrownieChat initialOpen={initialOpen} />
       )}

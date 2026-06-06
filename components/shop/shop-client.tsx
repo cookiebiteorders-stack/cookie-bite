@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
@@ -22,12 +23,24 @@ import {
   type ShopApiProduct,
 } from "@/lib/storefront/shop-catalog-client";
 import { ShopFilterChips, type ShopFilterChip } from "@/components/shop/shop-filter-chips";
-import { ShopFilterQuiz, ShopFilterQuizTrigger } from "@/components/shop/shop-filter-quiz";
-import {
-  ShopMobileFilterBar,
-  ShopMobileFilterSheet,
-} from "@/components/shop/shop-mobile-filter-sheet";
-import { ShareWishlistButton } from "@/components/wishlist/share-wishlist-button";
+import { ShopFilterQuizTrigger } from "@/components/shop/shop-filter-quiz";
+import { ShopMobileFilterBar } from "@/components/shop/shop-mobile-filter-sheet";
+
+const ShopFilterQuiz = dynamic(
+  () => import("@/components/shop/shop-filter-quiz").then((m) => m.ShopFilterQuiz),
+  { ssr: false },
+);
+
+const ShopMobileFilterSheet = dynamic(
+  () =>
+    import("@/components/shop/shop-mobile-filter-sheet").then((m) => m.ShopMobileFilterSheet),
+  { ssr: false },
+);
+
+const ShareWishlistButton = dynamic(
+  () => import("@/components/wishlist/share-wishlist-button").then((m) => m.ShareWishlistButton),
+  { ssr: false, loading: () => null },
+);
 import { trackGa4Event } from "@/lib/analytics/ga4";
 import { sortByBestMatch } from "@/lib/storefront/best-match-sort";
 import { getRecentlyViewed } from "@/lib/storefront/recently-viewed";

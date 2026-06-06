@@ -26,8 +26,8 @@ export function HeroLcpBackground() {
           fill
           priority
           fetchPriority="high"
-          sizes="100vw"
-          quality={72}
+          sizes="(max-width: 640px) 100vw, (max-width: 1200px) 100vw, 1920px"
+          quality={62}
           className="object-cover"
         />
       )}

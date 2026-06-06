@@ -1,9 +1,12 @@
 import { applyVars, renderShell } from "../shell";
+import { pickArEmail } from "./bodies-ar";
 import type { TemplateBuilder } from "../types";
+
+type EmailVars = Record<string, string | number | undefined | null>;
 
 function buildEmail(
   body: string,
-  vars: Record<string, string | number | undefined | null>,
+  vars: EmailVars,
   opts: { title: string; preheader?: string; lang?: "en" | "ar" },
 ): string {
   return renderShell(applyVars(body, vars), {
@@ -12,6 +15,22 @@ function buildEmail(
     variant: "email",
     lang: opts.lang,
   });
+}
+
+function resolveCopy(
+  key: string,
+  lang: "en" | "ar" | undefined,
+  en: { body: string; subject: string; preheader: string; title: string },
+  merged: EmailVars,
+) {
+  const ar = lang === "ar" ? pickArEmail(key) : undefined;
+  if (!ar) return en;
+  return {
+    body: ar.body,
+    subject: ar.subject(merged),
+    preheader: ar.preheader(merged),
+    title: ar.title,
+  };
 }
 
 /* ─────────────────────────── Password reset ─────────────────────────── */
@@ -231,9 +250,151 @@ export const securityAlertTemplate: TemplateBuilder = {
   },
 };
 
+/* ─────────────────────────── Account deleted ─────────────────────────── */
+
+const ACCOUNT_DELETED_BODY = `
+<div class="email-wrapper">
+  <div class="email-header"><div class="logo">YOUR STORE</div></div>
+  <div class="email-body">
+    <span class="tag warning">Account update</span>
+    <h1>Your account has been removed.</h1>
+    <p class="greeting">Hi {{first_name}},</p>
+    <p>We're writing to confirm that the Cookie Bite account linked to <strong>{{email_address}}</strong> was permanently removed on <strong>{{action_date}}</strong>.</p>
+    <div class="info-box"><p>Your order history and saved preferences are no longer available in our system. You may create a new account anytime using the same email address.</p></div>
+    <p style="font-size:13px;color:#9C8B7A;">If you didn't request this or believe it was a mistake, please <a href="{{contact_url}}">contact our team</a> — we're happy to help.</p>
+    <div style="text-align:center;margin:22px 0;"><a class="cta-btn" href="{{shop_url}}">Visit Cookie Bite</a></div>
+    <hr class="divider">
+    <p style="font-size:13px;color:#9C8B7A;">Questions? Visit our <a href="{{help_url}}">Help Center</a> or reply to this email.</p>
+  </div>
+  <div class="email-footer"><p>© 2026 [Your Store] · Hand-baked in {{company_address}}<br><a href="{{help_url}}">Help</a> · <a href="{{privacy_url}}">Privacy</a></p></div>
+</div>
+`;
+
+export const accountDeletedTemplate: TemplateBuilder = {
+  meta: {
+    key: "account-deleted",
+    name: "Account Deleted",
+    description: "Sent when an admin removes a customer account (without blocking the email).",
+    category: "security",
+    variant: "email",
+    sampleVars: {
+      first_name: "{{first_name}}",
+      customer_name: "{{customer_name}}",
+      email_address: "{{email}}",
+      action_date: "{{action_date}}",
+      shop_url: "https://cookie-bite.com/shop",
+      help_url: "https://cookie-bite.com/help",
+      contact_url: "https://cookie-bite.com/contact",
+      privacy_url: "https://cookie-bite.com/privacy",
+      company_address: "Fifth Settlement, New Cairo, Egypt",
+    },
+  },
+  build(vars, options) {
+    const merged = { ...accountDeletedTemplate.meta.sampleVars, ...vars };
+    const copy = resolveCopy(
+      "account-deleted",
+      options?.lang,
+      {
+        body: ACCOUNT_DELETED_BODY,
+        subject: "Your Cookie Bite account has been removed",
+        preheader: `Account for ${merged.email_address} was removed on ${merged.action_date}.`,
+        title: "Account removed",
+      },
+      merged,
+    );
+    return {
+      key: accountDeletedTemplate.meta.key,
+      subject: copy.subject,
+      preheader: copy.preheader,
+      html: buildEmail(copy.body, merged, {
+        title: copy.title,
+        preheader: copy.preheader,
+        lang: options?.lang,
+      }),
+    };
+  },
+};
+
+/* ─────────────────────────── Account blocked ─────────────────────────── */
+
+const ACCOUNT_BLOCKED_BODY = `
+<div class="email-wrapper">
+  <div class="email-header"><div class="logo">YOUR STORE</div></div>
+  <div class="email-body">
+    <span class="tag red">Account suspended</span>
+    <h1>Your account access has been blocked.</h1>
+    <p class="greeting">Hi {{first_name}},</p>
+    <p>The Cookie Bite account linked to <strong>{{email_address}}</strong> was suspended on <strong>{{action_date}}</strong>. This email address can no longer be used to sign up or sign in.</p>
+    <table class="tbl">
+      <thead><tr><th>Detail</th><th>Info</th></tr></thead>
+      <tbody>
+        <tr><td>Email</td><td>{{email_address}}</td></tr>
+        <tr><td>Date</td><td>{{action_date}}</td></tr>
+        <tr><td>Reason</td><td>{{action_reason}}</td></tr>
+      </tbody>
+    </table>
+    <div class="info-box" style="border-left-color:#DC2626;background:#FEE2E2;">
+      <p style="color:#7F1D1D;"><strong>What this means:</strong> Your profile was removed and future registration with this email is blocked.</p>
+    </div>
+    <p style="font-size:13px;color:#9C8B7A;">If you believe this was an error, <a href="{{contact_url}}">contact us</a> with your registered email and we'll review your case.</p>
+    <hr class="divider">
+    <p style="font-size:13px;color:#9C8B7A;"><a href="{{help_url}}">Help Center</a> · <a href="{{privacy_url}}">Privacy policy</a></p>
+  </div>
+  <div class="email-footer"><p>© 2026 [Your Store] · Hand-baked in {{company_address}}<br><a href="{{help_url}}">Help</a> · <a href="{{privacy_url}}">Privacy</a></p></div>
+</div>
+`;
+
+export const accountBlockedTemplate: TemplateBuilder = {
+  meta: {
+    key: "account-blocked",
+    name: "Account Blocked",
+    description: "Sent when an admin blocks a customer email and removes their account.",
+    category: "security",
+    variant: "email",
+    sampleVars: {
+      first_name: "{{first_name}}",
+      customer_name: "{{customer_name}}",
+      email_address: "{{email}}",
+      action_date: "{{action_date}}",
+      action_reason: "{{action_reason}}",
+      shop_url: "https://cookie-bite.com/shop",
+      help_url: "https://cookie-bite.com/help",
+      contact_url: "https://cookie-bite.com/contact",
+      privacy_url: "https://cookie-bite.com/privacy",
+      company_address: "Fifth Settlement, New Cairo, Egypt",
+    },
+  },
+  build(vars, options) {
+    const merged = { ...accountBlockedTemplate.meta.sampleVars, ...vars };
+    const copy = resolveCopy(
+      "account-blocked",
+      options?.lang,
+      {
+        body: ACCOUNT_BLOCKED_BODY,
+        subject: "Your Cookie Bite account has been suspended",
+        preheader: `Access blocked for ${merged.email_address} on ${merged.action_date}.`,
+        title: "Account suspended",
+      },
+      merged,
+    );
+    return {
+      key: accountBlockedTemplate.meta.key,
+      subject: copy.subject,
+      preheader: copy.preheader,
+      html: buildEmail(copy.body, merged, {
+        title: copy.title,
+        preheader: copy.preheader,
+        lang: options?.lang,
+      }),
+    };
+  },
+};
+
 export const SECURITY_TEMPLATES: TemplateBuilder[] = [
   passwordResetTemplate,
   emailVerificationTemplate,
   twoFaTemplate,
   securityAlertTemplate,
+  accountDeletedTemplate,
+  accountBlockedTemplate,
 ];

@@ -14,10 +14,14 @@ export function LokiBootstrap() {
     if (SKIP_LOKI_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
       return;
     }
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const narrow = window.matchMedia("(max-width: 639px)");
+    const coarse = window.matchMedia("(pointer: coarse)");
+    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+    if (reduced.matches || narrow.matches || coarse.matches) return;
+    if (typeof memory === "number" && memory <= 4) return;
 
-    const loki = new LokiTransform({ particleCount: 48 });
+    const loki = new LokiTransform({ particleCount: 32 });
     loki.init();
     return () => loki.dispose();
   }, [pathname]);

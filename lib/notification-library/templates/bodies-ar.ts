@@ -147,6 +147,61 @@ export const AR_EMAIL: Record<string, ArEmailCopy> = {
     preheader: (v) =>
       `إجمالي ${v.cart_total} · استخدم ${v.promo_code} لخصم ${v.discount}% — ينتهي خلال ${v.offer_expiry}.`,
   },
+  "account-deleted": {
+    body: `
+<div class="email-wrapper">
+  <div class="email-header"><div class="logo">كوكي بايت</div></div>
+  <div class="email-body">
+    <span class="tag warning">تحديث الحساب</span>
+    <h1>تم حذف حسابك.</h1>
+    <p class="greeting">مرحباً {{first_name}}،</p>
+    <p>نؤكد لك أن حساب <strong>كوكي بايت</strong> المرتبط بـ <strong>{{email_address}}</strong> أُزيل نهائياً بتاريخ <strong>{{action_date}}</strong>.</p>
+    <div class="info-box"><p>سجل طلباتك وتفضيلاتك المحفوظة لم تعد متاحة في نظامنا. يمكنك إنشاء حساب جديد في أي وقت باستخدام نفس البريد.</p></div>
+    <p style="font-size:13px;color:#9C8B7A;">إن لم تطلب ذلك أو تعتقد أنه خطأ، <a href="{{contact_url}}">تواصل مع فريقنا</a> — نسعد بمساعدتك.</p>
+    <div style="text-align:center;margin:22px 0;"><a class="cta-btn" href="{{shop_url}}">زيارة كوكي بايت</a></div>
+    <hr class="divider">
+    <p style="font-size:13px;color:#9C8B7A;">أسئلة؟ زُر <a href="{{help_url}}">مركز المساعدة</a> أو رد على هذا البريد.</p>
+  </div>
+  <div class="email-footer"><p>© 2026 كوكي بايت · مُخبز بعناية في {{company_address}}<br><a href="{{help_url}}">مساعدة</a> · <a href="{{privacy_url}}">الخصوصية</a></p></div>
+</div>
+`,
+    title: "تم حذف الحساب",
+    subject: (v) => `تم حذف حسابك في كوكي بايت — ${v.email_address ?? ""}`,
+    preheader: (v) =>
+      `أُزيل الحساب المرتبط بـ ${v.email_address ?? "بريدك"} بتاريخ ${v.action_date ?? ""}.`,
+  },
+  "account-blocked": {
+    body: `
+<div class="email-wrapper">
+  <div class="email-header"><div class="logo">كوكي بايت</div></div>
+  <div class="email-body">
+    <span class="tag red">إيقاف الحساب</span>
+    <h1>تم إيقاف وصولك إلى الحساب.</h1>
+    <p class="greeting">مرحباً {{first_name}}،</p>
+    <p>أُوقف حساب <strong>كوكي بايت</strong> المرتبط بـ <strong>{{email_address}}</strong> بتاريخ <strong>{{action_date}}</strong>. لم يعد بإمكانك التسجيل أو تسجيل الدخول بهذا البريد.</p>
+    <table class="tbl">
+      <thead><tr><th>التفاصيل</th><th>المعلومات</th></tr></thead>
+      <tbody>
+        <tr><td>البريد</td><td>{{email_address}}</td></tr>
+        <tr><td>التاريخ</td><td>{{action_date}}</td></tr>
+        <tr><td>السبب</td><td>{{action_reason}}</td></tr>
+      </tbody>
+    </table>
+    <div class="info-box" style="border-left-color:#DC2626;background:#FEE2E2;">
+      <p style="color:#7F1D1D;"><strong>ماذا يعني ذلك:</strong> حُذف ملفك الشخصي ولا يمكن استخدام هذا البريد للتسجيل مستقبلاً.</p>
+    </div>
+    <p style="font-size:13px;color:#9C8B7A;">إن اعتقدت أن هذا خطأ، <a href="{{contact_url}}">تواصل معنا</a> مع ذكر بريدك المسجّل لمراجعة الحالة.</p>
+    <hr class="divider">
+    <p style="font-size:13px;color:#9C8B7A;"><a href="{{help_url}}">مركز المساعدة</a> · <a href="{{privacy_url}}">سياسة الخصوصية</a></p>
+  </div>
+  <div class="email-footer"><p>© 2026 كوكي بايت · مُخبز بعناية في {{company_address}}<br><a href="{{help_url}}">مساعدة</a> · <a href="{{privacy_url}}">الخصوصية</a></p></div>
+</div>
+`,
+    title: "إيقاف الحساب",
+    subject: (v) => `تم إيقاف حسابك في كوكي بايت — ${v.email_address ?? ""}`,
+    preheader: (v) =>
+      `أُوقف الوصول لـ ${v.email_address ?? "بريدك"} بتاريخ ${v.action_date ?? ""}.`,
+  },
 };
 
 export function pickArEmail(key: string): ArEmailCopy | undefined {

@@ -4,7 +4,7 @@ import {
   writeEmailLog,
   writeFailedEmail,
 } from "@/lib/email/automation/db";
-import { isSmartRetriesEnabled } from "@/lib/store/owner-flags";
+import { isSmartRetriesEnabled } from "@/lib/store/owner-flags-server";
 import type { SendEmailPayload } from "@/lib/email/automation/types";
 
 function retryDelayMs(attempt: number): number {

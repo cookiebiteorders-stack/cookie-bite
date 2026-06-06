@@ -46,24 +46,43 @@ export function StoreFlagsProvider({
   useEffect(() => {
     let cancelled = false;
 
-    fetch("/api/store/flags", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { flags?: PublicStoreFlags } | null) => {
-        if (cancelled || !data?.flags) return;
-        setFlags(data.flags);
-        applyDocumentFlags(data.flags);
-      })
-      .catch(() => {
-        /* keep defaults */
-      })
-      .finally(() => {
-        if (!cancelled) setLoaded(true);
-      });
+    const refresh = () => {
+      fetch("/api/store/flags")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data: { flags?: PublicStoreFlags } | null) => {
+          if (cancelled || !data?.flags) return;
+          setFlags(data.flags);
+          applyDocumentFlags(data.flags);
+        })
+        .catch(() => {
+          /* keep defaults */
+        })
+        .finally(() => {
+          if (!cancelled) setLoaded(true);
+        });
+    };
 
+    if (initialFlags) {
+      setLoaded(true);
+      if (typeof window.requestIdleCallback === "function") {
+        const id = window.requestIdleCallback(refresh, { timeout: 45_000 });
+        return () => {
+          cancelled = true;
+          window.cancelIdleCallback(id);
+        };
+      }
+      const timer = window.setTimeout(refresh, 12_000);
+      return () => {
+        cancelled = true;
+        window.clearTimeout(timer);
+      };
+    }
+
+    refresh();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialFlags]);
 
   const value = useMemo(() => ({ ...flags, loaded }), [flags, loaded]);
 

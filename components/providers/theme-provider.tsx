@@ -32,8 +32,15 @@ function applyLightTheme() {
 export function ThemeProvider({ children }: ThemeProviderProps) {
   useLayoutEffect(() => {
     applyLightTheme();
-    window.localStorage.setItem(STORAGE_KEY, "light");
-    writeClientPrefCookie(THEME_COOKIE, "light");
+    const persist = () => {
+      window.localStorage.setItem(STORAGE_KEY, "light");
+      writeClientPrefCookie(THEME_COOKIE, "light");
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(persist, { timeout: 5000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    persist();
   }, []);
 
   const value = useMemo<ThemeContextValue>(

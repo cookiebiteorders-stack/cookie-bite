@@ -1,7 +1,8 @@
-import { arSA, enUS } from "@clerk/localizations";
+import type { arSA, enUS } from "@clerk/localizations";
 import type { Lang } from "@/lib/i18n/translations";
 
 type ClerkLocalization = typeof enUS;
+type ClerkLocalePack = typeof enUS;
 
 /** يظهر في عناوين Clerk وصفحة تسجيل الدخول بدل اسم التطبيق من لوحة Clerk. */
 export const SITE_HOST = "cookie-bite.com";
@@ -34,7 +35,7 @@ const AR_COPY = {
 };
 
 function buildCookieBiteClerkLocalization(
-  base: ClerkLocalization,
+  base: ClerkLocalePack,
   copy: typeof EN_COPY,
 ): ClerkLocalization {
   return {
@@ -124,7 +125,7 @@ function buildCookieBiteClerkLocalization(
 }
 
 function buildCookieBiteClerkLocalizationAr(
-  base: ClerkLocalization,
+  base: ClerkLocalePack,
   copy: typeof AR_COPY,
 ): ClerkLocalization {
   return {
@@ -177,17 +178,12 @@ function buildCookieBiteClerkLocalizationAr(
   };
 }
 
-/** نسخة إنجليزية مخصصة لـ Cookie Bite */
-export const cookieBiteClerkLocalization = buildCookieBiteClerkLocalization(
-  enUS,
-  EN_COPY,
-);
-
-const cookieBiteClerkLocalizationAr = buildCookieBiteClerkLocalizationAr(
-  arSA,
-  AR_COPY,
-);
-
-export function getClerkLocalization(lang: Lang): ClerkLocalization {
-  return lang === "ar" ? cookieBiteClerkLocalizationAr : cookieBiteClerkLocalization;
+/** يحمّل حزمة Clerk للغة النشطة فقط — لا يجلب ar+en معاً. */
+export async function getClerkLocalization(lang: Lang): Promise<ClerkLocalization> {
+  if (lang === "ar") {
+    const { arSA: arPack } = await import("@clerk/localizations");
+    return buildCookieBiteClerkLocalizationAr(arPack, AR_COPY);
+  }
+  const { enUS: enPack } = await import("@clerk/localizations");
+  return buildCookieBiteClerkLocalization(enPack, EN_COPY);
 }

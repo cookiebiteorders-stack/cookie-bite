@@ -2,34 +2,34 @@
 
 import dynamic from "next/dynamic";
 import { useLayoutEffect, useState } from "react";
-import { HeroSection5Static } from "@/components/ui/hero-section-5-static";
 
-const HeroSection5Motion = dynamic(
+const MotionShellInner = dynamic(
   () =>
-    import("@/components/ui/hero-section-5-motion").then((m) => ({
-      default: m.HeroSection5Motion,
+    import("@/components/layout/storefront-motion-shell-inner").then((m) => ({
+      default: m.StorefrontMotionShellInner,
     })),
-  { ssr: false, loading: () => <HeroSection5Static /> },
+  { ssr: true },
 );
 
-function prefersLightHero(): boolean {
+function prefersLightMotion(): boolean {
   if (typeof window === "undefined") return true;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return true;
-  if (window.matchMedia("(max-width: 767px)").matches) return true;
+  if (window.matchMedia("(max-width: 639px)").matches) return true;
   if (window.matchMedia("(pointer: coarse)").matches) return true;
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
   return typeof memory === "number" && memory <= 4;
 }
 
-export function HeroSection5Client() {
+/** غلاف الحركة — يُتخطى على الموبايل لتقليل حزمة motion/layout. */
+export function StorefrontMotionShell({ children }: { children: React.ReactNode }) {
   const [light, setLight] = useState(true);
 
   useLayoutEffect(() => {
-    setLight(prefersLightHero());
+    setLight(prefersLightMotion());
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const narrow = window.matchMedia("(max-width: 767px)");
+    const narrow = window.matchMedia("(max-width: 639px)");
     const coarse = window.matchMedia("(pointer: coarse)");
-    const sync = () => setLight(prefersLightHero());
+    const sync = () => setLight(prefersLightMotion());
     reduced.addEventListener("change", sync);
     narrow.addEventListener("change", sync);
     coarse.addEventListener("change", sync);
@@ -40,6 +40,9 @@ export function HeroSection5Client() {
     };
   }, []);
 
-  if (light) return <HeroSection5Static />;
-  return <HeroSection5Motion />;
+  if (light) {
+    return <div className="cb-page-route-shell min-h-0 w-full">{children}</div>;
+  }
+
+  return <MotionShellInner>{children}</MotionShellInner>;
 }

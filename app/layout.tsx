@@ -1,17 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { getClerkLocalization } from "@/lib/auth/clerk-auth-localization";
 import { SiteJsonLd } from "@/components/seo/site-jsonld";
-import { GA4Tracker } from "@/components/analytics/ga4-tracker";
 import { SeasonalThemeProvider } from "@/components/providers/seasonal-theme-provider";
 import { Cairo, DM_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { LanguageProvider } from "@/components/providers/language-provider";
 import { StoreFlagsProvider } from "@/components/providers/store-flags-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { LokiSvgFilters } from "@/components/effects/loki-svg-filters";
-import { LANG_COOKIE } from "@/lib/preferences/client-cookies";
+import { getLangFromCookies } from "@/lib/seo/server";
 import { cn } from "@/lib/utils";
 import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
 import {
@@ -20,7 +17,7 @@ import {
 } from "@/lib/auth/clerk-js-fallback";
 import { CssRecoveryBootstrap } from "@/components/pwa/css-recovery-bootstrap";
 import { CRITICAL_SHELL_CSS } from "@/lib/pwa/critical-shell-css";
-import { getPublicStoreFlags } from "@/lib/store/owner-flags";
+import { getPublicStoreFlags } from "@/lib/store/owner-flags-server";
 import "./globals.css";
 
 const clerkJsScriptUrl = resolveClerkJsScriptUrl();
@@ -32,7 +29,7 @@ const cairo = Cairo({
   subsets: ["latin", "arabic"],
   weight: ["400", "600"],
   display: "swap",
-  preload: true,
+  preload: false,
 });
 
 const dmSans = DM_Sans({
@@ -141,11 +138,16 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const store = await cookies();
-  const lang = store.get(LANG_COOKIE)?.value === "en" ? "en" : "ar";
+  const lang = await getLangFromCookies();
+  const [storeFlags, clerkLocalization] = await Promise.all([
+    getPublicStoreFlags(),
+    getClerkLocalization(lang),
+  ]);
   const dir = lang === "ar" ? "rtl" : "ltr";
-  const clerkLocalization = getClerkLocalization(lang);
-  const storeFlags = await getPublicStoreFlags();
+  const fontClass =
+    lang === "ar" ? cairo.className : dmSans.className;
+  const fontVariable =
+    lang === "ar" ? cairo.variable : dmSans.variable;
   return (
     <html
       lang={lang}
@@ -154,7 +156,7 @@ export default async function RootLayout({
       data-theme="light"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={cn(cairo.variable, dmSans.variable, "h-full antialiased")}
+      className={cn(fontVariable, fontClass, "h-full antialiased")}
       style={{ colorScheme: "light" }}
     >
       <head>
@@ -164,13 +166,14 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://clerk.cookie-bite.com" />
         <link rel="dns-prefetch" href="//www.googletagmanager.com" />
         <link rel="dns-prefetch" href="//www.google-analytics.com" />
       </head>
       <body className="min-h-full bg-background font-sans text-foreground">
         <CssRecoveryBootstrap />
-        <LokiSvgFilters />
         <ClerkProvider
           {...(clerkJsScriptUrl
             ? { __internal_clerkJSUrl: clerkJsScriptUrl }
@@ -196,7 +199,6 @@ export default async function RootLayout({
             <LanguageProvider initialLang={lang}>
               <StoreFlagsProvider initialFlags={storeFlags}>
                 <SiteJsonLd />
-                <GA4Tracker />
                 <SeasonalThemeProvider />
                 <ErrorBoundary>{children}</ErrorBoundary>
               </StoreFlagsProvider>

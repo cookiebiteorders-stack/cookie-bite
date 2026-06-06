@@ -1,4 +1,8 @@
 import { clerkClient } from "@clerk/nextjs/server";
+import {
+  sendAccountBlockedNotification,
+  sendAccountDeletedNotification,
+} from "@/lib/admin/customer-moderation-email";
 import { blockEmail } from "@/lib/db/blocked-emails";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { AdminActor } from "@/lib/admin/require-admin";
@@ -8,6 +12,7 @@ export type CustomerModerationTarget = {
   email: string;
   clerk_user_id: string;
   role: string;
+  full_name?: string | null;
 };
 
 export function isManualCrmClerkId(clerkUserId: string): boolean {
@@ -20,7 +25,7 @@ export async function loadCustomerModerationTarget(
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("users")
-    .select("id,email,clerk_user_id,role")
+    .select("id,email,clerk_user_id,role,full_name")
     .eq("id", userId)
     .maybeSingle();
   if (error || !data) return null;
@@ -123,6 +128,15 @@ export async function blockCustomerEmailAccount(input: {
 export async function deleteCustomerAccount(input: {
   target: CustomerModerationTarget;
 }): Promise<{ ok: true } | { ok: false; message: { en: string; ar: string } }> {
+  try {
+    await sendAccountDeletedNotification({
+      email: input.target.email,
+      fullName: input.target.full_name,
+    });
+  } catch (err) {
+    console.error("[deleteCustomerAccount] notification email failed", err);
+  }
+
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase.from("users").delete().eq("id", input.target.id);
   if (error) {
@@ -154,6 +168,16 @@ export async function blockAndDeleteCustomerAccount(input: {
   actor: AdminActor;
   reason?: string | null;
 }): Promise<{ ok: true } | { ok: false; message: { en: string; ar: string } }> {
+  try {
+    await sendAccountBlockedNotification({
+      email: input.target.email,
+      fullName: input.target.full_name,
+      reason: input.reason,
+    });
+  } catch (err) {
+    console.error("[blockAndDeleteCustomerAccount] notification email failed", err);
+  }
+
   const blocked = await blockEmail({
     email: input.target.email,
     reason: input.reason?.trim() || "Blocked by admin",

@@ -137,7 +137,14 @@ const nextConfig: NextConfig = {
       "date-fns",
       "@tanstack/react-table",
       "recharts",
+      "@clerk/nextjs",
+      "@clerk/localizations",
+      "@supabase/supabase-js",
     ],
+    staleTimes: {
+      dynamic: 30,
+      static: 300,
+    },
   },
   /** في التطوير: CDN لـ clerk-js و clerk-ui إذا لم تُضبط (انظر clerk-js-fallback.ts) */
   env: {

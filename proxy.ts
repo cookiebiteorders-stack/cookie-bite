@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { adminRouteModuleMap, canAccess } from "@/lib/admin/rbac";
 import { resolveStaffRole } from "@/lib/admin/auth-role";
 import { PRODUCTION_HOST } from "@/lib/config/production-lock";
-import { getOwnerFlags } from "@/lib/store/owner-flags";
+import { getOwnerFlags } from "@/lib/store/owner-flags-server";
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 const isAccountRoute = createRouteMatcher(["/account(.*)"]);
