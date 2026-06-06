@@ -19,6 +19,7 @@ import { buttonClassName } from "@/components/ui/button";
 import { MrBrownieChatActionStrip } from "@/components/mr-brownie/chat-action-card";
 import { MrBrownieChatClientActionStrip } from "@/components/mr-brownie/chat-client-action-strip";
 import { MrBrownieChatProductStrip } from "@/components/mr-brownie/chat-product-card";
+import { AnswerStyleBar } from "@/components/mr-brownie/answer-style-bar";
 import type { ChatClientAction } from "@/lib/mr-brownie/chat-client-actions";
 import type { Product } from "@/lib/data";
 import { VoiceInputButton } from "@/components/mr-brownie/voice-input-button";
@@ -71,6 +72,11 @@ import {
   type MrBrownieFabPosition,
 } from "@/lib/mr-brownie/fab-position";
 import { layoutAmbientBubble } from "@/lib/mr-brownie/bubble-layout";
+import {
+  loadAnswerStylePreference,
+  saveAnswerStylePreference,
+  type AnswerStylePreference,
+} from "@/lib/mr-brownie/answer-styles";
 import { pickRoamingTarget } from "@/lib/mr-brownie/roaming-target";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 
@@ -93,7 +99,12 @@ function findPrecedingUserMessage(messages: ChatMessage[], assistantIndex: numbe
   return "";
 }
 
-const DRAG_THRESHOLD_PX = 8;
+const DRAG_THRESHOLD_PX = 10;
+const DRAG_THRESHOLD_MOBILE_PX = 14;
+
+function dragThresholdPx(): number {
+  return isMobileViewport() ? DRAG_THRESHOLD_MOBILE_PX : DRAG_THRESHOLD_PX;
+}
 
 function isShopAssistantRole(role: string | null): boolean {
   return !role || role === "guest" || role === "customer";
@@ -309,6 +320,7 @@ export function MrBrownieChat({
   );
   const [dragPx, setDragPx] = useState<{ left: number; top: number } | null>(null);
   const [roamPx, setRoamPx] = useState<{ left: number; top: number } | null>(null);
+  const [fabPressed, setFabPressed] = useState(false);
   const [bubbleVisible, setBubbleVisible] = useState(false);
   const [bubbleText, setBubbleText] = useState("");
   const [showNotifDot, setShowNotifDot] = useState(true);
@@ -319,6 +331,9 @@ export function MrBrownieChat({
   const [suggestionsOpen, setSuggestionsOpen] = useState(!embedded);
   const [composerHint, setComposerHint] = useState<string | null>(null);
   const [feedbackByMessage, setFeedbackByMessage] = useState<Record<string, 1 | -1>>({});
+  const [answerStylePref, setAnswerStylePref] = useState<AnswerStylePreference>(() =>
+    loadAnswerStylePreference(),
+  );
   const fabRef = useRef<HTMLButtonElement>(null);
   const dragSession = useRef<{
     startX: number;
@@ -332,6 +347,9 @@ export function MrBrownieChat({
   const pendingDragRef = useRef<{ left: number; top: number } | null>(null);
   /** بعد السحب اليدوي: تبقى الأيقونة مكانها حتى هذا الوقت (epoch ms) قبل استئناف التجوّل */
   const dragHoldUntilRef = useRef(0);
+  const fabInteractingRef = useRef(false);
+  const dragPxRef = useRef<{ left: number; top: number } | null>(null);
+  const suppressClickRef = useRef(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -350,8 +368,17 @@ export function MrBrownieChat({
   const shopAssistant = isShopAssistantRole(sessionRole);
   const displayPersona: ChatPersona = STOREFRONT_PERSONA;
   const personaCfg = PERSONA_CONFIG[displayPersona];
+
+  const handleAnswerStyleChange = useCallback((pref: AnswerStylePreference) => {
+    setAnswerStylePref(pref);
+    saveAnswerStylePreference(pref);
+  }, []);
   const chipSuggestions =
     dynamicChips.length > 0 ? dynamicChips : suggestionsForRole(sessionRole, t);
+
+  useEffect(() => {
+    dragPxRef.current = dragPx;
+  }, [dragPx]);
 
   const flushPendingDrag = useCallback(() => {
     dragFlushRafRef.current = null;
@@ -414,6 +441,18 @@ export function MrBrownieChat({
     openedAtRef.current = Date.now();
     openRef.current = true;
     setOpen(true);
+  }, []);
+
+  const freezeFabPosition = useCallback(() => {
+    const el = fabRef.current;
+    if (!el || typeof window === "undefined") return;
+    const rect = el.getBoundingClientRect();
+    const frozen = {
+      left: Math.round(rect.left),
+      top: Math.round(rect.top),
+    };
+    setRoamPx(frozen);
+    saveRoamingPosition(frozen);
   }, []);
 
   useEffect(() => {
@@ -537,7 +576,8 @@ export function MrBrownieChat({
   useEffect(() => {
     if (embedded || reduceMotion) return;
     const tick = () => {
-      if (openRef.current || dragSession.current || dragPx) return;
+      if (openRef.current || dragSession.current || fabInteractingRef.current) return;
+      if (dragPxRef.current) return;
       /** لو المستخدم سحبها مؤخراً نتركها مكانها 10 دقائق */
       if (Date.now() < dragHoldUntilRef.current) return;
       const p = pickRoamingTargetCb();
@@ -579,12 +619,23 @@ export function MrBrownieChat({
           return msg;
         };
 
-        const runBubble = async () => {
-          const dynamic = await fetchDynamicAmbientMessage();
-          showBubble(dynamic ?? pickRandom());
+        const runBubble = () => {
+          const fallback = pickRandom();
+          showBubble(fallback);
+          void fetchDynamicAmbientMessage().then((dynamic) => {
+            if (
+              !dynamic ||
+              document.visibilityState === "hidden" ||
+              openRef.current ||
+              fabInteractingRef.current
+            ) {
+              return;
+            }
+            showBubble(dynamic);
+          });
         };
 
-        void runBubble();
+        runBubble();
       }, ROAM_POST_UI_MS);
     };
     const id = window.setInterval(tick, ROAM_INTERVAL_MS);
@@ -593,7 +644,6 @@ export function MrBrownieChat({
   }, [
     embedded,
     reduceMotion,
-    dragPx,
     pickRoamingTargetCb,
     showBubble,
     fetchDynamicAmbientMessage,
@@ -955,6 +1005,7 @@ export function MrBrownieChat({
             productSlug,
           },
           persona: shopAssistant ? "auto" : undefined,
+          answerStyle: shopAssistant ? answerStylePref : undefined,
           signal: controller.signal,
           callbacks: {
             onToken: (fullText) => {
@@ -1051,6 +1102,7 @@ export function MrBrownieChat({
       pathname,
       lang,
       shopAssistant,
+      answerStylePref,
     ],
   );
 
@@ -1141,9 +1193,11 @@ export function MrBrownieChat({
     cancelDragRaf();
     dragSession.current = null;
     pointerMoved.current = false;
+    fabInteractingRef.current = false;
+    setFabPressed(false);
     setDragPx(null);
     releaseFabPointerCapture();
-  }, [releaseFabPointerCapture]);
+  }, [releaseFabPointerCapture, cancelDragRaf]);
 
   useEffect(() => {
     resetFabDrag();
@@ -1161,8 +1215,12 @@ export function MrBrownieChat({
 
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (open) return;
+    if (e.button !== 0) return;
     const el = fabRef.current;
     if (!el) return;
+    fabInteractingRef.current = true;
+    setFabPressed(true);
+    freezeFabPosition();
     const rect = el.getBoundingClientRect();
     dragSession.current = {
       startX: e.clientX,
@@ -1171,6 +1229,7 @@ export function MrBrownieChat({
       originTop: rect.top,
     };
     pointerMoved.current = false;
+    suppressClickRef.current = false;
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -1178,7 +1237,7 @@ export function MrBrownieChat({
     if (!session) return;
     const dx = e.clientX - session.startX;
     const dy = e.clientY - session.startY;
-    if (!pointerMoved.current && Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+    if (!pointerMoved.current && Math.hypot(dx, dy) < dragThresholdPx()) return;
     const el = fabRef.current;
     if (el && !el.hasPointerCapture(e.pointerId)) {
       el.setPointerCapture(e.pointerId);
@@ -1202,6 +1261,8 @@ export function MrBrownieChat({
   const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
     releaseFabPointerCapture(e.pointerId);
     cancelDragRaf();
+    fabInteractingRef.current = false;
+    setFabPressed(false);
 
     const session = dragSession.current;
     const didMove = pointerMoved.current;
@@ -1210,11 +1271,10 @@ export function MrBrownieChat({
 
     if (!didMove) {
       setDragPx(null);
-      setShowNotifDot(false);
-      hideBubble();
-      openChat();
       return;
     }
+
+    suppressClickRef.current = true;
 
     if (session) {
       const dx = e.clientX - session.startX;
@@ -1249,13 +1309,24 @@ export function MrBrownieChat({
     resetFabDrag();
   };
 
+  const handleFabClick = () => {
+    if (embedded || openRef.current) return;
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
+    setShowNotifDot(false);
+    hideBubble();
+    openChat();
+  };
+
   /* موضع الـ FAB عبر DOM API */
   useLayoutEffect(() => {
     if (embedded) return;
     const el = fabRef.current;
     if (!el) return;
     el.style.setProperty("position", "fixed");
-    el.style.setProperty("z-index", "101");
+    el.style.setProperty("z-index", "102");
     el.style.setProperty("touch-action", "none");
     const pos = dragPx ?? roamPx;
     if (pos) {
@@ -1392,6 +1463,14 @@ export function MrBrownieChat({
                 </button>
               </div>
             </div>
+
+            {shopAssistant && viewMode === "chat" ? (
+              <AnswerStyleBar
+                value={answerStylePref}
+                onChange={handleAnswerStyleChange}
+                compact={embedded}
+              />
+            ) : null}
 
             <div
               ref={scrollRef}
@@ -1772,7 +1851,8 @@ export function MrBrownieChat({
     );
   }
 
-  const allowSmoothRoamMove = !embedded && dragPx == null && !open && !reduceMotion;
+  const allowSmoothRoamMove =
+    !embedded && dragPx == null && !open && !reduceMotion && !fabPressed;
   const idleFab = !embedded && dragPx == null && !open;
   const bubbleAbove =
     !embedded &&
@@ -1802,16 +1882,18 @@ export function MrBrownieChat({
       <button
         ref={fabRef}
         type="button"
+        onClick={handleFabClick}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
         className={cn(
-          "cb-mr-brownie-fab relative flex max-sm:h-[68px] max-sm:w-[68px] sm:h-[92px] sm:w-[92px] cursor-grab select-none items-center justify-center overflow-visible rounded-full bg-transparent p-0 shadow-none ring-0",
-          allowSmoothRoamMove &&
-            "motion-safe:transform-gpu motion-safe:transition-[left,top,right,bottom,transform,filter,opacity] motion-safe:duration-[1000ms] motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "cb-mr-brownie-fab relative flex max-sm:h-[68px] max-sm:w-[68px] sm:h-[92px] sm:w-[92px] cursor-pointer select-none items-center justify-center overflow-visible rounded-full bg-transparent p-0 shadow-none ring-0",
+          allowSmoothRoamMove && "cb-mr-brownie-fab--roaming motion-safe:transform-gpu",
+          fabPressed && "cb-mr-brownie-fab--pressed active:scale-[0.97]",
           !allowSmoothRoamMove &&
             !dragPx &&
+            !fabPressed &&
             "transition-[transform,filter,opacity] duration-200 ease-out",
           "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cb-focus",
           "touch-none active:cursor-grabbing",
@@ -1820,12 +1902,12 @@ export function MrBrownieChat({
           open && "pointer-events-none invisible opacity-0",
         )}
         aria-label="Mr. Brownie — اضغط للدردشة أو اسحب للتحريك على الشاشة"
+        aria-expanded={open}
       >
         <span
           className={cn(
             "relative inline-flex items-center justify-center",
-            allowSmoothRoamMove &&
-              "motion-safe:transition-transform motion-safe:duration-[1000ms] motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
+            allowSmoothRoamMove && "motion-safe:transform-gpu",
             dragPx && "!transition-none",
           )}
         >
@@ -1851,7 +1933,7 @@ export function MrBrownieChat({
               bubbleAbove
                 ? "mr-brownie-ambient-bubble--above bottom-full mb-2 origin-bottom"
                 : "top-full mt-2 origin-top",
-              "transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+              "transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
               bubbleVisible
                 ? "translate-y-0 scale-100 opacity-100"
                 : bubbleAbove

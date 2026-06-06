@@ -66,6 +66,12 @@ import type { MrBrowniePageIntent } from "@/lib/mr-brownie/page-intent";
 import type { AiCatalogProduct } from "@/lib/ai/website-knowledge";
 import type { CustomerMemorySnapshot } from "@/lib/mr-brownie/fetch-customer-memory";
 import type { ChatClientAction } from "@/lib/mr-brownie/chat-client-actions";
+import {
+  getAnswerStyleInstruction,
+  resolveAnswerStyle,
+  type AnswerStyle,
+  type AnswerStylePreference,
+} from "@/lib/mr-brownie/answer-styles";
 
 export type BrainPipelineMeta = {
   input: {
@@ -81,6 +87,9 @@ export type BrainPipelineMeta = {
   prompt_variant: PromptVariant;
   sentiment_score: number;
   persona_preference: PersonaPreference;
+  answer_style_preference: AnswerStylePreference;
+  active_answer_style: AnswerStyle;
+  answer_style_instruction: string;
   personality_instruction: string;
   persona_instruction: string;
   product_cards: ChatProductCard[];
@@ -126,6 +135,7 @@ export function buildBrainPipelineMeta(params: {
   } | null;
   loyaltyTier?: string | null;
   personaPreference?: PersonaPreference;
+  answerStylePreference?: AnswerStylePreference;
   personaPromptOverrides?: PersonaPromptOverrides;
   promptVariant?: PromptVariant;
   toneVector?: ToneVector | null;
@@ -136,11 +146,17 @@ export function buildBrainPipelineMeta(params: {
 }): BrainPipelineMeta {
   const prompt_variant: PromptVariant = params.promptVariant ?? "a";
   const persona_preference = params.personaPreference ?? "auto";
+  const answer_style_preference = params.answerStylePreference ?? "auto";
   const sentiment_score = scoreSentiment(params.lastUserMessage ?? "");
 
   const intent_engine = runIntentEngine({
     userMessage: params.lastUserMessage ?? "",
     pageIntent: params.pageIntent,
+    priorUserMessages: (params.conversationMessages ?? [])
+      .filter((m) => m.role === "user")
+      .map((m) => m.content)
+      .slice(0, -1)
+      .slice(-3),
   });
 
   const tool_routes = routeTools(intent_engine);
@@ -167,6 +183,16 @@ export function buildBrainPipelineMeta(params: {
       : "friendly";
 
   const emotion_trajectory = buildEmotionTrajectory(params.conversationMessages ?? []);
+
+  const active_answer_style = resolveAnswerStyle({
+    preference: answer_style_preference,
+    personalityMode: active_personality,
+    crisisMode: emotion_trajectory.crisis_mode,
+  });
+  const answer_style_instruction = getAnswerStyleInstruction(
+    active_answer_style,
+    params.locale,
+  );
 
   const isStorefront = params.role === "guest" || params.role === "customer";
   const active_persona: ChatPersona = isStorefront ? STOREFRONT_PERSONA : STOREFRONT_PERSONA;
@@ -239,20 +265,22 @@ export function buildBrainPipelineMeta(params: {
       ].filter((c, i, arr) => arr.findIndex((x) => x.id === c.id) === i)
     : [];
 
-  const persona_instruction = isStorefront
-    ? getStorefrontPersonaInstruction(
-        active_personality,
-        emotion_trajectory.crisis_mode,
-        params.locale,
-        params.personaPromptOverrides ?? {},
-        prompt_variant,
-      )
-    : resolvePersonaInstruction(
-        active_persona,
-        params.locale,
-        params.personaPromptOverrides ?? {},
-        prompt_variant,
-      );
+  const persona_instruction = (
+    isStorefront
+      ? getStorefrontPersonaInstruction(
+          active_personality,
+          emotion_trajectory.crisis_mode,
+          params.locale,
+          params.personaPromptOverrides ?? {},
+          prompt_variant,
+        )
+      : resolvePersonaInstruction(
+          active_persona,
+          params.locale,
+          params.personaPromptOverrides ?? {},
+          prompt_variant,
+        )
+  ).concat("\n\n", answer_style_instruction);
 
   const conversion_hints: string[] = [];
   if (active_personality === "sales") {
@@ -283,6 +311,9 @@ export function buildBrainPipelineMeta(params: {
   if (tone_vector) {
     conversion_hints.push(toneVectorInstruction(tone_vector));
   }
+  if (intent_engine.understanding_hint) {
+    conversion_hints.push(`Message understanding: ${intent_engine.understanding_hint}`);
+  }
   conversion_hints.push(emotionTrajectoryInstruction(emotion_trajectory));
   const occasionHint = giftOccasionHint(gift_occasion, params.locale);
   if (occasionHint) conversion_hints.push(occasionHint);
@@ -307,6 +338,9 @@ export function buildBrainPipelineMeta(params: {
     prompt_variant,
     sentiment_score,
     persona_preference,
+    answer_style_preference,
+    active_answer_style,
+    answer_style_instruction,
     personality_instruction: getPersonalityModeInstruction(active_personality),
     persona_instruction,
     product_cards,
@@ -332,7 +366,7 @@ export function buildBrainPipelineMeta(params: {
       intent_engine.response_strategy,
       "Execute layered_thinking: understand → decide → format (do not expose layer labels).",
       "If clarification_mode, use clarification_prompt pattern with choices — do not guess.",
-      "If confidence_pct >= 90, answer directly; if 50–89, brief answer + one question; if <50, clarify first.",
+      "If confidence_pct >= 78, answer directly; if 50–77, brief answer + one question; if <50 or ambiguity, clarify first.",
       "Pick one string from follow_up_options as closing question when possible.",
       emotionTrajectoryInstruction(emotion_trajectory),
       seasonal_context.season_id !== "default"

@@ -1,11 +1,14 @@
 import type { IntentEngineResult } from "@/lib/mr-brownie/brain/intent-engine";
 import type { CommerceIntent } from "@/lib/mr-brownie/brain/intent-engine";
+import type { MessageEntities } from "@/lib/mr-brownie/brain/message-understanding";
 
 export type LayeredThinkingPlan = {
   layer1_understanding: {
     user_goal: string;
     clarity: "clear" | "partial" | "unclear";
     missing_info: string[];
+    language: string;
+    entities: MessageEntities;
   };
   layer2_decision: {
     action: "answer" | "clarify" | "use_tools" | "support_only";
@@ -25,11 +28,25 @@ export function buildLayeredThinkingPlan(params: {
   confidencePct: number;
 }): LayeredThinkingPlan {
   const msg = params.userMessage.trim();
-  const unclear = params.intent.confidence === "low" || params.confidencePct < 50;
+  const entities = params.intent.entities;
+  const unclear =
+    params.intent.confidence === "low" ||
+    params.confidencePct < 50 ||
+    params.intent.ambiguity;
   const missing: string[] = [];
   if (params.intent.primary === "gift_request" || params.intent.primary === "fast_gift") {
-    if (!/مناسبة|occasion|birthday|هدية ل/i.test(msg)) missing.push("occasion");
-    if (!/\d+|جنيه|budget|ميزانية/i.test(msg)) missing.push("budget_hint");
+    if (!entities.occasion && !/مناسبة|occasion|birthday|هدية ل/i.test(msg)) {
+      missing.push("occasion");
+    }
+    if (entities.budget_egp == null && !/\d+|جنيه|budget|ميزانية/i.test(msg)) {
+      missing.push("budget_hint");
+    }
+  }
+  if (params.intent.primary === "order_status" && !entities.order_number) {
+    missing.push("order_number");
+  }
+  if (params.intent.primary === "complaint" && !entities.order_number) {
+    missing.push("issue_details");
   }
 
   let action: LayeredThinkingPlan["layer2_decision"]["action"] = "answer";
@@ -49,6 +66,8 @@ export function buildLayeredThinkingPlan(params: {
       user_goal: describeGoal(params.intent.primary),
       clarity: unclear ? "unclear" : missing.length ? "partial" : "clear",
       missing_info: missing,
+      language: params.intent.detected_language,
+      entities: params.intent.entities,
     },
     layer2_decision: {
       action,

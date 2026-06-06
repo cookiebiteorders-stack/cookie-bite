@@ -1,6 +1,10 @@
-import { detectTrainingIntent } from "@/lib/mr-brownie/training/detect-intent";
 import type { TrainingIntent } from "@/lib/mr-brownie/training/types";
 import type { MrBrowniePageIntent } from "@/lib/mr-brownie/page-intent";
+import {
+  type DetectedLanguage,
+  type MessageEntities,
+  understandUserMessage,
+} from "@/lib/mr-brownie/brain/message-understanding";
 
 export type CommerceIntent =
   | TrainingIntent
@@ -18,49 +22,87 @@ export type IntentEngineResult = {
   response_strategy: string;
   pre_thinking: string[];
   tools_to_run: Array<"search_products" | "gift_box_builder" | "cart_summary">;
+  detected_language: DetectedLanguage;
+  entities: MessageEntities;
+  understanding_hint: string;
+  ambiguity: boolean;
 };
 
-function detectSubTags(message: string): string[] {
+function detectSubTags(message: string, entities: MessageEntities): string[] {
   const tags: string[] = [];
   const m = message.toLowerCase();
-  if (/بسرعة|سريع|دلوقتي|urgent|asap|fast/i.test(m)) tags.push("urgent");
-  if (/رخيص|cheap|اقتصاد|budget|تحت \d+/i.test(m)) tags.push("budget_sensitive");
-  if (/فاخر|luxury|مميز|premium/i.test(m)) tags.push("premium");
-  if (/مخصص|custom|رسالة|كارت/i.test(m)) tags.push("personalized");
-  return tags;
+  if (entities.urgency || /بسرعة|سريع|دلوقتي|urgent|asap|fast/i.test(m)) {
+    tags.push("urgent");
+  }
+  if (
+    entities.budget_egp != null ||
+    /رخيص|cheap|اقتصاد|budget|تحت \d+/i.test(m)
+  ) {
+    tags.push("budget_sensitive");
+  }
+  if (/فاخر|luxury|مميز|premium/i.test(m) || (entities.budget_egp ?? 0) >= 800) {
+    tags.push("premium");
+  }
+  if (/مخصص|custom|رسالة|كارت|personalized/i.test(m)) tags.push("personalized");
+  if (entities.wants_recommendation) tags.push("wants_pick");
+  if (entities.wants_comparison) tags.push("wants_compare");
+  if (entities.dietary.length) tags.push(...entities.dietary);
+  if (entities.occasion) tags.push(`occasion_${entities.occasion}`);
+  return [...new Set(tags)];
 }
 
-function detectPromoIntent(message: string): boolean {
-  return /كود|كوبون|خصم|برومو|promo|coupon|discount\s*code/i.test(message);
+function detectPromoIntent(message: string, entities: MessageEntities): boolean {
+  return (
+    Boolean(entities.promo_code) ||
+    /كود|كوبون|خصم|برومو|promo|coupon|discount\s*code/i.test(message)
+  );
 }
 
-function refineIntent(base: TrainingIntent, message: string): CommerceIntent {
+function refineIntent(base: TrainingIntent, message: string, entities: MessageEntities): CommerceIntent {
   const m = message.toLowerCase();
-  if (detectPromoIntent(message)) return "promo_help";
-  if (base === "gift_request" && /بسرعة|سريع|fast|asap/.test(m)) {
+  if (detectPromoIntent(message, entities)) return "promo_help";
+  if (base === "gift_request" && (entities.urgency || /بسرعة|سريع|fast|asap/.test(m))) {
     return "fast_gift";
   }
-  if (/فين|ازاي|كيف|where|how to|رابط|صفحة/.test(m)) {
-    return "navigation";
+  if (/فين|ازاي|كيف|where|how to|رابط|صفحة|link to|open the/i.test(m)) {
+    if (base !== "order_status" && !/أوردر|اوردر|طلب|order|track/i.test(m)) {
+      return "navigation";
+    }
   }
-  if (/مخصص|تصميم|علامة|branding|corporate|شركة/.test(m)) {
+  if (/مخصص|تصميم|علامة|branding|corporate|شركة|logo/i.test(m)) {
     return "custom_request";
   }
   return base;
 }
 
+function confidenceLabel(pct: number): IntentEngineResult["confidence"] {
+  if (pct >= 78) return "high";
+  if (pct >= 50) return "medium";
+  return "low";
+}
+
 export function runIntentEngine(params: {
   userMessage: string;
   pageIntent: MrBrowniePageIntent;
+  priorUserMessages?: string[];
 }): IntentEngineResult {
-  const base = detectTrainingIntent(params.userMessage);
-  const primary = refineIntent(base, params.userMessage);
-  const tags = detectSubTags(params.userMessage);
+  const understanding = understandUserMessage({
+    message: params.userMessage,
+    pageIntent: params.pageIntent,
+    priorUserMessages: params.priorUserMessages,
+  });
+
+  const base = understanding.top_intent;
+  const primary = refineIntent(base, params.userMessage, understanding.entities);
+  const tags = detectSubTags(params.userMessage, understanding.entities);
 
   const pre_thinking = [
+    understanding.understanding_hint,
     "What does the user want to achieve?",
     "What facts exist in CONTEXT (products, cart, FAQ, memory)?",
-    "Do I need one clarifying question?",
+    understanding.ambiguity
+      ? "Intent is ambiguous — ask ONE clarifying question with 2–3 choices."
+      : "Do I need one clarifying question?",
     "Which tool_results apply (product_search, cart)?",
     "What single CTA closes the loop?",
   ];
@@ -78,14 +120,15 @@ export function runIntentEngine(params: {
     case "gift_request":
     case "custom_request":
       response_strategy =
-        "Clarify occasion/budget → 2–3 picks from tool_results → offer /gift-box/build.";
+        "Clarify occasion/budget if missing → 2–3 picks from tool_results → offer /gift-box/build.";
       tools_to_run.push("gift_box_builder");
       break;
     case "product_browse":
     case "budget":
     case "pairing":
-      response_strategy =
-        "Compare 2–3 SKUs with why; mention price_egp; shop_path links.";
+      response_strategy = understanding.entities.wants_comparison
+        ? "Compare 2–3 SKUs with why; prices + shop_path; highlight differences."
+        : "Compare 2–3 SKUs with why; mention price_egp; shop_path links.";
       break;
     case "cart_help":
       response_strategy = "Summarize CONTEXT.cart; free-ship gap; suggest add-on.";
@@ -107,6 +150,10 @@ export function runIntentEngine(params: {
       tools_to_run.push("cart_summary");
       break;
     default:
+      if (understanding.entities.wants_recommendation) {
+        response_strategy =
+          "User wants a pick — suggest 2–3 products from tool_results with brief why.";
+      }
       break;
   }
 
@@ -114,20 +161,20 @@ export function runIntentEngine(params: {
     tools_to_run.push("gift_box_builder");
   }
 
-  const confidence =
-    base === "general" && !tags.length ? "low" : tags.includes("urgent") ? "high" : "medium";
-
-  const confidence_pct =
-    confidence === "high" ? 90 : confidence === "medium" ? 60 : 30;
+  const confidence_pct = understanding.confidence_pct;
 
   return {
     primary,
-    confidence,
+    confidence: confidenceLabel(confidence_pct),
     confidence_pct,
     tags,
     response_strategy,
     pre_thinking,
     tools_to_run: [...new Set(tools_to_run)],
+    detected_language: understanding.detected_language,
+    entities: understanding.entities,
+    understanding_hint: understanding.understanding_hint,
+    ambiguity: understanding.ambiguity,
   };
 }
 

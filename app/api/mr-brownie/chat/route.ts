@@ -52,6 +52,8 @@ export async function POST(req: NextRequest) {
       session: parsed.data.session,
       userId: userId ?? null,
       clerkUser,
+      persona: parsed.data.persona,
+      answerStyle: parsed.data.answer_style,
     });
 
     let reply = "";

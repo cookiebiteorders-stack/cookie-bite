@@ -10,6 +10,7 @@ import type { MrBrownieChatMessage } from "@/lib/mr-brownie/gemini";
 import type { ChatActionCard } from "@/lib/mr-brownie/action-cards";
 import type { ChatClientAction } from "@/lib/mr-brownie/chat-client-actions";
 import type { ChatPersona, ChatProductCard, PersonaPreference } from "@/lib/mr-brownie/personas";
+import type { AnswerStyle, AnswerStylePreference } from "@/lib/mr-brownie/answer-styles";
 
 export const mrBrownieChatBodySchema = z.object({
   messages: z
@@ -54,6 +55,10 @@ export const mrBrownieChatBodySchema = z.object({
     .optional(),
   /** المتجر: Mr. Brownie فقط — Mrs. Cookie في /admin/copilot */
   persona: z.enum(["auto", "mr_brownie"]).optional(),
+  /** أسلوب الإجابة — friendly / concise / detailed / … */
+  answer_style: z
+    .enum(["auto", "friendly", "concise", "detailed", "enthusiastic", "calm", "expert"])
+    .optional(),
 });
 
 export function temperatureForRole(role: UserRole | "guest"): number {
@@ -84,6 +89,8 @@ export type MrBrowniePreparedChat = {
     locale: string;
     catalogTotal: number;
     activePersona: ChatPersona;
+    activeAnswerStyle: AnswerStyle;
+    answerStylePreference: AnswerStylePreference;
     promptVariant: "a" | "b";
     ragSource: "vector" | "keyword" | "none" | null;
     ragHitCount: number;
@@ -107,6 +114,7 @@ export async function prepareMrBrownieChat(params: {
     username?: string | null;
   } | null;
   persona?: PersonaPreference;
+  answerStyle?: AnswerStylePreference;
 }): Promise<MrBrowniePreparedChat> {
   let resolvedRole: UserRole | "guest" = "guest";
   let email: string | null = null;
@@ -192,6 +200,7 @@ export async function prepareMrBrownieChat(params: {
       content: m.content,
     })),
     personaPreference: params.persona ?? "auto",
+    answerStylePreference: params.answerStyle ?? "auto",
     clerkUserId: params.userId,
   });
 
@@ -235,6 +244,8 @@ export async function prepareMrBrownieChat(params: {
       locale: contextPayload.session.locale,
       catalogTotal: contextPayload.catalog_meta.total_active,
       activePersona: contextPayload.brain.active_persona,
+      activeAnswerStyle: contextPayload.brain.active_answer_style,
+      answerStylePreference: contextPayload.brain.answer_style_preference,
       promptVariant: contextPayload.brain.prompt_variant,
       ragSource: contextPayload.brain.rag_source,
       ragHitCount: contextPayload.brain.rag_hit_count,

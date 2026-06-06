@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
       userId: userId ?? null,
       clerkUser,
       persona: parsed.data.persona,
+      answerStyle: parsed.data.answer_style,
     });
 
     return createMrBrownieStreamResponse(
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
       {
         role: prepared.resolvedRole,
         persona: prepared.turnLogMeta.activePersona,
+        answer_style: prepared.turnLogMeta.activeAnswerStyle,
         prompt_variant: prepared.turnLogMeta.promptVariant,
         sentiment_score: prepared.turnLogMeta.sentimentScore,
         follow_up_options: prepared.turnLogMeta.followUpOptions,

@@ -111,10 +111,32 @@
 .cb-mr-brownie-fab {
   filter: drop-shadow(0 4px 14px rgba(59, 31, 14, 0.28));
   transition: filter 0.2s ease, transform 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
 }
 
 .cb-mr-brownie-fab:hover {
   filter: drop-shadow(0 6px 20px rgba(201, 151, 42, 0.42));
+}
+
+.cb-mr-brownie-fab--roaming {
+  transition:
+    left 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    top 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.2s ease,
+    transform 0.2s ease;
+}
+
+.cb-mr-brownie-fab--roaming > span {
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cb-mr-brownie-fab--pressed {
+  transition: filter 0.15s ease, transform 0.15s ease !important;
+}
+
+.cb-mr-brownie-fab--pressed > span {
+  transition: none !important;
 }
 
 .cb-mr-brownie--embedded {
@@ -263,6 +285,11 @@
   .cb-mr-brownie-drawer--left,
   .cb-mr-brownie-drawer--right {
     animation: none;
+  }
+
+  .cb-mr-brownie-fab--roaming,
+  .cb-mr-brownie-fab--roaming > span {
+    transition: none;
   }
 
   .cb-mr-brownie-typing::after {

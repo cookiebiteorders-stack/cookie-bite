@@ -1,12 +1,14 @@
 import { translations, type Lang } from "@/lib/i18n/translations";
 
-/** الحركة العشوائية + رسالة فقاعة: كل دقيقة */
-export const ROAM_INTERVAL_MS = 60_000;
-export const BUBBLE_AUTO_HIDE_MS = 10_000;
+/** الحركة العشوائية + رسالة فقاعة: كل 30 ثانية */
+export const ROAM_INTERVAL_MS = 30_000;
+/** مدة انتقال التجوّل (يجب أن تطابق CSS `.cb-mr-brownie-fab--roaming`) */
+export const ROAM_TRANSITION_MS = 520;
+export const BUBBLE_AUTO_HIDE_MS = 8_000;
 /** عند سحب الأيقونة لمكان معيّن: تبقى ثابتة 10 دقائق قبل استئناف الحركة */
 export const DRAG_HOLD_MS = 10 * 60_000;
 /** بعد انتهاء انتقال الحركة: إظهار فقاعة النص */
-export const ROAM_POST_UI_MS = 1040;
+export const ROAM_POST_UI_MS = ROAM_TRANSITION_MS + 48;
 export const ROAM_STORAGE_KEY = "mr-brownie-roam-pos-v1";
 
 function ambientBlock(locale: Lang) {

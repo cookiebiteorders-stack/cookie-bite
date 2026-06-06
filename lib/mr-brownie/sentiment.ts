@@ -33,6 +33,12 @@ export function scoreSentiment(message: string): number {
     "مكسور",
     "محبط",
     "نصب",
+    "زهقت",
+    "مش راضي",
+    "not happy",
+    "unhappy",
+    "horrible",
+    "hate",
   ];
   const positive = [
     "love",
@@ -52,6 +58,10 @@ export function scoreSentiment(message: string): number {
     "حلو",
     "مبسوط",
     "سعيد",
+    "حلو أوي",
+    "جميل أوي",
+    "perfect",
+    "delicious",
   ];
 
   let score = 0;

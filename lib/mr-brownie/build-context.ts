@@ -27,6 +27,7 @@ import { ensureKnowledgeIndexed } from "@/lib/mr-brownie/brain/knowledge-index";
 import { retrieveKnowledgeHybrid } from "@/lib/mr-brownie/brain/vector-retrieval";
 import { loadPublishedPersonaPrompts } from "@/lib/mr-brownie/persona-prompts";
 import type { PersonaPreference } from "@/lib/mr-brownie/personas";
+import type { AnswerStylePreference } from "@/lib/mr-brownie/answer-styles";
 import { assignPromptVariant, type PromptVariant } from "@/lib/mr-brownie/prompt-variant";
 import { loadToneVectorForUser } from "@/lib/mr-brownie/tone-vector";
 import type { MrBrownieContextPayload } from "@/lib/mr-brownie/types";
@@ -45,6 +46,7 @@ export async function buildMrBrownieContext(params: {
   lastUserMessage?: string;
   conversationMessages?: Array<{ role: "user" | "assistant"; content: string }>;
   personaPreference?: PersonaPreference;
+  answerStylePreference?: AnswerStylePreference;
   clerkUserId?: string | null;
   promptVariant?: PromptVariant;
 }): Promise<MrBrownieContextPayload> {
@@ -175,6 +177,7 @@ export async function buildMrBrownieContext(params: {
       : null,
     loyaltyTier: params.loyaltyTier,
     personaPreference: params.personaPreference ?? "auto",
+    answerStylePreference: params.answerStylePreference ?? "auto",
     personaPromptOverrides,
     promptVariant:
       params.promptVariant ??
