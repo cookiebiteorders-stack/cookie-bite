@@ -119,18 +119,10 @@ export async function blockCustomerEmailAccount(input: {
   return { ok: true };
 }
 
+/** Remove customer profile only — does not block the email for re-registration. */
 export async function deleteCustomerAccount(input: {
   target: CustomerModerationTarget;
-  actor: AdminActor;
-  reason?: string | null;
 }): Promise<{ ok: true } | { ok: false; message: { en: string; ar: string } }> {
-  const blockResult = await blockCustomerEmailAccount({
-    target: input.target,
-    actor: input.actor,
-    reason: input.reason ?? "Account deleted by admin",
-  });
-  if (!blockResult.ok) return blockResult;
-
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase.from("users").delete().eq("id", input.target.id);
   if (error) {
@@ -149,6 +141,57 @@ export async function deleteCustomerAccount(input: {
       message: {
         en: "Customer removed from database but Clerk delete failed",
         ar: "تم حذف العميل من قاعدة البيانات لكن فشل الحذف من Clerk",
+      },
+    };
+  }
+
+  return { ok: true };
+}
+
+/** Block email, remove Clerk access, and delete the CRM profile. */
+export async function blockAndDeleteCustomerAccount(input: {
+  target: CustomerModerationTarget;
+  actor: AdminActor;
+  reason?: string | null;
+}): Promise<{ ok: true } | { ok: false; message: { en: string; ar: string } }> {
+  const blocked = await blockEmail({
+    email: input.target.email,
+    reason: input.reason?.trim() || "Blocked by admin",
+    blockedByUserId: input.actor.user_id,
+    blockedByEmail: input.actor.email,
+    customerUserId: input.target.id,
+  });
+  if (!blocked) {
+    return {
+      ok: false,
+      message: {
+        en: "Failed to block email — is migration 0059 applied?",
+        ar: "تعذّر حظر البريد — تأكد من تطبيق migration 0059 على Supabase",
+      },
+    };
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase.from("users").delete().eq("id", input.target.id);
+  if (error) {
+    console.error("blockAndDeleteCustomerAccount db error", error);
+    return {
+      ok: false,
+      message: {
+        en: "Email blocked but failed to delete customer profile",
+        ar: "تم حظر البريد لكن تعذّر حذف ملف العميل",
+      },
+    };
+  }
+
+  try {
+    await deleteClerkUser(input.target.clerk_user_id);
+  } catch {
+    return {
+      ok: false,
+      message: {
+        en: "Email blocked and profile removed, but Clerk delete failed",
+        ar: "تم الحظر وحذف الملف محلياً لكن فشل الحذف من Clerk",
       },
     };
   }

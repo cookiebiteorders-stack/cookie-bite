@@ -218,11 +218,7 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
   const supabase = createSupabaseAdminClient();
   const { data: before } = await supabase.from("users").select("*").eq("id", id).maybeSingle();
 
-  const result = await deleteCustomerAccount({
-    target,
-    actor,
-    reason: parsed.data.reason,
-  });
+  const result = await deleteCustomerAccount({ target });
 
   if (!result.ok) {
     return NextResponse.json(bilingualError(result.message.en, result.message.ar), { status: 500 });
@@ -239,5 +235,5 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
     request: req,
   });
 
-  return NextResponse.json({ ok: true, deleted: true, email_blocked: true });
+  return NextResponse.json({ ok: true, deleted: true, email_blocked: false });
 }

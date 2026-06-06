@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
   assertCustomerModerationAllowed,
-  blockCustomerEmailAccount,
+  blockAndDeleteCustomerAccount,
   loadCustomerModerationTarget,
 } from "@/lib/admin/customer-moderation";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/lib/admin/require-admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { getBlockedEmail, unblockEmail } from "@/lib/db/blocked-emails";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { bilingualError } from "@/lib/validations";
 
 const blockSchema = z.object({
@@ -60,7 +61,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     );
   }
 
-  const result = await blockCustomerEmailAccount({
+  const supabase = createSupabaseAdminClient();
+  const { data: before } = await supabase.from("users").select("*").eq("id", id).maybeSingle();
+
+  const result = await blockAndDeleteCustomerAccount({
     target,
     actor,
     reason: parsed.data.reason,
@@ -72,16 +76,16 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
   await writeAuditLog({
     actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
-    action: "customers.block_email",
+    action: "customers.block_and_delete",
     module: "customers",
     entity_id: id,
-    before: { email: target.email, blocked: false },
-    after: { email: target.email, blocked: true, reason: parsed.data.reason ?? null },
+    before: before ?? null,
+    after: { email: target.email, blocked: true, deleted: true, reason: parsed.data.reason ?? null },
     metadata: { reason: parsed.data.reason ?? null },
     request: req,
   });
 
-  return NextResponse.json({ ok: true, email_blocked: true });
+  return NextResponse.json({ ok: true, email_blocked: true, deleted: true });
 }
 
 export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {

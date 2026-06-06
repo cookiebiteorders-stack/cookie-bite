@@ -6,6 +6,10 @@ import { Ban, Gift, MapPin, ShieldAlert, Sparkles, StickyNote, Trash2, X } from 
 import type { CustomerDetailResponse, OrderSummaryRow } from "@/lib/admin/crm-types";
 import { useCustomersCrmStore } from "@/stores/customers-crm-store";
 import { cn } from "@/lib/utils";
+import {
+  CustomerModerationDialog,
+  type ModerationDialogKind,
+} from "@/components/admin/customers/customer-moderation-dialog";
 
 type Props = {
   open: boolean;
@@ -36,7 +40,7 @@ export function CustomerProfileDrawer({
   const [fullName, setFullName] = useState("");
   const [points, setPoints] = useState("");
   const [notes, setNotes] = useState("");
-  const [blockReason, setBlockReason] = useState("");
+  const [dialogKind, setDialogKind] = useState<ModerationDialogKind | null>(null);
 
   const load = useCallback(async () => {
     if (!customerId) return;
@@ -95,58 +99,41 @@ export function CustomerProfileDrawer({
     if (ok) void load();
   };
 
-  const handleBlockEmail = async () => {
-    if (!customerId || !canDelete || !c?.email) return;
-    const typed = window.prompt(
-      `لتأكيد حظر البريد، اكتب بريد العميل بالكامل:\n${c.email}`,
-      "",
-    );
-    if (!typed || typed.trim().toLowerCase() !== c.email.trim().toLowerCase()) {
-      pushToast("لم يتم التأكيد — تم إلغاء الحظر.", "info");
-      return;
-    }
-    setModerating(true);
-    const ok = await blockCustomerEmail(customerId, {
-      confirm_email: typed.trim(),
-      reason: blockReason.trim() || undefined,
-    });
-    setModerating(false);
-    if (ok) void load();
-  };
+  const handleModerationConfirm = async (payload: {
+    confirmEmail: string;
+    reason?: string;
+  }) => {
+    if (!customerId || !canDelete || !dialogKind) return;
 
-  const handleUnblockEmail = async () => {
-    if (!customerId || !canDelete) return;
-    if (!window.confirm("إلغاء حظر هذا البريد؟ سيتمكن صاحبه من التسجيل مجدداً.")) return;
     setModerating(true);
-    const ok = await unblockCustomerEmail(customerId);
-    setModerating(false);
-    if (ok) void load();
-  };
+    let ok = false;
 
-  const handleDeleteCustomer = async () => {
-    if (!customerId || !canDelete || !c?.email) return;
-    if (
-      !window.confirm(
-        "حذف العميل نهائياً؟ سيتم حظر بريده ومنع تسجيل الدخول. الطلبات السابقة تبقى في النظام.",
-      )
-    ) {
-      return;
+    if (dialogKind === "delete" && c?.email) {
+      ok = await deleteCustomer(customerId, {
+        confirm_email: payload.confirmEmail,
+      });
+      if (ok) {
+        setDialogKind(null);
+        onOpenChange(false);
+      }
+    } else if (dialogKind === "block" && c?.email) {
+      ok = await blockCustomerEmail(customerId, {
+        confirm_email: payload.confirmEmail,
+        reason: payload.reason,
+      });
+      if (ok) {
+        setDialogKind(null);
+        onOpenChange(false);
+      }
+    } else if (dialogKind === "unblock") {
+      ok = await unblockCustomerEmail(customerId);
+      if (ok) {
+        setDialogKind(null);
+        void load();
+      }
     }
-    const typed = window.prompt(
-      `لتأكيد الحذف، اكتب بريد العميل بالكامل:\n${c.email}`,
-      "",
-    );
-    if (!typed || typed.trim().toLowerCase() !== c.email.trim().toLowerCase()) {
-      pushToast("لم يتم التأكيد — تم إلغاء الحذف.", "info");
-      return;
-    }
-    setModerating(true);
-    const ok = await deleteCustomer(customerId, {
-      confirm_email: typed.trim(),
-      reason: blockReason.trim() || undefined,
-    });
+
     setModerating(false);
-    if (ok) onOpenChange(false);
   };
 
   return (
@@ -355,8 +342,8 @@ export function CustomerProfileDrawer({
                         إجراءات حساسة
                       </h3>
                       <p className="mt-2 text-xs leading-relaxed text-red-900/80 dark:text-red-100/80">
-                        للمالك والأدمن فقط. الحظر يمنع تسجيل الدخول وإعادة التسجيل بنفس البريد. الحذف يزيل
-                        ملف العميل مع الإبقاء على سجل الطلبات.
+                        للمالك والأدمن فقط. <strong>الحذف</strong> يزيل الملف فقط ويمكن للعميل التسجيل مجدداً.
+                        <strong> الحظر</strong> يحظر البريد ويحذف الحساب معاً. الطلبات السابقة تبقى دائماً.
                       </p>
 
                       {detail.email_blocked ? (
@@ -373,25 +360,14 @@ export function CustomerProfileDrawer({
                             </p>
                           ) : null}
                         </div>
-                      ) : (
-                        <label className="mt-3 block text-xs font-semibold text-red-900 dark:text-red-100">
-                          سبب الحظر (اختياري)
-                          <input
-                            className="mt-1 w-full rounded-xl border border-red-200 bg-white px-3 py-2 text-sm text-stone-900 dark:border-red-900 dark:bg-stone-900"
-                            value={blockReason}
-                            onChange={(e) => setBlockReason(e.target.value)}
-                            placeholder="مثال: احتيال، إساءة، طلب العميل"
-                            disabled={moderating}
-                          />
-                        </label>
-                      )}
+                      ) : null}
 
                       <div className="mt-3 flex flex-col gap-2">
                         {detail.email_blocked ? (
                           <button
                             type="button"
                             disabled={moderating}
-                            onClick={() => void handleUnblockEmail()}
+                            onClick={() => setDialogKind("unblock")}
                             className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-bold text-red-800 hover:bg-red-100 disabled:opacity-60 dark:border-red-800 dark:bg-stone-900 dark:text-red-100"
                           >
                             <Ban className="h-4 w-4" aria-hidden />
@@ -401,17 +377,17 @@ export function CustomerProfileDrawer({
                           <button
                             type="button"
                             disabled={moderating}
-                            onClick={() => void handleBlockEmail()}
+                            onClick={() => setDialogKind("block")}
                             className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-400 bg-red-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-60"
                           >
                             <Ban className="h-4 w-4" aria-hidden />
-                            حظر البريد
+                            حظر البريد وحذف الحساب
                           </button>
                         )}
                         <button
                           type="button"
                           disabled={moderating}
-                          onClick={() => void handleDeleteCustomer()}
+                          onClick={() => setDialogKind("delete")}
                           className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-500 bg-red-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-800 disabled:opacity-60"
                         >
                           <Trash2 className="h-4 w-4" aria-hidden />
@@ -426,6 +402,16 @@ export function CustomerProfileDrawer({
           </motion.aside>
         </motion.div>
       ) : null}
+      <CustomerModerationDialog
+        open={dialogKind !== null}
+        kind={dialogKind ?? "delete"}
+        customerEmail={c?.email ?? ""}
+        busy={moderating}
+        onClose={() => {
+          if (!moderating) setDialogKind(null);
+        }}
+        onConfirm={(payload) => void handleModerationConfirm(payload)}
+      />
     </AnimatePresence>
   );
 }

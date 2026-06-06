@@ -186,7 +186,7 @@ export const useCustomersCrmStore = create<CustomersCrmState>((set, get) => ({
   blockCustomerEmail: async (id, body) => {
     try {
       await fetchJson(`/api/admin/customers/${id}/block`, { method: "POST", jsonBody: body });
-      get().pushToast("تم حظر بريد العميل.", "success");
+      get().pushToast("تم حظر البريد وحذف الحساب.", "success");
       await get().loadCustomers();
       return true;
     } catch (e) {
@@ -210,7 +210,7 @@ export const useCustomersCrmStore = create<CustomersCrmState>((set, get) => ({
   deleteCustomer: async (id, body) => {
     try {
       await fetchJson(`/api/admin/customers/${id}`, { method: "DELETE", jsonBody: body });
-      get().pushToast("تم حذف العميل وحظر بريده.", "success");
+      get().pushToast("تم حذف العميل.", "success");
       await get().loadCustomers();
       return true;
     } catch (e) {
