@@ -23,7 +23,20 @@ import type { ChatClientAction } from "@/lib/mr-brownie/chat-client-actions";
 import type { Product } from "@/lib/data";
 import { VoiceInputButton } from "@/components/mr-brownie/voice-input-button";
 import type { ChatActionCard } from "@/lib/mr-brownie/action-cards";
+import { trackGa4Event } from "@/lib/analytics/ga4";
 import { trackMrBrownieFunnel } from "@/lib/analytics/mr-brownie-funnel";
+import { GiftGuideQuiz } from "@/components/mr-brownie/gift-guide-quiz";
+import {
+  buildGiftGuideReply,
+  buildGiftGuideSummary,
+  isGiftGuideChip,
+  pickGiftGuideProducts,
+  type GiftGuideAnswers,
+} from "@/lib/mr-brownie/gift-guide";
+import {
+  fetchAllShopProducts,
+  mapApiProductToCatalog,
+} from "@/lib/storefront/shop-catalog-client";
 import { streamMrBrownieChat } from "@/lib/mr-brownie/stream-client";
 import {
   PERSONA_CONFIG,
@@ -295,6 +308,8 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
   const [showNotifDot, setShowNotifDot] = useState(true);
   const [sessionRole, setSessionRole] = useState<string | null>(null);
   const [dynamicChips, setDynamicChips] = useState<string[]>([]);
+  const [giftGuideOpen, setGiftGuideOpen] = useState(false);
+  const [giftGuideLoading, setGiftGuideLoading] = useState(false);
   const [feedbackByMessage, setFeedbackByMessage] = useState<Record<string, 1 | -1>>({});
   const fabRef = useRef<HTMLButtonElement>(null);
   const dragSession = useRef<{
@@ -1016,6 +1031,76 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
     void submitMessage(input);
   }, [input, submitMessage]);
 
+  const completeGiftGuide = useCallback(
+    async (answers: GiftGuideAnswers) => {
+      setGiftGuideOpen(false);
+      setGiftGuideLoading(true);
+      setError(null);
+
+      const locale = lang === "ar" ? "ar" : "en";
+      const summary = buildGiftGuideSummary(answers, locale);
+
+      trackMrBrownieFunnel("gift_guide_complete", {
+        pathname,
+        budget: answers.budget,
+        occasion: answers.occasion,
+        dietary: answers.dietary,
+      });
+      trackGa4Event("mr_brownie_gift_guide_complete", {
+        budget: answers.budget,
+        occasion: answers.occasion,
+        dietary: answers.dietary,
+      });
+
+      const userTs = Date.now();
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", content: summary, createdAt: userTs },
+      ]);
+      enqueueSaveMessage("user", summary);
+
+      try {
+        const rows = await fetchAllShopProducts();
+        const catalog = rows.map((row) =>
+          mapApiProductToCatalog(row, t("product.fallbackDescription"), lang),
+        );
+        const productCards = pickGiftGuideProducts(catalog, answers);
+        const reply = buildGiftGuideReply(answers, locale, productCards.length);
+        const assistantTs = Date.now();
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: reply,
+            productCards: productCards.length ? productCards : undefined,
+            createdAt: assistantTs,
+          },
+        ]);
+        enqueueSaveMessage("assistant", reply);
+
+        trackMrBrownieFunnel("assistant_reply", {
+          pathname,
+          source: "gift_guide",
+          has_products: productCards.length > 0 ? 1 : 0,
+        });
+      } catch (e) {
+        const fallback =
+          locale === "ar"
+            ? "تعذّر تحميل المنتجات الآن — جرّب مرة أخرى أو اسألني مباشرة."
+            : "Couldn't load products right now — try again or ask me directly.";
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: fallback, createdAt: Date.now() },
+        ]);
+        setError(e instanceof Error ? e.message : fallback);
+      } finally {
+        setGiftGuideLoading(false);
+      }
+    },
+    [lang, pathname, t, enqueueSaveMessage],
+  );
+
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (open) return;
     const el = fabRef.current;
@@ -1373,9 +1458,22 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
                     >
                       <p className="font-semibold">{t("mrBrownieChat.errorTitle")}</p>
                       <p className="mt-1.5 text-[13px] opacity-95">{error}</p>
-                      {error.includes("GEMINI") ||
-                      error.includes("Google AI Studio") ||
-                      error.includes("aistudio") ? (
+                      {error.includes("DEEPSEEK") ||
+                      error.includes("deepseek") ? (
+                        <p className="mt-2 text-xs opacity-90">
+                          {t("mrBrownieChat.errorApiKeyHint")}{" "}
+                          <a
+                            href="https://platform.deepseek.com/api_keys"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium underline underline-offset-2 hover:opacity-100"
+                          >
+                            platform.deepseek.com/api_keys
+                          </a>
+                        </p>
+                      ) : error.includes("GEMINI") ||
+                        error.includes("Google AI Studio") ||
+                        error.includes("aistudio") ? (
                         <p className="mt-2 text-xs opacity-90">
                           {t("mrBrownieChat.errorApiKeyHint")}{" "}
                           <a
@@ -1461,6 +1559,14 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
                   )}
                 </button>
               </div>
+              {giftGuideOpen ? (
+                <div className="mb-3 mt-3">
+                  <GiftGuideQuiz
+                    onComplete={(answers) => void completeGiftGuide(answers)}
+                    onCancel={() => setGiftGuideOpen(false)}
+                  />
+                </div>
+              ) : null}
               <p
                 className={cn(
                   "mb-2 mt-3 font-medium text-cb-text-muted",
@@ -1479,12 +1585,17 @@ export function MrBrownieChat({ embedded = false, initialOpen = false }: MrBrown
                   <button
                     key={s}
                     type="button"
-                    disabled={loading || historyLoading}
+                    disabled={loading || historyLoading || giftGuideLoading}
                     onClick={() => {
                       trackMrBrownieFunnel("chip_click", {
                         pathname,
                         chip: s.slice(0, 80),
                       });
+                      if (isGiftGuideChip(s, t("mrBrownieChat.suggestions.shop0"))) {
+                        trackMrBrownieFunnel("gift_guide_start", { pathname });
+                        setGiftGuideOpen(true);
+                        return;
+                      }
                       void submitMessage(s);
                     }}
                     className={cn(

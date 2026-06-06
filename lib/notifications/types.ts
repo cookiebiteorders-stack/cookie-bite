@@ -1,6 +1,7 @@
 export type NotificationType =
   | "order_confirmation"
   | "payment_confirmation"
+  | "review_request"
   | "invoice"
   | "shipping_update"
   | "whatsapp"

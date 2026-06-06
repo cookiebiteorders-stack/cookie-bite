@@ -20,6 +20,7 @@ import { Box3DPreview } from "@/components/gift-box-builder/box-3d-preview";
 import { FreeDeliveryBar } from "@/components/cart/free-delivery-bar";
 import { ShareGiftBoxButton } from "@/components/gift-box/share-gift-box-button";
 import { trackGa4Event } from "@/lib/analytics/ga4";
+import { GiftBoxPersonalizationPanel } from "@/components/gift-box-builder/gift-box-personalization-panel";
 import { OccasionTemplatesBar } from "@/components/gift-box-builder/occasion-templates-bar";
 import { applyOccasionTemplateToState } from "@/lib/occasion-templates/apply";
 import type { OccasionTemplate } from "@/lib/occasion-templates/types";
@@ -443,20 +444,7 @@ export function GiftBoxBuilder() {
           ) : null}
 
           {state.currentStep === 3 ? (
-            <div className="gb-step-panel active">
-              <h2 className="gb-step-title">{t("pages.giftBoxBuilder.s3Heading")}</h2>
-              <div className="gb-section-block">
-                <textarea
-                  className="gb-input"
-                  rows={4}
-                  maxLength={250}
-                  placeholder={t("pages.giftBoxBuilder.message")}
-                  value={state.msgText}
-                  onChange={(e) => patch({ msgText: e.target.value })}
-                />
-                <div className="text-end text-xs text-[var(--gb-text-muted)]">{state.msgText.length} / 250</div>
-              </div>
-            </div>
+            <GiftBoxPersonalizationPanel state={state} onPatch={patch} t={t} />
           ) : null}
 
           {state.currentStep === 4 ? (

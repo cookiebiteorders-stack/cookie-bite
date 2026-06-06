@@ -16,8 +16,11 @@ export function PageTransition({ children }: Props) {
   const pageMotion = usePageTransitionMotion();
   const shellRef = useRef<HTMLDivElement>(null);
   const prevPathRef = useRef<string | null>(null);
+  /** أول تحميل للصفحة — لا نخفي المحتوى (يُفسد LCP على الموبايل). */
+  const isFirstPaintRef = useRef(true);
 
   useEffect(() => {
+    isFirstPaintRef.current = false;
     const prev = prevPathRef.current;
     prevPathRef.current = pathname;
     if (prev === null || prev === pathname) return;
@@ -35,7 +38,7 @@ export function PageTransition({ children }: Props) {
         key={pathname}
         data-loki="page-route"
         className="min-h-0 w-full will-change-[opacity,transform]"
-        {...(pageMotion.reduced
+        {...(pageMotion.reduced || isFirstPaintRef.current
           ? { initial: false, transition: { duration: 0.01 } }
           : {
               initial: pageMotion.initial,

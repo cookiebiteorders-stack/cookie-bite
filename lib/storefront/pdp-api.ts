@@ -2,16 +2,7 @@ import type { Product } from "@/lib/data";
 import type { ProductRow } from "@/lib/db/types";
 import type { Lang } from "@/lib/i18n/translations";
 import { productRowToStorefrontProduct } from "@/lib/storefront/map-product-row";
-
-const FALLBACK_DESC = "Fresh handcrafted treats from Cookie Bite — New Cairo.";
-
-function appOrigin(): string {
-  const raw =
-    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    process.env.APP_BASE_URL?.trim() ||
-    "http://127.0.0.1:3000";
-  return raw.replace(/\/$/, "");
-}
+import type { RatingDistribution } from "@/lib/storefront/review-stats";
 
 export type PdpReview = import("@/lib/storefront/pdp-data").PdpReview;
 
@@ -23,7 +14,18 @@ export type PdpApiPayload = {
   reviews: PdpReview[];
   reviewCount: number;
   avgRating: number | null;
+  ratingDistribution: RatingDistribution;
 };
+
+const FALLBACK_DESC = "Fresh handcrafted treats from Cookie Bite — New Cairo.";
+
+function appOrigin(): string {
+  const raw =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+    process.env.APP_BASE_URL?.trim() ||
+    "http://127.0.0.1:3000";
+  return raw.replace(/\/$/, "");
+}
 
 /** جلب PDP عبر مسار API العام (نفس المصدر الذي يعمل على الإنتاج). */
 export async function fetchPdpPayloadFromApi(
@@ -42,6 +44,7 @@ export async function fetchPdpPayloadFromApi(
       reviews?: PdpReview[];
       review_count?: number;
       avg_rating?: number | null;
+      rating_distribution?: RatingDistribution;
     };
     if (!json.product?.slug) return null;
     const product = productRowToStorefrontProduct(json.product, FALLBACK_DESC, lang);
@@ -55,6 +58,13 @@ export async function fetchPdpPayloadFromApi(
       reviews: json.reviews ?? [],
       reviewCount: json.review_count ?? 0,
       avgRating: json.avg_rating ?? null,
+      ratingDistribution: json.rating_distribution ?? {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+      },
     };
   } catch (e) {
     console.error("[fetchPdpPayloadFromApi]", slug, e);

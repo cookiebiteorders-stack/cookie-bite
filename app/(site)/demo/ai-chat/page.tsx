@@ -1,3 +1,4 @@
+import "@/app/styles/ai-chat.css";
 import type { Metadata } from "next";
 import { AiChatApp } from "@/components/ai-chat/ai-chat-app";
 import { buildPageMetadata } from "@/lib/seo";

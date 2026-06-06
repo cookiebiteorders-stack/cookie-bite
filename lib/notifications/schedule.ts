@@ -1,6 +1,7 @@
 import {
   dispatchOrderConfirmed,
   dispatchPaymentConfirmed,
+  dispatchReviewRequest,
   type DispatchOptions,
 } from "@/lib/notifications/orchestrator";
 import {
@@ -10,6 +11,8 @@ import {
   claimPendingNotificationJobs,
   completeNotificationJob,
   enqueueNotificationJob,
+  hasReviewRequestJobForOrder,
+  reviewRequestScheduledAt,
   type NotificationJobType,
 } from "@/lib/notifications/db-queue";
 
@@ -21,7 +24,10 @@ async function runJob(
   if (jobType === "order_confirmation") {
     return dispatchOrderConfirmed(orderId, options);
   }
-  return dispatchPaymentConfirmed(orderId, options);
+  if (jobType === "payment_confirmation") {
+    return dispatchPaymentConfirmed(orderId, options);
+  }
+  return dispatchReviewRequest(orderId, options);
 }
 
 /**
@@ -36,6 +42,18 @@ export function scheduleOrderConfirmed(orderId: string, options?: DispatchOption
 
 export function schedulePaymentConfirmed(orderId: string, options?: DispatchOptions): void {
   void scheduleNotification("payment_confirmation", orderId, options);
+}
+
+/** Schedule review-request email 3 days after delivery (DB queue only — delayed). */
+export async function scheduleReviewRequest(orderId: string): Promise<void> {
+  if (await hasReviewRequestJobForOrder(orderId)) return;
+
+  const scheduledAt = reviewRequestScheduledAt();
+  await enqueueNotificationJob({
+    jobType: "review_request",
+    orderId,
+    scheduledAt,
+  });
 }
 
 async function scheduleNotification(

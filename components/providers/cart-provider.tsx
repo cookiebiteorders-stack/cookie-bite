@@ -31,6 +31,8 @@ const PROMO_STORAGE_KEY = "cb-promo-v1";
 type CartContextValue = {
   lines: CartLine[];
   isDrawerOpen: boolean;
+  /** Slug of the last standard product added — powers drawer upsell. */
+  lastUpsellSourceProductId: string | null;
   openDrawer: () => void;
   closeDrawer: () => void;
   toggleDrawer: () => void;
@@ -162,6 +164,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [promo, setPromo] = useState<AppliedPromo | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
+  const [lastUpsellSourceProductId, setLastUpsellSourceProductId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -199,7 +204,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [promo, hydrated]);
 
   const openDrawer = useCallback(() => setDrawerOpen(true), []);
-  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  const closeDrawer = useCallback(() => {
+    setDrawerOpen(false);
+    setLastUpsellSourceProductId(null);
+  }, []);
   const toggleDrawer = useCallback(() => setDrawerOpen((v) => !v), []);
 
   const addItem = useCallback(
@@ -215,6 +223,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       next[idx] = { ...next[idx], quantity: q };
       return next;
     });
+    setLastUpsellSourceProductId(product.id);
     setDrawerOpen(true);
     },
     [],
@@ -325,6 +334,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     () => ({
       lines,
       isDrawerOpen,
+      lastUpsellSourceProductId,
       openDrawer,
       closeDrawer,
       toggleDrawer,
@@ -345,6 +355,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     [
       lines,
       isDrawerOpen,
+      lastUpsellSourceProductId,
       openDrawer,
       closeDrawer,
       toggleDrawer,

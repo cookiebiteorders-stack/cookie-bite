@@ -100,14 +100,17 @@ export function usePageTransitionMotion(): PageTransitionMotion {
   const blurIn = pageBlurPx > 0 ? `${pageBlurPx}px` : "0px";
   const blurOut =
     pageBlurPx > 0 ? `${Math.round(pageBlurPx * 0.65)}px` : "0px";
+  const useLightEnter = !cinematic;
   return {
     reduced: false,
-    initial: {
-      opacity: 0,
-      y: 12,
-      scale: 0.994,
-      filter: `blur(${blurIn})`,
-    },
+    initial: useLightEnter
+      ? { opacity: 0, y: 6, scale: 1, filter: "blur(0px)" }
+      : {
+          opacity: 0,
+          y: 12,
+          scale: 0.994,
+          filter: `blur(${blurIn})`,
+        },
     animate: { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" },
     exit: {
       opacity: 0,

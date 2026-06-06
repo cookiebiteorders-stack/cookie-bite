@@ -12,11 +12,15 @@ import { TrackerProvider } from "./TrackerProvider";
  */
 function TrackerWithUser() {
   const { userId } = useAuth();
+  const disabled = process.env.NEXT_PUBLIC_DISABLE_TRACKING === "1";
+  const enableReplay =
+    !disabled && process.env.NEXT_PUBLIC_TRACKING_ENABLE_REPLAY !== "0";
   return (
     <TrackerProvider
       userId={userId ?? null}
       token={process.env.NEXT_PUBLIC_TRACKING_TOKEN}
-      disabled={process.env.NEXT_PUBLIC_DISABLE_TRACKING === "1"}
+      disabled={disabled}
+      enableReplay={enableReplay}
     />
   );
 }

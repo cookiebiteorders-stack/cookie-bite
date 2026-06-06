@@ -1,3 +1,4 @@
+import "@/app/styles/route-auth.css";
 import { ClerkHideDevFooter } from "@/components/auth/clerk-hide-dev-footer";
 
 export default function AuthLayout({

@@ -19,7 +19,7 @@ import { writeAuditLog } from "@/lib/admin/audit";
 import { ORDER_STATUS_VALUES, PAYMENT_STATUS_VALUES } from "@/lib/domain/order-enums";
 import { awardLoyaltyPointsForPaidOrder } from "@/lib/loyalty/award-order-points";
 import { syncOrderFinancialRecords } from "@/lib/orders/sync-order-financials";
-import { schedulePaymentConfirmed } from "@/lib/notifications/schedule";
+import { schedulePaymentConfirmed, scheduleReviewRequest } from "@/lib/notifications/schedule";
 
 const schema = z
   .object({
@@ -108,6 +108,14 @@ export async function PATCH(
       .maybeSingle();
     to = user?.email ?? to;
   }
+  const wasDelivered = (before?.status ?? "").toLowerCase() === "delivered";
+  const nowDelivered = (order.status ?? "").toLowerCase() === "delivered";
+  if (!wasDelivered && nowDelivered) {
+    void scheduleReviewRequest(id).catch((err) =>
+      console.error("[admin/orders] schedule review_request", err),
+    );
+  }
+
   if (to && parsed.data.status) {
     if (parsed.data.status === "shipped") {
       try {

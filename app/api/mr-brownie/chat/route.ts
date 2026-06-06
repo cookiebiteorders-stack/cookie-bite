@@ -5,7 +5,7 @@ import { getAiProductNamePool } from "@/lib/ai/website-knowledge";
 import { AI_AGENT_IDS } from "@/lib/ai-agent/agents";
 import { finalizeAgentResponse } from "@/lib/ai-agent/post-response";
 import type { CommerceIntent } from "@/lib/mr-brownie/brain/intent-engine";
-import { runMrBrownieGemini } from "@/lib/mr-brownie/gemini";
+import { runMrBrownieLlm } from "@/lib/mr-brownie/llm";
 import {
   isGuestSessionUuid,
   MR_BROWNIE_GUEST_SESSION_COOKIE,
@@ -55,19 +55,23 @@ export async function POST(req: NextRequest) {
     });
 
     let reply = "";
-    let usedModel = process.env.MR_BROWNIE_GEMINI_MODEL?.trim() || "gemini-flash-latest";
+    let usedModel = "unknown";
+    let usedProvider = "unknown";
 
     const jar = await cookies();
     const guestRaw = jar.get(MR_BROWNIE_GUEST_SESSION_COOKIE)?.value;
     const guestSessionId = isGuestSessionUuid(guestRaw) ? guestRaw : null;
 
     try {
-      const draft = await runMrBrownieGemini({
+      const llmResult = await runMrBrownieLlm({
         systemInstruction: prepared.systemInstruction,
         messages: prepared.rawMessages,
         temperature: prepared.temperature,
         maxOutputTokens: prepared.maxOutputTokens,
       });
+      usedModel = llmResult.model;
+      usedProvider = llmResult.provider;
+      const draft = llmResult.text;
       const optimized = await finalizeAgentResponse({
         agentId: AI_AGENT_IDS.MR_BROWNIE,
         draft,
@@ -95,8 +99,9 @@ export async function POST(req: NextRequest) {
       });
       reply = optimized.text;
     } catch (e) {
-      console.error("Gemini API Error, falling back to local responses:", e);
+      console.error("LLM API error, falling back to local responses:", e);
       usedModel = "fallback-local-rules";
+      usedProvider = "fallback";
 
       const lastUserMsg = msgList[msgList.length - 1]?.content.toLowerCase() || "";
       const role = prepared.resolvedRole;
@@ -132,11 +137,11 @@ export async function POST(req: NextRequest) {
           reply =
             "📊 (وضع الاستجابة التلقائية): راجع لوحة الطلبات /admin/orders لأحدث الأرقام.";
         } else {
-          reply = `مرحباً (${role}). تعذر الاتصال بـ Gemini — استخدم لوحة الإدارة أو Mrs. Cookie في /admin/copilot.`;
+          reply = `مرحباً (${role}). تعذر الاتصال بمساعد الذكاء الاصطناعي — استخدم لوحة الإدارة أو Mrs. Cookie في /admin/copilot.`;
         }
       } else {
         reply =
-          "عذراً، مشكلة مؤقتة في الاتصال بـ Gemini 🤖. جرّب السؤال عن التوصيل، الهدايا، أو منتجات /shop.";
+          "عذراً، مشكلة مؤقتة في الاتصال بمساعد الذكاء الاصطناعي 🤖. جرّب السؤال عن التوصيل، الهدايا، أو منتجات /shop.";
       }
     }
 
@@ -144,6 +149,7 @@ export async function POST(req: NextRequest) {
       reply,
       meta: {
         role: prepared.resolvedRole,
+        provider: usedProvider,
         model: usedModel,
       },
     });

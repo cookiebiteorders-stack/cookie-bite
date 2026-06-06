@@ -20,6 +20,7 @@ import {
 } from "@/lib/auth/clerk-js-fallback";
 import { CssRecoveryBootstrap } from "@/components/pwa/css-recovery-bootstrap";
 import { CRITICAL_SHELL_CSS } from "@/lib/pwa/critical-shell-css";
+import { getPublicStoreFlags } from "@/lib/store/owner-flags";
 import "./globals.css";
 
 const clerkJsScriptUrl = resolveClerkJsScriptUrl();
@@ -37,9 +38,9 @@ const cairo = Cairo({
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "700"],
   display: "swap",
-  preload: true,
+  preload: false,
 });
 
 export const viewport: Viewport = {
@@ -144,6 +145,7 @@ export default async function RootLayout({
   const lang = store.get(LANG_COOKIE)?.value === "en" ? "en" : "ar";
   const dir = lang === "ar" ? "rtl" : "ltr";
   const clerkLocalization = getClerkLocalization(lang);
+  const storeFlags = await getPublicStoreFlags();
   return (
     <html
       lang={lang}
@@ -192,7 +194,7 @@ export default async function RootLayout({
         >
           <ThemeProvider>
             <LanguageProvider initialLang={lang}>
-              <StoreFlagsProvider>
+              <StoreFlagsProvider initialFlags={storeFlags}>
                 <SiteJsonLd />
                 <GA4Tracker />
                 <SeasonalThemeProvider />

@@ -1,12 +1,18 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { DispatchOptions } from "@/lib/notifications/orchestrator";
 
-export type NotificationJobType = "order_confirmation" | "payment_confirmation";
+export type NotificationJobType =
+  | "order_confirmation"
+  | "payment_confirmation"
+  | "review_request";
+
+const REVIEW_REQUEST_DELAY_MS = 3 * 24 * 60 * 60 * 1000;
 
 export async function enqueueNotificationJob(params: {
   jobType: NotificationJobType;
   orderId: string;
   options?: DispatchOptions;
+  scheduledAt?: Date;
 }): Promise<string | null> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
     return null;
@@ -19,6 +25,7 @@ export async function enqueueNotificationJob(params: {
       order_id: params.orderId,
       payload: { force: Boolean(params.options?.force) },
       status: "pending",
+      scheduled_at: (params.scheduledAt ?? new Date()).toISOString(),
     })
     .select("id")
     .single();
@@ -86,4 +93,28 @@ export async function completeNotificationJob(
         : new Date().toISOString(),
     })
     .eq("id", id);
+}
+
+/** Skip duplicate review-request scheduling for the same order. */
+export async function hasReviewRequestJobForOrder(orderId: string): Promise<boolean> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    return false;
+  }
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("notification_jobs")
+    .select("id")
+    .eq("order_id", orderId)
+    .eq("job_type", "review_request")
+    .in("status", ["pending", "processing", "completed"])
+    .limit(1);
+  if (error) {
+    console.error("[notification_jobs] review_request lookup", error.message);
+    return false;
+  }
+  return Boolean(data?.length);
+}
+
+export function reviewRequestScheduledAt(): Date {
+  return new Date(Date.now() + REVIEW_REQUEST_DELAY_MS);
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
+import { useCart } from "@/components/providers/cart-provider";
 import { ProductCard } from "@/components/product/product-card";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { SeoRelatedLinks } from "@/components/seo/seo-related-links";
@@ -21,19 +22,42 @@ import {
   type ShopApiProduct,
 } from "@/lib/storefront/shop-catalog-client";
 import { ShopFilterChips, type ShopFilterChip } from "@/components/shop/shop-filter-chips";
+import { ShopFilterQuiz, ShopFilterQuizTrigger } from "@/components/shop/shop-filter-quiz";
 import {
   ShopMobileFilterBar,
   ShopMobileFilterSheet,
 } from "@/components/shop/shop-mobile-filter-sheet";
+import { ShareWishlistButton } from "@/components/wishlist/share-wishlist-button";
 import { trackGa4Event } from "@/lib/analytics/ga4";
+import { sortByBestMatch } from "@/lib/storefront/best-match-sort";
+import { getRecentlyViewed } from "@/lib/storefront/recently-viewed";
+import {
+  applyShopFilterQuiz,
+  type ShopFilterQuizAnswers,
+} from "@/lib/storefront/shop-filter-quiz";
+import {
+  computeShopFacetCounts,
+  filterShopProducts,
+  type ShopBadgeFilter,
+  type ShopFilterParams,
+  type ShopSortMode,
+} from "@/lib/storefront/shop-filters";
 
-type SortMode = "newest" | "price_asc" | "price_desc" | "popular";
-type BadgeFilter = "bestseller" | "new" | "trending";
+const SHOP_CATALOG_PAGE_SIZE = 16;
+
+type SortMode = ShopSortMode;
+type BadgeFilter = ShopBadgeFilter;
 
 type ShopProduct = CatalogProduct;
 
 function isSortMode(v: string | null): v is SortMode {
-  return v === "newest" || v === "price_asc" || v === "price_desc" || v === "popular";
+  return (
+    v === "newest" ||
+    v === "price_asc" ||
+    v === "price_desc" ||
+    v === "popular" ||
+    v === "best_match"
+  );
 }
 
 function isBadgeFilter(v: string): v is BadgeFilter {
@@ -74,6 +98,7 @@ type ShopClientProps = {
 
 export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientProps) {
   const { t, lang } = useLanguage();
+  const { lines } = useCart();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -90,6 +115,9 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [filterQuizOpen, setFilterQuizOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(SHOP_CATALOG_PAGE_SIZE);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -274,43 +302,88 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
     router,
   ]);
 
-  const filtered = useMemo(() => {
-    let list: ShopProduct[] = catalog;
-    const q = query.trim().toLowerCase();
-    if (cat !== "All") {
-      list = list.filter((p) => p.category === cat);
-    }
-    if (q) {
-      list = list.filter((p) => {
-        const hay = `${p.name} ${p.description} ${p.category}`.toLowerCase();
-        return hay.includes(q);
-      });
-    }
-    if (onlyBest) {
-      list = list.filter((p) => p.badges?.includes("bestseller"));
-    }
-    if (badgeFilter !== "all") {
-      list = list.filter((p) => p.badges?.includes(badgeFilter));
-    }
-    if (inStockOnly) {
-      list = list.filter((p) => p.inStock);
-    }
-    if (isMinPriceFilterActive(minPrice, priceBounds)) {
-      list = list.filter((p) => p.price >= minPrice!);
-    }
-    if (isMaxPriceFilterActive(maxPrice, priceBounds)) {
-      list = list.filter((p) => p.price <= maxPrice!);
-    }
-    if (sort === "price_asc") {
-      list = [...list].sort((a, b) => a.price - b.price);
-    } else if (sort === "price_desc") {
-      list = [...list].sort((a, b) => b.price - a.price);
-    } else {
-      // newest/popular fallback with existing shape
-      list = [...list];
-    }
-    return list;
-  }, [catalog, cat, query, onlyBest, badgeFilter, inStockOnly, minPrice, maxPrice, sort, priceBounds]);
+  const filterParams = useMemo(
+    (): ShopFilterParams => ({
+      cat,
+      query,
+      sort,
+      onlyBest,
+      badgeFilter,
+      inStockOnly,
+      minPrice,
+      maxPrice,
+      priceBounds,
+    }),
+    [cat, query, sort, onlyBest, badgeFilter, inStockOnly, minPrice, maxPrice, priceBounds],
+  );
+
+  const filtered = useMemo(
+    () => filterShopProducts(catalog, filterParams),
+    [catalog, filterParams],
+  );
+
+  const displayed = useMemo(() => {
+    if (sort !== "best_match") return filtered;
+    const recent = getRecentlyViewed();
+    return sortByBestMatch(filtered, {
+      recentSlugs: recent.map((entry) => entry.slug),
+      recentProductUuids: recent
+        .map((entry) => entry.productUuid)
+        .filter((id): id is string => Boolean(id)),
+      cartProductUuids: lines
+        .map((line) => line.productUuid)
+        .filter((id): id is string => Boolean(id)),
+      trendingSlugs: initialTrending.map((product) => product.id),
+    });
+  }, [filtered, sort, lines, initialTrending]);
+
+  useEffect(() => {
+    setVisibleCount(SHOP_CATALOG_PAGE_SIZE);
+  }, [cat, query, sort, onlyBest, inStockOnly, badgeFilter, minPrice, maxPrice, catalog.length]);
+
+  const visibleProducts = useMemo(
+    () => displayed.slice(0, visibleCount),
+    [displayed, visibleCount],
+  );
+
+  const hasMoreProducts = visibleCount < displayed.length;
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || !hasMoreProducts || loading) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((prev) =>
+            Math.min(prev + SHOP_CATALOG_PAGE_SIZE, displayed.length),
+          );
+        }
+      },
+      { rootMargin: "240px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMoreProducts, loading, displayed.length]);
+
+  const handleFilterQuizComplete = useCallback(
+    (answers: ShopFilterQuizAnswers) => {
+      const result = applyShopFilterQuiz(answers, availableCategories);
+      setCat(result.cat);
+      setQuery(result.query);
+      setMinPrice(result.minPrice);
+      setMaxPrice(result.maxPrice);
+      setOnlyBest(result.onlyBest);
+      setBadgeFilter(result.badgeFilter);
+      setFilterQuizOpen(false);
+      filterAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    },
+    [availableCategories],
+  );
+
+  const facets = useMemo(
+    () => computeShopFacetCounts(catalog, filterParams, availableCategories),
+    [catalog, filterParams, availableCategories],
+  );
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -336,7 +409,7 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
         best_sellers: onlyBest || undefined,
         in_stock: inStockOnly || undefined,
         badge: badgeFilter !== "all" ? badgeFilter : undefined,
-        results: filtered.length,
+        results: displayed.length,
       });
     }, 600);
     return () => window.clearTimeout(timer);
@@ -352,7 +425,7 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
     badgeFilter,
     minPrice,
     maxPrice,
-    filtered.length,
+    displayed.length,
   ]);
 
   const clearAll = () => {
@@ -386,6 +459,7 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
       const sortLabels: Record<SortMode, string> = {
         newest: t("pages.shop.sortNewest"),
         popular: t("pages.shop.sortPopular"),
+        best_match: t("pages.shop.sortBestMatch"),
         price_asc: t("pages.shop.sortPriceAsc"),
         price_desc: t("pages.shop.sortPriceDesc"),
       };
@@ -452,6 +526,10 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
   const filterControls = (
     <>
       <div className="cb-pl-shop-filters__row--primary">
+        <div className="flex flex-wrap items-center gap-2 pb-2 sm:col-span-2">
+          <ShopFilterQuizTrigger onClick={() => setFilterQuizOpen(true)} />
+          <ShareWishlistButton itemCount={wishlistUuids.size} />
+        </div>
         <input
           type="search"
           value={query}
@@ -466,6 +544,7 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
           aria-label={t("pages.shop.sortPopular")}
         >
           <option value="newest">{t("pages.shop.sortNewest")}</option>
+          <option value="best_match">{t("pages.shop.sortBestMatch")}</option>
           <option value="popular">{t("pages.shop.sortPopular")}</option>
           <option value="price_asc">{t("pages.shop.sortPriceAsc")}</option>
           <option value="price_desc">{t("pages.shop.sortPriceDesc")}</option>
@@ -526,20 +605,29 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
           "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cb-peach-deep/45",
         )}
       >
-        {availableCategories.map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => setCat(c)}
-            className={cn(
-              "cb-pl-pill shrink-0 snap-start font-bold uppercase tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-caramel)] focus-visible:ring-offset-2",
-              cat === c && "is-active",
-            )}
-            data-active={cat === c ? "true" : undefined}
-          >
-            {c === "All" ? t("pages.shop.categoryAll") : c}
-          </button>
-        ))}
+        {availableCategories.map((c) => {
+          const count = facets.categories[c] ?? 0;
+          const disabled = count === 0 && cat !== c;
+          const label =
+            c === "All" ? t("pages.shop.categoryAll") : c;
+          return (
+            <button
+              key={c}
+              type="button"
+              disabled={disabled}
+              onClick={() => setCat(c)}
+              className={cn(
+                "cb-pl-pill shrink-0 snap-start font-bold uppercase tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-caramel)] focus-visible:ring-offset-2",
+                cat === c && "is-active",
+                disabled && "cursor-not-allowed opacity-40",
+              )}
+              data-active={cat === c ? "true" : undefined}
+              aria-disabled={disabled || undefined}
+            >
+              {t("pages.shop.facetCount", { label, count })}
+            </button>
+          );
+        })}
       </div>
 
       <div className="cb-pl-shop-filters__divider space-y-3">
@@ -547,57 +635,80 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
           <p className="text-sm font-semibold text-cb-text-strong" aria-busy={!mounted || loading}>
             {!mounted || loading
               ? t("pages.shop.loadingCookies")
-              : t("pages.shop.showing", { filtered: filtered.length, total: catalog.length })}
+              : displayed.length > visibleProducts.length
+                ? t("pages.shop.showingProgress", {
+                    shown: visibleProducts.length,
+                    total: displayed.length,
+                  })
+                : t("pages.shop.showing", { filtered: displayed.length, total: catalog.length })}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-cb-text">
           <button
             type="button"
+            disabled={facets.bestSellers === 0 && !onlyBest}
             onClick={() => setOnlyBest((v) => !v)}
             className={cn(
               "rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide ring-1 transition",
               onlyBest
                 ? "bg-cb-brand-600 text-white ring-cb-brand-600"
                 : "bg-cb-surface text-cb-text-strong ring-cb-border hover:bg-cb-peach",
+              facets.bestSellers === 0 && !onlyBest && "cursor-not-allowed opacity-40",
             )}
           >
-            {t("pages.shop.bestSellersOnly")}
+            {t("pages.shop.facetCount", {
+              label: t("pages.shop.bestSellersOnly"),
+              count: facets.bestSellers,
+            })}
           </button>
           <button
             type="button"
+            disabled={facets.inStock === 0 && !inStockOnly}
             onClick={() => setInStockOnly((v) => !v)}
             className={cn(
               "rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide ring-1 transition",
               inStockOnly
                 ? "bg-cb-brand-600 text-white ring-cb-brand-600"
                 : "bg-cb-surface text-cb-text-strong ring-cb-border hover:bg-cb-peach",
+              facets.inStock === 0 && !inStockOnly && "cursor-not-allowed opacity-40",
             )}
           >
-            {t("pages.shop.inStockOnly")}
+            {t("pages.shop.facetCount", {
+              label: t("pages.shop.inStockOnly"),
+              count: facets.inStock,
+            })}
           </button>
           <div className="hidden h-5 w-px bg-cb-border/70 sm:block" aria-hidden />
-          {(["all", "bestseller", "new", "trending"] as const).map((b) => (
-            <button
-              key={b}
-              type="button"
-              onClick={() => setBadgeFilter(b)}
-              className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide ring-1 transition",
-                badgeFilter === b
-                  ? "bg-cb-brand-600 text-white ring-cb-brand-600"
-                  : "bg-cb-surface text-cb-text-strong ring-cb-border hover:bg-cb-peach",
-              )}
-            >
-              {b === "all"
+          {(["all", "bestseller", "new", "trending"] as const).map((b) => {
+            const badgeLabel =
+              b === "all"
                 ? t("pages.shop.allBadges")
                 : b === "bestseller"
                   ? t("product.badgeBestseller")
                   : b === "new"
                     ? t("product.badgeNew")
-                    : t("product.badgeTrending")}
-            </button>
-          ))}
+                    : t("product.badgeTrending");
+            const count = facets.badges[b];
+            const disabled = count === 0 && badgeFilter !== b;
+            return (
+              <button
+                key={b}
+                type="button"
+                disabled={disabled}
+                onClick={() => setBadgeFilter(b)}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide ring-1 transition",
+                  badgeFilter === b
+                    ? "bg-cb-brand-600 text-white ring-cb-brand-600"
+                    : "bg-cb-surface text-cb-text-strong ring-cb-border hover:bg-cb-peach",
+                  disabled && "cursor-not-allowed opacity-40",
+                )}
+              >
+                {t("pages.shop.facetCount", { label: badgeLabel, count })}
+              </button>
+            );
+          })}
         </div>
       </div>
     </>
@@ -647,7 +758,12 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
           >
             {!mounted || loading
               ? t("pages.shop.loadingCookies")
-              : t("pages.shop.showing", { filtered: filtered.length, total: catalog.length })}
+              : displayed.length > visibleProducts.length
+                ? t("pages.shop.showingProgress", {
+                    shown: visibleProducts.length,
+                    total: displayed.length,
+                  })
+                : t("pages.shop.showing", { filtered: displayed.length, total: catalog.length })}
           </p>
         </div>
 
@@ -657,7 +773,7 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
           open={mobileFiltersOpen}
           onClose={() => setMobileFiltersOpen(false)}
           activeCount={activeFilterCount}
-          resultCount={filtered.length}
+          resultCount={displayed.length}
         >
           {filterControls}
         </ShopMobileFilterSheet>
@@ -714,7 +830,7 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
         {error ? <p className="py-4 text-center text-sm text-red-600">{error}</p> : null}
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {filtered.map((p) => (
+          {visibleProducts.map((p) => (
             <ProductCard
               key={p.id}
               product={p}
@@ -724,7 +840,18 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
           ))}
         </div>
 
-        {!loading && filtered.length === 0 ? (
+        {hasMoreProducts && !loading ? (
+          <div ref={loadMoreRef} className="py-8 text-center" aria-hidden>
+            <p className="text-sm font-medium text-cb-text-muted">
+              {t("pages.shop.showingProgress", {
+                shown: visibleProducts.length,
+                total: displayed.length,
+              })}
+            </p>
+          </div>
+        ) : null}
+
+        {!loading && displayed.length === 0 ? (
           <div className="cb-pl-empty">
             <h3>{t("pages.shop.noMatch")}</h3>
             <p className="mt-2">{t("pages.shop.subtitle")}</p>
@@ -749,6 +876,12 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
           />
         </section>
       </div>
+
+      <ShopFilterQuiz
+        open={filterQuizOpen}
+        onClose={() => setFilterQuizOpen(false)}
+        onComplete={handleFilterQuizComplete}
+      />
     </div>
   );
 }

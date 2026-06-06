@@ -20,7 +20,13 @@ export function CssRecoveryBootstrap() {
       }
     };
 
-    scheduleChecks();
+    let idleId: number | undefined;
+    const start = () => scheduleChecks();
+    if (typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(start, { timeout: 4000 });
+    } else {
+      timers.push(window.setTimeout(start, 1200));
+    }
 
     const onVisible = () => {
       if (document.visibilityState === "visible") {
@@ -30,6 +36,7 @@ export function CssRecoveryBootstrap() {
     document.addEventListener("visibilitychange", onVisible);
 
     return () => {
+      if (idleId !== undefined) window.cancelIdleCallback(idleId);
       timers.forEach((id) => window.clearTimeout(id));
       document.removeEventListener("visibilitychange", onVisible);
     };

@@ -45,9 +45,8 @@ export async function drainBullNotificationJobs(max = 10): Promise<number> {
   const queue = await getQueue();
   if (!queue) return 0;
 
-  const { dispatchOrderConfirmed, dispatchPaymentConfirmed } = await import(
-    "@/lib/notifications/orchestrator"
-  );
+  const { dispatchOrderConfirmed, dispatchPaymentConfirmed, dispatchReviewRequest } =
+    await import("@/lib/notifications/orchestrator");
 
   const waiting = await queue.getJobs(["waiting", "delayed"], 0, max - 1);
   let done = 0;
@@ -56,8 +55,10 @@ export async function drainBullNotificationJobs(max = 10): Promise<number> {
       const { jobType, orderId, options } = job.data;
       if (jobType === "order_confirmation") {
         await dispatchOrderConfirmed(orderId, options);
-      } else {
+      } else if (jobType === "payment_confirmation") {
         await dispatchPaymentConfirmed(orderId, options);
+      } else {
+        await dispatchReviewRequest(orderId, options);
       }
       await job.remove();
       done += 1;

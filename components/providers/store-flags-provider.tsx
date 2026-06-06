@@ -7,10 +7,14 @@ type StoreFlagsContextValue = PublicStoreFlags & {
   loaded: boolean;
 };
 
-const DEFAULT: StoreFlagsContextValue = {
+const FLAG_DEFAULTS: PublicStoreFlags = {
   high_contrast_mode: false,
   maintenance_mode: false,
   beta_features: false,
+};
+
+const DEFAULT: StoreFlagsContextValue = {
+  ...FLAG_DEFAULTS,
   loaded: false,
 };
 
@@ -23,9 +27,21 @@ function applyDocumentFlags(flags: PublicStoreFlags) {
   root.dataset.storeFlags = JSON.stringify(flags);
 }
 
-export function StoreFlagsProvider({ children }: { children: ReactNode }) {
-  const [flags, setFlags] = useState<PublicStoreFlags>(DEFAULT);
-  const [loaded, setLoaded] = useState(false);
+export function StoreFlagsProvider({
+  children,
+  initialFlags,
+}: {
+  children: ReactNode;
+  initialFlags?: PublicStoreFlags;
+}) {
+  const [flags, setFlags] = useState<PublicStoreFlags>(initialFlags ?? FLAG_DEFAULTS);
+  const [loaded, setLoaded] = useState(Boolean(initialFlags));
+
+  useEffect(() => {
+    if (initialFlags) {
+      applyDocumentFlags(initialFlags);
+    }
+  }, [initialFlags]);
 
   useEffect(() => {
     let cancelled = false;

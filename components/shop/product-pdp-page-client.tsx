@@ -9,6 +9,7 @@ import { PdpActions } from "@/components/shop/pdp-actions";
 import { PdpFbtModule } from "@/components/shop/pdp-fbt-module";
 import { PdpReviewsSection } from "@/components/shop/pdp-reviews-section";
 import { PdpTrustStrip } from "@/components/shop/pdp-trust-strip";
+import { PdpWhatsAppCta } from "@/components/shop/pdp-whatsapp-cta";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductPriceDisplay } from "@/components/product/product-price-display";
 import { buttonClassName } from "@/components/ui/button";
@@ -29,6 +30,8 @@ import {
 } from "@/lib/seo";
 import { useExperiment } from "@/hooks/use-experiment";
 import type { PdpApiPayload, PdpReview } from "@/lib/storefront/pdp-api";
+import type { RatingDistribution } from "@/lib/storefront/review-stats";
+import { recordRecentlyViewed } from "@/lib/storefront/recently-viewed";
 
 const FALLBACK_DESC = "Fresh handcrafted treats from Cookie Bite — New Cairo.";
 
@@ -40,6 +43,7 @@ type ApiResponse = {
   reviews?: PdpReview[];
   review_count?: number;
   avg_rating?: number | null;
+  rating_distribution?: RatingDistribution;
 };
 
 type Props = {
@@ -60,6 +64,9 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
   const [reviews, setReviews] = useState<PdpReview[]>(initialPayload?.reviews ?? []);
   const [reviewCount, setReviewCount] = useState(initialPayload?.reviewCount ?? 0);
   const [avgRating, setAvgRating] = useState<number | null>(initialPayload?.avgRating ?? null);
+  const [ratingDistribution, setRatingDistribution] = useState(
+    initialPayload?.ratingDistribution ?? { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+  );
   const fbtPlacement = useExperiment("pdp_fbt_placement");
   const fbtBelowReviews = fbtPlacement === "below_reviews";
 
@@ -91,6 +98,9 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
         setReviews(data.reviews ?? []);
         setReviewCount(data.review_count ?? 0);
         setAvgRating(data.avg_rating ?? null);
+        setRatingDistribution(
+          data.rating_distribution ?? { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        );
       } catch {
         if (!cancelled) router.replace("/shop");
       } finally {
@@ -101,6 +111,17 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
       cancelled = true;
     };
   }, [slug, lang, router, initialPayload?.product]);
+
+  useEffect(() => {
+    if (!product) return;
+    recordRecentlyViewed({
+      slug: product.id,
+      name: product.name,
+      image: product.image,
+      price: product.price,
+      productUuid: product.productUuid,
+    });
+  }, [product]);
 
   const jsonLd = useMemo(() => {
     if (!product) return null;
@@ -194,6 +215,7 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
                 </a>
               ) : null}
               <PdpActions product={product} linkedAddons={addons} />
+              <PdpWhatsAppCta productName={product.name} productSlug={product.id} />
               <PdpTrustStrip />
             </div>
             <div className="mt-4">
@@ -210,6 +232,7 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
           reviews={reviews}
           reviewCount={reviewCount}
           avgRating={avgRating}
+          ratingDistribution={ratingDistribution}
         />
 
         {fbtBelowReviews ? <PdpFbtModule product={product} companions={fbt} /> : null}

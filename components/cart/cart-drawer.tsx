@@ -7,6 +7,7 @@ import { ShoppingBag, X, Minus, Plus, Trash2 } from "lucide-react";
 import { useEffect } from "react";
 import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
+import { CartDrawerUpsell } from "@/components/cart/cart-drawer-upsell";
 import { FreeDeliveryBar } from "@/components/cart/free-delivery-bar";
 import { buttonClassName } from "@/components/ui/button";
 import { easeSoft } from "@/lib/motion/presets";
@@ -18,6 +19,7 @@ export function CartDrawer() {
   const {
     lines,
     isDrawerOpen,
+    lastUpsellSourceProductId,
     closeDrawer,
     setQuantity,
     removeItem,
@@ -218,6 +220,9 @@ export function CartDrawer() {
                   </AnimatePresence>
                 </ul>
               )}
+              {lines.length > 0 && lastUpsellSourceProductId ? (
+                <CartDrawerUpsell sourceProductId={lastUpsellSourceProductId} />
+              ) : null}
             </div>
 
             {lines.length > 0 ? (

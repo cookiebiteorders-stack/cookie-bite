@@ -436,6 +436,67 @@
 .gift-box-builder .gb-swatch.selected {
   border-color: var(--gb-choco);
 }
+.gift-box-builder .gb-swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.gift-box-builder .gb-section-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gb-text-muted);
+  margin: 0 0 12px;
+}
+.gift-box-builder .gb-option-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 10px;
+}
+.gift-box-builder .gb-option-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border: 1.5px solid var(--gb-cream-dark);
+  border-radius: var(--gb-radius-sm);
+  background: var(--gb-cream);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.gift-box-builder .gb-option-chip.selected {
+  border-color: var(--gb-choco);
+  box-shadow: 0 0 0 1px var(--gb-choco);
+}
+.gift-box-builder .gb-option-chip__swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+.gift-box-builder .gb-option-chip__icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.gift-box-builder .gb-option-chip__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--gb-text);
+  line-height: 1.2;
+}
+.gift-box-builder .gb-field-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gb-text-muted);
+  margin-bottom: 6px;
+}
+.gift-box-builder .gb-input-row {
+  display: block;
+}
 
 .gift-box-builder .gb-scene {
   width: 340px;

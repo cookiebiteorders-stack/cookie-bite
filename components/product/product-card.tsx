@@ -16,6 +16,7 @@ import { ProductPriceDisplay } from "@/components/product/product-price-display"
 import { ProductSharedImage } from "@/components/product/product-shared-image";
 import { useLanguage } from "@/components/providers/language-provider";
 import { ProductCartActions } from "@/components/product/product-cart-actions";
+import { ProductQuickViewModal } from "@/components/shop/product-quick-view-modal";
 import { PRODUCT_PLACEHOLDER_IMAGE } from "@/lib/products/media";
 import { isProductOutOfStock } from "@/lib/products/stock";
 
@@ -46,6 +47,7 @@ export function ProductCard({
   const router = useRouter();
   const { isSignedIn } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
   const [uncontrolledSaved, setUncontrolledSaved] = useState(false);
   const [addonError, setAddonError] = useState<string | null>(null);
   const linkedAddons = product.linkedAddons ?? [];
@@ -108,7 +110,12 @@ export function ProductCard({
       )}
     >
       <div className="relative aspect-square overflow-hidden bg-cb-peach/40">
-        <Link href={`/shop/${product.id}`} prefetch={false} className="absolute inset-0 block">
+        <button
+          type="button"
+          className="absolute inset-0 block w-full cursor-zoom-in text-start"
+          onClick={() => setQuickViewOpen(true)}
+          aria-label={t("search.quickView")}
+        >
           <ProductSharedImage
             productId={product.id}
             src={product.image}
@@ -130,7 +137,10 @@ export function ProductCard({
               aria-hidden
             />
           ) : null}
-        </Link>
+        </button>
+        <span className="pointer-events-none absolute bottom-3 start-3 z-10 rounded-full bg-cb-surface/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-cb-text-strong opacity-0 shadow-sm transition group-hover:opacity-100">
+          {t("search.quickView")}
+        </span>
         <button
           type="button"
           disabled={busy || !uuid}
@@ -214,6 +224,11 @@ export function ProductCard({
           ) : null}
         </div>
       </div>
+      <ProductQuickViewModal
+        product={product}
+        open={quickViewOpen}
+        onClose={() => setQuickViewOpen(false)}
+      />
     </article>
   );
 }

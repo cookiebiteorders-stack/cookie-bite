@@ -198,11 +198,12 @@ export type PdpReview = {
   helpfulCount: number;
   createdAt: string;
   isFeatured: boolean;
+  isVerifiedPurchase: boolean;
 };
 
 export async function getApprovedProductReviews(
   productUuid: string,
-  limit = 6,
+  limit = 48,
 ): Promise<PdpReview[]> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return [];
@@ -211,7 +212,7 @@ export async function getApprovedProductReviews(
     const supabase = await createSupabaseServerClient();
     const extended = await supabase
       .from("reviews")
-      .select("id, rating, body, photo_url, helpful_count, created_at, is_featured")
+      .select("id, rating, body, photo_url, helpful_count, created_at, is_featured, order_id")
       .eq("product_id", productUuid)
       .eq("is_approved", true)
       .order("is_featured", { ascending: false })
@@ -239,6 +240,7 @@ export async function getApprovedProductReviews(
       helpfulCount: Number((r as { helpful_count?: number }).helpful_count) || 0,
       createdAt: r.created_at as string,
       isFeatured: Boolean(r.is_featured),
+      isVerifiedPurchase: Boolean((r as { order_id?: string | null }).order_id),
     }));
   } catch (e) {
     console.error("getApprovedProductReviews", e);

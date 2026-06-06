@@ -7,6 +7,7 @@ import {
 } from "@/lib/storefront/pdp-data";
 import { getActiveProductRowByRouteKey } from "@/lib/storefront/resolve-active-product";
 import type { Lang } from "@/lib/i18n/translations";
+import { buildRatingDistribution } from "@/lib/storefront/review-stats";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET(
@@ -38,6 +39,7 @@ export async function GET(
     .eq("is_approved", true);
 
   const ratings = (reviewsAgg ?? []).map((r) => r.rating);
+  const rating_distribution = buildRatingDistribution(ratings);
   const avg_rating =
     ratings.length > 0
       ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) /
@@ -73,6 +75,7 @@ export async function GET(
       reviews,
       review_count: ratings.length,
       avg_rating,
+      rating_distribution,
     },
     {
       headers: {

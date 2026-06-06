@@ -1,20 +1,35 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { CartDrawer } from "@/components/cart/cart-drawer";
-import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import { MobileFooter } from "@/components/layout/mobile-footer";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
-import { WhatsAppFab } from "@/components/layout/whatsapp-fab";
 import { CartProvider } from "@/components/providers/cart-provider";
 import { StaffAdminNavProvider } from "@/components/providers/staff-admin-nav-provider";
 import { cn } from "@/lib/utils";
 import { LayoutGroup } from "motion/react";
-
-import { MrBrownieHost } from "@/components/mr-brownie/mr-brownie-host";
 import { StorefrontRuntimeEffects } from "@/components/layout/storefront-runtime-effects";
+
+const AnnouncementBar = dynamic(
+  () => import("@/components/layout/announcement-bar").then((m) => m.AnnouncementBar),
+  { ssr: false, loading: () => null },
+);
+
+const CartDrawer = dynamic(
+  () => import("@/components/cart/cart-drawer").then((m) => m.CartDrawer),
+  { ssr: false, loading: () => null },
+);
+
+const WhatsAppFab = dynamic(
+  () => import("@/components/layout/whatsapp-fab").then((m) => m.WhatsAppFab),
+  { ssr: false, loading: () => null },
+);
+
+const MrBrownieHost = dynamic(
+  () => import("@/components/mr-brownie/mr-brownie-host").then((m) => m.MrBrownieHost),
+  { ssr: false, loading: () => null },
+);
 
 const PageTransition = dynamic(
   () => import("@/components/motion/page-transition").then((m) => m.PageTransition),

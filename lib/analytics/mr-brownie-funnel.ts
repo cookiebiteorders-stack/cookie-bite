@@ -9,6 +9,8 @@ export type MrBrownieFunnelStep =
   | "feedback_up"
   | "feedback_down"
   | "chip_click"
+  | "gift_guide_start"
+  | "gift_guide_complete"
   | "add_to_cart_from_chat"
   | "promo_apply_from_chat";
 

@@ -1,4 +1,4 @@
-import { runMrBrownieGemini } from "@/lib/mr-brownie/gemini";
+import { runMrBrownieLlm } from "@/lib/mr-brownie/llm";
 import {
   scoreAssistantResponse,
   type ResponseQualityReport,
@@ -19,7 +19,7 @@ export async function coachReviseResponse(params: {
   if (!process.env.MR_BROWNIE_ENABLE_COACH?.trim()) return null;
 
   try {
-    const revised = await runMrBrownieGemini({
+    const llmResult = await runMrBrownieLlm({
       systemInstruction: `You are a quality coach for Cookie Bite's Mr. Brownie.
 Rewrite the DRAFT reply to fix these issues: ${params.issues.join(", ")}.
 Rules: keep facts from draft; add one follow-up question; add 1–2 suggestions; stay concise; same language as user; max 2 emojis.`,
@@ -32,6 +32,7 @@ Rules: keep facts from draft; add one follow-up question; add 1–2 suggestions;
       temperature: 0.35,
       maxOutputTokens: 900,
     });
+    const revised = llmResult.text;
     const t = revised.trim();
     return t.length >= MIN_LEN ? t.slice(0, MAX_LEN) : null;
   } catch (e) {

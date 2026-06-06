@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
+import { preload } from "react-dom";
+import { HeroSection5 } from "@/components/ui/hero-section-5";
 import { HomeStorySnippet } from "@/components/sections/home-story-snippet";
 import { TrustBar } from "@/components/sections/trust-bar";
 import { buildLocalizedPageMetadata } from "@/lib/seo";
 import { getLangFromCookies } from "@/lib/seo/server";
+import { HERO_FALLBACK_IMAGE } from "@/lib/site-media";
 
 export const revalidate = 300;
 
@@ -12,27 +15,28 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildLocalizedPageMetadata("/", lang);
 }
 
-const HeroSection5 = dynamic(
-  () =>
-    import("@/components/ui/hero-section-5").then((m) => ({
-      default: m.HeroSection5,
-    })),
-  {
-    loading: () => (
-      <div
-        className="min-h-[100svh] w-full bg-cb-cream"
-        aria-hidden
-      />
-    ),
-  },
-);
-
 const HomeExploreCategories = dynamic(
   () =>
     import("@/components/sections/home-explore-categories").then((m) => ({
       default: m.HomeExploreCategories,
     })),
   { loading: () => <div className="h-96 animate-pulse bg-cb-peach/30" /> },
+);
+
+const HomeContinueShopping = dynamic(
+  () =>
+    import("@/components/sections/home-continue-shopping").then((m) => ({
+      default: m.HomeContinueShopping,
+    })),
+  { loading: () => null },
+);
+
+const HomeForYouSection = dynamic(
+  () =>
+    import("@/components/sections/home-for-you-section").then((m) => ({
+      default: m.HomeForYouSection,
+    })),
+  { loading: () => null },
 );
 
 const HomeProductCarousel = dynamic(
@@ -64,6 +68,8 @@ const NewsletterBanner = dynamic(
 );
 
 export default function HomePage() {
+  preload(HERO_FALLBACK_IMAGE, { as: "image", fetchPriority: "high" });
+
   return (
     <>
       <p className="sr-only">
@@ -74,6 +80,8 @@ export default function HomePage() {
       <HeroSection5 />
       <TrustBar />
       <HomeExploreCategories />
+      <HomeContinueShopping />
+      <HomeForYouSection />
       <HomeProductCarousel />
       <HomeStorySnippet />
       <HomeTestimonials />

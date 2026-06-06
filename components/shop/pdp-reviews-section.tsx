@@ -1,16 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
-import { Star, ThumbsUp } from "lucide-react";
+import { BadgeCheck, Star, ThumbsUp } from "lucide-react";
 import type { PdpReview } from "@/lib/storefront/pdp-api";
+import type { RatingDistribution } from "@/lib/storefront/review-stats";
+import { totalFromDistribution } from "@/lib/storefront/review-stats";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
+
+type ReviewFilter = "all" | "photos" | "verified" | "helpful";
 
 type Props = {
   reviews: PdpReview[];
   reviewCount: number;
   avgRating: number | null;
+  ratingDistribution: RatingDistribution;
 };
 
 function Stars({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) {
@@ -29,6 +34,42 @@ function Stars({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) 
         />
       ))}
     </span>
+  );
+}
+
+function RatingHistogram({
+  distribution,
+  total,
+}: {
+  distribution: RatingDistribution;
+  total: number;
+}) {
+  const { t } = useLanguage();
+  if (total <= 0) return null;
+
+  return (
+    <div
+      className="mt-4 w-full max-w-xs space-y-1.5"
+      aria-label={t("product.reviewsHistogramAria")}
+    >
+      {([5, 4, 3, 2, 1] as const).map((star) => {
+        const count = distribution[star];
+        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+        return (
+          <div key={star} className="flex items-center gap-2 text-xs font-medium text-cb-text">
+            <span className="w-3 tabular-nums text-cb-text-strong">{star}</span>
+            <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" aria-hidden />
+            <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-cb-peach/50">
+              <div
+                className="h-full rounded-full bg-amber-400 transition-all"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="w-8 text-end tabular-nums text-cb-text-muted">{count}</span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -83,8 +124,36 @@ function ReviewHelpfulButton({
   );
 }
 
-export function PdpReviewsSection({ reviews, reviewCount, avgRating }: Props) {
+function applyReviewFilter(reviews: PdpReview[], filter: ReviewFilter): PdpReview[] {
+  if (filter === "photos") {
+    return reviews.filter((r) => Boolean(r.photoUrl?.trim()));
+  }
+  if (filter === "verified") {
+    return reviews.filter((r) => r.isVerifiedPurchase);
+  }
+  if (filter === "helpful") {
+    return [...reviews]
+      .filter((r) => r.helpfulCount > 0)
+      .sort((a, b) => b.helpfulCount - a.helpfulCount);
+  }
+  return reviews;
+}
+
+export function PdpReviewsSection({
+  reviews,
+  reviewCount,
+  avgRating,
+  ratingDistribution,
+}: Props) {
   const { t, lang } = useLanguage();
+  const [filter, setFilter] = useState<ReviewFilter>("all");
+
+  const histogramTotal = totalFromDistribution(ratingDistribution);
+
+  const filteredReviews = useMemo(
+    () => applyReviewFilter(reviews, filter),
+    [reviews, filter],
+  );
 
   if (reviewCount === 0 && reviews.length === 0) return null;
 
@@ -94,9 +163,16 @@ export function PdpReviewsSection({ reviews, reviewCount, avgRating }: Props) {
     day: "numeric",
   });
 
+  const filterOptions: Array<{ id: ReviewFilter; label: string }> = [
+    { id: "all", label: t("product.reviewsFilterAll") },
+    { id: "photos", label: t("product.reviewsFilterPhotos") },
+    { id: "verified", label: t("product.reviewsFilterVerified") },
+    { id: "helpful", label: t("product.reviewsFilterHelpful") },
+  ];
+
   return (
     <section className="mt-16" aria-labelledby="pdp-reviews-heading">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2
             id="pdp-reviews-heading"
@@ -115,14 +191,39 @@ export function PdpReviewsSection({ reviews, reviewCount, avgRating }: Props) {
               </span>
             </p>
           ) : null}
+          <RatingHistogram distribution={ratingDistribution} total={histogramTotal || reviewCount} />
+        </div>
+
+        <div
+          className="flex flex-wrap gap-2"
+          role="tablist"
+          aria-label={t("product.reviewsFilterAria")}
+        >
+          {filterOptions.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              role="tab"
+              aria-selected={filter === opt.id}
+              onClick={() => setFilter(opt.id)}
+              className={cn(
+                "rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide ring-1 transition",
+                filter === opt.id
+                  ? "bg-cb-brand-600 text-white ring-cb-brand-600"
+                  : "bg-cb-surface text-cb-text-strong ring-cb-border hover:bg-cb-peach",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {reviews.length === 0 ? (
-        <p className="mt-6 text-sm text-cb-text-muted">{t("product.reviewsEmpty")}</p>
+      {filteredReviews.length === 0 ? (
+        <p className="mt-6 text-sm text-cb-text-muted">{t("product.reviewsFilterEmpty")}</p>
       ) : (
         <ul className="mt-6 space-y-4">
-          {reviews.map((r) => (
+          {filteredReviews.map((r) => (
             <li
               key={r.id}
               className={cn(
@@ -131,7 +232,15 @@ export function PdpReviewsSection({ reviews, reviewCount, avgRating }: Props) {
               )}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Stars rating={r.rating} />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Stars rating={r.rating} />
+                  {r.isVerifiedPurchase ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800 ring-1 ring-emerald-200">
+                      <BadgeCheck className="h-3 w-3" aria-hidden />
+                      {t("product.reviewsVerifiedBadge")}
+                    </span>
+                  ) : null}
+                </div>
                 <time
                   dateTime={r.createdAt}
                   className="text-xs font-medium text-cb-text-muted"

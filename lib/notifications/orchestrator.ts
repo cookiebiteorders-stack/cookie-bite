@@ -4,6 +4,7 @@ import { syncOrderFinancialRecords } from "@/lib/orders/sync-order-financials";
 import { fetchRawInvoiceForOrder } from "@/lib/invoices/fetch-invoice-for-order";
 import { generateInvoicePdfBuffer } from "@/lib/invoices/generate-invoice-pdf";
 import { toInvoiceViewModel } from "@/lib/invoices/to-invoice-view-model";
+import { getOrderItems } from "@/lib/db/orders";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   hasSuccessfulNotification,
@@ -394,4 +395,89 @@ export async function dispatchPaymentConfirmed(
     invoiceNumber: invoice?.invoiceNumber,
     errors,
   };
+}
+
+/**
+ * Day 3 post-delivery — ask the customer to leave a review.
+ */
+export async function dispatchReviewRequest(
+  orderId: string,
+  options?: DispatchOptions,
+): Promise<{ ok: boolean; skipped?: boolean; errors: string[] }> {
+  const errors: string[] = [];
+  const ctx = await loadOrderNotificationContext(orderId);
+  if (!ctx) return { ok: false, errors: ["order_not_found"] };
+
+  if (!ctx.customerEmail) {
+    return { ok: false, skipped: true, errors: ["no_email"] };
+  }
+  if (!process.env.RESEND_API_KEY) {
+    return { ok: false, errors: ["resend_not_configured"] };
+  }
+
+  const dup =
+    !options?.force &&
+    (await hasSuccessfulNotification({
+      orderId,
+      notificationType: "review_request",
+      channel: "email",
+      recipient: ctx.customerEmail,
+    }));
+  if (dup) {
+    await writeNotificationLog({
+      orderId,
+      notificationType: "review_request",
+      channel: "email",
+      recipient: ctx.customerEmail,
+      status: "skipped",
+      metadata: { reason: "duplicate" },
+    });
+    return { ok: true, skipped: true, errors: [] };
+  }
+
+  const orderNum = orderDisplayNumber(ctx);
+  const base = appBaseUrl();
+  const firstName = ctx.customerName.split(/\s+/)[0] ?? "there";
+  const lineItems = await getOrderItems(orderId);
+  const productName =
+    lineItems[0]?.product_name?.trim() || "Cookie Bite treats";
+  const reviewUrl = `${base}/account/orders`;
+
+  try {
+    await sendTemplateEmail({
+      to: ctx.customerEmail,
+      templateKey: "review-request",
+      vars: {
+        first_name: firstName,
+        product_name: productName,
+        order_number: orderNum,
+        review_url: reviewUrl,
+        company_address: BRAND.location,
+        privacy_url: `${base}/privacy`,
+        unsubscribe_url: `${base}/unsubscribe`,
+      },
+      lang: ctx.lang,
+    });
+    await writeNotificationLog({
+      orderId,
+      notificationType: "review_request",
+      channel: "email",
+      recipient: ctx.customerEmail,
+      status: "sent",
+      metadata: { review_url: reviewUrl, product_name: productName },
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "email_failed";
+    errors.push(msg);
+    await writeNotificationLog({
+      orderId,
+      notificationType: "review_request",
+      channel: "email",
+      recipient: ctx.customerEmail,
+      status: "failed",
+      errorMessage: msg,
+    });
+  }
+
+  return { ok: errors.length === 0, errors };
 }

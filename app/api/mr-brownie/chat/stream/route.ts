@@ -5,7 +5,7 @@ import type { CartLine } from "@/lib/cart/types";
 import { AI_AGENT_IDS } from "@/lib/ai-agent/agents";
 import { finalizeAgentResponse } from "@/lib/ai-agent/post-response";
 import type { CommerceIntent } from "@/lib/mr-brownie/brain/intent-engine";
-import { createGeminiStreamResponse } from "@/lib/mr-brownie/gemini-stream";
+import { createMrBrownieStreamResponse } from "@/lib/mr-brownie/llm";
 import {
   isGuestSessionUuid,
   MR_BROWNIE_GUEST_SESSION_COOKIE,
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       persona: parsed.data.persona,
     });
 
-    return createGeminiStreamResponse(
+    return createMrBrownieStreamResponse(
       {
         systemInstruction: prepared.systemInstruction,
         messages: prepared.rawMessages,
