@@ -128,7 +128,7 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
     try {
       const r = await fetchJson<{ ok: boolean; error?: string; provider?: string }>(
         "/api/admin/email/test",
-        { method: "POST", jsonBody: { to: testEmail.trim(), runHealth: true } },
+        { method: "POST", jsonBody: { to: testEmail.trim(), runHealth: false } },
       );
       setToast(r.ok ? `تم الإرسال عبر ${r.provider ?? "—"}` : r.error ?? "فشل");
       void load();

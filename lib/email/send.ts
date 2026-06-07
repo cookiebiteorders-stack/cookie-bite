@@ -187,6 +187,7 @@ export async function sendTemplateEmail(opts: {
   replyTo?: string;
   subjectOverride?: string;
   attachments?: EmailAttachment[];
+  immediate?: boolean;
 }) {
   const rendered = renderTemplate(opts.templateKey, opts.vars ?? {}, {
     lang: opts.lang,
@@ -202,6 +203,7 @@ export async function sendTemplateEmail(opts: {
     attachments: opts.attachments,
     templateKey: opts.templateKey,
     emailType: "notification",
+    immediate: opts.immediate,
   });
 }
 

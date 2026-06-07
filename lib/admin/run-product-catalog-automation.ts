@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { sendInternalEmail } from "@/lib/email/send";
+import { sendLowStockAlertEmail } from "@/lib/admin/send-low-stock-alert-email";
 import {
   canSendStockAlert,
   clearExpiredProductDiscounts,
@@ -45,21 +45,19 @@ export async function runProductCatalogAutomation(
         .order("stock", { ascending: true })
         .limit(15);
 
-      const rowsHtml = (lowProducts ?? [])
-        .map(
-          (p) =>
-            `<tr><td>${p.title_en ?? p.name}</td><td>${p.sku ?? "—"}</td><td>${p.stock}</td></tr>`,
-        )
-        .join("");
+      const rows = (lowProducts ?? []).map((p) => ({
+        name: String(p.title_en ?? p.name ?? "Product"),
+        sku: p.sku ? String(p.sku) : null,
+        stock: Number(p.stock ?? 0),
+      }));
 
       try {
-        await sendInternalEmail({
+        await sendLowStockAlertEmail({
           to: recipient,
-          subject: `⚠️ تنبيه مخزون منخفض · Cookie Bite`,
-          html: `<p>مرحباً،</p><p>${stock.low_stock_count} منتج(ات) بمخزون ≤ ${settings.low_stock_threshold}.</p><table border="1" cellpadding="6"><tr><th>المنتج</th><th>SKU</th><th>المخزون</th></tr>${rowsHtml}</table><p><a href="${process.env.NEXT_PUBLIC_APP_URL ?? ""}/admin/products">فتح لوحة المنتجات</a></p>`,
-          emailType: "notification",
-          templateKey: "report-low-stock",
-          immediate: true,
+          products: rows,
+          lowStockCount: stock.low_stock_count,
+          threshold: settings.low_stock_threshold,
+          lang: "ar",
         });
         await markStockAlertSent(supabase);
         alert_sent = true;

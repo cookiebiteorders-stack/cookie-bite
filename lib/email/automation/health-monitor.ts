@@ -118,15 +118,15 @@ export async function sendHealthCheckEmail(to: string): Promise<{ ok: boolean; e
   return { ok: result.ok, error: result.error };
 }
 
-export async function runFullHealthCycle(testRecipient?: string) {
+export async function runFullHealthCycle(options?: { sendTest?: boolean; testRecipient?: string }) {
   const checks = await runEmailHealthChecks();
   let testSend: { ok: boolean; error?: string } | undefined;
-  const to =
-    testRecipient ??
-    process.env.EMAIL_HEALTH_TEST_TO ??
-    process.env.OWNER_BOOTSTRAP_EMAIL;
-  if (to) {
+
+  const sendTest = options?.sendTest === true;
+  const to = options?.testRecipient?.trim();
+  if (sendTest && to) {
     testSend = await sendHealthCheckEmail(to);
   }
+
   return { ...checks, testSend };
 }

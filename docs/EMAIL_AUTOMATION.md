@@ -41,7 +41,8 @@ EMAIL_USE_QUEUE=true
 EMAIL_USE_DB_QUEUE=true
 REDIS_URL=redis://127.0.0.1:6379
 EMAIL_PROVIDER_PRIORITY=resend,smtp,sendgrid,mailgun
-EMAIL_HEALTH_TEST_TO=you@example.com
+# Automated health-check test emails are disabled; cron still runs provider probes + failover.
+# EMAIL_HEALTH_TEST_TO=
 EMAIL_CONFIG_ENCRYPTION_KEY=<openssl rand -hex 32>
 
 # SMTP fallback

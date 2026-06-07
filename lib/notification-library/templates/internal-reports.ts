@@ -84,22 +84,22 @@ export const weeklySalesTemplate: TemplateBuilder = {
 
 const LOW_STOCK_BODY = `
 <div class="email-wrap">
-  <div class="email-head" style="background:#7d1a1a;"><div class="store">YOUR STORE</div><div class="period">Alert · {{alert_date}}</div></div>
+  <div class="email-head" style="background:#7d1a1a;"><div class="store">{{store_name}}</div><div class="period">Alert · {{alert_date}}</div></div>
   <div class="email-body">
     <h1 style="color:#7d1a1a;">Low stock alert</h1>
-    <p>Hi {{manager_name}}, the following products are running critically low and require immediate action to avoid stockouts.</p>
+    <p>Hi {{manager_name}}, <strong>{{low_stock_count}}</strong> product(s) are at or below the reorder threshold (≤ {{threshold}} units).</p>
     <table class="email-table">
-      <thead><tr><th>Product</th><th>SKU</th><th>Current Stock</th><th>Daily Sales</th><th>Days Left</th></tr></thead>
+      <thead><tr><th>Product</th><th>SKU</th><th>Stock</th></tr></thead>
       <tbody>
         {{low_stock_rows}}
       </tbody>
     </table>
     <div style="background:#fce4ec;border-left:3px solid #c62828;padding:10px 14px;border-radius:0 5px 5px 0;margin:14px 0;">
-      <p style="font-size:12px;color:#7d1a1a;margin:0;line-height:1.6;">⚠️ <strong>Action required:</strong> Contact your supplier or update product availability on the storefront to prevent lost sales.</p>
+      <p style="font-size:12px;color:#7d1a1a;margin:0;line-height:1.6;">⚠️ <strong>Action required:</strong> Restock or hide affected products on the storefront to avoid lost sales.</p>
     </div>
-    <a class="cta" style="background:#7d1a1a;" href="{{inventory_url}}">Go to Inventory Panel</a>
+    <a class="cta" style="background:#7d1a1a;" href="{{inventory_url}}">Open product catalog</a>
   </div>
-  <div class="email-footer-b"><p>© 2025 [Your Store] · Automated stock monitoring alert</p></div>
+  <div class="email-footer-b"><p>© {{store_name}} · Automated stock monitoring</p></div>
 </div>
 `;
 
@@ -111,24 +111,28 @@ export const lowStockAlertTemplate: TemplateBuilder = {
     category: "internal-report",
     variant: "email",
     sampleVars: {
+      store_name: "Cookie Bite",
       manager_name: "Mostafa",
       alert_date: "16 May 2026",
+      low_stock_count: 3,
+      threshold: 10,
       low_stock_rows:
-        '<tr><td>Chocolate Chunk Box (6)</td><td>SKU-CCB-06</td><td style="color:#c62828;font-weight:700;">3</td><td>9</td><td style="color:#c62828;font-weight:700;">0.3</td></tr>' +
-        '<tr><td>Vanilla Cookie Box (24)</td><td>SKU-VCB-24</td><td style="color:#f57c00;font-weight:700;">12</td><td>5</td><td style="color:#f57c00;font-weight:700;">2.4</td></tr>' +
-        '<tr><td>Classic Cookie Box (12)</td><td>SKU-CCB-12</td><td style="color:#f57c00;font-weight:700;">18</td><td>7</td><td style="color:#f57c00;font-weight:700;">2.6</td></tr>',
+        '<tr><td>Chocolate Chunk Box (6)</td><td>SKU-CCB-06</td><td style="color:#c62828;font-weight:700;">3</td></tr>' +
+        '<tr><td>Vanilla Cookie Box (24)</td><td>SKU-VCB-24</td><td style="color:#f57c00;font-weight:700;">8</td></tr>' +
+        '<tr><td>Classic Cookie Box (12)</td><td>SKU-CCB-12</td><td style="color:#f57c00;font-weight:700;">9</td></tr>',
       inventory_url: "https://cookie-bite.com/admin/products",
     },
   },
   build(vars, options) {
     const merged = { ...lowStockAlertTemplate.meta.sampleVars, ...vars };
+    const count = merged.low_stock_count ?? 0;
     return {
       key: lowStockAlertTemplate.meta.key,
-      subject: "⚠️ Low stock alert · Action required",
-      preheader: `Critical stock levels detected on ${merged.alert_date}`,
+      subject: `⚠️ Low stock alert · ${count} product(s) need attention`,
+      preheader: `${count} SKU(s) at or below threshold (${merged.threshold})`,
       html: buildEmail(LOW_STOCK_BODY, merged, {
         title: "Low stock alert",
-        preheader: "Critical stock levels detected",
+        preheader: `${count} products below threshold`,
         lang: options?.lang,
       }),
     };

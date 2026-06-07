@@ -19,7 +19,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(bilingualError("Invalid email", "بريد غير صالح"), { status: 400 });
   }
 
-  const health = parsed.data.runHealth ? await runFullHealthCycle(parsed.data.to) : undefined;
+  const health = parsed.data.runHealth
+    ? await runFullHealthCycle({ sendTest: false })
+    : undefined;
 
   const result = await sendAutomatedEmailNow({
     to: parsed.data.to,
