@@ -18,12 +18,11 @@ export function PresenceTimingGrid({
   fields: PresenceTimingField[];
   lang: AppLang;
 }) {
-  const now = Date.now();
   return (
     <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
       {fields.map((field) => {
         const timestamp = formatRealtimeTimestamp(field.at, lang);
-        const ago = formatRelativeAgo(field.at, lang, now);
+        const ago = formatRelativeAgo(field.at, lang);
         return (
           <div
             key={field.label}
@@ -67,7 +66,6 @@ export function PresenceActivityTimeline({
     );
   }
 
-  const now = Date.now();
   return (
     <div className="mt-2 rounded-lg border border-cb-border/70 bg-cb-surface px-3 py-2">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-cb-text-muted">{title}</p>
@@ -85,7 +83,7 @@ export function PresenceActivityTimeline({
             </div>
             <div className="shrink-0 text-right text-[11px] text-cb-text-muted">
               <p className="font-mono">{formatRealtimeTimestamp(item.occurred_at, lang)}</p>
-              <p>{formatRelativeAgo(item.occurred_at, lang, now)}</p>
+              <p>{formatRelativeAgo(item.occurred_at, lang)}</p>
             </div>
           </li>
         ))}

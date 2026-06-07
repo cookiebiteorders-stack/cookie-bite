@@ -10,7 +10,6 @@ import {
 import { format } from "date-fns";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
-  Copy,
   Download,
   Filter,
   Loader2,
@@ -20,14 +19,23 @@ import {
   Search,
   SlidersHorizontal,
   Tag,
-  Trash2,
 } from "lucide-react";
 import {
   ProductRowActionsMenu,
   type ProductMenuAnchor,
 } from "@/components/admin/products/product-row-actions-menu";
+import { ProductsBulkTagsPicker } from "@/components/admin/products/products-bulk-tags-picker";
+import { ProductsBulkToolsPanel } from "@/components/admin/products/products-bulk-tools-panel";
+import { ProductsEditableCell } from "@/components/admin/products/products-editable-cell";
+import { ProductsFloatingSaveBar } from "@/components/admin/products/products-floating-save-bar";
 import { useDebounce } from "@/src/hooks/useDebounce";
+import { fetchJson } from "@/lib/http/fetch-json";
 import type { AdminProductRow } from "@/lib/admin/products-dashboard-types";
+import {
+  mergeProductWithPending,
+  parseClipboardColumn,
+  type InlineEditableField,
+} from "@/lib/admin/products-inline-edit";
 import { PRODUCT_PLACEHOLDER_IMAGE } from "@/lib/products/media";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
 import { buttonClassName } from "@/components/ui/button";
@@ -116,6 +124,7 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
   const clearSelection = useProductsDashboardStore((s) => s.clearSelection);
   const bulkPatch = useProductsDashboardStore((s) => s.bulkPatch);
   const bulkDelete = useProductsDashboardStore((s) => s.bulkDelete);
+  const bulkApplyTags = useProductsDashboardStore((s) => s.bulkApplyTags);
   const duplicateProduct = useProductsDashboardStore((s) => s.duplicateProduct);
   const pushToast = useProductsDashboardStore((s) => s.pushToast);
   const setLowStockOnly = useProductsDashboardStore((s) => s.setLowStockOnly);
@@ -135,6 +144,14 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
   const featuredOnly = useProductsDashboardStore((s) => s.featuredOnly);
   const setFeaturedOnly = useProductsDashboardStore((s) => s.setFeaturedOnly);
   const resetFilters = useProductsDashboardStore((s) => s.resetFilters);
+  const pendingEdits = useProductsDashboardStore((s) => s.pendingEdits);
+  const savingEdits = useProductsDashboardStore((s) => s.savingEdits);
+  const setCellEdit = useProductsDashboardStore((s) => s.setCellEdit);
+  const discardPendingEdits = useProductsDashboardStore((s) => s.discardPendingEdits);
+  const savePendingEdits = useProductsDashboardStore((s) => s.savePendingEdits);
+  const pendingEditCount = useProductsDashboardStore((s) => s.pendingEditCount);
+  const applyBulkPriceAdjustment = useProductsDashboardStore((s) => s.applyBulkPriceAdjustment);
+  const applySmartBulkRule = useProductsDashboardStore((s) => s.applySmartBulkRule);
 
   const canWrite = Boolean(meta?.can_write);
   const canDelete = Boolean(meta?.can_delete);
@@ -144,6 +161,30 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
   const advancedOpen = useProductsDashboardStore((s) => s.advancedFiltersOpen);
   const setAdvancedOpen = useProductsDashboardStore((s) => s.setAdvancedFiltersOpen);
   const [openMenu, setOpenMenu] = useState<ProductMenuAnchor | null>(null);
+  const [pasteAnchor, setPasteAnchor] = useState<{
+    productId: string;
+    field: InlineEditableField;
+  } | null>(null);
+  const [taxonomyCategories, setTaxonomyCategories] = useState<
+    Array<{ id: string; name_en: string; name_ar: string | null }>
+  >([]);
+
+  useEffect(() => {
+    void fetchJson<{ categories: Array<{ id: string; name_en: string; name_ar: string | null }> }>(
+      "/api/admin/products/taxonomy",
+      { cache: "no-store" },
+    )
+      .then((res) => setTaxonomyCategories(res.categories ?? []))
+      .catch(() => setTaxonomyCategories([]));
+  }, []);
+
+  const displayProducts = useMemo(
+    () =>
+      products.map((p) => mergeProductWithPending(p, pendingEdits[p.id])),
+    [products, pendingEdits],
+  );
+
+  const dirtyCount = pendingEditCount();
 
   useEffect(() => {
     setSearch(debouncedSearch);
@@ -152,6 +193,33 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
   useEffect(() => {
     setLocalSearch(search);
   }, [search]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        if (dirtyCount <= 0) return;
+        e.preventDefault();
+        void savePendingEdits();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [dirtyCount, savePendingEdits]);
+
+  const handleTablePaste = (e: React.ClipboardEvent) => {
+    if (!canWrite || !pasteAnchor) return;
+    const values = parseClipboardColumn(e.clipboardData.getData("text/plain"));
+    if (values.length <= 1) return;
+    e.preventDefault();
+    const startIndex = displayProducts.findIndex((p) => p.id === pasteAnchor.productId);
+    if (startIndex < 0) return;
+    for (let i = 0; i < values.length; i += 1) {
+      const row = displayProducts[startIndex + i];
+      if (!row) break;
+      setCellEdit(row.id, pasteAnchor.field, values[i] ?? "");
+    }
+    pushToast(`تم لصق ${Math.min(values.length, displayProducts.length - startIndex)} قيمة.`, "success");
+  };
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
@@ -221,11 +289,34 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
           </div>
         ),
       },
-      { accessorKey: "sku", header: "SKU", cell: (c) => c.getValue() ?? "—" },
+      { accessorKey: "sku", header: "SKU", cell: ({ row }) => (
+          <ProductsEditableCell
+            productId={row.original.id}
+            field="sku"
+            value={row.original.sku ?? ""}
+            displayValue={row.original.sku ?? "—"}
+            disabled={!canWrite}
+            onChange={(v) => setCellEdit(row.original.id, "sku", v)}
+            onFocusCell={(id, field) => setPasteAnchor({ productId: id, field })}
+            isDirty={Boolean(pendingEdits[row.original.id]?.sku)}
+          />
+        ) },
       {
         accessorKey: "category",
         header: "التصنيف",
-        cell: (c) => <span className="text-cb-text-muted">{String(c.getValue() ?? "—")}</span>,
+        cell: ({ row }) => (
+          <ProductsEditableCell
+            productId={row.original.id}
+            field="category"
+            value={row.original.category ?? ""}
+            displayValue={row.original.category ?? "—"}
+            disabled={!canWrite}
+            className="min-w-[7rem]"
+            onChange={(v) => setCellEdit(row.original.id, "category", v)}
+            onFocusCell={(id, field) => setPasteAnchor({ productId: id, field })}
+            isDirty={Boolean(pendingEdits[row.original.id]?.category)}
+          />
+        ),
         meta: { headerClass: "hidden lg:table-cell", cellClass: "hidden lg:table-cell" },
       },
       {
@@ -235,7 +326,17 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
           const t = stockTone(row.original.stock, row.original.is_active);
           return (
             <div className="flex flex-col items-start gap-1">
-              <span className="text-sm font-bold tabular-nums">{row.original.stock.toLocaleString("ar-EG")}</span>
+              <ProductsEditableCell
+                productId={row.original.id}
+                field="stock"
+                value={String(row.original.stock)}
+                disabled={!canWrite}
+                inputMode="numeric"
+                className="w-20"
+                onChange={(v) => setCellEdit(row.original.id, "stock", v)}
+                onFocusCell={(id, field) => setPasteAnchor({ productId: id, field })}
+                isDirty={Boolean(pendingEdits[row.original.id]?.stock)}
+              />
               <span className={cn(TABLE_BADGE, t.cls)}>{t.label}</span>
             </div>
           );
@@ -245,9 +346,17 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
         accessorKey: "price_egp",
         header: "السعر",
         cell: ({ row }) => (
-          <span className="text-sm font-bold tabular-nums">
-            {row.original.price_egp.toLocaleString("ar-EG")}
-          </span>
+          <ProductsEditableCell
+            productId={row.original.id}
+            field="price_egp"
+            value={String(row.original.price_egp)}
+            disabled={!canWrite}
+            inputMode="decimal"
+            className="w-24"
+            onChange={(v) => setCellEdit(row.original.id, "price_egp", v)}
+            onFocusCell={(id, field) => setPasteAnchor({ productId: id, field })}
+            isDirty={Boolean(pendingEdits[row.original.id]?.price_egp)}
+          />
         ),
       },
       {
@@ -342,11 +451,13 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
     [
       products,
       selectedIds,
+      pendingEdits,
       clearSelection,
       selectAllOnPage,
       toggleSelect,
       canWrite,
       canDelete,
+      setCellEdit,
       onEdit,
       duplicateProduct,
       bulkDelete,
@@ -357,7 +468,7 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
 
   /* eslint-disable react-hooks/incompatible-library -- TanStack Table يعيد دوال غير مستقرة للمُحسّن */
   const table = useReactTable({
-    data: products,
+    data: displayProducts,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -366,7 +477,7 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
   const selectedCount = selectedIds.size;
 
   return (
-    <div className="space-y-4">
+    <div className={cn("space-y-4", dirtyCount > 0 && "pb-24")}>
       <div className="rounded-2xl border border-cb-border/90 bg-white/90 p-4 shadow-sm backdrop-blur-md dark:bg-cb-surface-elevated/90">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative min-w-0 flex-1">
@@ -440,6 +551,22 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
         </div>
       </div>
 
+      {canWrite ? (
+        <ProductsBulkToolsPanel
+          disabled={loading}
+          filteredTotal={total}
+          selectedCount={selectedCount}
+          onApplyPrice={(params) => void applyBulkPriceAdjustment(params)}
+          onApplySmartRule={(rule) => void applySmartBulkRule(rule)}
+        />
+      ) : null}
+
+      {canWrite && dirtyCount > 0 ? (
+        <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">
+          انقر على خانة السعر أو المخزون ثم الصق من Excel (Ctrl+V) لتعبئة الصفوف التالية.
+        </p>
+      ) : null}
+
       <AnimatePresence>
         {selectedCount > 0 ? (
           <motion.div
@@ -468,19 +595,48 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
               >
                 إيقاف
               </button>
-              <button
-                type="button"
+              <ProductsBulkTagsPicker
                 disabled={!canWrite}
-                className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold shadow-sm disabled:opacity-50 dark:bg-stone-900"
-                onClick={() => {
-                  const v = window.prompt("تصنيف جديد للمنتجات المحددة:");
-                  if (!v?.trim()) return;
-                  void bulkPatch({ category: v.trim() });
-                }}
-              >
-                <Tag className="me-1 inline h-3.5 w-3.5" />
-                تصنيف
-              </button>
+                selectedCount={selectedCount}
+                onApply={({ tagIds, mode }) => void bulkApplyTags({ tagIds, mode })}
+              />
+              {taxonomyCategories.length > 0 ? (
+                <select
+                  disabled={!canWrite}
+                  defaultValue=""
+                  onChange={(e) => {
+                    const opt = e.target.selectedOptions[0];
+                    if (!opt?.value) return;
+                    void bulkPatch({
+                      category: opt.dataset.nameEn ?? opt.textContent ?? "",
+                      category_id: opt.value,
+                    });
+                    e.target.value = "";
+                  }}
+                  className="rounded-lg border border-cb-border bg-white px-2 py-1.5 text-xs font-bold shadow-sm disabled:opacity-50 dark:bg-stone-900"
+                >
+                  <option value="">تصنيف…</option>
+                  {taxonomyCategories.map((c) => (
+                    <option key={c.id} value={c.id} data-name-en={c.name_en}>
+                      {c.name_ar ?? c.name_en}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <button
+                  type="button"
+                  disabled={!canWrite}
+                  className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold shadow-sm disabled:opacity-50 dark:bg-stone-900"
+                  onClick={() => {
+                    const v = window.prompt("تصنيف جديد للمنتجات المحددة:");
+                    if (!v?.trim()) return;
+                    void bulkPatch({ category: v.trim() });
+                  }}
+                >
+                  <Tag className="me-1 inline h-3.5 w-3.5" />
+                  تصنيف
+                </button>
+              )}
               <button
                 type="button"
                 disabled={!canWrite}
@@ -648,7 +804,10 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
       </div>
 
       {/* Desktop table */}
-      <div className="cb-table-wrap cb-table-wrap--products hidden md:block">
+      <div
+        className="cb-table-wrap cb-table-wrap--products hidden md:block"
+        onPaste={handleTablePaste}
+      >
         <table className="cb-table w-full min-w-[52rem] text-sm" data-cb-zebra="true">
           <caption className="sr-only">جدول المنتجات — التصفية والترقيم والإجراءات</caption>
           <thead>
@@ -838,6 +997,13 @@ export function ProductsMainWorkspace({ searchInputRef, onEdit, onAdd }: Props) 
           </motion.div>
         ) : null}
       </AnimatePresence>
+
+      <ProductsFloatingSaveBar
+        count={dirtyCount}
+        saving={savingEdits}
+        onSave={() => void savePendingEdits()}
+        onDiscard={discardPendingEdits}
+      />
     </div>
   );
 }

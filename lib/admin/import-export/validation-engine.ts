@@ -10,17 +10,27 @@ const boolish = z
     return s === "true" || s === "1" || s === "yes" || s === "نعم";
   });
 
-const productRowSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string().min(2).max(160).optional(),
-  slug: z.string().max(120).optional(),
-  title_en: z.string().max(200).optional(),
-  sku: z.string().max(80).nullable().optional(),
-  category: z.string().max(100).nullable().optional(),
-  price_egp: z.coerce.number().positive().optional(),
-  stock: z.coerce.number().int().min(0).optional(),
-  is_active: boolish.optional(),
-});
+const productRowSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    name: z.string().min(2).max(160).optional(),
+    slug: z.string().max(120).optional(),
+    title_en: z.string().max(200).optional(),
+    title_ar: z.string().max(160).optional(),
+    sku: z.string().max(80).nullable().optional(),
+    category: z.string().max(100).nullable().optional(),
+    price_egp: z.coerce.number().positive().optional(),
+    stock: z.coerce.number().int().min(0).optional(),
+    is_active: boolish.optional(),
+  })
+  .refine(
+    (row) =>
+      Boolean(row.id) ||
+      (Boolean(row.name && row.name.length >= 2) &&
+        row.price_egp != null &&
+        Number(row.price_egp) > 0),
+    { message: "Provide id to update, or name + price_egp to create" },
+  );
 
 const promoRowSchema = z.object({
   code: z.string().min(2).max(40),

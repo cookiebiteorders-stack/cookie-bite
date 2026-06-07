@@ -4,7 +4,8 @@ export type AutomationJobId =
   | "notification_jobs"
   | "email_worker"
   | "email_health"
-  | "abandoned_cart";
+  | "abandoned_cart"
+  | "product_catalog";
 
 export type AutomationJobDef = {
   id: AutomationJobId;
@@ -47,6 +48,14 @@ export const AUTOMATION_JOBS: AutomationJobDef[] = [
     triggerKey: "settings.automation.triggers.cartIdle",
     cronPath: "/api/cron/abandoned-cart-reminders",
     scheduleKey: "settings.automation.schedule.hourly",
+  },
+  {
+    id: "product_catalog",
+    labelKey: "settings.automation.jobs.productCatalog",
+    descKey: "settings.automation.jobs.productCatalogDesc",
+    triggerKey: "settings.automation.triggers.productCatalog",
+    cronPath: "/api/cron/product-catalog-automation",
+    scheduleKey: "settings.automation.schedule.every15m",
   },
 ];
 

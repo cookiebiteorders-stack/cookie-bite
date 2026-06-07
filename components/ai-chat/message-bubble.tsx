@@ -57,17 +57,22 @@ export const MessageBubble = memo(function MessageBubble({
   const isUser = role === "user";
   const mrBrownie = variant === "mr-brownie";
 
+  const bubbleMax = "max-w-[min(100%,28rem)] sm:max-w-[min(92%,32rem)]";
+  const bubblePad = mrBrownie ? "px-3.5 py-2.5" : "px-3.5 py-2.5";
+
   const bubble = (
     <div
       className={cn(
-        "group relative max-w-[92%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm",
+        "group relative w-fit min-w-[2.75rem] rounded-2xl text-sm leading-relaxed shadow-sm",
+        bubbleMax,
+        bubblePad,
         isUser
           ? mrBrownie
-            ? "ms-auto bg-gradient-to-br from-cb-terracotta-dark to-cb-terracotta text-white"
-            : "ms-auto bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
+            ? "bg-gradient-to-br from-cb-terracotta-dark to-cb-terracotta text-white"
+            : "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
           : mrBrownie
-            ? "me-auto bg-cb-cream/95 text-cb-text-strong ring-1 ring-cb-border/55 dark:bg-cb-surface-2"
-            : "me-auto border border-zinc-800 bg-zinc-900 text-zinc-50",
+            ? "bg-cb-cream/95 text-cb-text-strong ring-1 ring-cb-border/55 dark:bg-cb-surface-2"
+            : "border border-zinc-800 bg-zinc-900 text-zinc-50",
         className,
       )}
     >
@@ -88,7 +93,7 @@ export const MessageBubble = memo(function MessageBubble({
       ) : null}
 
       {isUser ? (
-        <p className="whitespace-pre-wrap break-words">{content}</p>
+        <p className="whitespace-pre-wrap [overflow-wrap:anywhere] [word-break:normal]">{content}</p>
       ) : (
         <>
           <MarkdownRenderer content={text} />
@@ -143,14 +148,28 @@ export const MessageBubble = memo(function MessageBubble({
     </div>
   );
 
-  if (!config.animations.bubbleAnimation) return bubble;
+  if (!config.animations.bubbleAnimation) {
+    return (
+      <div
+        className={cn(
+          "flex w-full min-w-0",
+          isUser ? "justify-end" : "justify-start",
+        )}
+      >
+        {bubble}
+      </div>
+    );
+  }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
-      className={cn(isUser ? "ms-auto" : "me-auto")}
+      className={cn(
+        "flex w-full min-w-0",
+        isUser ? "justify-end" : "justify-start",
+      )}
     >
       {bubble}
     </motion.div>

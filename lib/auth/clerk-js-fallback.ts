@@ -13,7 +13,7 @@ export const CLERK_JS_CDN_FALLBACK = `https://cdn.jsdelivr.net/npm/@clerk/clerk-
 
 export const CLERK_UI_CDN_FALLBACK = `https://cdn.jsdelivr.net/npm/@clerk/ui@${CLERK_UI_VERSION_FALLBACK}/dist/ui.browser.js`;
 
-function useDevCdnFallback(): boolean {
+function isDevCdnFallback(): boolean {
   return process.env.NODE_ENV === "development";
 }
 
@@ -22,14 +22,14 @@ function useDevCdnFallback(): boolean {
  * تجاهل NEXT_PUBLIC_CLERK_JS_URL=@6 من .env — يحمّل أحدث 6.x ويكسر mount لواجهة UI.
  */
 export function resolveClerkJsScriptUrl(): string | undefined {
-  if (useDevCdnFallback()) return CLERK_JS_CDN_FALLBACK;
+  if (isDevCdnFallback()) return CLERK_JS_CDN_FALLBACK;
   const custom = process.env.NEXT_PUBLIC_CLERK_JS_URL?.trim();
   if (custom) return custom;
   return undefined;
 }
 
 export function resolveClerkUIScriptUrl(): string | undefined {
-  if (useDevCdnFallback()) return CLERK_UI_CDN_FALLBACK;
+  if (isDevCdnFallback()) return CLERK_UI_CDN_FALLBACK;
   const custom = process.env.NEXT_PUBLIC_CLERK_UI_URL?.trim();
   if (custom) return custom;
   return undefined;

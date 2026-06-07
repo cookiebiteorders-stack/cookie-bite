@@ -7,6 +7,15 @@ import type {
   ProductsListResponse,
   StockStateFilter,
 } from "@/lib/admin/products-dashboard-types";
+import { filtersFromDashboardState } from "@/lib/admin/products-list-filters";
+import {
+  buildPatchFromPending,
+  countPendingEdits,
+  type InlineEditableField,
+  type PendingEditsMap,
+  type PriceAdjustMode,
+  type SmartBulkRule,
+} from "@/lib/admin/products-inline-edit";
 
 type Toast = { id: string; message: string; variant: "success" | "error" | "info" };
 
@@ -45,6 +54,8 @@ export interface ProductsDashboardState {
   featuredOnly: boolean;
   advancedFiltersOpen: boolean;
   toasts: Toast[];
+  pendingEdits: PendingEditsMap;
+  savingEdits: boolean;
 
   setOnline: (v: boolean) => void;
   setAdvancedFiltersOpen: (v: boolean) => void;
@@ -72,6 +83,23 @@ export interface ProductsDashboardState {
   bulkDelete: (ids: string[]) => Promise<boolean>;
   createProduct: (body: Record<string, unknown>) => Promise<AdminProductRow | null>;
   duplicateProduct: (source: AdminProductRow) => Promise<boolean>;
+  bulkApplyTags: (params: {
+    tagIds: string[];
+    mode: "add" | "remove" | "replace";
+  }) => Promise<boolean>;
+
+  setCellEdit: (id: string, field: InlineEditableField, value: string) => void;
+  clearCellEdit: (id: string, field?: InlineEditableField) => void;
+  discardPendingEdits: () => void;
+  savePendingEdits: () => Promise<boolean>;
+  pendingEditCount: () => number;
+
+  applyBulkPriceAdjustment: (params: {
+    mode: PriceAdjustMode;
+    value: number;
+    target: "selected" | "filtered";
+  }) => Promise<boolean>;
+  applySmartBulkRule: (rule: SmartBulkRule) => Promise<boolean>;
 }
 
 function buildQuery(state: ProductsDashboardState): string {
@@ -115,6 +143,8 @@ export const useProductsDashboardStore = create<ProductsDashboardState>((set, ge
   featuredOnly: false,
   advancedFiltersOpen: false,
   toasts: [],
+  pendingEdits: {},
+  savingEdits: false,
 
   setAdvancedFiltersOpen: (v) => set({ advancedFiltersOpen: v }),
 
@@ -182,6 +212,7 @@ export const useProductsDashboardStore = create<ProductsDashboardState>((set, ge
         loading: false,
         online: true,
         selectedIds: new Set(),
+        pendingEdits: {},
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "فشل تحميل المنتجات";
@@ -243,31 +274,190 @@ export const useProductsDashboardStore = create<ProductsDashboardState>((set, ge
     }
   },
 
-  duplicateProduct: async (source) => {
-    const name = `Copy of ${source.name}`.slice(0, 160);
-    const ingredientsList = (source.dietary ?? []).filter(Boolean);
-    const body = {
-      name,
-      title_en: source.title_en ? `Copy — ${source.title_en}`.slice(0, 160) : null,
-      title_ar: source.title_ar ? `نسخة — ${source.title_ar}`.slice(0, 160) : null,
-      description_en: source.description_en ?? null,
-      description_ar: source.description_ar ?? null,
-      category: source.category ?? null,
-      sku: null,
-      price_egp: source.price_egp,
-      stock: Math.max(0, source.stock),
-      is_active: false,
-      image_url: source.image_url ?? null,
-      dietary: ingredientsList,
-      compare_price_egp: source.compare_price_egp ?? null,
-    };
+  setCellEdit: (id, field, value) =>
+    set((s) => {
+      const prev = s.pendingEdits[id] ?? {};
+      const original = s.products.find((p) => p.id === id);
+      if (!original) return s;
+
+      let sameAsOriginal = false;
+      if (field === "sku") sameAsOriginal = (value.trim() || "") === (original.sku ?? "");
+      if (field === "category") sameAsOriginal = (value.trim() || "") === (original.category ?? "");
+      if (field === "stock") sameAsOriginal = value.trim() === String(original.stock);
+      if (field === "price_egp") sameAsOriginal = value.trim() === String(original.price_egp);
+
+      const nextEdit = { ...prev };
+      if (sameAsOriginal) delete nextEdit[field];
+      else nextEdit[field] = value;
+
+      const pendingEdits = { ...s.pendingEdits };
+      if (Object.keys(nextEdit).length === 0) delete pendingEdits[id];
+      else pendingEdits[id] = nextEdit;
+      return { pendingEdits };
+    }),
+
+  clearCellEdit: (id, field) =>
+    set((s) => {
+      if (!field) {
+        const pendingEdits = { ...s.pendingEdits };
+        delete pendingEdits[id];
+        return { pendingEdits };
+      }
+      const prev = s.pendingEdits[id];
+      if (!prev) return s;
+      const nextEdit = { ...prev };
+      delete nextEdit[field];
+      const pendingEdits = { ...s.pendingEdits };
+      if (Object.keys(nextEdit).length === 0) delete pendingEdits[id];
+      else pendingEdits[id] = nextEdit;
+      return { pendingEdits };
+    }),
+
+  discardPendingEdits: () => set({ pendingEdits: {} }),
+
+  pendingEditCount: () => countPendingEdits(get().pendingEdits),
+
+  savePendingEdits: async () => {
+    const pendingEdits = get().pendingEdits;
+    const entries = Object.entries(pendingEdits);
+    if (entries.length === 0) return true;
+
+    const updates: Array<{ id: string; patch: Record<string, unknown> }> = [];
+    for (const [id, edit] of entries) {
+      const built = buildPatchFromPending(edit);
+      if ("error" in built) {
+        get().pushToast(built.error, "error");
+        return false;
+      }
+      updates.push({ id, patch: built.patch });
+    }
+
+    set({ savingEdits: true });
     try {
-      await fetchJson("/api/admin/products", { method: "POST", jsonBody: body });
-      get().pushToast("تم تكرار المنتج كمسودة غير منشورة.", "success");
+      const res = await fetchJson<{ ok: boolean; updated: number; failures: string[] }>(
+        "/api/admin/products/batch-update",
+        { method: "POST", jsonBody: { updates } },
+      );
+      if (res.failures?.length) {
+        get().pushToast(`تم حفظ ${res.updated} — فشل ${res.failures.length}`, "info");
+      } else {
+        get().pushToast(`تم حفظ ${res.updated} منتج.`, "success");
+      }
+      set({ pendingEdits: {}, savingEdits: false });
+      await get().loadProducts();
+      return res.ok || res.updated > 0;
+    } catch (e) {
+      set({ savingEdits: false });
+      get().pushToast(e instanceof Error ? e.message : "فشل حفظ التعديلات", "error");
+      return false;
+    }
+  },
+
+  applyBulkPriceAdjustment: async ({ mode, value, target }) => {
+    if (target === "selected") {
+      const selected = get().selectedIds;
+      if (selected.size === 0) {
+        get().pushToast("حدّد منتجات أولاً.", "info");
+        return false;
+      }
+      const rows = get().products.filter((p) => selected.has(p.id));
+      const updates = rows.map((row) => {
+        const current = Number(row.price_egp);
+        let next = current;
+        if (mode === "set_fixed") next = value;
+        else {
+          const delta = (current * value) / 100;
+          next = mode === "percent_add" ? current + delta : current - delta;
+        }
+        return {
+          id: row.id,
+          patch: { price_egp: Math.max(0.01, Math.round(next * 100) / 100) },
+        };
+      });
+      try {
+        await fetchJson("/api/admin/products/batch-update", {
+          method: "POST",
+          jsonBody: { updates },
+        });
+        get().pushToast(`تم تعديل أسعار ${updates.length} منتج.`, "success");
+        await get().loadProducts();
+        return true;
+      } catch (e) {
+        get().pushToast(e instanceof Error ? e.message : "فشل تعديل الأسعار", "error");
+        return false;
+      }
+    }
+
+    try {
+      const res = await fetchJson<{ updated: number; matched: number }>(
+        "/api/admin/products/bulk-by-filter",
+        {
+          method: "POST",
+          jsonBody: {
+            filters: filtersFromDashboardState(get()),
+            price_adjustment: { mode, value },
+          },
+        },
+      );
+      get().pushToast(`تم تعديل ${res.updated} من ${res.matched} منتج (حسب الفلتر).`, "success");
+      await get().loadProducts();
+      return true;
+    } catch (e) {
+      get().pushToast(e instanceof Error ? e.message : "فشل تعديل الأسعار", "error");
+      return false;
+    }
+  },
+
+  applySmartBulkRule: async (rule) => {
+    try {
+      const filters = filtersFromDashboardState(get());
+      const res = await fetchJson<{ updated: number; matched: number }>(
+        "/api/admin/products/bulk-by-filter",
+        {
+          method: "POST",
+          jsonBody: {
+            filters,
+            smart_rule:
+              rule.type === "stock_below"
+                ? { type: "stock_below", threshold: rule.threshold, action: rule.action }
+                : { type: rule.type, action: rule.action },
+          },
+        },
+      );
+      get().pushToast(`تم تطبيق القاعدة على ${res.updated} من ${res.matched} منتج.`, "success");
+      await get().loadProducts();
+      return true;
+    } catch (e) {
+      get().pushToast(e instanceof Error ? e.message : "فشل تطبيق القاعدة", "error");
+      return false;
+    }
+  },
+
+  duplicateProduct: async (source) => {
+    try {
+      await fetchJson(`/api/admin/products/${source.id}/duplicate`, { method: "POST" });
+      get().pushToast("تم تكرار المنتج (variants + tags + add-ons) كمسودة.", "success");
       await get().loadProducts();
       return true;
     } catch (e) {
       get().pushToast(e instanceof Error ? e.message : "فشل التكرار", "error");
+      return false;
+    }
+  },
+
+  bulkApplyTags: async ({ tagIds, mode }) => {
+    const ids = Array.from(get().selectedIds);
+    if (ids.length === 0) return false;
+    try {
+      const res = await fetchJson<{ affected: number; mode: string }>("/api/admin/products/bulk-tags", {
+        method: "POST",
+        jsonBody: { ids, tag_ids: tagIds, mode },
+      });
+      get().pushToast(`تم تطبيق الوسوم على ${res.affected} منتج.`, "success");
+      await get().loadProducts();
+      return true;
+    } catch (e) {
+      get().pushToast(e instanceof Error ? e.message : "فشل تطبيق الوسوم", "error");
       return false;
     }
   },

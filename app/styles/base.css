@@ -633,10 +633,20 @@ table.cb-table tbody tr:last-child td {
   border-bottom: none;
 }
 
-/* Admin products table — roomier rows + slimmer horizontal scroll */
+/* Admin products table — roomier rows + slimmer horizontal scroll + sticky header */
 .cb-table-wrap--products {
+  max-height: min(68vh, 40rem);
+  overflow: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--cb-border) transparent;
+}
+
+.cb-table-wrap--products thead th {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  background: var(--cb-table-header-bg);
+  box-shadow: 0 1px 0 var(--cb-table-border);
 }
 
 .cb-table-wrap--products::-webkit-scrollbar {

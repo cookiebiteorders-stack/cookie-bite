@@ -58,7 +58,7 @@ export function AuthLayout({
       <div className="relative mx-auto flex w-full max-w-[1040px] flex-col px-0 py-0 sm:px-4 sm:py-6 lg:py-8">
         <div
           className={cn(
-            "auth-page__card relative flex min-h-dvh w-full flex-col overflow-hidden",
+            "auth-page__card relative flex min-h-dvh w-full flex-col overflow-x-hidden overflow-y-auto sm:overflow-hidden",
             "border border-cb-border/70 bg-cb-surface/95 backdrop-blur-md",
             "dark:border-cb-border dark:bg-cb-surface/95",
             "sm:min-h-[min(100dvh-3rem,720px)] sm:rounded-3xl",
@@ -167,7 +167,7 @@ export function AuthLayout({
               </div>
             </header>
 
-            <div className="auth-page__form-zone auth-form-scroll mx-auto w-full min-h-0 min-w-0 flex-1 md:flex-none md:overflow-visible">
+            <div className="auth-page__form-zone mx-auto w-full min-w-0 shrink-0 md:overflow-visible">
               {children}
             </div>
 

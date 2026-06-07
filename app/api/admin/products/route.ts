@@ -9,6 +9,7 @@ import {
   requireWritePermission,
 } from "@/lib/admin/require-admin";
 import { writeAuditLog } from "@/lib/admin/audit";
+import { saveProductVersions } from "@/lib/admin/product-versions";
 import { bilingualError } from "@/lib/validations";
 import { buildIlikeOrClause } from "@/lib/security/sanitize-filter";
 import {
@@ -27,6 +28,10 @@ import { insertProductWithSlugRetry } from "@/lib/products/insert-product";
 import { zodPayloadError } from "@/lib/validations/zod-errors";
 import { linkedAddonIdsSchema } from "@/lib/addons/validation";
 import { listLinkedAddonIdsByProductIds, replaceProductAddonLinks } from "@/lib/db/addons";
+import {
+  replaceProductTagLinks,
+  resolveCategoryIdByName,
+} from "@/lib/db/product-catalog";
 
 const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -68,6 +73,13 @@ const bulkPatchSchema = z.object({
       dietary: z.array(z.string().max(120)).optional(),
       compare_price_egp: z.number().positive().nullable().optional(),
       linked_addon_ids: linkedAddonIdsSchema.optional(),
+      barcode: z.string().max(80).nullable().optional(),
+      meta_title: z.string().max(120).nullable().optional(),
+      meta_description: z.string().max(320).nullable().optional(),
+      category_id: z.string().uuid().nullable().optional(),
+      tag_ids: z.array(z.string().uuid()).optional(),
+      publish_at: z.string().datetime().nullable().optional(),
+      discount_ends_at: z.string().datetime().nullable().optional(),
     })
     .refine((v) => Object.keys(v).length > 0, {
       message: "patch is required",
@@ -96,6 +108,13 @@ const createProductSchema = z.object({
   dietary: z.array(z.string().max(120)).optional(),
   compare_price_egp: z.number().positive().nullable().optional(),
   linked_addon_ids: linkedAddonIdsSchema.optional(),
+  barcode: z.string().max(80).optional().nullable(),
+  meta_title: z.string().max(120).optional().nullable(),
+  meta_description: z.string().max(320).optional().nullable(),
+  category_id: z.string().uuid().optional().nullable(),
+  tag_ids: z.array(z.string().uuid()).optional(),
+  publish_at: z.string().datetime().optional().nullable(),
+  discount_ends_at: z.string().datetime().optional().nullable(),
 });
 
 function resolveProductMedia(input: {
@@ -123,6 +142,16 @@ function applyPatchMedia(
     next.slug = deriveProductSlug("", patch.slug);
   }
   return next;
+}
+
+async function enrichCategoryId(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  patch: Record<string, unknown>,
+) {
+  if ("category" in patch && !("category_id" in patch)) {
+    const categoryId = await resolveCategoryIdByName(supabase, patch.category as string | null);
+    if (categoryId) patch.category_id = categoryId;
+  }
 }
 
 /** يولّد slug تلقائياً عند الحفظ إذا كان الحقل فارغاً (منتجات قديمة). */
@@ -277,6 +306,12 @@ export async function POST(req: NextRequest) {
     image_url: payload.image_url ?? null,
   });
 
+  const supabase = createSupabaseAdminClient();
+  let category_id = payload.category_id ?? null;
+  if (!category_id && payload.category) {
+    category_id = await resolveCategoryIdByName(supabase, payload.category);
+  }
+
   const buildRow = (slug: string) => ({
     slug,
     name: payload.name.trim(),
@@ -286,7 +321,11 @@ export async function POST(req: NextRequest) {
     description_ar: payload.description_ar ?? null,
     description: payload.description_en ?? payload.description_ar ?? null,
     category: payload.category ?? null,
+    category_id,
     sku: payload.sku ?? null,
+    barcode: payload.barcode ?? null,
+    meta_title: payload.meta_title ?? null,
+    meta_description: payload.meta_description ?? null,
     price_egp: payload.price_egp,
     compare_price_egp: payload.compare_price_egp ?? null,
     stock: payload.stock,
@@ -299,9 +338,10 @@ export async function POST(req: NextRequest) {
     weight_grams: payload.weight_grams ?? null,
     pieces_count: payload.pieces_count ?? null,
     dietary: payload.dietary ?? [],
+    publish_at: payload.publish_at ?? null,
+    discount_ends_at: payload.discount_ends_at ?? null,
   });
 
-  const supabase = createSupabaseAdminClient();
   const inserted = await insertProductWithSlugRetry(
     supabase,
     payload.name.trim(),
@@ -329,11 +369,15 @@ export async function POST(req: NextRequest) {
 
   const data = inserted.data;
   await replaceProductAddonLinks(String(data.id), payload.linked_addon_ids ?? []);
+  if (payload.tag_ids?.length) {
+    await replaceProductTagLinks(supabase, String(data.id), payload.tag_ids);
+  }
 
   await writeAuditLog({
     actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
     action: "products.create",
     module: "products",
+    entity_id: String(data.id),
     metadata: { product_id: data.id, slug: data.slug },
     after: data,
     request: req,
@@ -363,12 +407,27 @@ export async function PATCH(req: NextRequest) {
 
   const { ids, patch } = parsed.data;
   const linkedAddonIds = patch.linked_addon_ids;
+  const tagIds = patch.tag_ids;
   if ("linked_addon_ids" in patch) {
     delete (patch as Record<string, unknown>).linked_addon_ids;
   }
+  if ("tag_ids" in patch) {
+    delete (patch as Record<string, unknown>).tag_ids;
+  }
   const dbPatch = applyPatchMedia(patch);
   const supabase = createSupabaseAdminClient();
+  await enrichCategoryId(supabase, dbPatch);
   const { data: before } = await supabase.from("products").select("*").in("id", ids);
+  if (before?.length) {
+    await saveProductVersions(
+      supabase,
+      before as Record<string, unknown>[],
+      { user_id: actor.user_id, email: actor.email, role: actor.role },
+      "before_update",
+    ).catch(() => {
+      /* non-fatal */
+    });
+  }
   const { data, error } = await supabase
     .from("products")
     .update(dbPatch)
@@ -388,11 +447,16 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
+  if (tagIds && ids.length === 1) {
+    await replaceProductTagLinks(supabase, ids[0]!, tagIds);
+  }
+
   await writeAuditLog({
     actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
     action: "products.bulk_update",
     module: "products",
-    metadata: { ids, patch, updated_count: data?.length ?? 0 },
+    entity_id: ids.length === 1 ? ids[0]! : null,
+    metadata: { ids, patch: dbPatch, updated_count: data?.length ?? 0 },
     before: before ?? null,
     after: data ?? null,
     request: req,

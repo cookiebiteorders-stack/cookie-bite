@@ -1,9 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { AuthTrustRow } from "@/components/auth/auth-trust-row";
-import { PasswordRulesCallout } from "@/components/auth/password-rules-callout";
+import { PasswordRulesHint } from "@/components/auth/password-rules-hint";
 import { useLanguage } from "@/components/providers/language-provider";
 
 type Props = {
@@ -19,9 +19,11 @@ export function ClerkAuthShell({
   showTrustRow = true,
 }: Props) {
   const { lang } = useLanguage();
+  const shellRef = useRef<HTMLDivElement>(null);
 
   return (
     <div
+      ref={shellRef}
       className={cn("clerk-auth-shell relative w-full min-w-0", className)}
       dir={lang === "ar" ? "rtl" : "ltr"}
       lang={lang}
@@ -31,7 +33,7 @@ export function ClerkAuthShell({
         aria-hidden
       />
       <div className="relative z-10 w-full min-w-0 rounded-[1.25rem]">{children}</div>
-      <PasswordRulesCallout variant="auth" className="relative z-10 mt-4" />
+      <PasswordRulesHint containerRef={shellRef} variant="auth" />
       {showTrustRow ? <AuthTrustRow className="relative z-10 mt-4" /> : null}
     </div>
   );

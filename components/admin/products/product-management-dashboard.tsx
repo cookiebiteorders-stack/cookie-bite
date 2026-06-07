@@ -19,6 +19,9 @@ import type { AdminProductRow } from "@/lib/admin/products-dashboard-types";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
 import { ProductsHeroAndStats } from "@/components/admin/products/products-hero-and-stats";
 import { ProductsAnalyticsStrip } from "@/components/admin/products/products-analytics-strip";
+import { ProductsCatalogSettingsPanel } from "@/components/admin/products/products-catalog-settings-panel";
+import { ProductsCollectionsPanel } from "@/components/admin/products/products-collections-panel";
+import { ProductsTaxonomyPanel } from "@/components/admin/products/products-taxonomy-panel";
 import { ProductsMainWorkspace } from "@/components/admin/products/products-main-workspace";
 import { ProductFormDrawer } from "@/components/admin/products/product-form-drawer";
 import { ProductAssistantPanel } from "@/components/admin/products/product-assistant-panel";
@@ -92,6 +95,8 @@ export function ProductManagementDashboard() {
     discountedOnly,
     featuredOnly,
   ]);
+
+  const pageProductIds = useMemo(() => products.map((p) => p.id), [products]);
 
   useEffect(() => {
     const onRefresh = (e: Event) => {
@@ -329,7 +334,10 @@ export function ProductManagementDashboard() {
 
       <ProductsHeroAndStats stats={stats} online={online} />
       <ProductAssistantPanel canWrite={canWrite} />
-      <ProductsAnalyticsStrip products={products} />
+      <ProductsCatalogSettingsPanel canWrite={canWrite} onSaved={() => pushToast("تم حفظ قواعد الكتالوج.", "success")} />
+      <ProductsTaxonomyPanel canWrite={canWrite} />
+      <ProductsCollectionsPanel canWrite={canWrite} />
+      <ProductsAnalyticsStrip products={products} productIds={pageProductIds} />
       <ProductsMainWorkspace searchInputRef={searchRef} onEdit={openEdit} onAdd={openCreate} />
 
       <ProductFormDrawer

@@ -81,6 +81,23 @@
   max-width: var(--auth-shell-max) !important;
 }
 
+.auth-page .clerk-auth-shell .cl-scrollBox,
+.auth-page .clerk-auth-shell .cl-main,
+.auth-page .clerk-auth-shell .cl-card {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.auth-page .clerk-auth-shell {
+  overflow: visible;
+}
+
+.password-rules-hint {
+  max-height: min(70dvh, 22rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 @media (max-width: 380px) {
   .auth-page .clerk-auth-shell .cl-socialButtonsBlockButton,
   .auth-page .clerk-auth-shell .cl-formButtonPrimary,

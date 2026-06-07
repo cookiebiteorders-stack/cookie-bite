@@ -262,6 +262,7 @@ export const adminSectionsEn = {
       schedule: {
         every5m: "every ~5 min",
         every10m: "every ~10 min",
+        every15m: "every ~15 min",
         hourly: "hourly",
       },
       triggers: {
@@ -269,6 +270,7 @@ export const adminSectionsEn = {
         emailQueue: "Drains email_queue + BullMQ",
         providerHealth: "Health check + smart retries",
         cartIdle: "Carts with email idle 1h / 24h",
+        productCatalog: "Catalog publish, stock & discounts",
       },
       jobs: {
         notificationJobs: "Notification worker",
@@ -279,6 +281,8 @@ export const adminSectionsEn = {
         emailHealthDesc: "Provider checks, failover, requeue failed (if smart retries ON).",
         abandonedCart: "Abandoned cart reminders",
         abandonedCartDesc: "Reminder 1 after 1h, reminder 2 + 10% code after 24h.",
+        productCatalog: "Product catalog automation",
+        productCatalogDesc: "Scheduled publish, discount expiry, stock rules, low-stock alerts.",
       },
       pipelines: {
         orderConfirm: "Order confirmation",
@@ -959,6 +963,7 @@ export const adminSectionsAr = {
       schedule: {
         every5m: "كل ~5 دقائق",
         every10m: "كل ~10 دقائق",
+        every15m: "كل ~15 دقيقة",
         hourly: "كل ساعة",
       },
       triggers: {
@@ -966,6 +971,7 @@ export const adminSectionsAr = {
         emailQueue: "يفرغ email_queue + BullMQ",
         providerHealth: "فحص المزود + إعادة محاولة ذكية",
         cartIdle: "سلة بريد خاملة 1 س / 24 س",
+        productCatalog: "نشر المنتجات والمخزون والخصومات",
       },
       jobs: {
         notificationJobs: "عامل الإشعارات",
@@ -976,6 +982,8 @@ export const adminSectionsAr = {
         emailHealthDesc: "فحص المزودين وإعادة الطابور (إن كان smart retries مفعّلاً).",
         abandonedCart: "تذكير السلة المهجورة",
         abandonedCartDesc: "تذكير 1 بعد ساعة، تذكير 2 + خصم 10% بعد 24 ساعة.",
+        productCatalog: "أتمتة كتالوج المنتجات",
+        productCatalogDesc: "نشر مجدول، انتهاء خصومات، قواعد مخزون، تنبيهات.",
       },
       pipelines: {
         orderConfirm: "تأكيد الطلب",

@@ -23,35 +23,46 @@ export function AnswerStyleBar({
   className,
 }: AnswerStyleBarProps) {
   const { t } = useLanguage();
+  const label = t("mrBrownieChat.answerStyles.label");
 
-  const options: Array<{ id: AnswerStylePreference; label: string }> = [
-    { id: "auto", label: t("mrBrownieChat.answerStyles.auto") },
+  const options: Array<{ id: AnswerStylePreference; label: string; hint: string }> = [
+    {
+      id: "auto",
+      label: t("mrBrownieChat.answerStyles.auto"),
+      hint: t("mrBrownieChat.answerStyles.autoHint"),
+    },
     ...ANSWER_STYLE_ORDER.map((id) => ({
       id,
-      label: `${ANSWER_STYLE_CONFIG[id].emoji} ${t(ANSWER_STYLE_CONFIG[id].labelKey)}`,
+      label: compact
+        ? ANSWER_STYLE_CONFIG[id].emoji
+        : `${ANSWER_STYLE_CONFIG[id].emoji} ${t(ANSWER_STYLE_CONFIG[id].labelKey)}`,
+      hint: t(ANSWER_STYLE_CONFIG[id].hintKey),
     })),
   ];
 
   return (
     <div
       className={cn(
-        "cb-mr-brownie-answer-styles shrink-0 border-b border-white/10 bg-black/10",
-        compact ? "px-2.5 py-1.5" : "px-4 py-2 sm:px-5",
+        "cb-mr-brownie-answer-styles shrink-0",
+        compact && "cb-mr-brownie-answer-styles--compact",
         className,
       )}
     >
-      <p
+      <span
         className={cn(
-          "mb-1.5 font-medium text-white/70",
-          compact ? "text-[10px]" : "text-[11px]",
+          "cb-mr-brownie-answer-styles__label font-semibold",
+          compact ? "text-[9px] sm:text-[10px]" : "text-[11px]",
         )}
       >
-        {t("mrBrownieChat.answerStyles.label")}
-      </p>
+        <span className="sm:hidden" aria-hidden>
+          🎨
+        </span>
+        <span className={compact ? "hidden sm:inline" : undefined}>{label}</span>
+      </span>
       <div
-        className="flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="cb-mr-brownie-answer-styles__track flex min-w-0 flex-1 gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         role="radiogroup"
-        aria-label={t("mrBrownieChat.answerStyles.label")}
+        aria-label={label}
       >
         {options.map((opt) => {
           const active = value === opt.id;
@@ -61,18 +72,19 @@ export function AnswerStyleBar({
               type="button"
               role="radio"
               aria-checked={active}
-              title={
+              aria-label={
                 opt.id === "auto"
-                  ? t("mrBrownieChat.answerStyles.autoHint")
-                  : t(ANSWER_STYLE_CONFIG[opt.id as AnswerStyle].hintKey)
+                  ? t("mrBrownieChat.answerStyles.auto")
+                  : t(ANSWER_STYLE_CONFIG[opt.id as AnswerStyle].labelKey)
               }
+              title={opt.hint}
               onClick={() => onChange(opt.id)}
               className={cn(
-                "cb-mr-brownie-answer-style-btn shrink-0 rounded-full border px-2.5 py-1 font-semibold leading-none transition",
-                compact ? "text-[10px]" : "text-[11px]",
-                active
-                  ? "border-[var(--mr-gold)] bg-white/15 text-[var(--mr-cream)] shadow-sm"
-                  : "border-white/15 bg-white/5 text-white/75 hover:border-white/25 hover:bg-white/10",
+                "cb-mr-brownie-answer-style-btn shrink-0 rounded-full font-semibold leading-none transition",
+                compact
+                  ? "px-1.5 py-0.5 text-[10px] sm:px-2 sm:py-1 sm:text-[10px]"
+                  : "px-2.5 py-1 text-[11px]",
+                active && "cb-mr-brownie-answer-style-btn--active",
               )}
             >
               {opt.label}

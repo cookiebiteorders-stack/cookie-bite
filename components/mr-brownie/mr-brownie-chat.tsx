@@ -356,7 +356,7 @@ export function MrBrownieChat({
   const bubbleHideTimerRef = useRef<number | null>(null);
   const lastBubbleIndexRef = useRef(-1);
   const openRef = useRef(initialOpen);
-  const openedAtRef = useRef(initialOpen ? Date.now() : 0);
+  const openedAtRef = useRef(0);
   const linesRef = useRef(lines);
   const isSignedInRef = useRef(Boolean(isSignedIn));
   const clerkUserIdRef = useRef<string | undefined>(undefined);
@@ -436,6 +436,12 @@ export function MrBrownieChat({
     if (embedded) return;
     onFabReady?.();
   }, [embedded, onFabReady]);
+
+  useEffect(() => {
+    if (initialOpen && openedAtRef.current === 0) {
+      openedAtRef.current = Date.now();
+    }
+  }, [initialOpen]);
 
   const openChat = useCallback(() => {
     openedAtRef.current = Date.now();
@@ -1367,7 +1373,7 @@ export function MrBrownieChat({
         embedded
           ? "cb-mr-brownie-drawer--embedded relative flex min-h-0 w-full overflow-hidden rounded-2xl"
           : cn(
-              "cb-mr-brownie-drawer--floating fixed inset-y-0 z-[51]",
+              "cb-mr-brownie-drawer--floating fixed inset-y-0 z-[126]",
               drawerSideClass,
             ),
       )}
@@ -1375,21 +1381,21 @@ export function MrBrownieChat({
             <div
               className={cn(
                 "cb-mr-brownie-header flex shrink-0 items-center justify-between gap-2",
-                embedded ? "px-2.5 py-2" : "px-5 py-3.5",
+                embedded ? "px-2.5 py-2" : "px-3 py-2 sm:px-4",
               )}
             >
-              <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={personaCfg.mascotSrc}
                   alt={personaCfg.displayName}
-                  width={embedded ? 36 : 52}
-                  height={embedded ? 36 : 52}
+                  width={embedded ? 36 : 40}
+                  height={embedded ? 36 : 40}
                   decoding="async"
                   draggable={false}
                   className={cn(
                     "shrink-0 object-contain object-center transition-opacity duration-300",
-                    embedded ? "h-9 w-9" : "h-[52px] w-[52px]",
+                    embedded ? "h-9 w-9" : "h-10 w-10",
                   )}
                 />
                 <div className="min-w-0">
@@ -1397,7 +1403,7 @@ export function MrBrownieChat({
                     id="mr-brownie-title"
                     className={cn(
                       "cb-mr-brownie-header__title font-semibold leading-tight",
-                      embedded ? "text-sm" : "text-lg",
+                      embedded ? "text-sm" : "text-sm sm:text-base",
                     )}
                   >
                     {personaCfg.displayName}
@@ -1454,12 +1460,12 @@ export function MrBrownieChat({
                   type="button"
                   onClick={() => setOpen(false)}
                   className={cn(
-                    "cb-mr-brownie-header__btn rounded-full",
-                    embedded ? "p-1.5" : "p-2",
+                    "cb-mr-brownie-header__btn cb-mr-brownie-header__btn--icon rounded-full",
+                    embedded ? "p-1.5" : "p-1.5",
                   )}
                   aria-label={embedded ? t("mrBrownieChat.collapseChat") : t("mrBrownieChat.closeChat")}
                 >
-                  <X className={embedded ? "h-4 w-4" : "h-5 w-5"} />
+                  <X className={embedded ? "h-4 w-4" : "h-4 w-4"} />
                 </button>
               </div>
             </div>
@@ -1468,7 +1474,7 @@ export function MrBrownieChat({
               <AnswerStyleBar
                 value={answerStylePref}
                 onChange={handleAnswerStyleChange}
-                compact={embedded}
+                compact
               />
             ) : null}
 
@@ -1525,7 +1531,13 @@ export function MrBrownieChat({
                       streamingIndex === i &&
                       m.role === "assistant";
                     return (
-                      <div key={`${m.role}-${msgKey}`} className="flex flex-col gap-0">
+                      <div
+                        key={`${m.role}-${msgKey}`}
+                        className={cn(
+                          "flex w-full min-w-0 flex-col gap-0",
+                          m.role === "user" ? "items-end" : "items-start",
+                        )}
+                      >
                         <MessageBubble
                           role={m.role}
                           content={m.content}

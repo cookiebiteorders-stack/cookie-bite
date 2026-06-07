@@ -52,6 +52,12 @@ import {
 } from "@/lib/products/pricing";
 import { CatalogMultiSelect } from "@/components/admin/products/catalog-multi-select";
 import {
+  ProductVariantsEditor,
+  variantsFromApiRows,
+  variantsToApiPayload,
+} from "@/components/admin/products/product-variants-editor";
+import { ProductHistoryPanel } from "@/components/admin/products/product-history-panel";
+import {
   PRODUCT_BADGE_OPTIONS,
   PRODUCT_SEASON_OPTIONS,
   filterValidBadges,
@@ -83,6 +89,13 @@ const inputErrorClass =
 const labelClass =
   "flex items-center gap-1.5 text-xs font-bold tracking-wide text-cb-text-strong";
 
+function toDatetimeLocalFromIso(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -112,6 +125,18 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
   const [aiImagePickerOpen, setAiImagePickerOpen] = useState(false);
   const [aiImageCandidates, setAiImageCandidates] = useState<ProductImageCandidate[]>([]);
   const [addonsCatalog, setAddonsCatalog] = useState<Addon[]>([]);
+  const [taxonomyTags, setTaxonomyTags] = useState<
+    Array<{ id: string; name_en: string; name_ar: string | null }>
+  >([]);
+
+  useEffect(() => {
+    if (!open) return;
+    void fetchJson<{
+      tags: Array<{ id: string; name_en: string; name_ar: string | null }>;
+    }>("/api/admin/products/taxonomy", { cache: "no-store" })
+      .then((res) => setTaxonomyTags(res.tags ?? []))
+      .catch(() => setTaxonomyTags([]));
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -128,6 +153,40 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
           sale > 0 &&
           compare > sale,
       );
+      void fetchJson<{
+        product: AdminProductRow;
+        variants: Array<{
+          id: string;
+          name: string;
+          sku: string | null;
+          barcode: string | null;
+          price_egp: number | null;
+          stock: number;
+          options?: Record<string, unknown>;
+          is_active: boolean;
+        }>;
+        tag_ids: string[];
+      }>(`/api/admin/products/${editingId}`, { cache: "no-store" })
+        .then((detail) => {
+          setForm((f) => ({
+            ...f,
+            barcode: detail.product?.barcode ?? f.barcode,
+            meta_title: detail.product?.meta_title ?? f.meta_title,
+            meta_description: detail.product?.meta_description ?? f.meta_description,
+            category_id: detail.product?.category_id ?? f.category_id,
+            tag_ids: detail.tag_ids ?? [],
+            variants: variantsFromApiRows(detail.variants ?? []),
+            publish_at: detail.product?.publish_at
+              ? toDatetimeLocalFromIso(detail.product.publish_at)
+              : f.publish_at,
+            discount_ends_at: detail.product?.discount_ends_at
+              ? toDatetimeLocalFromIso(detail.product.discount_ends_at)
+              : f.discount_ends_at,
+          }));
+        })
+        .catch(() => {
+          /* keep row snapshot */
+        });
       return;
     }
     const draft = loadProductFormDraft();
@@ -630,6 +689,13 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
         savedProductId = created.product?.id ?? null;
       }
 
+      if (savedProductId) {
+        await fetchJson(`/api/admin/products/${savedProductId}/variants`, {
+          method: "PUT",
+          jsonBody: { variants: variantsToApiPayload(form.variants) },
+        });
+      }
+
       const uploadsPending = getProductMediaUploadBusyCount() > 0;
       if (savedProductId) {
         setProductMediaPatchContext({
@@ -863,6 +929,15 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   />
                 </label>
                 <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
+                  <span className={labelClass}>Barcode</span>
+                  <input
+                    className={inputClass}
+                    value={form.barcode}
+                    onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
+                    placeholder="EAN / UPC / QR"
+                  />
+                </label>
+                <label className={cn("space-y-2", formStep !== 1 && "hidden")}>
                   <span className={labelClass}>Title EN</span>
                   <input
                     className={inputClass}
@@ -992,6 +1067,40 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   </datalist>
                 </div>
 
+                {taxonomyTags.length > 0 ? (
+                  <div className={cn("space-y-2", formStep !== 1 && "hidden")}>
+                    <span className={labelClass}>Tags (وسوم)</span>
+                    <div className="flex flex-wrap gap-2">
+                      {taxonomyTags.map((tag) => {
+                        const checked = form.tag_ids.includes(tag.id);
+                        return (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            disabled={!canWrite}
+                            onClick={() =>
+                              setForm((f) => ({
+                                ...f,
+                                tag_ids: checked
+                                  ? f.tag_ids.filter((id) => id !== tag.id)
+                                  : [...f.tag_ids, tag.id],
+                              }))
+                            }
+                            className={cn(
+                              "rounded-full border px-3 py-1 text-[11px] font-bold transition",
+                              checked
+                                ? "border-cb-terracotta-dark bg-cb-terracotta-dark text-white"
+                                : "border-cb-border bg-white text-cb-text-strong hover:border-amber-300",
+                            )}
+                          >
+                            {tag.name_ar ?? tag.name_en}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className={cn("flex flex-wrap items-center justify-between gap-2", formStep !== 2 && "hidden")}>
                   <p className={labelClass}>الوصف والمكونات</p>
                   <button
@@ -1039,6 +1148,32 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     onChange={(e) => setForm((f) => ({ ...f, ingredients: e.target.value }))}
                   />
                 </label>
+                <label className={cn("space-y-2 sm:col-span-2", formStep !== 2 && "hidden")}>
+                  <span className={labelClass}>Meta title (SEO)</span>
+                  <input
+                    className={inputClass}
+                    maxLength={120}
+                    value={form.meta_title}
+                    onChange={(e) => setForm((f) => ({ ...f, meta_title: e.target.value }))}
+                  />
+                </label>
+                <label className={cn("space-y-2 sm:col-span-2", formStep !== 2 && "hidden")}>
+                  <span className={labelClass}>Meta description (SEO)</span>
+                  <textarea
+                    className={cn(inputClass, "min-h-20 resize-y")}
+                    maxLength={320}
+                    value={form.meta_description}
+                    onChange={(e) => setForm((f) => ({ ...f, meta_description: e.target.value }))}
+                  />
+                </label>
+
+                <div className={cn("col-span-full", formStep !== 3 && "hidden")}>
+                  <ProductVariantsEditor
+                    variants={form.variants}
+                    disabled={!canWrite}
+                    onChange={(variants) => setForm((f) => ({ ...f, variants }))}
+                  />
+                </div>
 
                 <label className={cn("space-y-2", formStep !== 3 && "hidden")}>
                   <span className={labelClass}>السعر (ج.م) *</span>
@@ -1163,6 +1298,35 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                   </label>
                 </div>
 
+                <div className={cn("col-span-full grid gap-3 sm:grid-cols-2", formStep !== 3 && "hidden")}>
+                  <label className="space-y-2">
+                    <span className={labelClass}>جدولة النشر</span>
+                    <input
+                      type="datetime-local"
+                      className={inputClass}
+                      value={form.publish_at}
+                      disabled={!canWrite}
+                      onChange={(e) => setForm((f) => ({ ...f, publish_at: e.target.value }))}
+                    />
+                    <p className="text-[11px] text-cb-text-muted">
+                      يُفعَّل تلقائياً عند الوصول للوقت (مع is_active = false حالياً).
+                    </p>
+                  </label>
+                  <label className="space-y-2">
+                    <span className={labelClass}>انتهاء الخصم</span>
+                    <input
+                      type="datetime-local"
+                      className={inputClass}
+                      value={form.discount_ends_at}
+                      disabled={!canWrite}
+                      onChange={(e) => setForm((f) => ({ ...f, discount_ends_at: e.target.value }))}
+                    />
+                    <p className="text-[11px] text-cb-text-muted">
+                      يُزال سعر المقارنة تلقائياً بعد هذا الوقت.
+                    </p>
+                  </label>
+                </div>
+
                 <div
                   className={cn(
                     "col-span-full rounded-2xl border border-amber-200/70 bg-gradient-to-br from-white to-amber-50/40 p-4 sm:col-span-2",
@@ -1223,6 +1387,13 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                 </motion.div>
               </AnimatePresence>
               </div>
+
+              <ProductHistoryPanel
+                productId={editingId}
+                open={open && Boolean(editingId)}
+                canWrite={canWrite}
+                onRestored={() => void loadProducts()}
+              />
             </div>
 
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-cb-border/70 bg-white/95 px-4 py-3 shadow-[0_-4px_16px_-8px_rgba(61,40,20,0.12)] dark:bg-cb-surface-elevated">

@@ -42,6 +42,11 @@ function resolveSchedules(): JobSchedule[] {
       intervalMs: parsePositiveInt(process.env.BACKGROUND_WORKER_ABANDONED_MS, 60 * 60_000),
       limit: parsePositiveInt(process.env.BACKGROUND_WORKER_ABANDONED_LIMIT, 50),
     },
+    {
+      id: "product_catalog",
+      intervalMs: parsePositiveInt(process.env.BACKGROUND_WORKER_CATALOG_MS, 15 * 60_000),
+      limit: 1,
+    },
   ];
 }
 

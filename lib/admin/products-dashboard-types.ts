@@ -21,7 +21,11 @@ export type AdminProductRow = {
   badges?: string[] | null;
   seasons?: string[] | null;
   category?: string | null;
+  category_id?: string | null;
   sku: string | null;
+  barcode?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
   stock: number;
   price_egp: number;
   compare_price_egp?: number | null;
@@ -33,6 +37,32 @@ export type AdminProductRow = {
   pieces_count?: number | null;
   updated_at?: string | null;
   linked_addon_ids?: string[];
+  tag_ids?: string[];
+  publish_at?: string | null;
+  discount_ends_at?: string | null;
+};
+
+export type ProductVariantFormItem = {
+  id?: string;
+  name: string;
+  sku: string;
+  barcode: string;
+  price_egp: string;
+  stock: string;
+  option_size: string;
+  option_color: string;
+  is_active: boolean;
+};
+
+export const EMPTY_PRODUCT_VARIANT: ProductVariantFormItem = {
+  name: "",
+  sku: "",
+  barcode: "",
+  price_egp: "",
+  stock: "0",
+  option_size: "",
+  option_color: "",
+  is_active: true,
 };
 
 export type CatalogStats = {
@@ -95,6 +125,12 @@ export type ProductFormState = {
   linked_addon_ids: string[];
   meta_title: string;
   meta_description: string;
+  barcode: string;
+  category_id: string;
+  tag_ids: string[];
+  variants: ProductVariantFormItem[];
+  publish_at: string;
+  discount_ends_at: string;
 };
 
 export const EMPTY_PRODUCT_IMAGE_SLOT: ProductImageFormItem = {
@@ -129,6 +165,12 @@ export const EMPTY_PRODUCT_FORM: ProductFormState = {
   linked_addon_ids: [],
   meta_title: "",
   meta_description: "",
+  barcode: "",
+  category_id: "",
+  tag_ids: [],
+  variants: [],
+  publish_at: "",
+  discount_ends_at: "",
 };
 
 /** هل المنتج مُعلَّم للصفحة الرئيسية (شارة featured) */
@@ -210,9 +252,30 @@ export function rowToProductForm(item: AdminProductRow): ProductFormState {
     is_active: item.is_active,
     show_on_homepage: (item.badges ?? []).includes("featured"),
     linked_addon_ids: item.linked_addon_ids ?? [],
-    meta_title: (item.title_en ?? item.name ?? "").slice(0, 70),
-    meta_description: (item.description_en ?? "").slice(0, 160),
+    meta_title: item.meta_title ?? (item.title_en ?? item.name ?? "").slice(0, 70),
+    meta_description: item.meta_description ?? (item.description_en ?? "").slice(0, 160),
+    barcode: item.barcode ?? "",
+    category_id: item.category_id ?? "",
+    tag_ids: item.tag_ids ?? [],
+    variants: [],
+    publish_at: item.publish_at ? toDatetimeLocalValue(item.publish_at) : "",
+    discount_ends_at: item.discount_ends_at ? toDatetimeLocalValue(item.discount_ends_at) : "",
   };
+}
+
+function toDatetimeLocalValue(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function fromDatetimeLocalValue(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const d = new Date(trimmed);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
 }
 
 export function formToApiPayload(form: ProductFormState) {
@@ -279,5 +342,12 @@ export function formToApiPayload(form: ProductFormState) {
     video_url: form.video_url.trim() || null,
     is_active: form.is_active,
     linked_addon_ids: form.linked_addon_ids,
+    barcode: form.barcode.trim() || null,
+    meta_title: form.meta_title.trim() || null,
+    meta_description: form.meta_description.trim() || null,
+    category_id: form.category_id.trim() || null,
+    tag_ids: form.tag_ids,
+    publish_at: fromDatetimeLocalValue(form.publish_at),
+    discount_ends_at: fromDatetimeLocalValue(form.discount_ends_at),
   };
 }

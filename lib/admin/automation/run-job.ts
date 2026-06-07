@@ -5,6 +5,8 @@ import { drainEmailQueue } from "@/lib/email/automation/pipeline";
 import { requeueFailedEmails, runSelfHealCycle } from "@/lib/email/automation/self-heal";
 import { drainBullNotificationJobs } from "@/lib/notifications/bull-queue";
 import { processPendingNotificationJobs } from "@/lib/notifications/schedule";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { runProductCatalogAutomation } from "@/lib/admin/run-product-catalog-automation";
 
 export async function runAutomationJob(
   jobId: AutomationJobId,
@@ -33,6 +35,11 @@ export async function runAutomationJob(
     case "abandoned_cart": {
       const processed = await processAbandonedCartReminders();
       return { processed };
+    }
+    case "product_catalog": {
+      const supabase = createSupabaseAdminClient();
+      const result = await runProductCatalogAutomation(supabase);
+      return { ...result };
     }
     default:
       return { error: "unknown_job" };
