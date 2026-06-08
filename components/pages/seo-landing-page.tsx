@@ -32,7 +32,7 @@ export function SeoLandingPage({
   return (
     <div className="bg-cb-cream pb-24 pt-12">
       <div className="mx-auto max-w-3xl px-4 lg:px-6">
-        <header className="mx-auto mb-8 max-w-3xl space-y-4 md:mb-12">
+        <header className="mb-8 ms-0 me-auto max-w-3xl space-y-4 text-start md:mb-12">
           {eyebrow ? (
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-cb-terracotta-dark">{eyebrow}</p>
           ) : null}

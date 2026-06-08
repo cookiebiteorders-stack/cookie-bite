@@ -8,6 +8,7 @@ import {
   orderDisplayNumber,
 } from "@/lib/notifications/order-context";
 import { getTemplateDefaultVars, PERSONAL_OR_CONTEXT_VARS } from "./template-default-vars";
+import { getFreeShippingThresholdEgp } from "@/lib/store/commerce-settings-server";
 
 function firstNameFromFullName(fullName: string): string {
   const trimmed = fullName.trim();
@@ -108,12 +109,14 @@ export async function mergeAutomationTemplateVars(
       ? legacy.order_id.trim()
       : null;
   const orderVars = orderId ? await enrichFromOrderId(orderId) : {};
+  const freeShippingThresholdEgp = await getFreeShippingThresholdEgp();
 
   const merged: Record<string, string | number | boolean> = {
     ...defaults,
     ...recipientVars,
     ...orderVars,
     ...legacy,
+    free_shipping_threshold_egp: freeShippingThresholdEgp,
   };
 
   const missingForAi = input.templateVariables.filter((key) => {

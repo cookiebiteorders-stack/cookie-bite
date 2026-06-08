@@ -29,7 +29,7 @@ const PROMOTIONAL_BODY = `
     <div style="text-align:center;margin:14px 0 24px;"><a class="cta-btn" href="{{shop_url}}">Shop the sale</a></div>
     <div class="two-col">
       <div class="col-box"><h4>What's good right now</h4><p>Classic Cookie Box · Chocolate Chunk · Vanilla 24-pack.</p></div>
-      <div class="col-box"><h4>Free local delivery</h4><p>On orders over 500 EGP across New Cairo zones.</p></div>
+      <div class="col-box"><h4>Free local delivery</h4><p>On orders over {{free_shipping_threshold_egp}} EGP across New Cairo zones.</p></div>
     </div>
     <hr class="divider">
     <p style="font-size:12px;color:#9C8B7A;">Code <strong>{{promo_code}}</strong> valid until {{expiry_date}} at 11:59 PM. One use per customer; can't be combined with other offers.</p>

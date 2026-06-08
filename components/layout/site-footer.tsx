@@ -5,7 +5,8 @@ import { Facebook, Heart, Instagram, Mail, MessageCircle } from "lucide-react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { FooterToolbar } from "@/components/ui/footer-toolbar";
 import { useLanguage } from "@/components/providers/language-provider";
-import { BRAND } from "@/lib/brand";
+import { useBusinessHours } from "@/components/providers/store-business-settings-provider";
+import { BRAND, brandLocation } from "@/lib/brand";
 import { NAV_LINKS, SITE } from "@/lib/data";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,8 @@ const socialUnderline =
 
 export function SiteFooter() {
   const wa = siteConfig.whatsappNumber || BRAND.whatsappE164;
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const businessHours = useBusinessHours();
   const linkSections = [
     {
       id: "shop",
@@ -54,7 +56,7 @@ export function SiteFooter() {
         { href: "/help/faq", label: t("nav.faq") },
         { href: "/delivery/new-cairo", label: t("footer.deliveryNewCairo") },
         { href: "/corporate-gifting", label: t("footer.corporateGifting") },
-        { href: "/contact", label: t("footer.contactShipping") },
+        { href: "/shipping", label: t("footer.contactShipping") },
         { href: "/help/returns", label: t("footer.returnsRefunds") },
         { href: "/privacy", label: t("footer.privacyPolicy") },
         { href: "/terms", label: t("footer.termsConditions") },
@@ -82,7 +84,7 @@ export function SiteFooter() {
       id: "hours",
       title: t("footer.hours"),
       items: [
-        { href: "/contact", label: t("footer.hoursLine") },
+        { href: "/contact", label: businessHours },
         {
           href: `mailto:${BRAND.ordersEmail}`,
           label: BRAND.ordersEmail,
@@ -202,7 +204,7 @@ export function SiteFooter() {
             className="mx-1 h-4 w-4 animate-pulse text-cb-terracotta-dark"
             aria-hidden
           />
-          <span>{t("footer.inLocation", { location: BRAND.location })}</span>
+          <span>{t("footer.inLocation", { location: brandLocation(lang) })}</span>
           <Link
             href="/our-story"
             className="ms-1 font-bold text-cb-text-strong hover:text-cb-terracotta-dark"

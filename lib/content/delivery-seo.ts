@@ -1,16 +1,29 @@
-import { BRAND } from "@/lib/brand";
+import { brandLocation } from "@/lib/brand";
 import type { Lang } from "@/lib/i18n/translations";
+import {
+  formatZonesCoverageBody,
+  formatZonesCoverageFaqAnswer,
+  resolveZoneDisplayLabels,
+  type PublicShippingZone,
+} from "@/lib/shipping/public-zones-shared";
 
-export function getNewCairoDeliveryFaq(lang: Lang): Array<{ q: string; a: string }> {
+export function getNewCairoDeliveryFaq(
+  lang: Lang,
+  zones: PublicShippingZone[],
+  freeShippingThresholdEgp: number,
+): Array<{ q: string; a: string }> {
+  const location = brandLocation(lang);
+  const labels = resolveZoneDisplayLabels(zones, lang);
+
   if (lang === "ar") {
     return [
       {
         q: "هل توصّلون في جميع أنحاء القاهرة الجديدة؟",
-        a: `نعم — نوصّل من مطبخنا في ${BRAND.location} إلى معظم كمبوندات ومناطق القاهرة الجديدة.`,
+        a: formatZonesCoverageFaqAnswer(location, labels, lang),
       },
       {
         q: "ما حد التوصيل المجاني؟",
-        a: `الطلبات فوق ${BRAND.freeDeliveryThresholdEgp} جنيه (قبل الخصومات) قد تستحق التوصيل المجاني حيث تسمح المنطقة.`,
+        a: `الطلبات فوق ${freeShippingThresholdEgp} جنيه (قبل الخصومات) قد تستحق التوصيل المجاني حيث تسمح المنطقة.`,
       },
       {
         q: "كم يستغرق توصيل الكوكيز؟",
@@ -22,14 +35,15 @@ export function getNewCairoDeliveryFaq(lang: Lang): Array<{ q: string; a: string
       },
     ];
   }
+
   return [
     {
       q: "Do you deliver across New Cairo?",
-      a: `Yes — we deliver from our kitchen in ${BRAND.location} across most New Cairo compounds and nearby neighborhoods.`,
+      a: formatZonesCoverageFaqAnswer(location, labels, lang),
     },
     {
       q: "What is the free delivery threshold?",
-      a: `Orders over ${BRAND.freeDeliveryThresholdEgp} EGP (before discounts) qualify for free delivery where the zone allows it.`,
+      a: `Orders over ${freeShippingThresholdEgp} EGP (before discounts) qualify for free delivery where the zone allows it.`,
     },
     {
       q: "How fast is cookie delivery in New Cairo?",
@@ -42,13 +56,21 @@ export function getNewCairoDeliveryFaq(lang: Lang): Array<{ q: string; a: string
   ];
 }
 
-export function getNewCairoDeliveryContent(lang: Lang) {
-  const faqs = getNewCairoDeliveryFaq(lang);
+export function getNewCairoDeliveryContent(
+  lang: Lang,
+  zones: PublicShippingZone[],
+  freeShippingThresholdEgp: number,
+) {
+  const faqs = getNewCairoDeliveryFaq(lang, zones, freeShippingThresholdEgp);
+  const location = brandLocation(lang);
+  const labels = resolveZoneDisplayLabels(zones, lang);
+  const zonesBody = formatZonesCoverageBody(labels, lang);
+
   if (lang === "ar") {
     return {
       eyebrow: "التوصيل",
       title: "توصيل الكوكيز في القاهرة الجديدة",
-      subtitle: `كوكيز كوكي بايت الطازجة تُخبز على دفعات صغيرة وتُوصّل من ${BRAND.location}.`,
+      subtitle: `كوكيز كوكي بايت الطازجة تُخبز على دفعات صغيرة وتُوصّل من ${location}.`,
       faqHeading: "أسئلة شائعة عن التوصيل",
       ctaLabel: "اطلب الكوكيز الآن",
       ctaHref: "/shop",
@@ -56,14 +78,14 @@ export function getNewCairoDeliveryContent(lang: Lang) {
       sections: [
         {
           heading: "المناطق التي نغطيها",
-          body: "نوصّل في التجمع الخامس، ميفيدا، ماونتن فيو، هايد بارك، كاتامية، مدينتي، الرحاب، وكمبوندات أخرى. أكّد عنوانك على واتساب قبل طلبات الهدايا الكبيرة.",
+          body: zonesBody,
         },
         {
           heading: "حد التوصيل المجاني",
-          body: `استمتع بالتوصيل المجاني للطلبات المؤهلة فوق ${BRAND.freeDeliveryThresholdEgp} جنيه قبل الخصومات عندما تكون منطقتك مؤهلة. تظهر الرسوم وطرق الدفع عند إتمام الطلب.`,
+          body: `استمتع بالتوصيل المجاني للطلبات المؤهلة فوق ${freeShippingThresholdEgp} جنيه قبل الخصومات عندما تكون منطقتك مؤهلة. تظهر الرسوم وطرق الدفع عند إتمام الطلب.`,
         },
         {
-          heading: "التغليف والطزاجة",
+          heading: "التغليف وجودة المنتجات",
           body: "نُغلّف الكوكيز في صناديقنا لتحافظ على جودتها أثناء النقل. للحصول على أفضل قوام، استمتع بها خلال أيام قليلة واحفظها في وعاء محكم.",
         },
       ],
@@ -76,10 +98,11 @@ export function getNewCairoDeliveryContent(lang: Lang) {
       faqs,
     };
   }
+
   return {
     eyebrow: "Delivery",
     title: "Cookie delivery in New Cairo",
-    subtitle: `Fresh Cookie Bite boxes baked in small batches and delivered from ${BRAND.location}.`,
+    subtitle: `Fresh Cookie Bite boxes baked in small batches and delivered from ${location}.`,
     faqHeading: "Frequently asked questions",
     ctaLabel: "Order cookies",
     ctaHref: "/shop",
@@ -87,11 +110,11 @@ export function getNewCairoDeliveryContent(lang: Lang) {
     sections: [
       {
         heading: "Zones we serve",
-        body: "We deliver across Fifth Settlement, Mivida, Mountain View, Hyde Park, Katameya, Madinaty, Rehab, and many more compounds. Confirm your address on WhatsApp before large gift orders.",
+        body: zonesBody,
       },
       {
         heading: "Free delivery threshold",
-        body: `Enjoy free delivery on qualifying orders over ${BRAND.freeDeliveryThresholdEgp} EGP before discounts, when your zone is eligible. Fees and payment methods appear at checkout.`,
+        body: `Enjoy free delivery on qualifying orders over ${freeShippingThresholdEgp} EGP before discounts, when your zone is eligible. Fees and payment methods appear at checkout.`,
       },
       {
         heading: "Packaging & freshness",

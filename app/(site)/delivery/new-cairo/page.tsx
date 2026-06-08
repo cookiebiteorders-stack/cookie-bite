@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { SeoLandingPage } from "@/components/pages/seo-landing-page";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { getNewCairoDeliveryContent } from "@/lib/content/delivery-seo";
+import { getPublicShippingZones } from "@/lib/shipping/public-zones-server";
+import { getFreeShippingThresholdEgp } from "@/lib/store/commerce-settings-server";
 import { translations } from "@/lib/i18n/translations";
 import {
   buildBreadcrumbJsonLd,
@@ -12,13 +14,18 @@ import { getLangFromCookies } from "@/lib/seo/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const lang = await getLangFromCookies();
-  return buildLocalizedPageMetadata("/delivery/new-cairo", lang);
+  const threshold = await getFreeShippingThresholdEgp();
+  return buildLocalizedPageMetadata("/delivery/new-cairo", lang, { threshold });
 }
 
 export default async function DeliveryNewCairoPage() {
   const lang = await getLangFromCookies();
-  const dict = translations[lang];
-  const content = getNewCairoDeliveryContent(lang);
+  const [dict, zones, freeShippingThresholdEgp] = await Promise.all([
+    Promise.resolve(translations[lang]),
+    getPublicShippingZones(),
+    getFreeShippingThresholdEgp(),
+  ]);
+  const content = getNewCairoDeliveryContent(lang, zones, freeShippingThresholdEgp);
 
   const faqJsonLd = buildFaqPageJsonLd(content.faqs);
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([

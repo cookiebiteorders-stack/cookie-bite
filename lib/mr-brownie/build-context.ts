@@ -78,7 +78,7 @@ export async function buildMrBrownieContext(params: {
     loadToneVectorForUser(params.clerkUserId ?? null),
   ]);
 
-  const knowledgeRaw = buildStoreKnowledgeBase();
+  const knowledgeRaw = buildStoreKnowledgeBase(website.delivery.free_threshold_egp);
   const session = params.session?.pathname
     ? resolvePageIntent(
         params.session.pathname,
@@ -99,7 +99,7 @@ export async function buildMrBrownieContext(params: {
           : knowledgeRaw.faq,
   };
 
-  await ensureKnowledgeIndexed();
+  ensureKnowledgeIndexed();
 
   const faqForRetrieval = knowledge_base.faq.map((f) => ({
     question: f.question,
@@ -189,6 +189,7 @@ export async function buildMrBrownieContext(params: {
     knowledgeSnippets,
     clientActions,
     promoPreview,
+    freeShippingThresholdEgp: website.delivery.free_threshold_egp,
   });
 
   const behavior_rules = getActiveBehaviorRules();

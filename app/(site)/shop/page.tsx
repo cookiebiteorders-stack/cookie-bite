@@ -16,6 +16,7 @@ import {
   buildShopCategoryMetadata,
 } from "@/lib/seo";
 import { getLangFromCookies } from "@/lib/seo/server";
+import { getFreeShippingThresholdEgp } from "@/lib/store/commerce-settings-server";
 import { getCachedTrendingRecommendations } from "@/lib/storefront/cached-catalog";
 import { getCachedShopCategoryLabels } from "@/lib/storefront/shop-categories-server";
 import { getCachedShopCatalog } from "@/lib/storefront/shop-catalog-server";
@@ -39,7 +40,8 @@ export async function generateMetadata({
 export default async function ShopPage() {
   const lang = await getLangFromCookies();
   const dict = translations[lang];
-  const faqJsonLd = buildFaqPageJsonLd(getShopPageFaq(lang));
+  const freeShippingThresholdEgp = await getFreeShippingThresholdEgp();
+  const faqJsonLd = buildFaqPageJsonLd(getShopPageFaq(lang, freeShippingThresholdEgp));
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: (dict.tabs as { home: string }).home, path: "/" },
     { name: (dict.nav as { shop: string }).shop, path: "/shop" },

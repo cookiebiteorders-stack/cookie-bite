@@ -31,11 +31,23 @@ export function getPageSeoEntry(path: LocalizedPageKey, lang: Lang): PageSeoEntr
   return PAGE_METADATA[path][lang];
 }
 
-export function buildLocalizedPageMetadata(path: LocalizedPageKey, lang: Lang): Metadata {
+export function buildLocalizedPageMetadata(
+  path: LocalizedPageKey,
+  lang: Lang,
+  replacements?: Record<string, string | number>,
+): Metadata {
   const entry = getPageSeoEntry(path, lang);
+  const interpolate = (value: string) => {
+    if (!replacements) return value;
+    return Object.entries(replacements).reduce(
+      (text, [key, replacement]) =>
+        text.replace(new RegExp(`\\{${key}\\}`, "g"), String(replacement)),
+      value,
+    );
+  };
   return buildPageMetadata({
-    title: entry.title,
-    description: entry.description,
+    title: interpolate(entry.title),
+    description: interpolate(entry.description),
     path,
     keywords: entry.keywords,
     lang,

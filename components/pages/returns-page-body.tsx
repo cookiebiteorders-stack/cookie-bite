@@ -10,8 +10,7 @@ export function ReturnsPageBody() {
   return (
     <div className="mx-auto max-w-3xl px-4 lg:px-6">
       <SectionHeading
-        align="left"
-        className="text-left"
+        align="start"
         eyebrow={t("pages.returns.eyebrow")}
         title={t("pages.returns.title")}
         subtitle={t("pages.returns.subtitle")}

@@ -48,13 +48,77 @@ const WELCOME_BODY = `
     <hr class="divider">
     <div class="two-col">
       <div class="col-box"><h4>Made fresh, daily</h4><p>Most boxes are baked the same day they leave our kitchen.</p></div>
-      <div class="col-box"><h4>Free delivery over 500 EGP</h4><p>Across New Cairo and surrounding zones.</p></div>
+      <div class="col-box"><h4>Free delivery over {{free_shipping_threshold_egp}} EGP</h4><p>Across New Cairo and surrounding zones.</p></div>
     </div>
     <p style="font-size:13px;color:#9C8B7A;margin-top:18px;">Need anything? Just reply — a real person reads every email. Or peek at our <a href="{{help_url}}">Help Center</a>.</p>
   </div>
   <div class="email-footer"><p>© 2026 [Your Store] · Hand-baked in {{company_address}}<br><a href="{{shop_url}}">Shop</a> · <a href="{{help_url}}">Help</a> · <a href="{{unsubscribe_url}}">Unsubscribe</a></p></div>
 </div>
 `;
+
+/* ─────────────────── Welcome (prelaunch) ─────────────────── */
+
+const WELCOME_PRELAUNCH_BODY = `
+<div class="email-wrapper">
+  <div class="email-header"><div class="logo">YOUR STORE</div></div>
+  <div class="email-body">
+    <span class="tag">Thanks for joining</span>
+    <h1>Welcome, {{first_name}} — we're glad you're here.</h1>
+    <p class="greeting">Hi {{first_name}},</p>
+    <p>Thank you for creating an account with <strong>Cookie Bite</strong>. We're putting the final touches on our online shop and <strong>we're not accepting orders just yet</strong>.</p>
+    <div class="info-box"><p>🔔 <strong>We'll email you as soon as ordering opens.</strong> No action needed — we'll let you know the moment you can place your first box.</p></div>
+    <p>In the meantime, you can browse flavors and get to know us — checkout will stay disabled until we're ready.</p>
+    <div style="text-align:center;margin:22px 0;"><a class="cta-btn" href="{{shop_url}}">Visit the shop</a></div>
+    <hr class="divider">
+    <p style="font-size:13px;color:#9C8B7A;margin-top:18px;">Questions? Reply to this email or visit our <a href="{{help_url}}">Help Center</a>.</p>
+  </div>
+  <div class="email-footer"><p>© 2026 Cookie Bite · Hand-baked in {{company_address}}<br><a href="{{shop_url}}">Shop</a> · <a href="{{help_url}}">Help</a> · <a href="{{unsubscribe_url}}">Unsubscribe</a></p></div>
+</div>
+`;
+
+export const welcomePrelaunchTemplate: TemplateBuilder = {
+  meta: {
+    key: "welcome-prelaunch",
+    name: "Welcome — prelaunch (no orders yet)",
+    description: "Sent to new customers when the site is not yet accepting orders.",
+    category: "transactional",
+    variant: "email",
+    sampleVars: {
+      first_name: "Sara",
+      shop_url: "https://cookie-bite.com/shop",
+      help_url: "https://cookie-bite.com/help",
+      company_address: "Fifth Settlement, New Cairo, Egypt",
+      unsubscribe_url: "#",
+      privacy_url: "https://cookie-bite.com/privacy",
+    },
+  },
+  build(vars, options) {
+    const merged = { ...welcomePrelaunchTemplate.meta.sampleVars, ...vars };
+    const enSubject = `Welcome to Cookie Bite, ${merged.first_name ?? "there"} — we'll notify you when ordering opens`;
+    const enPreheader = "Thanks for signing up — we're not taking orders yet, but we'll email you when we're ready.";
+    const copy = resolveCopy(
+      "welcome-prelaunch",
+      options?.lang,
+      {
+        body: WELCOME_PRELAUNCH_BODY,
+        subject: enSubject,
+        preheader: enPreheader,
+        title: "Welcome to Cookie Bite",
+      },
+      merged,
+    );
+    return {
+      key: welcomePrelaunchTemplate.meta.key,
+      subject: copy.subject,
+      preheader: copy.preheader,
+      html: buildEmail(copy.body, merged, {
+        title: copy.title,
+        preheader: copy.preheader,
+        lang: options?.lang,
+      }),
+    };
+  },
+};
 
 export const welcomeTemplate: TemplateBuilder = {
   meta: {
@@ -454,6 +518,7 @@ export const paymentConfirmedTemplate: TemplateBuilder = {
 
 export const TRANSACTIONAL_TEMPLATES: TemplateBuilder[] = [
   welcomeTemplate,
+  welcomePrelaunchTemplate,
   orderConfirmedTemplate,
   paymentConfirmedTemplate,
   orderShippedTemplate,

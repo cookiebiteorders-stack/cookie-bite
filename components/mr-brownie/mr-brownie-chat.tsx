@@ -38,7 +38,7 @@ import {
   fetchAllShopProducts,
   mapApiProductToCatalog,
 } from "@/lib/storefront/shop-catalog-client";
-import { streamMrBrownieChat } from "@/lib/mr-brownie/stream-client";
+import { fetchMrBrownieNonStreamReply, streamMrBrownieChat } from "@/lib/mr-brownie/stream-client";
 import {
   PERSONA_CONFIG,
   type ChatPersona,
@@ -1084,13 +1084,59 @@ export function MrBrownieChat({
             return copy.slice(0, -1);
           });
         } else {
+          let fallbackReply: string | null = null;
+          try {
+            const fallback = await fetchMrBrownieNonStreamReply({
+              messages: nextMessages.map(({ role, content, imageUrls: imgs }) => ({
+                role,
+                content,
+                attachments: imgs?.map((url) => ({ url })),
+              })),
+              cartLines: lines,
+              session: {
+                pathname,
+                locale: lang,
+                productSlug:
+                  pathname.startsWith("/shop/") && pathname !== "/shop"
+                    ? pathname.split("/").filter(Boolean)[1]
+                    : undefined,
+              },
+              persona: shopAssistant ? "auto" : undefined,
+              answerStyle: shopAssistant ? answerStylePref : undefined,
+            });
+            fallbackReply = fallback?.reply ?? null;
+          } catch {
+            /* keep stream/partial error path */
+          }
+
+          let savedAssistant = false;
+          let assistantText = "";
           setMessages((prev) => {
-            if (prev[streamingIdx] && !prev[streamingIdx]?.content.trim()) {
-              return prev.slice(0, -1);
+            const copy = [...prev];
+            const partial = copy[streamingIdx]?.content?.trim() ?? "";
+            const text = fallbackReply || partial;
+            if (!text) {
+              if (copy[streamingIdx] && !partial) return copy.slice(0, -1);
+              return copy;
             }
-            return prev;
+            savedAssistant = true;
+            assistantText = text;
+            if (copy[streamingIdx]) {
+              copy[streamingIdx] = {
+                ...copy[streamingIdx],
+                content: text,
+                persona: STOREFRONT_PERSONA,
+              };
+            }
+            return copy;
           });
-          setError(e instanceof Error ? e.message : "Network error.");
+
+          if (savedAssistant && assistantText) {
+            enqueueSaveMessage("assistant", assistantText);
+            setError(null);
+          } else {
+            setError(e instanceof Error ? e.message : "Network error.");
+          }
         }
       } finally {
         streamAbortRef.current = null;

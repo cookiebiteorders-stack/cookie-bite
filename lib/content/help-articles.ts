@@ -36,7 +36,7 @@ export const HELP_DELIVERY: HelpArticleContent = {
     {
       heading: "Free delivery",
       paragraphs: [
-        "Enjoy free delivery on qualifying orders over 500 EGP before discounts, subject to zone availability. The checkout page shows fees for your address.",
+        "Enjoy free delivery on qualifying orders over {threshold} EGP before discounts, subject to zone availability. The checkout page shows fees for your address.",
       ],
     },
   ],

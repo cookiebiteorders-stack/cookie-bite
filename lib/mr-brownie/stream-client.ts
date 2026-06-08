@@ -68,3 +68,50 @@ export async function streamMrBrownieChat(params: {
 
   return fullText;
 }
+
+export type MrBrownieNonStreamRequest = {
+  messages: Array<{
+    role: "user" | "assistant";
+    content: string;
+    attachments?: Array<{ url: string }>;
+  }>;
+  cartLines: Array<{
+    productId: string;
+    name: string;
+    priceEgp: number;
+    quantity: number;
+  }>;
+  session?: {
+    pathname: string;
+    productSlug?: string;
+    locale?: "ar" | "en" | "auto";
+  };
+  persona?: PersonaPreference;
+  answerStyle?: AnswerStylePreference;
+};
+
+/** Non-stream fallback when SSE fails — uses rule-based or full LLM endpoint. */
+export async function fetchMrBrownieNonStreamReply(
+  params: MrBrownieNonStreamRequest,
+): Promise<{ reply: string; meta?: Record<string, unknown> } | null> {
+  const res = await fetch("/api/mr-brownie/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messages: params.messages,
+      cart: { lines: params.cartLines },
+      session: params.session,
+      persona: params.persona,
+      answer_style: params.answerStyle,
+    }),
+  });
+
+  const data = (await res.json().catch(() => null)) as {
+    reply?: string;
+    meta?: Record<string, unknown>;
+    error?: { en?: string; ar?: string };
+  } | null;
+
+  if (!res.ok || !data?.reply?.trim()) return null;
+  return { reply: data.reply.trim(), meta: data.meta };
+}

@@ -6,6 +6,14 @@ import dynamic from "next/dynamic";
 import { ArrowLeft, ArrowRight, Menu, Search, ShoppingBag, Settings, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+const NotificationCenter = dynamic(
+  () =>
+    import("@/components/announcements/notification-center").then((m) => ({
+      default: m.NotificationCenter,
+    })),
+  { ssr: false, loading: () => null },
+);
+
 const MobileHeaderNavDrawer = dynamic(
   () =>
     import("@/components/layout/mobile-header-nav-drawer").then((m) => ({
@@ -225,6 +233,7 @@ export function MobileHeader() {
                 <SlidersHorizontal className="h-5 w-5" aria-hidden />
               </button>
             )}
+            <NotificationCenter className="mobile-header__icon-btn !p-0" />
             <LanguageToggle mobile className="mobile-header__icon-btn !p-0" />
             <Link
               href="/search"

@@ -56,7 +56,7 @@ export const termsEn: LegalDocumentMeta = {
       id: "delivery",
       heading: "6. Delivery & scheduling",
       paragraphs: [
-        "Delivery zones, fees, and estimated time windows are calculated at checkout based on your address. Free delivery may apply above the threshold shown on the site (currently 500 EGP where configured).",
+        "Delivery zones, fees, and estimated time windows are calculated at checkout based on your address. Free delivery may apply above the threshold shown on the site (currently {threshold} EGP where configured).",
         "You must ensure someone is available to receive perishable goods. We are not responsible for deterioration caused by incorrect addresses, refused delivery, or prolonged unavailability after arrival.",
         "Scheduled delivery slots are estimates, not guarantees. We will notify you if a significant delay is likely.",
       ],

@@ -29,6 +29,7 @@ import { ImportExportToolbar } from "@/components/admin/import-export/import-exp
 import { ExportModal } from "@/components/admin/import-export/export-modal";
 import { DiscountEditModal, type DiscountRow } from "@/components/admin/discounts/discount-edit-modal";
 import { DiscountAiMenu } from "@/components/admin/discounts/discount-ai-menu";
+import { FreeShippingSettingsPanel } from "@/components/admin/discounts/free-shipping-settings-panel";
 
 type Discount = DiscountRow;
 
@@ -418,6 +419,8 @@ export default function AdminDiscountsPage() {
             onPauseExpiring={() => void pauseExpiringSoon()}
           />
         </div>
+
+        <FreeShippingSettingsPanel canWrite />
 
         <div className="relative mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {[

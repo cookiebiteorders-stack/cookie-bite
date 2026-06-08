@@ -16,8 +16,9 @@ import {
 } from "lucide-react";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { cn } from "@/lib/utils";
+import { EmailAutomationControlsPanel } from "@/components/admin/email/email-automation-controls-panel";
 
-type Tab = "dashboard" | "logs" | "failed" | "queue" | "contacts" | "settings" | "templates";
+type Tab = "dashboard" | "logs" | "failed" | "queue" | "contacts" | "settings" | "templates" | "automation";
 
 type ResendContactRow = {
   id: string;
@@ -30,6 +31,7 @@ type ResendContactRow = {
 
 const TABS: { id: Tab; href: string; label: string }[] = [
   { id: "dashboard", href: "/admin/email", label: "لوحة التحكم" },
+  { id: "automation", href: "/admin/email/automation", label: "البريد التلقائي" },
   { id: "logs", href: "/admin/email/logs", label: "السجلات" },
   { id: "failed", href: "/admin/email/failed", label: "فاشلة" },
   { id: "queue", href: "/admin/email/queue", label: "الطابور" },
@@ -299,9 +301,15 @@ export function EmailAdminHub({ activeTab }: { activeTab: Tab }) {
         </p>
       ) : null}
 
-      {loading ? (
+      {loading && activeTab !== "automation" ? (
         <div className="flex justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-cb-brand-600" aria-hidden />
+        </div>
+      ) : null}
+
+      {activeTab === "automation" ? (
+        <div className="admin-panel-surface rounded-2xl p-4 shadow-sm">
+          <EmailAutomationControlsPanel />
         </div>
       ) : null}
 

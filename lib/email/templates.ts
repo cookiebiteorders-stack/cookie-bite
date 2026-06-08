@@ -116,21 +116,26 @@ export function contactNotification(opts: {
  * Contact form — customer auto-reply (sent to the person who submitted)       *
  * -------------------------------------------------------------------------- */
 
-export function contactAutoReply(opts: { name: string; subject: string }) {
+export function contactAutoReply(opts: {
+  name: string;
+  subject: string;
+  hoursEn?: string;
+}) {
   const firstName = (opts.name?.split(/\s+/)[0] ?? "there").trim() || "there";
+  const hoursLine = opts.hoursEn?.trim() || "Sun–Thu, 10am–8pm Cairo time";
   return {
     subject: `We got your message, ${firstName} — Cookie Bite`,
     html: shell(
       `
       <span style="display:inline-block;background:#E2F1E8;color:#5DAA84;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border-radius:999px;margin-bottom:14px;border:1px solid #E2F1E8;">Message received</span>
       <h1 style="${heading}">Thanks for reaching out, ${esc(firstName)}.</h1>
-      <p style="${body}">We just received your message about <strong>"${esc(opts.subject)}"</strong>. Someone from our small team will read it and reply personally — usually within one business day (Sun–Thu, 10am–8pm Cairo time).</p>
+      <p style="${body}">We just received your message about <strong>"${esc(opts.subject)}"</strong>. Someone from our small team will read it and reply personally — usually within one business day (${esc(hoursLine)}).</p>
       <p style="${body}">In the meantime, you can browse our latest bake or peek at the most common questions in our Help Center:</p>
       <p style="margin:18px 0;">
         <a href="${APP_URL}/shop" style="display:inline-block;background:${BRAND.accentDark};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:999px;font-size:13px;font-weight:700;margin-right:8px;">Browse this week</a>
         <a href="${APP_URL}/help" style="display:inline-block;background:transparent;color:${BRAND.accentDark};text-decoration:none;padding:10px 22px;border-radius:999px;font-size:13px;font-weight:700;border:1.5px solid ${BRAND.borderSoft};">Help Center</a>
       </p>
-      <p style="${body};font-size:13px;color:${BRAND.muted};">If your question is urgent, message us on WhatsApp at <a href="https://wa.me/201140165995" style="color:${BRAND.accentDark};font-weight:600;">01140165995</a> — fastest reply during opening hours.</p>
+      <p style="${body};font-size:13px;color:${BRAND.muted};">If your question is urgent, message us on WhatsApp at <a href="https://wa.me/201140165995" style="color:${BRAND.accentDark};font-weight:600;">01140165995</a> — fastest reply during ${esc(hoursLine)}.</p>
     `,
       {
         title: `We got your message, ${firstName}`,

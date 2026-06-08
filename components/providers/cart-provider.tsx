@@ -242,6 +242,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
     setLastUpsellSourceProductId(product.id);
     setDrawerOpen(true);
+    void import("@/lib/announcements/behavior").then((m) => m.markClientBehavior("add_to_cart"));
+    void import("@/lib/announcements/events").then((m) =>
+      m.dispatchAnnouncementTrigger("add_to_cart"),
+    );
     },
     [],
   );

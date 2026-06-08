@@ -1,4 +1,5 @@
 import { BRAND } from "@/lib/brand";
+import { ENV_FREE_SHIPPING_THRESHOLD_EGP } from "@/lib/store/commerce-settings-shared";
 
 export const NEW_CAIRO_DELIVERY_FAQ = [
   {
@@ -7,7 +8,7 @@ export const NEW_CAIRO_DELIVERY_FAQ = [
   },
   {
     q: "What is the free delivery threshold?",
-    a: `Orders over ${BRAND.freeDeliveryThresholdEgp} EGP (before discounts) qualify for free delivery where the zone allows it.`,
+    a: `Orders over ${ENV_FREE_SHIPPING_THRESHOLD_EGP} EGP (before discounts) qualify for free delivery where the zone allows it. Check the site header or product pages for the current threshold.`,
   },
   {
     q: "How fast is cookie delivery in New Cairo?",

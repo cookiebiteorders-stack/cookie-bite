@@ -7,6 +7,9 @@ import { Cairo, DM_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { LanguageProvider } from "@/components/providers/language-provider";
 import { StoreFlagsProvider } from "@/components/providers/store-flags-provider";
+import { StoreBusinessSettingsProvider } from "@/components/providers/store-business-settings-provider";
+import { StoreShippingZonesProvider } from "@/components/providers/store-shipping-zones-provider";
+import { StoreCommerceSettingsProvider } from "@/components/providers/store-commerce-settings-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { getLangFromCookies } from "@/lib/seo/server";
 import { cn } from "@/lib/utils";
@@ -20,6 +23,9 @@ import { PreloadProbe } from "@/components/debug/preload-probe";
 import { ClickBlockProbe } from "@/components/debug/click-block-probe";
 import { CRITICAL_SHELL_CSS } from "@/lib/pwa/critical-shell-css";
 import { getPublicStoreFlags } from "@/lib/store/owner-flags-server";
+import { getPublicBusinessSettings } from "@/lib/store/business-settings-server";
+import { getPublicShippingZones } from "@/lib/shipping/public-zones-server";
+import { getPublicCommerceSettings } from "@/lib/store/commerce-settings-server";
 import "./globals.css";
 
 const clerkJsScriptUrl = resolveClerkJsScriptUrl();
@@ -141,8 +147,12 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const lang = await getLangFromCookies();
-  const [storeFlags, clerkLocalization] = await Promise.all([
+  const [storeFlags, businessSettings, shippingZones, commerceSettings, clerkLocalization] =
+    await Promise.all([
     getPublicStoreFlags(),
+    getPublicBusinessSettings(),
+    getPublicShippingZones(),
+    getPublicCommerceSettings(),
     getClerkLocalization(lang),
   ]);
   const dir = lang === "ar" ? "rtl" : "ltr";
@@ -210,9 +220,15 @@ export default async function RootLayout({
           <ThemeProvider>
             <LanguageProvider initialLang={lang}>
               <StoreFlagsProvider initialFlags={storeFlags}>
-                <SiteJsonLd />
-                <SeasonalThemeProvider />
-                <ErrorBoundary>{children}</ErrorBoundary>
+                <StoreBusinessSettingsProvider initialSettings={businessSettings}>
+                  <StoreShippingZonesProvider initialZones={shippingZones}>
+                    <StoreCommerceSettingsProvider initialSettings={commerceSettings}>
+                      <SiteJsonLd />
+                      <SeasonalThemeProvider />
+                      <ErrorBoundary>{children}</ErrorBoundary>
+                    </StoreCommerceSettingsProvider>
+                  </StoreShippingZonesProvider>
+                </StoreBusinessSettingsProvider>
               </StoreFlagsProvider>
             </LanguageProvider>
           </ThemeProvider>

@@ -2,16 +2,19 @@
 
 import dynamic from "next/dynamic";
 import { ResponsiveStorefrontHeader } from "@/components/layout/responsive-storefront-header";
+import { AnnouncementProvider } from "@/components/providers/announcement-provider";
 import { CartProvider } from "@/components/providers/cart-provider";
 import { StaffAdminNavProvider } from "@/components/providers/staff-admin-nav-provider";
 import { cn } from "@/lib/utils";
+import { TopAnnouncementSlot } from "@/components/layout/top-announcement-slot";
+import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import { DeferredShellChrome } from "@/components/layout/deferred-shell-chrome";
 import { StorefrontRuntimeEffects } from "@/components/layout/storefront-runtime-effects";
 
-const DeferredAnnouncementBar = dynamic(
+const StorefrontAnnouncementOverlays = dynamic(
   () =>
-    import("@/components/layout/deferred-announcement-bar").then((m) => ({
-      default: m.DeferredAnnouncementBar,
+    import("@/components/announcements/announcement-engine").then((m) => ({
+      default: m.StorefrontAnnouncementOverlays,
     })),
   { ssr: false, loading: () => null },
 );
@@ -64,6 +67,7 @@ export function PageShell({
 }) {
   return (
     <StaffAdminNavProvider>
+    <AnnouncementProvider>
     <CartProvider>
       <div
         className={cn(
@@ -76,7 +80,10 @@ export function PageShell({
         <a href="#main-content" className="cb-skip-link">
           {skipToMainLabel}
         </a>
-        <DeferredAnnouncementBar />
+        <TopAnnouncementSlot>
+          <AnnouncementBar />
+        </TopAnnouncementSlot>
+        <StorefrontAnnouncementOverlays />
 
         <ResponsiveStorefrontHeader />
 
@@ -99,6 +106,7 @@ export function PageShell({
         </DeferredShellChrome>
       </div>
     </CartProvider>
+    </AnnouncementProvider>
     </StaffAdminNavProvider>
   );
 }

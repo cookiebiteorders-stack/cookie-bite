@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/components/providers/language-provider";
+import { useFreeShippingThreshold } from "@/components/providers/store-commerce-settings-provider";
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +13,7 @@ type Props = {
 
 export function FreeDeliveryBar({ subtotalEgp, className, variant = "default" }: Props) {
   const { t } = useLanguage();
-  const threshold = siteConfig.freeDeliveryThresholdEgp;
+  const threshold = useFreeShippingThreshold();
   const remaining = Math.max(0, threshold - subtotalEgp);
   const pct = threshold <= 0 ? 100 : Math.min(100, (subtotalEgp / threshold) * 100);
 

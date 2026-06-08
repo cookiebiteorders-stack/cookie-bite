@@ -1,6 +1,7 @@
-import { BRAND } from "@/lib/brand";
+import { BRAND, brandLocation } from "@/lib/brand";
 import { FAQ_ITEM_KEYS } from "@/lib/seo/faq-keys";
 import { translations, type Lang } from "@/lib/i18n/translations";
+import { ENV_FREE_SHIPPING_THRESHOLD_EGP } from "@/lib/store/commerce-settings-shared";
 import { siteConfig } from "@/lib/site-config";
 
 export type StoreFaqEntry = {
@@ -9,14 +10,14 @@ export type StoreFaqEntry = {
   answer: string;
 };
 
-function interpolateTemplate(text: string): string {
+function interpolateTemplate(text: string, lang: Lang, threshold: number): string {
   return text
-    .replace(/\{location\}/g, BRAND.location)
-    .replace(/\{threshold\}/g, String(siteConfig.freeDeliveryThresholdEgp))
+    .replace(/\{location\}/g, brandLocation(lang))
+    .replace(/\{threshold\}/g, String(threshold))
     .replace(/\{phone\}/g, BRAND.phoneDisplay);
 }
 
-function extractFaqItems(lang: Lang): StoreFaqEntry[] {
+function extractFaqItems(lang: Lang, threshold: number): StoreFaqEntry[] {
   const pages = translations[lang].pages as Record<string, unknown> | undefined;
   const faq = pages?.faq as { items?: Record<string, { q?: string; a?: string }> } | undefined;
   const items = faq?.items;
@@ -28,22 +29,27 @@ function extractFaqItems(lang: Lang): StoreFaqEntry[] {
     if (!row?.q || !row?.a) continue;
     out.push({
       lang,
-      question: interpolateTemplate(String(row.q)),
-      answer: interpolateTemplate(String(row.a)).slice(0, 420),
+      question: interpolateTemplate(String(row.q), lang, threshold),
+      answer: interpolateTemplate(String(row.a), lang, threshold).slice(0, 420),
     });
   }
   return out;
 }
 
 /** RAG-lite: FAQ و سياسات ثابتة من نفس محتوى الموقع (بدون Vector DB). */
-export function buildStoreKnowledgeBase(): {
+export function buildStoreKnowledgeBase(
+  freeShippingThresholdEgp: number = ENV_FREE_SHIPPING_THRESHOLD_EGP,
+): {
   faq: StoreFaqEntry[];
   policies: string[];
   source: "site_translations";
 } {
-  const faq = [...extractFaqItems("en"), ...extractFaqItems("ar")];
+  const faq = [
+    ...extractFaqItems("en", freeShippingThresholdEgp),
+    ...extractFaqItems("ar", freeShippingThresholdEgp),
+  ];
   const policies = [
-    `Free delivery threshold: ${siteConfig.freeDeliveryThresholdEgp} ${BRAND.currency} (see FAQ).`,
+    `Free delivery threshold: ${freeShippingThresholdEgp} ${BRAND.currency} (see FAQ).`,
     `Standard delivery fee reference: ${siteConfig.standardDeliveryFeeEgp} ${BRAND.currency} when below threshold.`,
     "Returns: perishable goods — report damage/wrong items within 24 hours with photos (/help/returns).",
     "Payments: online card via Paymob at checkout; COD may show for eligible zones only.",

@@ -22,6 +22,7 @@ export const PERSONAL_OR_CONTEXT_VARS = new Set([
   "email_address",
   "action_date",
   "action_reason",
+  "free_shipping_threshold_egp",
 ]);
 
 export function getTemplateDefaultVars(

@@ -1,10 +1,11 @@
 import type { Lang } from "@/lib/i18n/translations";
-import { siteConfig } from "@/lib/site-config";
+import { ENV_FREE_SHIPPING_THRESHOLD_EGP } from "@/lib/store/commerce-settings-shared";
 
 export type ProactiveSellingContext = {
   locale: Lang;
   cartItems: number;
   cartSubtotalEgp: number;
+  freeShippingThresholdEgp?: number;
   /** ثوانٍ على صفحة منتج */
   pdpDwellSeconds?: number;
   productSlug?: string | null;
@@ -15,7 +16,7 @@ export type ProactiveSellingContext = {
 
 export function buildProactiveSellingLine(ctx: ProactiveSellingContext): string | null {
   const ar = ctx.locale === "ar";
-  const freeThreshold = siteConfig.freeDeliveryThresholdEgp;
+  const freeThreshold = ctx.freeShippingThresholdEgp ?? ENV_FREE_SHIPPING_THRESHOLD_EGP;
   const gap = Math.max(0, freeThreshold - ctx.cartSubtotalEgp);
 
   if (ctx.cartItems > 0 && ctx.cartIdleMinutes != null && ctx.cartIdleMinutes >= 30) {

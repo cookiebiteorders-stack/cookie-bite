@@ -30,8 +30,7 @@ export function CorporateGiftingClient() {
     <div className="bg-cb-cream pb-24 pt-12">
       <div className="mx-auto max-w-3xl px-4 lg:px-6">
         <SectionHeading
-          align="left"
-          className="text-left"
+          align="start"
           eyebrow={t("pages.corporateGifting.eyebrow")}
           title={t("pages.corporateGifting.title")}
           subtitle={t("pages.corporateGifting.subtitle")}

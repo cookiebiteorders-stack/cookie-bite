@@ -143,6 +143,7 @@ export function buildBrainPipelineMeta(params: {
   knowledgeSnippets?: KnowledgeSnippet[];
   clientActions?: ChatClientAction[];
   promoPreview?: MrBrownieToolResults["promo_preview"];
+  freeShippingThresholdEgp?: number;
 }): BrainPipelineMeta {
   const prompt_variant: PromptVariant = params.promptVariant ?? "a";
   const persona_preference = params.personaPreference ?? "auto";
@@ -213,6 +214,7 @@ export function buildBrainPipelineMeta(params: {
     products: params.products,
     cartLines: params.cartLines,
     promoPreview: params.promoPreview ?? null,
+    freeShippingThresholdEgp: params.freeShippingThresholdEgp,
   });
 
   const client_actions = params.clientActions ?? [];

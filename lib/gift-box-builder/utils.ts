@@ -3,8 +3,8 @@ import type { GiftBoxSizeConfig } from "@/lib/gift-box-builder/sizes";
 import type { GiftBoxBuilderState } from "@/lib/gift-box-builder/types";
 import { formatProductPriceEgp } from "@/lib/products/pricing";
 
-export function formatBuilderPrice(amount: number, lang: "ar" | "en" = "ar"): string {
-  return formatProductPriceEgp(amount, lang === "ar" ? "ar-EG" : "en-EG");
+export function formatBuilderPrice(amount: number, _lang: "ar" | "en" = "ar"): string {
+  return formatProductPriceEgp(amount);
 }
 
 export function getBoxCapacity(boxCode: string | null, sizes?: GiftBoxSizeConfig[]): number {

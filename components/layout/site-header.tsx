@@ -34,6 +34,14 @@ import { cn } from "@/lib/utils";
 const iconBtn =
   "cb-touch-manipulation inline-flex h-11 min-h-[2.75rem] w-11 min-w-[2.75rem] items-center justify-center rounded-xl text-cb-text transition-[transform,box-shadow,color,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:bg-cb-hover-overlay hover:text-cb-terracotta-dark hover:shadow-sm active:scale-[0.97] dark:hover:bg-cb-peach/15";
 
+const NotificationCenter = dynamic(
+  () =>
+    import("@/components/announcements/notification-center").then((m) => ({
+      default: m.NotificationCenter,
+    })),
+  { ssr: false, loading: () => null },
+);
+
 const SiteHeaderAuthSlot = dynamic(
   () =>
     import("@/components/layout/site-header-auth-slot").then((m) => m.SiteHeaderAuthSlot),
@@ -155,7 +163,7 @@ export function SiteHeader() {
     <>
       <header
         className={cn(
-          "cb-pl-navbar fixed start-0 end-0 top-0 z-[100] w-full border-b transition-[border-color,background-color,box-shadow,backdrop-filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "cb-pl-navbar fixed start-0 end-0 top-[var(--cb-announcement-offset,0px)] z-[100] w-full border-b transition-[border-color,background-color,box-shadow,backdrop-filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
           scrolled ? "is-scrolled" : "",
           scrolled
             ? "border-[color:var(--color-border-soft)] bg-white shadow-[var(--shadow-pl-nav)] backdrop-blur-xl"
@@ -250,6 +258,7 @@ export function SiteHeader() {
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               <div className={utilityGroupClass}>
+                <NotificationCenter />
                 <LanguageToggle className="hidden md:inline-flex" />
               </div>
               {admin ? (

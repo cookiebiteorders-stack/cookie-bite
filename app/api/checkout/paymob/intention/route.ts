@@ -15,6 +15,7 @@ import {
 } from "@/lib/paymob/accept";
 import { resolvePaymobHmacSecret } from "@/lib/paymob/env";
 import { siteConfig } from "@/lib/site-config";
+import { getFreeShippingThresholdEgp } from "@/lib/store/commerce-settings-server";
 import {
   fetchActivePromoByCode,
   validatePromoForCartAsync,
@@ -148,7 +149,7 @@ export async function POST(req: Request) {
     subtotal += pricing.subtotal;
   }
 
-  const threshold = siteConfig.freeDeliveryThresholdEgp;
+  const threshold = await getFreeShippingThresholdEgp();
 
   let discountAmount = 0;
   let appliedPromoCode: string | null = null;

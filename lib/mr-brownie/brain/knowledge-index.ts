@@ -22,8 +22,9 @@ function hashContent(parts: string[]): string {
 
 export function buildKnowledgeChunkRows(
   products: AiCatalogProduct[] = [],
+  freeShippingThresholdEgp?: number,
 ): Omit<KnowledgeChunkRow, "embedding">[] {
-  const kb = buildStoreKnowledgeBase();
+  const kb = buildStoreKnowledgeBase(freeShippingThresholdEgp);
   const rows: Omit<KnowledgeChunkRow, "embedding">[] = [];
 
   for (const faq of kb.faq) {
@@ -94,8 +95,11 @@ export async function syncKnowledgeChunks(): Promise<{
     return { ok: false, indexed: 0, products: 0, error: "GEMINI_API_KEY missing" };
   }
 
-  const { catalog } = await loadAiWebsiteKnowledgeBundle();
-  const baseRows = buildKnowledgeChunkRows(catalog.products);
+  const { catalog, website } = await loadAiWebsiteKnowledgeBundle();
+  const baseRows = buildKnowledgeChunkRows(
+    catalog.products,
+    website.delivery.free_threshold_egp,
+  );
   const productCount = baseRows.filter((r) => r.source_type === "product").length;
   const embeddings = await embedTexts(baseRows.map((r) => r.chunk_text));
 
@@ -135,15 +139,35 @@ export async function syncKnowledgeChunks(): Promise<{
   return { ok: true, indexed: payload.length, products: productCount };
 }
 
-/** يفهرس مرة واحدة إذا الجدول فارغ. */
-export async function ensureKnowledgeIndexed(): Promise<void> {
-  const supabase = tryCreateSupabaseAdminClient();
-  if (!supabase || !process.env.GEMINI_API_KEY?.trim()) return;
+/** يفهرس مرة واحدة إذا الجدول فارغ — في الخلفية دون حجب المحادثة. */
+let knowledgeIndexAttempted = false;
+let knowledgeIndexInFlight: Promise<void> | null = null;
 
-  const { count } = await supabase
-    .from("mr_brownie_knowledge_chunks")
-    .select("id", { count: "exact", head: true });
+export function ensureKnowledgeIndexed(): void {
+  if (knowledgeIndexAttempted && !knowledgeIndexInFlight) return;
+  if (knowledgeIndexInFlight) return;
 
-  if (count && count > 0) return;
-  await syncKnowledgeChunks();
+  knowledgeIndexInFlight = (async () => {
+    try {
+      const supabase = tryCreateSupabaseAdminClient();
+      if (!supabase || !process.env.GEMINI_API_KEY?.trim()) return;
+
+      const { count } = await supabase
+        .from("mr_brownie_knowledge_chunks")
+        .select("id", { count: "exact", head: true });
+
+      if (count && count > 0) {
+        knowledgeIndexAttempted = true;
+        return;
+      }
+
+      await syncKnowledgeChunks();
+      knowledgeIndexAttempted = true;
+    } catch (e) {
+      console.error("[mr-brownie] background knowledge index failed", e);
+      knowledgeIndexAttempted = true;
+    } finally {
+      knowledgeIndexInFlight = null;
+    }
+  })();
 }

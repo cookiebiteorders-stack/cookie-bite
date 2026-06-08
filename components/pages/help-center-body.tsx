@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { useLanguage } from "@/components/providers/language-provider";
+import { useBusinessHours } from "@/components/providers/store-business-settings-provider";
 import { BRAND } from "@/lib/brand";
 import { helpArticlePathForKey, type HelpCenterArticleKey } from "@/lib/content/help-center";
 import { cn } from "@/lib/utils";
@@ -137,6 +138,7 @@ const CATEGORY_ORDER: CategoryId[] = [
 
 export function HelpCenterBody() {
   const { t, lang } = useLanguage();
+  const businessHours = useBusinessHours();
   const [query, setQuery] = useState("");
 
   const articleLabels = useMemo(
@@ -281,8 +283,8 @@ export function HelpCenterBody() {
       {/* Categories */}
       <section className="mx-auto mt-4 max-w-6xl px-4 lg:px-6">
         <SectionHeading
-          align="left"
-          className="text-left"
+          align="center"
+          className="text-center"
           eyebrow={t("pages.help.categoriesEyebrow")}
           title={t("pages.help.categoriesTitle")}
         />
@@ -392,8 +394,7 @@ export function HelpCenterBody() {
       {/* Popular questions */}
       <section className="mx-auto mt-16 max-w-6xl px-4 lg:px-6">
         <SectionHeading
-          align="left"
-          className="text-left"
+          align="start"
           eyebrow={t("pages.help.popularEyebrow")}
           title={t("pages.help.popularTitle")}
         />
@@ -431,8 +432,7 @@ export function HelpCenterBody() {
       {/* Self-service quick actions */}
       <section className="mx-auto mt-16 max-w-6xl px-4 lg:px-6">
         <SectionHeading
-          align="left"
-          className="text-left"
+          align="start"
           eyebrow={t("pages.help.selfServiceEyebrow")}
           title={t("pages.help.selfServiceTitle")}
         />
@@ -528,7 +528,7 @@ export function HelpCenterBody() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-cb-cream">{t("pages.help.contactPhone")}</p>
-                    <p className="text-xs text-cb-cream/75">{t("pages.help.contactPhoneSub")}</p>
+                    <p className="text-xs text-cb-cream/75">{businessHours}</p>
                   </div>
                   <ArrowUpRight
                     className={cn(

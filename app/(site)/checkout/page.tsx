@@ -14,13 +14,14 @@ import { buttonClassName } from "@/components/ui/button";
 import { DeliveryScheduler } from "@/components/checkout/delivery-scheduler";
 import { stashPendingPurchaseEvents } from "@/components/checkout/purchase-events-tracker";
 import { useLanguage } from "@/components/providers/language-provider";
+import { useFreeShippingThreshold } from "@/components/providers/store-commerce-settings-provider";
+import { siteConfig } from "@/lib/site-config";
 import {
   emptyDeliveryScheduling,
   stateToPayload,
   validateDeliverySchedulingClient,
   type DeliverySchedulingState,
 } from "@/lib/checkout/delivery-scheduling";
-import { siteConfig } from "@/lib/site-config";
 import {
   buildSnapshotFromCartLine,
   type GiftBoxCartBuilderPayload,
@@ -38,6 +39,7 @@ export default function CheckoutPage() {
   const { lang, t, formatPrice } = useLanguage();
   const { lines, subtotalEgp, discountEgp, itemCount, clearCart, promo, applyPromo, clearPromo } =
     useCart();
+  const freeShippingThreshold = useFreeShippingThreshold();
   const [step, setStep] = useState<Step>(1);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -176,7 +178,7 @@ export default function CheckoutPage() {
   }
 
   const deliveryFee =
-    subtotalEgp >= siteConfig.freeDeliveryThresholdEgp
+    subtotalEgp >= freeShippingThreshold
       ? 0
       : siteConfig.standardDeliveryFeeEgp;
   const giftWrapFee = delivery.isGift || giftBoxLine ? GIFT_WRAP_FEE_EGP : 0;

@@ -19,7 +19,7 @@ export function MrBrownieChatProductCard({
   outOfStockLabel,
   onProductClick,
 }: MrBrownieChatProductCardProps) {
-  const price = new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-EG", {
+  const price = new Intl.NumberFormat("en-EG", {
     style: "currency",
     currency: "EGP",
     maximumFractionDigits: 0,

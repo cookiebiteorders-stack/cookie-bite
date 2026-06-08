@@ -41,7 +41,16 @@ export function getProductDiscount(
   };
 }
 
-export function formatProductPriceEgp(amount: number, locale: "ar-EG" | "en-EG" = "ar-EG"): string {
-  const formatted = amount.toLocaleString(locale, { maximumFractionDigits: 0 });
-  return locale === "ar-EG" ? `${formatted} جنيه` : `${formatted} EGP`;
+/** Storefront prices always use Western numerals and EGP, regardless of UI language. */
+export const STOREFRONT_PRICE_LOCALE = "en-EG" as const;
+
+export function formatProductPriceNumber(amount: number): string {
+  return amount.toLocaleString(STOREFRONT_PRICE_LOCALE, { maximumFractionDigits: 0 });
+}
+
+export function formatProductPriceEgp(
+  amount: number,
+  _locale?: "ar-EG" | "en-EG",
+): string {
+  return `${formatProductPriceNumber(amount)} EGP`;
 }

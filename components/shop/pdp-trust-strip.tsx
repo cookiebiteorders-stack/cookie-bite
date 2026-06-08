@@ -3,16 +3,18 @@
 import { Lock, RotateCcw, Truck } from "lucide-react";
 import { PdpPaymentMethods } from "@/components/shop/pdp-payment-methods";
 import { useLanguage } from "@/components/providers/language-provider";
+import { useFreeShippingThreshold } from "@/components/providers/store-commerce-settings-provider";
 import { BRAND } from "@/lib/brand";
 
 export function PdpTrustStrip() {
   const { t } = useLanguage();
+  const freeShippingThreshold = useFreeShippingThreshold();
 
   const items = [
     {
       icon: Truck,
       text: t("product.trustFreeDelivery", {
-        amount: BRAND.freeDeliveryThresholdEgp,
+        amount: freeShippingThreshold,
         currency: BRAND.currency,
       }),
     },

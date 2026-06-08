@@ -2,30 +2,26 @@
 
 import { useLayoutEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { MobileHeader } from "@/components/layout/mobile-header";
 
 const SiteHeader = dynamic(
   () => import("@/components/layout/site-header").then((m) => m.SiteHeader),
-  { ssr: true },
+  { ssr: false, loading: () => null },
 );
 
-const MobileHeader = dynamic(
-  () => import("@/components/layout/mobile-header").then((m) => m.MobileHeader),
-  { ssr: true },
-);
-
-type ViewportMode = "mobile" | "desktop" | "unknown";
+type ViewportMode = "mobile" | "desktop";
 
 function readViewportMode(): ViewportMode {
-  if (typeof window === "undefined") return "unknown";
   return window.matchMedia("(max-width: 767px)").matches ? "mobile" : "desktop";
 }
 
 /**
- * يحمّل هيدراً واحداً فقط — الموبايل لا يحمّل chunk الهيدر المكتبي (motion + Clerk slot).
- * أول رسم: موبايل افتراضياً (يتوافق مع CSS الحرج) ثم يُصحَّح على الديسكتوب بعد القياس.
+ * Mobile header is imported statically so SSR and the first client paint match
+ * (dynamic() around MobileHeader caused Suspense on the server vs <header> on the client).
+ * Desktop header loads only after viewport measurement — client-only chunk.
  */
 export function ResponsiveStorefrontHeader() {
-  const [mode, setMode] = useState<ViewportMode>("unknown");
+  const [mode, setMode] = useState<ViewportMode>("mobile");
 
   useLayoutEffect(() => {
     const sync = () => setMode(readViewportMode());
@@ -35,9 +31,7 @@ export function ResponsiveStorefrontHeader() {
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  const showMobile = mode !== "desktop";
-
-  if (showMobile) {
+  if (mode === "mobile") {
     return <MobileHeader />;
   }
 
@@ -46,7 +40,7 @@ export function ResponsiveStorefrontHeader() {
       <div className="desktop-header">
         <SiteHeader />
       </div>
-      <div className="hidden h-16 lg:block" aria-hidden />
+      <div className="cb-header-spacer hidden lg:block" aria-hidden />
     </>
   );
 }

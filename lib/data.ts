@@ -19,12 +19,8 @@ export const NAV_LINKS: NavItem[] = [
   { href: "/contact", label: "Contact" },
 ];
 
-/** شريط الثقة — Master Doc §4.2 */
+/** شريط الثقة — Master Doc §4.2 (free delivery uses dynamic threshold in announcement bar) */
 export const ANNOUNCEMENT_ITEMS = [
-  {
-    icon: "truck" as const,
-    text: `Free delivery over ${BRAND.freeDeliveryThresholdEgp} EGP`,
-  },
   { icon: "clock" as const, text: "Fresh baked to order" },
   { icon: "heart" as const, text: "Gift wrapping available" },
   {

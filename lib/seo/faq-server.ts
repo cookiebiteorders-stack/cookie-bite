@@ -1,20 +1,19 @@
 import "server-only";
-import { BRAND } from "@/lib/brand";
+import { BRAND, brandLocation } from "@/lib/brand";
 import { translations, type Lang } from "@/lib/i18n/translations";
 import { FAQ_ITEM_KEYS, type FaqItemKey } from "@/lib/seo/faq-keys";
+import { getFreeShippingThresholdEgp } from "@/lib/store/commerce-settings-server";
 
 type FaqItem = { q: string; a: string };
 
-function interpolateFaq(template: string, lang: Lang): string {
-  const localizedLocation =
-    lang === "ar" ? "التجمع الخامس، القاهرة الجديدة" : BRAND.location;
+function interpolateFaq(template: string, lang: Lang, threshold: number): string {
   return template
-    .replace(/\{location\}/g, localizedLocation)
-    .replace(/\{threshold\}/g, String(BRAND.freeDeliveryThresholdEgp))
+    .replace(/\{location\}/g, brandLocation(lang))
+    .replace(/\{threshold\}/g, String(threshold))
     .replace(/\{phone\}/g, BRAND.phoneDisplay);
 }
 
-function getFaqItemsForLang(lang: Lang): FaqItem[] {
+function getFaqItemsForLang(lang: Lang, threshold: number): FaqItem[] {
   const pages = translations[lang].pages as Record<string, unknown>;
   const items = pages?.faq as Record<string, unknown> | undefined;
   const faqItems = items?.items as Record<string, { q?: string; a?: string }> | undefined;
@@ -24,16 +23,18 @@ function getFaqItemsForLang(lang: Lang): FaqItem[] {
     const row = faqItems[key];
     return {
       q: row?.q ?? "",
-      a: interpolateFaq(row?.a ?? "", lang),
+      a: interpolateFaq(row?.a ?? "", lang, threshold),
     };
   }).filter((x) => x.q && x.a);
 }
 
 /** English FAQ pairs for SSR JSON-LD and metadata */
-export function getEnglishFaqItems(): FaqItem[] {
-  return getFaqItemsForLang("en");
+export async function getEnglishFaqItems(): Promise<FaqItem[]> {
+  const threshold = await getFreeShippingThresholdEgp();
+  return getFaqItemsForLang("en", threshold);
 }
 
-export function getFaqItems(lang: Lang): FaqItem[] {
-  return getFaqItemsForLang(lang);
+export async function getFaqItems(lang: Lang): Promise<FaqItem[]> {
+  const threshold = await getFreeShippingThresholdEgp();
+  return getFaqItemsForLang(lang, threshold);
 }

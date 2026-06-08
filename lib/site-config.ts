@@ -7,6 +7,5 @@ function numFromEnv(value: string | undefined, fallback: number) {
 /** إعدادات المتجر المعروضة للعميل (من NEXT_PUBLIC_*). */
 export const siteConfig = {
   whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "",
-  freeDeliveryThresholdEgp: numFromEnv(process.env.NEXT_PUBLIC_FREE_DELIVERY_THRESHOLD_EGP, 500),
   standardDeliveryFeeEgp: numFromEnv(process.env.NEXT_PUBLIC_DELIVERY_FEE_EGP, 45),
 } as const;

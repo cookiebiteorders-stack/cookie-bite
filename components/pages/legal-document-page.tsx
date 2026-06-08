@@ -28,8 +28,7 @@ export function LegalDocumentPage({ pageKey, path, lastUpdated, sections }: Prop
       <JsonLdScript id={`${pageKey}-breadcrumb-jsonld`} json={breadcrumbJsonLd} />
       <div className="mx-auto max-w-3xl px-4 text-start lg:px-6">
         <SectionHeading
-          align="left"
-          className="text-start"
+          align="start"
           eyebrow={t("legal.eyebrow")}
           title={t(`${prefix}.title`)}
           subtitle={t(`${prefix}.subtitle`)}

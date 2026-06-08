@@ -102,7 +102,12 @@ export function LanguageProvider({ children, initialLang }: LanguageProviderProp
     (key: string, vars?: TranslateVars) => {
       const active = translations[lang] as Record<string, unknown>;
       const english = translations.en as Record<string, unknown>;
-      const value = getNestedValue(active, key) ?? getNestedValue(english, key);
+      const value =
+        getNestedValue(active, key) ??
+        getNestedValue(english, key) ??
+        (key.startsWith("home.")
+          ? getNestedValue(active, key.slice(5)) ?? getNestedValue(english, key.slice(5))
+          : undefined);
       if (typeof value === "string") return interpolate(value, vars);
       return key;
     },
@@ -110,9 +115,8 @@ export function LanguageProvider({ children, initialLang }: LanguageProviderProp
   );
 
   const formatPrice = useCallback(
-    (amount: number) =>
-      formatProductPriceEgp(amount, lang === "ar" ? "ar-EG" : "en-EG"),
-    [lang],
+    (amount: number) => formatProductPriceEgp(amount),
+    [],
   );
 
   const value = useMemo<LanguageContextValue>(

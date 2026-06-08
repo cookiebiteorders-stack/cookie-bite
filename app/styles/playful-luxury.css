@@ -197,7 +197,8 @@ html[dir="rtl"] .cb-pl-body {
 
 @media (prefers-reduced-motion: reduce) {
   .cb-pl-reveal,
-  [class*="cb-marquee"] {
+  [class*="cb-marquee"],
+  .cb-announcement-marquee {
     animation: none !important;
   }
   *,
@@ -296,7 +297,28 @@ html[dir="rtl"] .cb-pl-body {
   min-height: 2.25rem;
 }
 
+.cb-header-spacer {
+  height: var(--cb-header-height, calc(4rem + var(--cb-announcement-offset, 0px)));
+}
+
+:root {
+  --cb-header-height: calc(4rem + var(--cb-announcement-offset, 0px));
+}
+
+.cb-top-announcement-slot {
+  pointer-events: none;
+}
+
+.cb-top-announcement-slot > * {
+  pointer-events: auto;
+}
+
+.cb-top-announcement-slot:not(:has(> *)) {
+  display: none;
+}
+
 .cb-pl-announcement [class*="marquee"],
+.cb-pl-announcement .cb-announcement-marquee,
 .cb-pl-announcement .inline-flex,
 .cb-pl-announcement span {
   color: var(--color-text-on-dark) !important;
@@ -307,6 +329,14 @@ html[dir="rtl"] .cb-pl-body {
 
 .cb-pl-announcement svg {
   color: var(--color-text-on-dark) !important;
+}
+
+.cb-announcement-marquee {
+  animation: cb-marquee 26s linear infinite;
+}
+
+[dir="rtl"] .cb-announcement-marquee {
+  animation-direction: reverse;
 }
 
 /* ─── 2. Navbar (applied via header classes) ─── */
@@ -334,6 +364,158 @@ html[dir="rtl"] .cb-pl-body {
 .cb-pl-nav-link:hover,
 .cb-pl-nav-link[aria-current="page"] {
   color: var(--color-caramel);
+}
+
+/* ─── Hero announcement (in-section promo) ─── */
+.cb-hero-layout__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  min-height: min(72svh, 40rem);
+  align-items: stretch;
+  justify-content: center;
+}
+
+@media (min-width: 1024px) {
+  .cb-hero-layout__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(16rem, 0.95fr);
+    gap: clamp(1.5rem, 4vw, 3.5rem);
+    align-items: center;
+    min-height: min(78svh, 44rem);
+  }
+}
+
+.cb-hero-layout__promo {
+  align-items: center;
+  justify-content: center;
+  padding-inline: clamp(0.5rem, 2vw, 1.5rem);
+}
+
+.cb-hero-announcement {
+  width: 100%;
+}
+
+.cb-hero-announcement--inline {
+  margin-block: 1rem 0.25rem;
+}
+
+.cb-hero-announcement--panel {
+  max-width: 22rem;
+}
+
+.cb-hero-announcement__card {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 1rem 1.1rem;
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in oklab, var(--color-caramel) 28%, transparent);
+  background: color-mix(in oklab, var(--color-white) 88%, transparent);
+  box-shadow:
+    0 10px 28px rgba(232, 120, 42, 0.1),
+    0 1px 0 rgba(255, 255, 255, 0.8) inset;
+  backdrop-filter: blur(10px);
+}
+
+.cb-hero-announcement--panel .cb-hero-announcement__card {
+  padding: 1.25rem 1.35rem;
+}
+
+.cb-hero-announcement__icon {
+  display: flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--color-caramel) 14%, white);
+  color: var(--color-caramel-dark, var(--color-caramel));
+}
+
+.cb-hero-announcement__title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--color-text-primary);
+}
+
+.cb-hero-announcement--panel .cb-hero-announcement__title {
+  font-size: 1.0625rem;
+}
+
+.cb-hero-announcement__message {
+  margin-top: 0.35rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.cb-hero-announcement__actions {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.cb-hero-announcement__cta {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding-inline: 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--color-text-on-dark);
+  background: var(--color-caramel);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.cb-hero-announcement__cta:hover {
+  background: var(--color-caramel-dark, var(--color-caramel));
+  color: var(--color-text-on-dark);
+  text-decoration: none;
+}
+
+.cb-hero-announcement__dots {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.cb-hero-announcement__dot {
+  height: 0.35rem;
+  width: 0.35rem;
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--color-caramel) 25%, transparent);
+}
+
+.cb-hero-announcement__dot.is-active {
+  width: 1.1rem;
+  background: var(--color-caramel);
+}
+
+.cb-hero-announcement__dismiss {
+  position: absolute;
+  top: 0.5rem;
+  inset-inline-end: 0.5rem;
+  display: inline-flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  color: var(--color-text-muted);
+  transition: background 0.15s ease;
+}
+
+.cb-hero-announcement__dismiss:hover {
+  background: color-mix(in oklab, var(--color-caramel) 10%, transparent);
 }
 
 /* ─── 3. Hero ─── */

@@ -8,6 +8,30 @@ type ArEmailCopy = {
 };
 
 export const AR_EMAIL: Record<string, ArEmailCopy> = {
+  "welcome-prelaunch": {
+    body: `
+<div class="email-wrapper">
+  <div class="email-header"><div class="logo">كوكي بايت</div></div>
+  <div class="email-body">
+    <span class="tag">شكراً لانضمامك</span>
+    <h1>أهلاً {{first_name}} — سعداء بوجودك معنا.</h1>
+    <p class="greeting">مرحباً {{first_name}}،</p>
+    <p>شكراً لإنشاء حسابك في <strong>كوكي بايت</strong>. نضع اللمسات الأخيرة على متجرنا الإلكتروني، و<strong>لا نقبل الطلبات حالياً</strong>.</p>
+    <div class="info-box"><p>🔔 <strong>سنرسل لك بريداً فور فتح الطلبات.</strong> لا حاجة لأي إجراء — سنُبلغك لحظة إمكانية طلب أول صندوق لك.</p></div>
+    <p>يمكنك في هذه الأثناء تصفّح النكهات والتعرّف علينا — الدفع سيبقى معطّلاً حتى نكون جاهزين.</p>
+    <div style="text-align:center;margin:22px 0;"><a class="cta-btn" href="{{shop_url}}">زيارة المتجر</a></div>
+    <hr class="divider">
+    <p style="font-size:13px;color:#9C8B7A;margin-top:18px;">أسئلة؟ رد على هذا البريد أو زُر <a href="{{help_url}}">مركز المساعدة</a>.</p>
+  </div>
+  <div class="email-footer"><p>© 2026 كوكي بايت · مُخبز بعناية في {{company_address}}<br><a href="{{shop_url}}">المتجر</a> · <a href="{{help_url}}">مساعدة</a> · <a href="{{unsubscribe_url}}">إلغاء الاشتراك</a></p></div>
+</div>
+`,
+    title: "أهلاً بك في كوكي بايت",
+    subject: (v) =>
+      `أهلاً بك في كوكي بايت، ${v.first_name ?? "عزيزنا"} — سنُبلغك عند فتح الطلبات`,
+    preheader: () =>
+      "شكراً لتسجيلك — لا نقبل طلبات بعد، وسنرسل لك بريداً عند الجاهزية.",
+  },
   welcome: {
     body: `
 <div class="email-wrapper">
@@ -22,7 +46,7 @@ export const AR_EMAIL: Record<string, ArEmailCopy> = {
     <hr class="divider">
     <div class="two-col">
       <div class="col-box"><h4>طازة كل يوم</h4><p>معظم الطلبات تُخبز في نفس يوم التحضير من المطبخ.</p></div>
-      <div class="col-box"><h4>توصيل مجاني فوق 500 جنيه</h4><p>في التجمع الخامس والمناطق المحيطة.</p></div>
+      <div class="col-box"><h4>توصيل مجاني فوق {{free_shipping_threshold_egp}} جنيه</h4><p>في التجمع الخامس والمناطق المحيطة.</p></div>
     </div>
     <p style="font-size:13px;color:#9C8B7A;margin-top:18px;">تحتاج مساعدة؟ رد على هذا البريد — فريقنا يقرأ كل رسالة. أو زُر <a href="{{help_url}}">مركز المساعدة</a>.</p>
   </div>

@@ -13,6 +13,8 @@ export type LocalizedPageKey =
   | "/gift-box/build"
   | "/mystery-box"
   | "/delivery/new-cairo"
+  | "/delivery/areas"
+  | "/shipping"
   | "/blog"
   | "/our-cookies"
   | "/our-story"
@@ -160,7 +162,7 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
     en: {
       title: "Cookie Delivery in New Cairo — Fifth Settlement",
       description:
-        "Fresh Cookie Bite cookie and gift box delivery across New Cairo compounds. Free delivery over 500 EGP, small-batch baking, WhatsApp support from Fifth Settlement.",
+        "Fresh Cookie Bite cookie and gift box delivery across New Cairo compounds. Free delivery over {threshold} EGP, small-batch baking, WhatsApp support from Fifth Settlement.",
       keywords: [
         "cookie delivery new cairo",
         "cookie delivery fifth settlement",
@@ -178,6 +180,53 @@ export const PAGE_METADATA: Record<LocalizedPageKey, Record<Lang, PageSeoEntry>>
         "توصيل حلويات التجمع الخامس",
         "توصيل كوكي بايت",
         "طلب كوكيز بالتوصيل القاهرة",
+      ],
+    },
+  },
+  "/delivery/areas": {
+    en: {
+      title: "Cookie Delivery Areas & Compounds",
+      description:
+        "See Cookie Bite delivery areas and compounds across New Cairo — synced from live shipping zones. Confirm your address on WhatsApp before checkout.",
+      keywords: [
+        "cookie delivery compounds cairo",
+        "fifth settlement cookie delivery",
+        "mivida dessert delivery",
+        "new cairo delivery zones",
+      ],
+    },
+    ar: {
+      title: "مناطق توصيل الكوكيز والكمبوندات",
+      description:
+        "اطلع على مناطق وكمبوندات توصيل كوكي بايت في القاهرة الجديدة — محدّثة من مناطق الشحن في الإدارة. أكّد عنوانك على واتساب قبل الطلب.",
+      keywords: [
+        "مناطق توصيل كوكيز القاهرة",
+        "توصيل التجمع الخامس",
+        "كمبوندات التوصيل",
+      ],
+    },
+  },
+  "/shipping": {
+    en: {
+      title: "Shipping & Delivery Zones",
+      description:
+        "View Cookie Bite delivery zones and save your shipping address to your profile for faster checkout in New Cairo.",
+      keywords: [
+        "cookie delivery zones cairo",
+        "shipping areas new cairo",
+        "cookie bite delivery address",
+        "save delivery address",
+      ],
+    },
+    ar: {
+      title: "الشحن والتوصيل — مناطق كوكي بايت",
+      description:
+        "اطلع على مناطق الشحن التي يضيفها فريق كوكي بايت واحفظ عنوان التوصيل في ملفك لتسريع الطلب في القاهرة الجديدة.",
+      keywords: [
+        "الشحن والتوصيل",
+        "مناطق توصيل كوكيز",
+        "عنوان التوصيل كوكي بايت",
+        "القاهرة الجديدة",
       ],
     },
   },

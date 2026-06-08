@@ -4,7 +4,11 @@
 
 /* --- Mobile Header --- */
 .mobile-header {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  position: fixed;
+  top: var(--cb-announcement-offset, 0px);
+  left: 0;
+  right: 0;
+  z-index: 100;
   height: 56px; display: none; align-items: center;
   padding: 0 16px; gap: 4px;
   border-bottom: 1px solid var(--cb-border);
@@ -144,7 +148,10 @@
   .desktop-header { display: none !important; }
   .desktop-footer { display: none !important; }
   .desktop-whatsapp-fab { display: none !important; }
-  body { padding-top: 56px; padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  body {
+    padding-top: calc(56px + var(--cb-announcement-offset, 0px));
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
   html, body { overflow-x: hidden; }
 }
 

@@ -823,8 +823,8 @@ export function ShopClient({
             aria-labelledby="shop-trending-heading"
           >
             <SectionHeading
-              align="left"
-              className="mb-6 text-start"
+              align="start"
+              className="mb-6"
               eyebrow={t("pages.shop.trendingEyebrow")}
               title={
                 <span id="shop-trending-heading">{t("pages.shop.trendingTitle")}</span>
@@ -850,9 +850,16 @@ export function ShopClient({
           className="scroll-mt-24"
           aria-labelledby="shop-catalog-heading"
         >
-          <h2 id="shop-catalog-heading" className="sr-only">
-            {t("pages.shop.catalogTitle")}
-          </h2>
+          <SectionHeading
+            align="start"
+            className="mb-6"
+            eyebrow={t("pages.shop.catalogEyebrow")}
+            title={
+              <span id="shop-catalog-heading">{t("pages.shop.catalogTitle")}</span>
+            }
+            subtitle={t("pages.shop.catalogSubtitle")}
+            variant="editorial"
+          />
 
         {loading ? (
           <div className="grid gap-6 py-8 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
@@ -896,15 +903,15 @@ export function ShopClient({
         ) : null}
         </section>
 
-        <section className="mt-16 border-t border-cb-border pt-10">
+        <section className="mt-16 border-t border-cb-border pt-10 text-center">
           <h2 className="font-serif text-xl font-semibold text-cb-text-strong sm:text-2xl">
             {t("pages.shop.seoSectionTitle")}
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cb-text sm:text-base">
+          <p className="mx-auto mt-3 max-w-2xl whitespace-pre-line text-sm leading-relaxed text-cb-text sm:text-base">
             {t("pages.shop.seoSectionBody")}
           </p>
           <SeoRelatedLinks
-            className="mt-5"
+            className="mt-5 [&_ul]:justify-center"
             ariaLabel={t("pages.shop.seoRelatedAria")}
             links={getShopRelatedLinks(lang)}
           />

@@ -1,6 +1,8 @@
 import { EMAIL_CONFIG, getResend } from "@/lib/email/resend";
 import { sendAutomatedEmail } from "@/lib/email/automation/pipeline";
 import { contactNotification, contactAutoReply } from "@/lib/email/templates";
+import { getPublicBusinessSettings } from "@/lib/store/business-settings-server";
+import { getFreeShippingThresholdEgp } from "@/lib/store/commerce-settings-server";
 import { renderTemplate } from "@/lib/notification-library";
 
 const DEFAULT_CUSTOMER_EMAIL_LANG: "en" | "ar" = "ar";
@@ -78,10 +80,12 @@ export async function sendWelcomeEmail(opts: {
 }) {
   const firstName = opts.name?.split(/\s+/)[0] ?? "there";
   const lang = opts.lang ?? DEFAULT_CUSTOMER_EMAIL_LANG;
+  const freeShippingThresholdEgp = await getFreeShippingThresholdEgp();
   const rendered = renderTemplate(
     "welcome",
     {
       first_name: firstName,
+      free_shipping_threshold_egp: freeShippingThresholdEgp,
     },
     { lang },
   );
@@ -114,7 +118,12 @@ export async function sendContactAutoReply(opts: {
   name: string;
   subject: string;
 }) {
-  const tpl = contactAutoReply({ name: opts.name, subject: opts.subject });
+  const businessSettings = await getPublicBusinessSettings();
+  const tpl = contactAutoReply({
+    name: opts.name,
+    subject: opts.subject,
+    hoursEn: businessSettings.hours_en,
+  });
   return dispatch({
     to: opts.to,
     subject: tpl.subject,
@@ -189,9 +198,17 @@ export async function sendTemplateEmail(opts: {
   attachments?: EmailAttachment[];
   immediate?: boolean;
 }) {
-  const rendered = renderTemplate(opts.templateKey, opts.vars ?? {}, {
+  const freeShippingThresholdEgp = await getFreeShippingThresholdEgp();
+  const rendered = renderTemplate(
+    opts.templateKey,
+    {
+      free_shipping_threshold_egp: freeShippingThresholdEgp,
+      ...opts.vars,
+    },
+    {
     lang: opts.lang,
-  });
+  },
+  );
   if (!rendered) {
     throw new Error(`Template "${opts.templateKey}" not found in registry`);
   }

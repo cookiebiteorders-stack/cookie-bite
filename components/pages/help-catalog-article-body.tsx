@@ -6,8 +6,10 @@ import { ChevronLeft, ChevronRight, ThumbsDown, ThumbsUp } from "lucide-react";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { buttonClassName } from "@/components/ui/button";
 import { useLanguage } from "@/components/providers/language-provider";
+import { useStoreShippingZones } from "@/components/providers/store-shipping-zones-provider";
 import type { HelpCenterArticle, HelpCenterBlock } from "@/lib/content/help-center";
 import { getHelpArticlesByCategory, helpArticlePath } from "@/lib/content/help-center";
+import { formatZonesGroupedLines } from "@/lib/shipping/public-zones-shared";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -72,23 +74,33 @@ function HelpBlockView({ block, isRtl }: { block: HelpCenterBlock; isRtl: boolea
 
 export function HelpCatalogArticleBody({ article }: Props) {
   const { lang, t } = useLanguage();
+  const { zones } = useStoreShippingZones();
   const isRtl = lang === "ar";
   const [helpful, setHelpful] = useState<"yes" | "no" | null>(null);
 
-  const localized = useMemo(
-    () => ({
+  const localized = useMemo(() => {
+    const zoneLines =
+      article.id === "o2" ? formatZonesGroupedLines(zones, lang) : null;
+    const blocks = article.blocks[lang].map((block) => {
+      if (article.id !== "o2" || !zoneLines?.length) return block;
+      const areasHeading =
+        lang === "ar" ? "المناطق المتاحة حالياً" : "Currently available areas";
+      if (block.heading !== areasHeading) return block;
+      return { ...block, list: zoneLines };
+    });
+
+    return {
       title: article.title[lang],
       description: article.description[lang],
       readTime: article.readTime[lang],
-      blocks: article.blocks[lang],
+      blocks,
       relatedLinks: article.relatedLinks.map((link) => ({
         href: link.href,
         label: link.label[lang],
       })),
       categoryTitle: t(`pages.help.categories.${article.categoryId}.title`),
-    }),
-    [article, lang, t],
-  );
+    };
+  }, [article, lang, t, zones]);
 
   const siblings = useMemo(
     () => getHelpArticlesByCategory(article.categoryId).filter((a) => a.id !== article.id),
@@ -131,7 +143,7 @@ export function HelpCatalogArticleBody({ article }: Props) {
           <span className="text-cb-text-muted">{localized.readTime}</span>
         </div>
 
-        <SectionHeading align="left" className="mt-4 text-start" title={localized.title} subtitle={localized.description} />
+        <SectionHeading align="start" className="mt-4" title={localized.title} subtitle={localized.description} />
 
         <div className="mt-10 space-y-10 rounded-3xl border border-cb-border bg-cb-surface p-6 shadow-sm sm:p-8">
           {localized.blocks.map((block, index) => (

@@ -1,7 +1,7 @@
 import type { UserRole } from "@/lib/admin/rbac";
-import { BRAND } from "@/lib/brand";
 import type { Lang } from "@/lib/i18n/translations";
 import { buildProactiveSellingLine } from "@/lib/mr-brownie/proactive-selling";
+import { ENV_FREE_SHIPPING_THRESHOLD_EGP } from "@/lib/store/commerce-settings-shared";
 
 function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -31,6 +31,7 @@ export function buildAmbientApiMessage(params: {
   productSlug?: string | null;
   productName?: string | null;
   cartIdleMinutes?: number;
+  freeShippingThresholdEgp?: number;
 }): string {
   const { locale, resolvedRole, cartItems, cartSubtotal, productNames } = params;
 
@@ -38,6 +39,7 @@ export function buildAmbientApiMessage(params: {
     locale,
     cartItems,
     cartSubtotalEgp: cartSubtotal,
+    freeShippingThresholdEgp: params.freeShippingThresholdEgp,
     pdpDwellSeconds: params.pdpDwellSeconds,
     productSlug: params.productSlug,
     productName: params.productName,
@@ -52,7 +54,8 @@ export function buildAmbientApiMessage(params: {
         ? [...FALLBACK_NAMES_AR]
         : [...FALLBACK_NAMES_EN];
   const pickName = () => pick(namePool);
-  const freeShipThreshold = BRAND.freeDeliveryThresholdEgp;
+  const freeShipThreshold =
+    params.freeShippingThresholdEgp ?? ENV_FREE_SHIPPING_THRESHOLD_EGP;
   const amountLeft = Math.max(0, freeShipThreshold - cartSubtotal);
 
   const roleLine =

@@ -2,19 +2,21 @@
 
 import Link from "next/link";
 import { SectionHeading } from "@/components/sections/section-heading";
-import { BRAND } from "@/lib/brand";
+import { useFreeShippingThreshold } from "@/components/providers/store-commerce-settings-provider";
+import { BRAND, brandLocation } from "@/lib/brand";
 import { FAQ_ITEM_KEYS } from "@/lib/seo/faq-keys";
 import { useLanguage } from "@/components/providers/language-provider";
 
 export function FaqPageBody() {
   const { t, lang } = useLanguage();
-  const location = lang === "ar" ? "التجمع الخامس، القاهرة الجديدة" : BRAND.location;
+  const location = brandLocation(lang);
+  const threshold = useFreeShippingThreshold();
 
   const faqs = FAQ_ITEM_KEYS.map((id) => ({
     q: t(`pages.faq.items.${id}.q`),
     a: t(`pages.faq.items.${id}.a`, {
       location,
-      threshold: BRAND.freeDeliveryThresholdEgp,
+      threshold,
       phone: BRAND.phoneDisplay,
     }),
   }));
@@ -22,8 +24,7 @@ export function FaqPageBody() {
   return (
     <div className="mx-auto max-w-3xl px-4 lg:px-6">
       <SectionHeading
-        align="left"
-        className="text-left"
+        align="start"
         eyebrow={t("pages.faq.eyebrow")}
         title={t("pages.faq.title")}
         subtitle={t("pages.faq.subtitle")}

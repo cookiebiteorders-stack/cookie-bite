@@ -7,6 +7,7 @@ import {
 } from "@/lib/admin/require-admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { bilingualError } from "@/lib/validations";
+import { invalidatePublicShippingZonesCache } from "@/lib/shipping/public-zones-server";
 
 const bodySchema = z.object({
   orderedIds: z.array(z.string().uuid()).min(1),
@@ -49,6 +50,8 @@ export async function POST(req: NextRequest) {
     metadata: { orderedIds: parsed.data.orderedIds },
     request: req,
   });
+
+  invalidatePublicShippingZonesCache();
 
   return NextResponse.json({ ok: true });
 }

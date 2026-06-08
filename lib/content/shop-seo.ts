@@ -1,7 +1,9 @@
-import { BRAND } from "@/lib/brand";
 import type { Lang } from "@/lib/i18n/translations";
 
-export function getShopPageFaq(lang: Lang): Array<{ q: string; a: string }> {
+export function getShopPageFaq(
+  lang: Lang,
+  freeShippingThresholdEgp: number,
+): Array<{ q: string; a: string }> {
   if (lang === "ar") {
     return [
       {
@@ -18,7 +20,7 @@ export function getShopPageFaq(lang: Lang): Array<{ q: string; a: string }> {
       },
       {
         q: "متى يكون التوصيل مجانياً؟",
-        a: `الطلبات فوق ${BRAND.freeDeliveryThresholdEgp} جنيه (قبل الخصومات) قد ت qualify للتوصيل المجاني حسب المنطقة — التفاصيل عند الدفع.`,
+        a: `الطلبات فوق ${freeShippingThresholdEgp} جنيه (قبل الخصومات) قد ت qualify للتوصيل المجاني حسب المنطقة — التفاصيل عند الدفع.`,
       },
     ];
   }
@@ -37,7 +39,7 @@ export function getShopPageFaq(lang: Lang): Array<{ q: string; a: string }> {
     },
     {
       q: "When is delivery free?",
-      a: `Orders over ${BRAND.freeDeliveryThresholdEgp} EGP (before discounts) may qualify for free delivery in eligible zones — fees show at checkout.`,
+      a: `Orders over ${freeShippingThresholdEgp} EGP (before discounts) may qualify for free delivery in eligible zones — fees show at checkout.`,
     },
   ];
 }

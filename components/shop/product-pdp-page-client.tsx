@@ -32,6 +32,8 @@ import {
 import { useExperiment } from "@/hooks/use-experiment";
 import type { PdpApiPayload, PdpReview } from "@/lib/storefront/pdp-api";
 import type { RatingDistribution } from "@/lib/storefront/review-stats";
+import { InlineAlerts } from "@/components/announcements/inline-alerts";
+import { markClientBehavior } from "@/lib/announcements/behavior";
 import { recordRecentlyViewed } from "@/lib/storefront/recently-viewed";
 
 const FALLBACK_DESC = "Fresh handcrafted treats from Cookie Bite — New Cairo.";
@@ -124,6 +126,7 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
       price: product.price,
       productUuid: product.productUuid,
     });
+    markClientBehavior("viewed_product");
   }, [product]);
 
   const jsonLd = useMemo(() => {
@@ -159,6 +162,8 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
             <JsonLdScript id={`pdp-breadcrumb-jsonld-${product.id}`} json={jsonLd.breadcrumb} />
           </>
         ) : null}
+        <InlineAlerts slot="product" />
+
         <Link
           href="/shop"
           className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-cb-terracotta-dark hover:underline"

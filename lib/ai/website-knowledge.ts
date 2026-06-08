@@ -2,6 +2,7 @@ import { BRAND } from "@/lib/brand";
 import { NAV_LINKS, OUR_COOKIE_SECTION_DEFS, SITE } from "@/lib/data";
 import type { ProductRow } from "@/lib/db/types";
 import { siteConfig } from "@/lib/site-config";
+import { getFreeShippingThresholdEgp } from "@/lib/store/commerce-settings-server";
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 
 /** TTL قصير — يبقي الكتالوج محدثاً دون ضغط على كل رسالة */
@@ -68,7 +69,10 @@ type CachedBundle = {
 
 let cache: CachedBundle | null = null;
 
-function buildStaticWebsiteSnapshot(categories: string[]): WebsiteKnowledgeSnapshot {
+function buildStaticWebsiteSnapshot(
+  categories: string[],
+  freeShippingThresholdEgp: number,
+): WebsiteKnowledgeSnapshot {
   const extraPages: WebsiteKnowledgeSnapshot["pages"] = [
     { path: "/shop", label: "Shop", purpose: "Browse all active products and filters" },
     { path: "/shop/[slug]", label: "Product", purpose: "Product detail, add to cart" },
@@ -111,9 +115,9 @@ function buildStaticWebsiteSnapshot(categories: string[]): WebsiteKnowledgeSnaps
       email: BRAND.email,
     },
     delivery: {
-      free_threshold_egp: siteConfig.freeDeliveryThresholdEgp,
+      free_threshold_egp: freeShippingThresholdEgp,
       standard_fee_egp: siteConfig.standardDeliveryFeeEgp,
-      note: `Free delivery on orders over ${siteConfig.freeDeliveryThresholdEgp} ${BRAND.currency} (New Cairo area). Fresh baked to order; typical lead time shared at checkout.`,
+      note: `Free delivery on orders over ${freeShippingThresholdEgp} ${BRAND.currency} (New Cairo area). Fresh baked to order; typical lead time shared at checkout.`,
     },
     pages,
     features: [
@@ -265,14 +269,13 @@ async function fetchActivePromos(): Promise<AiPromoOffer[]> {
   return offers;
 }
 
-function defaultShippingOffer(): AiPromoOffer {
-  const threshold = siteConfig.freeDeliveryThresholdEgp;
+function defaultShippingOffer(freeShippingThresholdEgp: number): AiPromoOffer {
   return {
-    code: `FREESHIP_${threshold}`,
+    code: `FREESHIP_${freeShippingThresholdEgp}`,
     type: "fixed",
     value: siteConfig.standardDeliveryFeeEgp,
-    min_order_amount_egp: threshold,
-    discount_summary: `Free delivery on orders over ${threshold} ${BRAND.currency}`,
+    min_order_amount_egp: freeShippingThresholdEgp,
+    discount_summary: `Free delivery on orders over ${freeShippingThresholdEgp} ${BRAND.currency}`,
     expiry: null,
     eligible_products: [],
   };
@@ -299,9 +302,10 @@ export async function loadAiWebsiteKnowledgeBundle(): Promise<{
   const categories = [
     ...new Set(catalog.products.map((p) => p.category).filter(Boolean)),
   ].sort();
-  const website = buildStaticWebsiteSnapshot(categories);
+  const freeShippingThresholdEgp = await getFreeShippingThresholdEgp();
+  const website = buildStaticWebsiteSnapshot(categories, freeShippingThresholdEgp);
   const dbPromos = await fetchActivePromos();
-  const promoOffers = [defaultShippingOffer(), ...dbPromos];
+  const promoOffers = [defaultShippingOffer(freeShippingThresholdEgp), ...dbPromos];
 
   cache = {
     expiresAt: Date.now() + CACHE_TTL_MS,

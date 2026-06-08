@@ -26,8 +26,7 @@ export function UtilityPageShell({
     <div className={cn("bg-cb-cream pb-24 pt-12 dark:bg-background", className)}>
       <div className="mx-auto max-w-3xl px-4 lg:px-6">
         <SectionHeading
-          align="left"
-          className="text-left"
+          align="start"
           eyebrow={eyebrow}
           title={title}
           subtitle={subtitle}

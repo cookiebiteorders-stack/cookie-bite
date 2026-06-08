@@ -7,6 +7,7 @@ import {
 } from "@/lib/admin/require-admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { bilingualError } from "@/lib/validations";
+import { invalidatePublicShippingZonesCache } from "@/lib/shipping/public-zones-server";
 
 const patchSchema = z.object({
   name: z.string().min(2).max(120).optional(),
@@ -92,6 +93,8 @@ export async function PATCH(
     request: req,
   });
 
+  invalidatePublicShippingZonesCache();
+
   return NextResponse.json({ ok: true, zone: data });
 }
 
@@ -134,6 +137,8 @@ export async function DELETE(
     after: null,
     request: req,
   });
+
+  invalidatePublicShippingZonesCache();
 
   return NextResponse.json({ ok: true });
 }

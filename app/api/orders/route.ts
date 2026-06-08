@@ -21,9 +21,7 @@ type ProductForCheckout = {
   images: unknown;
 };
 
-const FREE_DELIVERY_THRESHOLD = Number(
-  process.env.NEXT_PUBLIC_FREE_DELIVERY_THRESHOLD_EGP ?? 500,
-);
+import { getFreeShippingThresholdEgp } from "@/lib/store/commerce-settings-server";
 const DELIVERY_FEE = 50;
 const GIFT_WRAP_FEE = 30;
 
@@ -267,7 +265,7 @@ export async function POST(req: NextRequest) {
     promoFreeShipping = promoResult.free_shipping;
   }
 
-  let delivery_fee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+  let delivery_fee = subtotal >= (await getFreeShippingThresholdEgp()) ? 0 : DELIVERY_FEE;
   if (promoFreeShipping) delivery_fee = 0;
   const gift_wrapping_fee = data.is_gift ? GIFT_WRAP_FEE : 0;
   const total = Math.max(

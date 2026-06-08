@@ -4,7 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncNotificationLibraryToEmailTemplates } from "@/lib/email/automation/sync-template-library";
 
 const DEFAULT_EVENT_MAPPINGS = [
-  { event_name: "user_registered", template_key: "welcome" },
+  { event_name: "user_registered", template_key: "welcome-prelaunch" },
   { event_name: "order_created", template_key: "order-confirmed" },
   { event_name: "order_shipped", template_key: "order-shipped" },
   { event_name: "password_reset", template_key: "password-reset" },

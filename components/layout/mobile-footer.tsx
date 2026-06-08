@@ -2,12 +2,12 @@
 
 import { Instagram, Facebook, MessageCircle, Heart } from "lucide-react";
 import { useLanguage } from "@/components/providers/language-provider";
-import { BRAND } from "@/lib/brand";
+import { BRAND, brandLocation } from "@/lib/brand";
 import { SITE } from "@/lib/data";
 
 export function MobileFooter() {
   const wa = BRAND.whatsappE164;
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   return (
     <footer className="mobile-footer">
@@ -57,7 +57,7 @@ export function MobileFooter() {
         <span className="mobile-footer__heart-row">
           {t("footer.madeWith")}{" "}
           <Heart className="h-3 w-3 text-cb-terracotta-dark" aria-hidden />{" "}
-          {t("footer.inLocation", { location: BRAND.location })}
+          {t("footer.inLocation", { location: brandLocation(lang) })}
         </span>
       </div>
     </footer>

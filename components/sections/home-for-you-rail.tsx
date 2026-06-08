@@ -14,7 +14,7 @@ type Props = {
 };
 
 export function HomeForYouRail({ trending }: Props) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -49,13 +49,14 @@ export function HomeForYouRail({ trending }: Props) {
     <section
       className="bg-cb-surface py-12 md:py-16"
       aria-labelledby="home-for-you-heading"
+      dir={lang === "ar" ? "rtl" : "ltr"}
     >
       <div className="mx-auto max-w-7xl cb-gutter">
-        <ViewReveal variant="tilt-up" className="mb-8">
+        <ViewReveal variant="tilt-up" className="mb-8 w-full">
           <SectionHeading
-            align="left"
+            align="start"
             variant="editorial"
-            className="text-start"
+            className="mb-0 w-full max-w-3xl"
             eyebrow={t("home.forYou.eyebrow")}
             title={<span id="home-for-you-heading">{t("home.forYou.title")}</span>}
             subtitle={t("home.forYou.subtitle")}

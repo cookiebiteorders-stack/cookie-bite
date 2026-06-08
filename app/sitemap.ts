@@ -30,6 +30,7 @@ const staticRoutes: Array<{
   { path: "/help/gifting", changeFrequency: "monthly", priority: 0.72 },
   { path: "/delivery/new-cairo", changeFrequency: "weekly", priority: 0.88 },
   { path: "/delivery/areas", changeFrequency: "weekly", priority: 0.85 },
+  { path: "/shipping", changeFrequency: "weekly", priority: 0.86 },
   { path: "/corporate-gifting", changeFrequency: "weekly", priority: 0.84 },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.4 },
   { path: "/terms", changeFrequency: "yearly", priority: 0.4 },

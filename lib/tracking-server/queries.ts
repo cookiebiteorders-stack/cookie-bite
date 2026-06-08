@@ -1,5 +1,8 @@
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchSessionDetail, type SessionDetailPayload } from "@/lib/tracking-server/session-detail";
+
+export type { SessionDetailPayload };
 
 export type Range = "24h" | "7d" | "30d" | "90d";
 
@@ -247,7 +250,7 @@ export async function getRecentSessions(limit = 30) {
   const { data } = await supabase
     .from("tracking_sessions")
     .select(
-      "session_id, visitor_id, started_at, last_event_at, entry_page, exit_page, device_type, browser, country, utm_source, pageview_count, event_count, is_bot",
+      "session_id, visitor_id, started_at, last_event_at, ended_at, duration_seconds, entry_page, exit_page, device_type, browser, os, country, city, ip, utm_source, utm_medium, utm_campaign, pageview_count, click_count, event_count, is_bot, is_bounce, referrer",
     )
     .order("started_at", { ascending: false })
     .eq("is_bot", false)
@@ -255,22 +258,8 @@ export async function getRecentSessions(limit = 30) {
   return data ?? [];
 }
 
-export async function getSessionDetail(sessionId: string) {
-  const supabase = getClient();
-  if (!supabase) return null;
-  const { data: session } = await supabase
-    .from("tracking_sessions")
-    .select("*")
-    .eq("session_id", sessionId)
-    .maybeSingle();
-  if (!session) return null;
-  const { data: events } = await supabase
-    .from("tracking_events")
-    .select("event_id, name, path, occurred_at, properties")
-    .eq("session_id", sessionId)
-    .order("occurred_at", { ascending: true })
-    .limit(2000);
-  return { session, events: events ?? [] };
+export async function getSessionDetail(sessionId: string): Promise<SessionDetailPayload | null> {
+  return fetchSessionDetail(sessionId);
 }
 
 export async function getHeatmapForPath(path: string, deviceType: string) {

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { resolveStaffRole } from "@/lib/admin/auth-role";
 import { getAiProductNamePool } from "@/lib/ai/website-knowledge";
 import { buildAmbientApiMessage } from "@/lib/mr-brownie/ambient-api-messages";
+import { getFreeShippingThresholdEgp } from "@/lib/store/commerce-settings-server";
 
 const bodySchema = z.object({
   cartItems: z.number().int().min(0).max(200).optional(),
@@ -43,6 +44,7 @@ export async function POST(req: NextRequest) {
       : "guest";
 
     const liveNames = await getAiProductNamePool(8);
+    const freeShippingThresholdEgp = await getFreeShippingThresholdEgp();
 
     return NextResponse.json({
       message: buildAmbientApiMessage({
@@ -51,6 +53,7 @@ export async function POST(req: NextRequest) {
         cartItems,
         cartSubtotal,
         productNames: liveNames,
+        freeShippingThresholdEgp,
         pdpDwellSeconds: parsed.success ? parsed.data.pdpDwellSeconds : undefined,
         productSlug: parsed.success ? parsed.data.productSlug : undefined,
         productName: parsed.success ? parsed.data.productName : undefined,

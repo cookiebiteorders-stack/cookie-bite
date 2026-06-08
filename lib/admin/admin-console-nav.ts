@@ -27,6 +27,7 @@ export const ADMIN_CONSOLE_NAV_ITEMS: AdminConsoleNavItem[] = [
   { href: "/admin/audit-logs", navKey: "audit", module: "audit" },
   { href: "/admin/media", navKey: "media", module: "media" },
   { href: "/admin/cms", navKey: "cms", module: "cms" },
+  { href: "/admin/announcements", navKey: "announcements", module: "cms" },
   { href: "/admin/template-library", navKey: "templates", module: "templates" },
   { href: "/admin/email", navKey: "email", module: "settings" },
   { href: "/admin/settings", navKey: "settings", module: "settings" },

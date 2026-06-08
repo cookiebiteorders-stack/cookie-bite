@@ -3,20 +3,21 @@
 import { ContactForm } from "@/components/contact/contact-form";
 import { SectionHeading } from "@/components/sections/section-heading";
 import { useLanguage } from "@/components/providers/language-provider";
-import { BRAND } from "@/lib/brand";
+import { useBusinessHours } from "@/components/providers/store-business-settings-provider";
+import { BRAND, brandLocation } from "@/lib/brand";
 
 export function ContactPageBody() {
   const { t, lang } = useLanguage();
+  const businessHours = useBusinessHours();
   const phoneHref = `+${BRAND.whatsappE164}`;
-  const location = lang === "ar" ? "التجمع الخامس، القاهرة الجديدة، مصر" : BRAND.location;
+  const location = brandLocation(lang);
 
   return (
     <div className="bg-cb-cream pb-24 pt-12">
       <div className="mx-auto grid max-w-7xl gap-12 cb-gutter lg:grid-cols-2">
         <div>
           <SectionHeading
-            align="left"
-            className="text-left"
+            align="start"
             eyebrow={t("pages.contact.eyebrow")}
             title={t("pages.contact.title")}
             subtitle={t("pages.contact.subtitle")}
@@ -39,6 +40,7 @@ export function ContactPageBody() {
               </a>
             </li>
             <li>{location}</li>
+            <li>{businessHours}</li>
           </ul>
         </div>
         <ContactForm />

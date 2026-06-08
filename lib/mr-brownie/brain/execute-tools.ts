@@ -3,8 +3,7 @@ import { cartSubtotal } from "@/lib/cart/types";
 import type { AiCatalogProduct } from "@/lib/ai/website-knowledge";
 import { searchCatalogForQuery } from "@/lib/mr-brownie/brain/product-search-tool";
 import type { IntentEngineResult } from "@/lib/mr-brownie/brain/intent-engine";
-import { BRAND } from "@/lib/brand";
-import { siteConfig } from "@/lib/site-config";
+import { ENV_FREE_SHIPPING_THRESHOLD_EGP } from "@/lib/store/commerce-settings-shared";
 
 export type MrBrownieToolResults = {
   promo_preview: {
@@ -39,6 +38,7 @@ export function executeMrBrownieTools(params: {
   products: AiCatalogProduct[];
   cartLines: CartLine[];
   promoPreview?: MrBrownieToolResults["promo_preview"];
+  freeShippingThresholdEgp?: number;
 }): MrBrownieToolResults {
   const tools = new Set(params.intent.tools_to_run);
   const search_products = tools.has("search_products")
@@ -63,7 +63,7 @@ export function executeMrBrownieTools(params: {
   let cart_summary: MrBrownieToolResults["cart_summary"] = null;
   if (tools.has("cart_summary") && params.cartLines.length > 0) {
     const subtotal = cartSubtotal(params.cartLines);
-    const threshold = siteConfig.freeDeliveryThresholdEgp;
+    const threshold = params.freeShippingThresholdEgp ?? ENV_FREE_SHIPPING_THRESHOLD_EGP;
     const gap = Math.max(0, threshold - subtotal);
     cart_summary = {
       items_count: params.cartLines.reduce((n, l) => n + l.quantity, 0),

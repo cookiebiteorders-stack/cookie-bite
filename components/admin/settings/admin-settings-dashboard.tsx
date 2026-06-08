@@ -36,10 +36,11 @@ import { useAdminT } from "@/lib/admin/use-admin-t";
 import { AdminBadge, AdminBadgeButton, adminTabClass } from "@/components/admin/admin-badge";
 import { OwnerControlsPanel } from "@/components/admin/owner-controls-panel";
 import { AutomationCenterPanel } from "@/components/admin/settings/automation-center-panel";
+import { StoreBusinessHoursPanel } from "@/components/admin/settings/store-business-hours-panel";
 
 const tplStudioFieldClass = "cb-field min-w-0 w-full dark:bg-stone-900";
 
-type SettingsTab = "overview" | "automations" | "templates" | "integrations" | "owner";
+type SettingsTab = "overview" | "store" | "automations" | "templates" | "integrations" | "owner";
 
 type HealthResponse = {
   canonical_host: string;
@@ -88,6 +89,7 @@ type AuditLogRow = {
 
 const SETTINGS_TABS: SettingsTab[] = [
   "overview",
+  "store",
   "automations",
   "templates",
   "integrations",
@@ -305,6 +307,8 @@ export function AdminSettingsDashboard() {
   }, [tplBody, waCatalogEntry]);
 
   const isOwner = health?.actor?.role === "owner";
+  const canWriteSettings =
+    health?.actor?.role === "owner" || health?.actor?.role === "admin";
   const warningCount = health?.env.warnings.length ?? 0;
   const missingCount = health?.env.missing.length ?? 0;
   const storeStatus: StoreHealthStatus =
@@ -640,6 +644,10 @@ export function AdminSettingsDashboard() {
                 </div>
               </section>
             </div>
+          ) : null}
+
+          {activeTab === "store" ? (
+            <StoreBusinessHoursPanel canWrite={canWriteSettings} />
           ) : null}
 
           {activeTab === "automations" ? <AutomationCenterPanel /> : null}

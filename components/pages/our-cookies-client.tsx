@@ -337,7 +337,7 @@ export function OurCookiesClient() {
           </div>
         ) : null}
 
-        <section className="mt-16 rounded-3xl border border-cb-border bg-cb-surface/80 p-6 sm:p-8">
+        <section className="mt-16 rounded-3xl border border-cb-border bg-cb-surface/80 p-6 text-start sm:p-8">
           <h2 className="font-serif text-xl font-semibold text-cb-text-strong sm:text-2xl">
             {t("pages.ourCookies.seoSectionTitle")}
           </h2>

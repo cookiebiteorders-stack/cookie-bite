@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function FaqPage() {
   const lang = await getLangFromCookies();
   const dict = translations[lang];
-  const faqItems = getFaqItems(lang);
+  const faqItems = await getFaqItems(lang);
   const faqJsonLd = buildFaqPageJsonLd(faqItems);
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: (dict.tabs as { home: string }).home, path: "/" },

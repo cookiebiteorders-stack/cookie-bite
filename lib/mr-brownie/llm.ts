@@ -146,7 +146,28 @@ export function createMrBrownieStreamResponse(
           }
         }
 
-        await hooks?.onComplete?.(fullText);
+        if (!fullText.trim()) {
+          try {
+            const recovered = await runMrBrownieLlm(params);
+            fullText = recovered.text.trim();
+            usedProvider = recovered.provider;
+            usedModel = recovered.model;
+            if (fullText) {
+              controller.enqueue(
+                encoder.encode(encodeSseEvent({ type: "token", content: fullText })),
+              );
+            }
+          } catch (recoverErr) {
+            console.warn("[mr-brownie/llm] empty stream recovery failed:", recoverErr);
+          }
+        }
+
+        try {
+          await hooks?.onComplete?.(fullText);
+        } catch (hookErr) {
+          console.error("[mr-brownie/llm] onComplete hook failed (keeping streamed reply):", hookErr);
+        }
+
         controller.enqueue(
           encoder.encode(
             encodeSseEvent({
@@ -157,6 +178,36 @@ export function createMrBrownieStreamResponse(
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : "LLM stream failed";
+        try {
+          const recovered = await runMrBrownieLlm(params);
+          const text = recovered.text.trim();
+          if (text) {
+            controller.enqueue(
+              encoder.encode(encodeSseEvent({ type: "token", content: text })),
+            );
+            try {
+              await hooks?.onComplete?.(text);
+            } catch (hookErr) {
+              console.error("[mr-brownie/llm] onComplete after recovery failed:", hookErr);
+            }
+            controller.enqueue(
+              encoder.encode(
+                encodeSseEvent({
+                  type: "done",
+                  meta: {
+                    provider: recovered.provider,
+                    model: recovered.model,
+                    recovered_from_stream_error: true,
+                    ...meta,
+                  },
+                }),
+              ),
+            );
+            return;
+          }
+        } catch (recoverErr) {
+          console.warn("[mr-brownie/llm] stream error recovery failed:", recoverErr);
+        }
         controller.enqueue(
           encoder.encode(encodeSseEvent({ type: "error", message })),
         );

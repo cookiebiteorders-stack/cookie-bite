@@ -7,6 +7,7 @@ import {
 } from "@/lib/admin/require-admin";
 import { writeAuditLog } from "@/lib/admin/audit";
 import { bilingualError } from "@/lib/validations";
+import { invalidatePublicShippingZonesCache } from "@/lib/shipping/public-zones-server";
 
 const geoFields = {
   center_lat: z.number().min(-90).max(90).nullable().optional(),
@@ -89,6 +90,8 @@ export async function POST(req: NextRequest) {
     after: data,
     request: req,
   });
+
+  invalidatePublicShippingZonesCache();
 
   return NextResponse.json({ ok: true, zone: data });
 }

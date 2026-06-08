@@ -2,7 +2,7 @@
 
 import { useLanguage } from "@/components/providers/language-provider";
 import {
-  formatProductPriceEgp,
+  formatProductPriceNumber,
   getProductDiscount,
 } from "@/lib/products/pricing";
 import { cn } from "@/lib/utils";
@@ -41,15 +41,14 @@ export function ProductPriceDisplay({
   size = "md",
   className,
 }: Props) {
-  const { lang, t } = useLanguage();
-  const locale = lang === "ar" ? "ar-EG" : "en-EG";
+  const { t, formatPrice } = useLanguage();
   const discount = getProductDiscount(price, comparePrice);
   const styles = sizeStyles[size];
 
   if (!discount) {
     return (
       <p className={cn(styles.sale, "text-cb-terracotta-dark", className)}>
-        {formatProductPriceEgp(price, locale)}
+        {formatPrice(price)}
       </p>
     );
   }
@@ -63,10 +62,10 @@ export function ProductPriceDisplay({
             "font-medium text-cb-text-muted line-through decoration-cb-text-muted/70",
           )}
         >
-          {formatProductPriceEgp(discount.comparePrice, locale)}
+          {formatPrice(discount.comparePrice)}
         </span>
         <span className={cn(styles.sale, "text-cb-terracotta-dark")}>
-          {formatProductPriceEgp(discount.salePrice, locale)}
+          {formatPrice(discount.salePrice)}
         </span>
         <span
           className={cn(
@@ -78,7 +77,7 @@ export function ProductPriceDisplay({
         </span>
       </div>
       <p className={cn(styles.meta, "font-semibold text-emerald-700 dark:text-emerald-400")}>
-        {t("product.saveAmount", { amount: discount.amountEgp.toLocaleString(locale) })}
+        {t("product.saveAmount", { amount: formatProductPriceNumber(discount.amountEgp) })}
       </p>
     </div>
   );

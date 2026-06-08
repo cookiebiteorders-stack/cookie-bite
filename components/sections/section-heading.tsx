@@ -1,15 +1,22 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
+type SectionAlign = "center" | "start" | "left";
+
 type Props = {
   eyebrow?: string;
   title: ReactNode;
   subtitle?: string;
-  align?: "left" | "center";
+  /** @deprecated Use `"start"` — `"left"` is kept for backwards compatibility. */
+  align?: SectionAlign;
   /** قاعدة ملوّنة + تباعد غير متماثل — إحساس تحريري */
   variant?: "default" | "editorial";
   className?: string;
 };
+
+function isStartAlign(align: SectionAlign): boolean {
+  return align === "start" || align === "left";
+}
 
 export function SectionHeading({
   eyebrow,
@@ -20,23 +27,25 @@ export function SectionHeading({
   className,
 }: Props) {
   const editorial = variant === "editorial";
+  const start = isStartAlign(align);
+  const center = align === "center";
 
   return (
     <div
       className={cn(
-        "mx-auto mb-8 max-w-3xl space-y-4 md:mb-12",
-        align === "center" && !editorial && "text-center",
-        editorial && align === "center" && "max-w-4xl text-center",
+        "mb-8 max-w-3xl space-y-4 md:mb-12",
+        start ? "ms-0 me-auto" : "mx-auto",
+        center && !editorial && "text-center",
+        editorial && center && "max-w-4xl text-center",
         className,
+        start && "text-start",
       )}
     >
       {eyebrow ? (
         <p
           className={cn(
             "text-xs font-bold uppercase tracking-[0.22em]",
-            editorial
-              ? "text-cb-terracotta"
-              : "text-cb-terracotta-dark",
+            editorial ? "text-cb-terracotta" : "text-cb-terracotta-dark",
           )}
         >
           {eyebrow}
@@ -45,10 +54,10 @@ export function SectionHeading({
       <div
         className={cn(
           "relative",
-          editorial && align === "center" && "mx-auto max-w-2xl",
+          editorial && center && "mx-auto max-w-2xl",
         )}
       >
-        {editorial && align === "left" ? (
+        {editorial && start ? (
           <span
             className="absolute -start-1 top-2 hidden h-[0.65em] w-1 rounded-full bg-cb-mint md:block md:-start-4"
             aria-hidden
@@ -69,7 +78,8 @@ export function SectionHeading({
         <p
           className={cn(
             "max-w-[min(42rem,100%)] text-cb-text-muted",
-            align === "center" && "mx-auto",
+            center && "mx-auto",
+            start && "ms-0 me-auto",
             editorial
               ? "text-[length:var(--fluid-body)] leading-relaxed sm:text-lg"
               : "text-[length:var(--fluid-body)] sm:text-lg",

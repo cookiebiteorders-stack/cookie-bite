@@ -116,6 +116,21 @@ export const adminSectionsEn = {
     duplicateFailed: "Failed to duplicate discount",
     noExpiringToPause: "No expiring-soon codes to pause.",
     pausedExpiring: "Paused {count} expiring codes.",
+    freeShipping: {
+      title: "Free delivery threshold",
+      subtitle:
+        "Set the cart subtotal (before discounts) required for free delivery across the storefront, cart, checkout, and FAQ.",
+      thresholdLabel: "Minimum order for free delivery",
+      usageNote:
+        "Applies store-wide when no zone-specific threshold overrides it. Promo codes marked “free shipping” still waive delivery independently.",
+      save: "Save threshold",
+      saving: "Saving…",
+      saved: "Free delivery threshold saved.",
+      saveFailed: "Could not save threshold.",
+      loading: "Loading commerce settings…",
+      loadFailed: "Could not load free delivery settings.",
+      readOnly: "View only — ask an owner or admin to update.",
+    },
     errors: {
       loadFailed: "Failed to load discounts",
       unknown: "Unknown error",
@@ -210,6 +225,7 @@ export const adminSectionsEn = {
     refresh: "Refresh",
     tabs: {
       overview: "Overview",
+      store: "Store info",
       automations: "Automations",
       templates: "Templates",
       integrations: "Integrations",
@@ -304,6 +320,22 @@ export const adminSectionsEn = {
       },
     },
     loading: "Loading settings…",
+    storeHours: {
+      title: "Work hours",
+      subtitle:
+        "Shown on the footer, Help Center, contact page, and customer auto-reply emails — in English and Arabic.",
+      hoursEn: "English hours line",
+      hoursAr: "Arabic hours line",
+      usageNote:
+        "Example: Sun–Thu · 10am – 8pm. Keep it short — this is the single source of truth for opening hours on the storefront.",
+      save: "Save work hours",
+      saving: "Saving…",
+      saved: "Work hours updated.",
+      saveFailed: "Could not save work hours",
+      loading: "Loading work hours…",
+      loadFailed: "Could not load work hours. Run npm run supabase:migrate if this is a new install.",
+      readOnly: "Read-only — owner or admin can edit.",
+    },
     envCheckFailed: "Environment check failed",
     retry: "Retry",
     templatesErrorTitle: "Notification templates",
@@ -818,6 +850,21 @@ export const adminSectionsAr = {
     duplicateFailed: "فشل نسخ الخصم",
     noExpiringToPause: "لا توجد أكواد تنتهي قريباً.",
     pausedExpiring: "تم إيقاف {count} كود ينتهي قريباً.",
+    freeShipping: {
+      title: "حد التوصيل المجاني",
+      subtitle:
+        "حدّد الحد الأدنى لمجموع السلة (قبل الخصومات) للتوصيل المجاني — يظهر في المتجر والسلة والدفع والأسئلة الشائعة.",
+      thresholdLabel: "الحد الأدنى للطلب للتوصيل المجاني",
+      usageNote:
+        "يُطبَّق على مستوى المتجر ما لم تُحدَّد منطقة شحن بحد خاص. أكواد «شحن مجاني» تُلغي رسوم التوصيل بشكل مستقل.",
+      save: "حفظ الحد",
+      saving: "جاري الحفظ…",
+      saved: "تم حفظ حد التوصيل المجاني.",
+      saveFailed: "تعذّر حفظ الحد.",
+      loading: "جاري تحميل إعدادات التجارة…",
+      loadFailed: "تعذّر تحميل إعدادات التوصيل المجاني.",
+      readOnly: "عرض فقط — اطلب من المالك أو المدير التعديل.",
+    },
     errors: {
       loadFailed: "فشل تحميل الخصومات",
       unknown: "خطأ غير معروف",
@@ -911,6 +958,7 @@ export const adminSectionsAr = {
     refresh: "تحديث",
     tabs: {
       overview: "نظرة عامة",
+      store: "معلومات المتجر",
       automations: "الأتمتة",
       templates: "القوالب",
       integrations: "التكاملات",
@@ -1005,6 +1053,22 @@ export const adminSectionsAr = {
       },
     },
     loading: "جاري تحميل الإعدادات…",
+    storeHours: {
+      title: "ساعات العمل",
+      subtitle:
+        "تظهر في التذييل، مركز المساعدة، صفحة التواصل، ورسائل التأكيد التلقائية — بالعربية والإنجليزية.",
+      hoursEn: "سطر الساعات (إنجليزي)",
+      hoursAr: "سطر الساعات (عربي)",
+      usageNote:
+        "مثال: Sun–Thu · 10am – 8pm. اجعله قصيراً — هذا المصدر الوحيد لساعات العمل في المتجر.",
+      save: "حفظ ساعات العمل",
+      saving: "جاري الحفظ…",
+      saved: "تم تحديث ساعات العمل.",
+      saveFailed: "تعذّر حفظ ساعات العمل",
+      loading: "جاري تحميل ساعات العمل…",
+      loadFailed: "تعذّر تحميل ساعات العمل. شغّل npm run supabase:migrate إن كان التثبيت جديداً.",
+      readOnly: "قراءة فقط — المالك أو المدير يمكنه التعديل.",
+    },
     envCheckFailed: "فشل فحص البيئة",
     retry: "إعادة المحاولة",
     templatesErrorTitle: "قوالب الإشعارات",

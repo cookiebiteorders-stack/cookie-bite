@@ -23,7 +23,7 @@ function entryToProduct(entry: RecentlyViewedEntry): Product {
 }
 
 export function HomeContinueShopping() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [entries, setEntries] = useState<RecentlyViewedEntry[]>([]);
   const [mounted, setMounted] = useState(false);
 
@@ -38,13 +38,14 @@ export function HomeContinueShopping() {
     <section
       className="border-y border-cb-border/60 bg-cb-cream py-12 md:py-16"
       aria-labelledby="home-continue-heading"
+      dir={lang === "ar" ? "rtl" : "ltr"}
     >
       <div className="mx-auto max-w-7xl cb-gutter">
-        <ViewReveal variant="tilt-up" className="mb-8">
+        <ViewReveal variant="tilt-up" className="mb-8 w-full">
           <SectionHeading
-            align="left"
+            align="start"
             variant="editorial"
-            className="text-start"
+            className="mb-0 w-full max-w-3xl"
             eyebrow={t("home.continueShopping.eyebrow")}
             title={<span id="home-continue-heading">{t("home.continueShopping.title")}</span>}
             subtitle={t("home.continueShopping.subtitle")}

@@ -8,6 +8,8 @@ import { QuantitySelector } from "@/src/components/cart/QuantitySelector";
 import { buttonClassName } from "@/components/ui/button";
 import { siteConfig } from "@/lib/site-config";
 import { useLanguage } from "@/components/providers/language-provider";
+import { useFreeShippingThreshold } from "@/components/providers/store-commerce-settings-provider";
+import { InlineAlerts } from "@/components/announcements/inline-alerts";
 import { PromoCodeField } from "@/components/checkout/promo-code-field";
 
 export default function CartPage() {
@@ -23,8 +25,9 @@ export default function CartPage() {
     applyPromo,
     clearPromo,
   } = useCart();
+  const freeShippingThreshold = useFreeShippingThreshold();
   const shipping =
-    subtotalEgp >= siteConfig.freeDeliveryThresholdEgp
+    subtotalEgp >= freeShippingThreshold
       ? 0
       : siteConfig.standardDeliveryFeeEgp;
   const total = Math.max(0, subtotalEgp - discountEgp + shipping);
@@ -36,6 +39,7 @@ export default function CartPage() {
           <h1 className="font-serif text-4xl font-semibold text-cb-text-strong">
             {t("pages.cart.title")}
           </h1>
+          <InlineAlerts slot="cart" />
           <p className="mt-2 text-cb-text-muted">{t("pages.cart.subtitle")}</p>
 
           {lines.length === 0 ? (

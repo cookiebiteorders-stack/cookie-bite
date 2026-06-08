@@ -5,15 +5,30 @@ import { SectionHeading } from "@/components/sections/section-heading";
 import { buttonClassName } from "@/components/ui/button";
 import { useLanguage } from "@/components/providers/language-provider";
 import { resolveHelpArticle } from "@/lib/content/help-articles-ar";
+import { useFreeShippingThreshold } from "@/components/providers/store-commerce-settings-provider";
 import type { HelpArticleContent } from "@/lib/content/help-articles";
+import { interpolateFreeShippingThreshold } from "@/lib/store/commerce-settings-shared";
 
 type Props = {
   article: HelpArticleContent;
 };
 
+function withThreshold(content: HelpArticleContent, threshold: number): HelpArticleContent {
+  return {
+    ...content,
+    sections: content.sections.map((section) => ({
+      ...section,
+      paragraphs: section.paragraphs.map((p) =>
+        interpolateFreeShippingThreshold(p, threshold),
+      ),
+    })),
+  };
+}
+
 export function HelpArticleLayout({ article }: Props) {
   const { lang, t } = useLanguage();
-  const content = resolveHelpArticle(article, lang);
+  const threshold = useFreeShippingThreshold();
+  const content = withThreshold(resolveHelpArticle(article, lang), threshold);
 
   return (
     <div className="bg-cb-cream pb-24 pt-12">
@@ -34,7 +49,7 @@ export function HelpArticleLayout({ article }: Props) {
           <span className="text-cb-text">{content.title}</span>
         </nav>
 
-        <SectionHeading align="left" className="text-start" title={content.title} />
+        <SectionHeading align="start" title={content.title} />
 
         {content.sections.map((section) => (
           <section key={section.heading} className="mt-10">

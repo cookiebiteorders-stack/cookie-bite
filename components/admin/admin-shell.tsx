@@ -7,6 +7,7 @@ import { getAccessibleAdminConsoleNav } from "@/lib/admin/admin-console-nav";
 import { AdminConsoleNavLinks } from "@/components/admin/admin-console-nav-links";
 import { AdminConsoleNavbar } from "@/components/admin/admin-console-navbar";
 import { AdminConsoleProvider } from "@/components/admin/admin-console-context";
+import { TopAnnouncementSlot } from "@/components/layout/top-announcement-slot";
 import { AnnouncementBar } from "@/components/layout/announcement-bar";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -39,13 +40,15 @@ export function AdminShell({ role, children }: AdminShellProps) {
             {t("actions.skipToMain")}
           </a>
           <div className="cb-no-print">
-            <AnnouncementBar />
+            <TopAnnouncementSlot>
+              <AnnouncementBar />
+            </TopAnnouncementSlot>
           </div>
 
           <div className="desktop-header cb-no-print">
             <SiteHeader />
           </div>
-          <div className="hidden h-16 md:block" aria-hidden />
+          <div className="cb-header-spacer hidden md:block" aria-hidden />
 
           <div className="cb-no-print">
             <MobileHeader />
@@ -56,7 +59,7 @@ export function AdminShell({ role, children }: AdminShellProps) {
             <div className="mx-auto grid w-full min-w-0 max-w-[1600px] grid-cols-1 lg:grid-cols-[260px_1fr]">
               <aside
                 className={cn(
-                  "cb-no-print sticky top-16 z-20 hidden h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] flex-col overflow-hidden",
+                  "cb-no-print sticky top-[calc(4rem+var(--cb-announcement-offset,0px))] z-20 hidden h-[calc(100dvh-4rem-var(--cb-announcement-offset,0px))] max-h-[calc(100dvh-4rem-var(--cb-announcement-offset,0px))] flex-col overflow-hidden",
                   "border-r border-cb-border bg-cb-surface-2 py-4 backdrop-blur-md lg:flex",
                 )}
               >
