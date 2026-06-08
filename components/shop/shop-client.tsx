@@ -49,6 +49,11 @@ import {
   type ShopFilterQuizAnswers,
 } from "@/lib/storefront/shop-filter-quiz";
 import {
+  buildShopCategoryLabelLookup,
+  localizeShopCategory,
+  type ShopCategoryLabelRow,
+} from "@/lib/storefront/localize-shop-category";
+import {
   computeShopFacetCounts,
   filterShopProducts,
   type ShopBadgeFilter,
@@ -107,15 +112,31 @@ type ShopClientProps = {
   initialTrending?: Product[];
   /** من الخادم — يتجنّب طلبات `/api/products` المتسلسلة عند أول paint */
   initialCatalog?: ShopApiProduct[];
+  /** من الخادم — أسماء الفئات بالعربي/الإنجليزي للفلاتر */
+  categoryLabels?: ShopCategoryLabelRow[];
 };
 
-export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientProps) {
+export function ShopClient({
+  initialTrending = [],
+  initialCatalog,
+  categoryLabels = [],
+}: ShopClientProps) {
   const { t, lang } = useLanguage();
   const { lines } = useCart();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const { isLoaded, isSignedIn } = useAuth();
+
+  const categoryLabelLookup = useMemo(
+    () => buildShopCategoryLabelLookup(categoryLabels, lang, t),
+    [categoryLabels, lang, t],
+  );
+
+  const localizeCategory = useCallback(
+    (category: string) => localizeShopCategory(category, categoryLabelLookup, t),
+    [categoryLabelLookup, t],
+  );
   const [catalog, setCatalog] = useState<ShopProduct[]>(() => {
     if (!initialCatalog?.length) return [];
     return initialCatalog.map((row) =>
@@ -457,7 +478,7 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
     if (cat !== "All") {
       chips.push({
         id: "cat",
-        label: cat,
+        label: localizeCategory(cat),
         onRemove: () => setCat("All"),
       });
     }
@@ -534,6 +555,7 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
     maxPrice,
     priceBounds,
     t,
+    localizeCategory,
   ]);
 
   const filterControls = (
@@ -621,8 +643,7 @@ export function ShopClient({ initialTrending = [], initialCatalog }: ShopClientP
         {availableCategories.map((c) => {
           const count = facets.categories[c] ?? 0;
           const disabled = count === 0 && cat !== c;
-          const label =
-            c === "All" ? t("pages.shop.categoryAll") : c;
+          const label = localizeCategory(c);
           return (
             <button
               key={c}

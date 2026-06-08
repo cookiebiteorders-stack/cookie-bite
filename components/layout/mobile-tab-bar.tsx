@@ -30,18 +30,18 @@ const tabs: MobileTab[] = [
     match: (p: string) => p === "/",
   },
   {
-    href: "/shop",
-    label: "Shop",
-    Icon: ShoppingBag,
-    match: (p: string) => p.startsWith("/shop"),
-  },
-  {
     href: "/gift-ideas",
     label: "Gifts",
     Icon: Gift,
-    elevated: true,
     match: (p: string) =>
       p.startsWith("/gift-ideas") || p.startsWith("/gift-box"),
+  },
+  {
+    href: "/shop",
+    label: "Shop",
+    Icon: ShoppingBag,
+    elevated: true,
+    match: (p: string) => p.startsWith("/shop"),
   },
   {
     href: "/account#wish",
