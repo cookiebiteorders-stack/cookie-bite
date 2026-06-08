@@ -254,6 +254,21 @@ export const translations: Record<Lang, Dictionary> = {
       abTest: "A/B test (variant B)",
       preview: "Live preview",
       nameHint: "Use {name} in title/message for personalization",
+      bannerHint:
+        "Banner type appears in the top moving ticker on the storefront. Set status to Active and target All pages.",
+      marqueePreview: "Ticker preview (moving bar)",
+      aiSection: "AI assistant",
+      aiPromptPlaceholder:
+        "e.g. Free delivery over 500 EGP this weekend — short ticker text",
+      aiGenerate: "Generate with AI",
+      aiSync: "Sync languages",
+      aiSyncEn: "Complete English from Arabic",
+      aiSyncAr: "Complete Arabic from English",
+      aiGenerating: "Generating…",
+      aiUnavailable: "AI assist unavailable",
+      publishHint: "Draft announcements are hidden on the site — set Active to publish.",
+      quickTicker: "Moving ticker",
+      validationError: "Please fill all required fields in both languages.",
     },
     passwordRules: {
       title: "Password rules",
@@ -2209,6 +2224,21 @@ export const translations: Record<Lang, Dictionary> = {
       abTest: "اختبار A/B (المتغير B)",
       preview: "معاينة مباشرة",
       nameHint: "استخدم {name} في العنوان/الرسالة للتخصيص",
+      bannerHint:
+        "نوع Banner يظهر في الشريط المتحرك أعلى الموقع. اضبط الحالة على Active واستهدف All pages.",
+      marqueePreview: "معاينة الشريط المتحرك",
+      aiSection: "مساعد الذكاء الاصطناعي",
+      aiPromptPlaceholder:
+        "مثال: توصيل مجاني فوق 500 جنيه نهاية الأسبوع — نص قصير للشريط",
+      aiGenerate: "اكتب بالذكاء الاصطناعي",
+      aiSync: "مزامنة اللغتين",
+      aiSyncEn: "أكمل الإنجليزي من العربي",
+      aiSyncAr: "أكمل العربي من الإنجليزي",
+      aiGenerating: "جاري التوليد…",
+      aiUnavailable: "مساعد الذكاء الاصطناعي غير متاح",
+      publishHint: "الإعلانات في وضع Draft لا تظهر في الموقع — اضبط Active للنشر.",
+      quickTicker: "شريط متحرك",
+      validationError: "يرجى تعبئة جميع الحقول المطلوبة باللغتين.",
     },
     passwordRules: {
       title: "قواعد كلمة المرور",

@@ -41,7 +41,7 @@ export function DynamicBannerBar() {
 
   return (
     <div className="cb-pl-announcement" role="region" aria-label={current.title}>
-      <div className="mx-auto flex max-w-7xl items-center gap-2 cb-gutter py-1.5 text-[12px] font-medium">
+      <div className="mx-auto flex max-w-7xl items-center gap-2 cb-gutter py-0.5 text-[11px] font-medium leading-tight">
         <p className="min-w-0 flex-1 truncate">
           <span className="font-semibold">{current.title}</span>
           {current.message ? (

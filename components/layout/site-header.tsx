@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -11,11 +10,6 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import {
-  motion,
-  useMotionValueEvent,
-  useScroll,
-} from "motion/react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LogoMark } from "@/components/brand/logo-mark";
 import { SiteLogoLink } from "@/components/brand/site-logo";
@@ -24,12 +18,12 @@ import { LanguageToggle } from "@/components/layout/language-toggle";
 import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { useStaffAdminNav } from "@/components/providers/staff-admin-nav-provider";
-import { duration, easeSoft, spring } from "@/lib/motion/presets";
 import { useOptionalAdminConsole } from "@/components/admin/admin-console-context";
 import { AdminConsoleNavLinks } from "@/components/admin/admin-console-nav-links";
 import { resolveCurrentAdminConsolePage } from "@/lib/admin/admin-console-nav";
 import { getRoleLabel } from "@/lib/admin/rbac";
 import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
 
 const iconBtn =
   "cb-touch-manipulation inline-flex h-11 min-h-[2.75rem] w-11 min-w-[2.75rem] items-center justify-center rounded-xl text-cb-text transition-[transform,box-shadow,color,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:bg-cb-hover-overlay hover:text-cb-terracotta-dark hover:shadow-sm active:scale-[0.97] dark:hover:bg-cb-peach/15";
@@ -81,10 +75,24 @@ export function SiteHeader() {
   const storeLabel = t("adminShell.backToStore");
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuToggleRef = useRef<HTMLButtonElement>(null);
-  const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
 
-  /** قيم ثابتة في DOM لتمرير axe / Edge Tools (لا تعابير JSX على aria-expanded / aria-controls) */
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 28);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen]);
+
   useLayoutEffect(() => {
     const el = mobileMenuToggleRef.current;
     if (!el) return;
@@ -95,19 +103,6 @@ export function SiteHeader() {
       el.setAttribute("aria-expanded", "false");
       el.removeAttribute("aria-controls");
     }
-  }, [mobileOpen]);
-
-  useMotionValueEvent(scrollY, "change", (y) => {
-    setScrolled(y > 28);
-  });
-
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
   }, [mobileOpen]);
 
   useEffect(() => {
@@ -163,7 +158,7 @@ export function SiteHeader() {
     <>
       <header
         className={cn(
-          "cb-pl-navbar fixed start-0 end-0 top-[var(--cb-announcement-offset,0px)] z-[100] w-full border-b transition-[border-color,background-color,box-shadow,backdrop-filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "cb-pl-navbar fixed start-0 end-0 top-[var(--cb-announcement-offset,0px)] z-[100] w-full border-b transition-[border-color,background-color,box-shadow,backdrop-filter] duration-200 ease-out",
           scrolled ? "is-scrolled" : "",
           scrolled
             ? "border-[color:var(--color-border-soft)] bg-white shadow-[var(--shadow-pl-nav)] backdrop-blur-xl"
@@ -173,7 +168,7 @@ export function SiteHeader() {
         <div className="mx-auto w-full max-w-7xl cb-gutter">
           <div
             className={cn(
-              "flex items-center justify-between gap-3 transition-[min-height] duration-500",
+              "flex items-center justify-between gap-3 transition-[min-height] duration-200",
               scrolled ? "min-h-14 py-1.5" : "min-h-16 py-2",
             )}
           >
@@ -320,13 +315,11 @@ export function SiteHeader() {
             aria-label={t("nav.closeMenu")}
             onClick={() => setMobileOpen(false)}
           />
-            <motion.nav
-              initial={{ x: isRtl ? "100%" : "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: isRtl ? "100%" : "-100%" }}
-              transition={spring.snappy}
+            <nav
+              id="site-mobile-nav-panel"
               className={cn(
-                "absolute inset-y-0 start-0 flex w-[min(100vw-0.5rem,22rem)] max-w-[calc(100vw-env(safe-area-inset-left))] flex-col border-e border-cb-border bg-cb-surface/98 py-6 shadow-2xl backdrop-blur-xl dark:bg-cb-surface-2/98 max-sm:backdrop-blur-md",
+                "cb-mobile-nav-panel absolute inset-y-0 start-0 flex w-[min(100vw-0.5rem,22rem)] max-w-[calc(100vw-env(safe-area-inset-left))] flex-col border-e border-cb-border bg-cb-surface/98 py-6 shadow-2xl backdrop-blur-xl dark:bg-cb-surface-2/98 max-sm:backdrop-blur-md",
+                isRtl && "cb-mobile-nav-panel--rtl",
               )}
               style={{
                 paddingTop: "max(1.25rem, env(safe-area-inset-top))",
@@ -363,16 +356,8 @@ export function SiteHeader() {
                     </p>
                   </>
                 ) : null}
-                {mobileFullLinks.map((item, i) => (
-                  <motion.div
-                    key={item.href}
-                    initial={{ opacity: 0, x: 16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{
-                      ...spring.gentle,
-                      delay: 0.04 + i * 0.045,
-                    }}
-                  >
+                {mobileFullLinks.map((item) => (
+                  <div key={item.href}>
                     <Link
                       href={item.href}
                       className="cb-touch-manipulation flex min-h-[2.75rem] items-center rounded-xl px-4 py-3 text-base font-semibold text-cb-text-strong transition-colors hover:bg-cb-peach/50 active:bg-cb-peach/60 dark:hover:bg-cb-peach/20"
@@ -380,7 +365,7 @@ export function SiteHeader() {
                     >
                       {item.label}
                     </Link>
-                  </motion.div>
+                  </div>
                 ))}
                 {!admin && staffAdminNavItems.length > 0 && adminNavForMenu.length > 0 ? (
                   <>
@@ -389,16 +374,8 @@ export function SiteHeader() {
                         {t("nav.adminMenu")}
                       </p>
                     </div>
-                    {staffAdminNavItems.map((item, j) => (
-                      <motion.div
-                        key={`${item.href}-${item.navKey}`}
-                        initial={{ opacity: 0, x: 16 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{
-                          ...spring.gentle,
-                          delay: 0.04 + (mobileFullLinks.length + j) * 0.045,
-                        }}
-                      >
+                    {staffAdminNavItems.map((item) => (
+                      <div key={`${item.href}-${item.navKey}`}>
                         <Link
                           href={item.href}
                           className="cb-touch-manipulation flex min-h-[2.75rem] items-center rounded-xl px-4 py-3 text-base font-semibold text-cb-text-strong transition-colors hover:bg-cb-peach/50 active:bg-cb-peach/60 dark:hover:bg-cb-peach/20"
@@ -406,12 +383,12 @@ export function SiteHeader() {
                         >
                           {t(`adminNav.${item.navKey}`)}
                         </Link>
-                      </motion.div>
+                      </div>
                     ))}
                   </>
                 ) : null}
               </div>
-            </motion.nav>
+            </nav>
           </div>
         ) : null}
     </>

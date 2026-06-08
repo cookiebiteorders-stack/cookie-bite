@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { roleMatrix, type ModuleKey, type UserRole } from "@/lib/admin/rbac";
 import { useLanguage } from "@/components/providers/language-provider";
 import { formatAdminMoney } from "@/lib/admin/admin-label";
+import type { AdminDashboardKpis } from "@/lib/admin/dashboard-kpis";
+import { fetchJson } from "@/lib/http/fetch-json";
 
 const moduleOrder: ModuleKey[] = [
   "dashboard",
@@ -44,56 +47,84 @@ type Kpi = {
 };
 
 type Props = {
-  totalRevenue: number;
-  ordersToday: number;
-  activeOrders: number;
-  totalCustomers: number;
-  totalProducts: number;
-  aov: number;
+  initialKpis: AdminDashboardKpis;
 };
 
-export function AdminDashboardHome({
-  totalRevenue,
-  ordersToday,
-  activeOrders,
-  totalCustomers,
-  totalProducts,
-  aov,
-}: Props) {
-  const { t, lang } = useLanguage();
+const LIVE_POLL_MS = 90_000;
 
-  const liveKpis: Kpi[] = [
-    {
-      titleKey: "adminDashboard.kpiTotalRevenue",
-      value: formatAdminMoney(totalRevenue, lang),
-      tone: "success",
-    },
-    {
-      titleKey: "adminDashboard.kpiOrdersToday",
-      value: String(ordersToday),
-      tone: "info",
-    },
-    {
-      titleKey: "adminDashboard.kpiActiveOrders",
-      value: String(activeOrders),
-      tone: "warning",
-    },
-    {
-      titleKey: "adminDashboard.kpiCustomers",
-      value: String(totalCustomers),
-      tone: "success",
-    },
-    {
-      titleKey: "adminDashboard.kpiProducts",
-      value: String(totalProducts),
-      tone: "info",
-    },
-    {
-      titleKey: "adminDashboard.kpiAov",
-      value: formatAdminMoney(aov, lang),
-      tone: "success",
-    },
-  ];
+export function AdminDashboardHome({ initialKpis }: Props) {
+  const { t, lang } = useLanguage();
+  const [kpis, setKpis] = useState(initialKpis);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const refreshKpis = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const data = await fetchJson<{ ok: boolean; kpis: AdminDashboardKpis }>(
+        "/api/admin/dashboard/kpis",
+      );
+      if (data.ok && data.kpis) setKpis(data.kpis);
+    } catch {
+      /* keep last good snapshot */
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    setKpis(initialKpis);
+  }, [initialKpis]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      void refreshKpis();
+    }, LIVE_POLL_MS);
+    return () => window.clearInterval(id);
+  }, [refreshKpis]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshKpis();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [refreshKpis]);
+
+  const liveKpis: Kpi[] = useMemo(
+    () => [
+      {
+        titleKey: "adminDashboard.kpiTotalRevenue",
+        value: formatAdminMoney(kpis.totalRevenue, lang),
+        tone: "success",
+      },
+      {
+        titleKey: "adminDashboard.kpiOrdersToday",
+        value: String(kpis.ordersToday),
+        tone: "info",
+      },
+      {
+        titleKey: "adminDashboard.kpiActiveOrders",
+        value: String(kpis.activeOrders),
+        tone: "warning",
+      },
+      {
+        titleKey: "adminDashboard.kpiCustomers",
+        value: String(kpis.totalCustomers),
+        tone: "success",
+      },
+      {
+        titleKey: "adminDashboard.kpiProducts",
+        value: String(kpis.totalProducts),
+        tone: "info",
+      },
+      {
+        titleKey: "adminDashboard.kpiAov",
+        value: formatAdminMoney(kpis.aov, lang),
+        tone: "success",
+      },
+    ],
+    [kpis, lang],
+  );
 
   const quickActionKeys = [
     "adminDashboard.quickAddProduct",
@@ -136,10 +167,16 @@ export function AdminDashboardHome({
             </p>
             <p className="mt-2 text-2xl font-bold text-cb-text-strong">{kpi.value}</p>
             <span
-              className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+              className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
                 badgeClass[kpi.tone]
               }`}
             >
+              {refreshing ? (
+                <span
+                  className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-current opacity-80"
+                  aria-hidden
+                />
+              ) : null}
               {t("adminStatus.live")}
             </span>
           </article>

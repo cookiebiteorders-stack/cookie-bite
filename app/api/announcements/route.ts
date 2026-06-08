@@ -7,7 +7,7 @@ import type { AnnouncementUserContext, AudienceUserType } from "@/lib/announceme
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { resolveStaffRole } from "@/lib/admin/auth-role";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 async function resolveUserContext(
   page: string,

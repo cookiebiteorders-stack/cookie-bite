@@ -200,6 +200,7 @@ html[dir="rtl"] .cb-pl-body {
   [class*="cb-marquee"],
   .cb-announcement-marquee {
     animation: none !important;
+    transform: none !important;
   }
   *,
   *::before,
@@ -294,7 +295,7 @@ html[dir="rtl"] .cb-pl-body {
   background: var(--gradient-premium);
   color: var(--color-text-on-dark);
   border-block-end: none;
-  min-height: 2.25rem;
+  min-height: 1.625rem;
 }
 
 .cb-header-spacer {
@@ -322,21 +323,67 @@ html[dir="rtl"] .cb-pl-body {
 .cb-pl-announcement .inline-flex,
 .cb-pl-announcement span {
   color: var(--color-text-on-dark) !important;
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
   font-weight: 500;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
 }
 
 .cb-pl-announcement svg {
   color: var(--color-text-on-dark) !important;
 }
 
+.cb-announcement-marquee-viewport {
+  overflow: hidden;
+  width: 100%;
+}
+
 .cb-announcement-marquee {
-  animation: cb-marquee 26s linear infinite;
+  display: flex;
+  width: max-content;
+  animation: cb-marquee 48s linear infinite;
+  will-change: transform;
+}
+
+.cb-announcement-marquee-segment {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
 }
 
 [dir="rtl"] .cb-announcement-marquee {
-  animation-direction: reverse;
+  animation-name: cb-marquee-rtl;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-announcement-marquee {
+    animation: none;
+    transform: none;
+  }
+}
+
+.cb-header-shell {
+  position: fixed;
+  inset-inline: 0;
+  top: var(--cb-announcement-offset, 0px);
+  z-index: 100;
+  width: 100%;
+  background: color-mix(in oklab, var(--color-white) 92%, transparent);
+  backdrop-filter: blur(12px);
+  border-block-end: 1px solid var(--color-border-soft);
+}
+
+.cb-mobile-nav-panel {
+  animation: cb-mobile-nav-in-ltr 0.22s ease-out forwards;
+}
+
+.cb-mobile-nav-panel--rtl {
+  animation-name: cb-mobile-nav-in-rtl;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-mobile-nav-panel {
+    animation: none;
+  }
 }
 
 /* ─── 2. Navbar (applied via header classes) ─── */

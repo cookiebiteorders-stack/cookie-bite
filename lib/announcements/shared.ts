@@ -13,6 +13,15 @@ import type {
 } from "@/lib/announcements/types";
 
 export const ANNOUNCEMENTS_CACHE_TAG = "store-announcements";
+export const ANNOUNCEMENTS_CHANGED_EVENT = "cookiebite:announcements-changed";
+
+/** Banners (marquee ticker) must always show — no per-session cooldown. */
+export function defaultFrequencyForType(type: AnnouncementType): AnnouncementFrequency {
+  if (type === "banner") {
+    return { perSession: false, cooldownHours: 0, untilInteract: false };
+  }
+  return { perSession: true, cooldownHours: 24, untilInteract: false };
+}
 
 export const ANNOUNCEMENT_TYPES: AnnouncementType[] = [
   "banner",

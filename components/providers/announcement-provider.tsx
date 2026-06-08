@@ -104,14 +104,16 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
       lang,
       sessionId: getSessionId(),
       behaviors: getClientBehaviors().join(","),
+      _t: String(Date.now()),
     });
 
-    fetch(`/api/announcements?${params}`)
+    fetch(`/api/announcements?${params}`, { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data: { announcements?: AnnouncementView[] } | null) => {
         const items = data?.announcements ?? [];
-        const visible = items.filter((item) =>
-          shouldShowAnnouncement(item.id, item.frequency),
+        const visible = items.filter(
+          (item) =>
+            item.type === "banner" || shouldShowAnnouncement(item.id, item.frequency),
         );
         setAnnouncements(visible);
       })
@@ -121,6 +123,34 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchAnnouncements();
+  }, [fetchAnnouncements]);
+
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const channel = new BroadcastChannel("cookiebite:announcements");
+    const onMessage = (e: MessageEvent) => {
+      if (e.data?.type === "refresh") fetchAnnouncements();
+    };
+    channel.addEventListener("message", onMessage);
+    return () => {
+      channel.removeEventListener("message", onMessage);
+      channel.close();
+    };
+  }, [fetchAnnouncements]);
+
+  useEffect(() => {
+    const onChanged = () => fetchAnnouncements();
+    window.addEventListener("cookiebite:announcements-changed", onChanged);
+    return () =>
+      window.removeEventListener("cookiebite:announcements-changed", onChanged);
+  }, [fetchAnnouncements]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchAnnouncements();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [fetchAnnouncements]);
 
   const getByType = useCallback(

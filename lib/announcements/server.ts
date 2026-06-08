@@ -1,6 +1,6 @@
 import "server-only";
 
-import { revalidateTag, unstable_cache } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { createSupabaseAdminClient, tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   ANNOUNCEMENTS_CACHE_TAG,
@@ -23,7 +23,7 @@ import type {
 } from "@/lib/announcements/types";
 import { toAnnouncementView } from "@/lib/announcements/shared";
 
-const MEMORY_TTL_MS = 30_000;
+const MEMORY_TTL_MS = 10_000;
 let memoryCache: AnnouncementRecord[] | null = null;
 let memoryExpiresAt = 0;
 
@@ -67,12 +67,6 @@ async function loadAnnouncementsFromDb(): Promise<AnnouncementRecord[]> {
   );
 }
 
-const getCachedAnnouncements = unstable_cache(
-  loadAnnouncementsFromDb,
-  ["store-announcements-active"],
-  { revalidate: 60, tags: [ANNOUNCEMENTS_CACHE_TAG] },
-);
-
 export async function expireDueAnnouncements(): Promise<number> {
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return 0;
@@ -93,7 +87,7 @@ export async function expireDueAnnouncements(): Promise<number> {
 export async function getActiveAnnouncements(): Promise<AnnouncementRecord[]> {
   await expireDueAnnouncements();
   if (memoryCache && Date.now() < memoryExpiresAt) return memoryCache;
-  const records = await getCachedAnnouncements();
+  const records = await loadAnnouncementsFromDb();
   const active = records.filter((r) => isScheduleActive(r));
   setMemoryCache(active);
   return active;

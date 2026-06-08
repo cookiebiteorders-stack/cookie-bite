@@ -1,12 +1,14 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart3,
   Bell,
   Megaphone,
   Pencil,
   Plus,
+  RefreshCw,
+  Sparkles,
   Trash2,
   X,
 } from "lucide-react";
@@ -135,6 +137,52 @@ function formToPayload(form: FormState) {
   };
 }
 
+/** بث إشارة تحديث الإعلانات لجميع تبويبات المتجر */
+function broadcastAnnouncementsRefresh() {
+  try {
+    if (typeof BroadcastChannel !== "undefined") {
+      const ch = new BroadcastChannel("cookiebite:announcements");
+      ch.postMessage({ type: "refresh" });
+      ch.close();
+    }
+  } catch {
+    /* تجاهل أخطاء BroadcastChannel */
+  }
+}
+
+type AiAction = "suggest_full" | "translate_en_to_ar" | "translate_ar_to_en" | "improve_text";
+
+async function callAiSuggest(
+  action: AiAction,
+  partial: Partial<FormState> & { hint?: string },
+): Promise<Partial<FormState>> {
+  const res = await fetch("/api/admin/announcements/ai-suggest", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action,
+      type: partial.type,
+      title_en: partial.title_en,
+      title_ar: partial.title_ar,
+      message_en: partial.message_en,
+      message_ar: partial.message_ar,
+      cta_label_en: partial.cta_label_en,
+      cta_label_ar: partial.cta_label_ar,
+      hint: partial.hint,
+    }),
+  });
+  if (!res.ok) throw new Error("AI request failed");
+  const data = (await res.json()) as { result?: Partial<FormState> };
+  return data.result ?? {};
+}
+
+type AiLoadingKey =
+  | "suggest_full"
+  | "translate_en_to_ar"
+  | "translate_ar_to_en"
+  | "improve_text"
+  | null;
+
 export function AnnouncementsAdminDashboard() {
   const { t, lang } = useLanguage();
   const [items, setItems] = useState<AnnouncementRecord[]>([]);
@@ -144,6 +192,10 @@ export function AnnouncementsAdminDashboard() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [aiLoading, setAiLoading] = useState<AiLoadingKey>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [hintText, setHintText] = useState("");
+  const hintRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -177,12 +229,16 @@ export function AnnouncementsAdminDashboard() {
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setHintText("");
+    setAiError(null);
     setFormOpen(true);
   };
 
   const openEdit = (record: AnnouncementRecord) => {
     setEditingId(record.id);
     setForm(recordToForm(record));
+    setHintText("");
+    setAiError(null);
     setFormOpen(true);
   };
 
@@ -205,6 +261,7 @@ export function AnnouncementsAdminDashboard() {
       if (!res.ok) throw new Error("save failed");
       setFormOpen(false);
       load();
+      broadcastAnnouncementsRefresh();
     } catch {
       setError(t("announcementsAdmin.saveError"));
     } finally {
@@ -215,7 +272,23 @@ export function AnnouncementsAdminDashboard() {
   const onDelete = async (id: string) => {
     if (!window.confirm(t("announcementsAdmin.deleteConfirm"))) return;
     const res = await fetch(`/api/admin/announcements/${id}`, { method: "DELETE" });
-    if (res.ok) load();
+    if (res.ok) {
+      load();
+      broadcastAnnouncementsRefresh();
+    }
+  };
+
+  const handleAi = async (action: AiAction) => {
+    setAiLoading(action);
+    setAiError(null);
+    try {
+      const result = await callAiSuggest(action, { ...form, hint: hintText });
+      setForm((f) => ({ ...f, ...result }));
+    } catch {
+      setAiError("فشل طلب الذكاء الاصطناعي — تأكد من ضبط OPENAI_API_KEY");
+    } finally {
+      setAiLoading(null);
+    }
   };
 
   const previewTitle = lang === "ar" ? form.title_ar : form.title_en;
@@ -334,6 +407,7 @@ export function AnnouncementsAdminDashboard() {
             onSubmit={onSubmit}
             className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-cb-border/60 bg-cb-surface p-5 shadow-xl"
           >
+            {/* ─── Header ─── */}
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">
                 {editingId ? t("announcementsAdmin.edit") : t("announcementsAdmin.create")}
@@ -341,6 +415,51 @@ export function AnnouncementsAdminDashboard() {
               <button type="button" onClick={() => setFormOpen(false)} aria-label="Close">
                 <X className="h-5 w-5" />
               </button>
+            </div>
+
+            {/* ─── AI Suggest Strip ─── */}
+            <div className="mb-5 rounded-xl border border-cb-border/40 bg-gradient-to-r from-violet-50 to-purple-50 p-3 dark:from-violet-950/20 dark:to-purple-950/20">
+              <div className="flex flex-wrap items-center gap-2">
+                <Sparkles className="h-4 w-4 shrink-0 text-violet-600" aria-hidden />
+                <span className="text-xs font-semibold text-violet-700 dark:text-violet-400">
+                  مساعد الذكاء الاصطناعي
+                </span>
+                <input
+                  ref={hintRef}
+                  type="text"
+                  className="min-w-0 flex-1 rounded-lg border border-violet-200 bg-white/70 px-2.5 py-1.5 text-xs placeholder:text-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:bg-black/20"
+                  placeholder="موضوع الإعلان (اختياري)… مثل: عرض رمضان، توصيل مجاني"
+                  value={hintText}
+                  onChange={(e) => setHintText(e.target.value)}
+                />
+                <button
+                  type="button"
+                  disabled={aiLoading === "suggest_full"}
+                  onClick={() => void handleAi("suggest_full")}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
+                >
+                  {aiLoading === "suggest_full" ? (
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                  )}
+                  اقتراح كامل
+                </button>
+                <button
+                  type="button"
+                  disabled={aiLoading === "improve_text"}
+                  onClick={() => void handleAi("improve_text")}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-violet-300 bg-white/70 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50 disabled:opacity-60 dark:bg-transparent"
+                >
+                  {aiLoading === "improve_text" ? (
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  ) : null}
+                  تحسين النص
+                </button>
+              </div>
+              {aiError ? (
+                <p className="mt-2 text-xs text-rose-600">{aiError}</p>
+              ) : null}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -377,50 +496,91 @@ export function AnnouncementsAdminDashboard() {
                   ))}
                 </select>
               </label>
-              <label className="block text-sm md:col-span-2">
-                Title (EN)
-                <input
-                  className="mt-1 w-full rounded-xl border border-cb-border px-3 py-2"
-                  value={form.title_en}
-                  onChange={(e) => setForm((f) => ({ ...f, title_en: e.target.value }))}
-                  required
-                />
-              </label>
-              <label className="block text-sm md:col-span-2">
-                العنوان (AR)
-                <input
-                  className="mt-1 w-full rounded-xl border border-cb-border px-3 py-2"
-                  dir="rtl"
-                  value={form.title_ar}
-                  onChange={(e) => setForm((f) => ({ ...f, title_ar: e.target.value }))}
-                  required
-                />
-              </label>
-              <label className="block text-sm md:col-span-2">
-                Message (EN)
-                <textarea
-                  className="mt-1 w-full rounded-xl border border-cb-border px-3 py-2"
-                  rows={3}
-                  value={form.message_en}
-                  onChange={(e) => setForm((f) => ({ ...f, message_en: e.target.value }))}
-                  required
-                />
-              </label>
-              <label className="block text-sm md:col-span-2">
-                الرسالة (AR)
-                <textarea
-                  className="mt-1 w-full rounded-xl border border-cb-border px-3 py-2"
-                  dir="rtl"
-                  rows={3}
-                  value={form.message_ar}
-                  onChange={(e) => setForm((f) => ({ ...f, message_ar: e.target.value }))}
-                  required
-                />
-              </label>
+
+              {/* ─── Title pair ─── */}
+              <div className="md:col-span-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">العنوان / Title</span>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      title="ترجم من EN إلى AR"
+                      disabled={aiLoading === "translate_en_to_ar"}
+                      onClick={() => void handleAi("translate_en_to_ar")}
+                      className="inline-flex items-center gap-1 rounded-lg border border-cb-border px-2 py-1 text-[11px] text-cb-text-muted hover:bg-cb-hover-overlay disabled:opacity-50"
+                    >
+                      {aiLoading === "translate_en_to_ar" ? (
+                        <RefreshCw className="h-3 w-3 animate-spin" aria-hidden />
+                      ) : (
+                        <Sparkles className="h-3 w-3" aria-hidden />
+                      )}
+                      EN → عر
+                    </button>
+                    <button
+                      type="button"
+                      title="Translate AR to EN"
+                      disabled={aiLoading === "translate_ar_to_en"}
+                      onClick={() => void handleAi("translate_ar_to_en")}
+                      className="inline-flex items-center gap-1 rounded-lg border border-cb-border px-2 py-1 text-[11px] text-cb-text-muted hover:bg-cb-hover-overlay disabled:opacity-50"
+                    >
+                      {aiLoading === "translate_ar_to_en" ? (
+                        <RefreshCw className="h-3 w-3 animate-spin" aria-hidden />
+                      ) : (
+                        <Sparkles className="h-3 w-3" aria-hidden />
+                      )}
+                      عر → EN
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <input
+                    className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+                    placeholder="Title (EN)"
+                    value={form.title_en}
+                    onChange={(e) => setForm((f) => ({ ...f, title_en: e.target.value }))}
+                    required
+                  />
+                  <input
+                    className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+                    placeholder="العنوان (AR)"
+                    dir="rtl"
+                    value={form.title_ar}
+                    onChange={(e) => setForm((f) => ({ ...f, title_ar: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* ─── Message pair ─── */}
+              <div className="md:col-span-2">
+                <span className="text-sm font-medium">الرسالة / Message</span>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <textarea
+                    className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+                    rows={3}
+                    placeholder="Message (EN)"
+                    value={form.message_en}
+                    onChange={(e) => setForm((f) => ({ ...f, message_en: e.target.value }))}
+                    required
+                  />
+                  <textarea
+                    className="w-full rounded-xl border border-cb-border px-3 py-2 text-sm"
+                    rows={3}
+                    placeholder="الرسالة (AR)"
+                    dir="rtl"
+                    value={form.message_ar}
+                    onChange={(e) => setForm((f) => ({ ...f, message_ar: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* ─── CTA ─── */}
               <label className="block text-sm">
                 CTA (EN)
                 <input
                   className="mt-1 w-full rounded-xl border border-cb-border px-3 py-2"
+                  placeholder="e.g. Shop Now"
                   value={form.cta_label_en}
                   onChange={(e) => setForm((f) => ({ ...f, cta_label_en: e.target.value }))}
                 />
@@ -429,6 +589,7 @@ export function AnnouncementsAdminDashboard() {
                 CTA (AR)
                 <input
                   className="mt-1 w-full rounded-xl border border-cb-border px-3 py-2"
+                  placeholder="مثل: اطلب الآن"
                   dir="rtl"
                   value={form.cta_label_ar}
                   onChange={(e) => setForm((f) => ({ ...f, cta_label_ar: e.target.value }))}
@@ -442,6 +603,7 @@ export function AnnouncementsAdminDashboard() {
                   onChange={(e) => setForm((f) => ({ ...f, cta_url: e.target.value }))}
                 />
               </label>
+
               <label className="block text-sm">
                 Priority
                 <input
@@ -593,12 +755,43 @@ export function AnnouncementsAdminDashboard() {
               </div>
             </div>
 
-            <div className="mt-4 rounded-xl border border-cb-border/50 bg-cb-peach/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-cb-text-muted">
-                {t("announcementsAdmin.preview")}
-              </p>
-              <p className="mt-2 font-semibold">{previewTitle || "—"}</p>
-              <p className="text-sm text-cb-text">{previewMessage || "—"}</p>
+            {/* ─── Live Preview ─── */}
+            <div className="mt-4 overflow-hidden rounded-xl border border-cb-border/50">
+              <div className="bg-gradient-to-r from-amber-600 to-orange-500 px-4 py-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-white/70">
+                  معاينة المسار المتحرك
+                </p>
+                <div className="mt-1 overflow-hidden">
+                  <div
+                    key={`${previewTitle}${previewMessage}`}
+                    className="flex w-max animate-[cb-marquee_12s_linear_infinite] items-center gap-3 text-[11px] font-medium text-white"
+                  >
+                    {[...Array(6)].map((_, i) => (
+                      <span key={i} className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap">
+                        <Megaphone className="h-2.5 w-2.5 shrink-0 opacity-80" aria-hidden />
+                        {previewTitle || "عنوان الإعلان"}
+                        {previewMessage ? ` · ${previewMessage}` : ""}
+                        <span className="mx-2 opacity-50">·</span>
+                      </span>
+                    ))}
+                    {[...Array(6)].map((_, i) => (
+                      <span key={`b${i}`} className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap" aria-hidden>
+                        <Megaphone className="h-2.5 w-2.5 shrink-0 opacity-80" aria-hidden />
+                        {previewTitle || "عنوان الإعلان"}
+                        {previewMessage ? ` · ${previewMessage}` : ""}
+                        <span className="mx-2 opacity-50">·</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="bg-cb-peach/20 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-cb-text-muted">
+                  {t("announcementsAdmin.preview")} — {lang === "ar" ? "العربية" : "English"}
+                </p>
+                <p className="mt-1 font-semibold">{previewTitle || "—"}</p>
+                <p className="text-sm text-cb-text">{previewMessage || "—"}</p>
+              </div>
             </div>
 
             <div className="mt-4 flex justify-end gap-2">

@@ -9,6 +9,7 @@ import {
 import {
   ANNOUNCEMENT_TYPES,
   TARGET_PAGES,
+  defaultFrequencyForType,
   normalizeAbTest,
   normalizeAudience,
   normalizeFrequency,
@@ -60,7 +61,10 @@ export async function POST(request: Request) {
   const parsed = createSchema.safeParse(raw);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: { en: "Validation failed", ar: "فشل التحقق من البيانات" } },
+      {
+        error: { en: "Validation failed", ar: "فشل التحقق من البيانات" },
+        details: parsed.error.flatten(),
+      },
       { status: 400 },
     );
   }
@@ -82,7 +86,7 @@ export async function POST(request: Request) {
     audience: normalizeAudience(parsed.data.audience ?? { userType: "all" }),
     trigger_config: normalizeTrigger(parsed.data.trigger_config ?? { type: "immediate" }),
     frequency: normalizeFrequency(
-      parsed.data.frequency ?? { perSession: true, cooldownHours: 24 },
+      parsed.data.frequency ?? defaultFrequencyForType(parsed.data.type as AnnouncementCreateInput["type"]),
     ),
     dismissible: parsed.data.dismissible ?? true,
     variant: parsed.data.variant ?? null,

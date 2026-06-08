@@ -181,3 +181,18 @@ body.dark > *,
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
+
+@keyframes cb-marquee-rtl {
+  from { transform: translateX(0); }
+  to   { transform: translateX(50%); }
+}
+
+@keyframes cb-mobile-nav-in-ltr {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes cb-mobile-nav-in-rtl {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}

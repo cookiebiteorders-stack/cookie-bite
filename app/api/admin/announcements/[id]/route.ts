@@ -10,12 +10,13 @@ import {
 import {
   ANNOUNCEMENT_TYPES,
   TARGET_PAGES,
+  defaultFrequencyForType,
   normalizeAbTest,
   normalizeAudience,
   normalizeFrequency,
   normalizeTrigger,
 } from "@/lib/announcements/shared";
-import type { AnnouncementUpdateInput } from "@/lib/announcements/types";
+import type { AnnouncementType, AnnouncementUpdateInput } from "@/lib/announcements/types";
 
 const updateSchema = z
   .object({
@@ -83,7 +84,10 @@ export async function PUT(request: Request, context: RouteContext) {
   const parsed = updateSchema.safeParse(raw);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: { en: "Validation failed", ar: "فشل التحقق من البيانات" } },
+      {
+        error: { en: "Validation failed", ar: "فشل التحقق من البيانات" },
+        details: parsed.error.flatten(),
+      },
       { status: 400 },
     );
   }
@@ -100,7 +104,9 @@ export async function PUT(request: Request, context: RouteContext) {
       : undefined,
     frequency: parsed.data.frequency
       ? normalizeFrequency(parsed.data.frequency)
-      : undefined,
+      : parsed.data.type
+        ? defaultFrequencyForType(parsed.data.type as AnnouncementType)
+        : undefined,
     ab_test:
       parsed.data.ab_test !== undefined
         ? normalizeAbTest(parsed.data.ab_test)

@@ -16,10 +16,44 @@ const iconMap = {
   megaphone: Megaphone,
 } as const;
 
+/** تكرار كافٍ لملء الشاشات العريضة بدون فراغات أثناء الحلقة */
+const MARQUEE_COPIES = 8;
+
 type TickerItem = {
   icon: keyof typeof iconMap;
   label: string;
 };
+
+function MarqueeSegment({
+  items,
+  ariaHidden,
+}: {
+  items: TickerItem[];
+  ariaHidden?: boolean;
+}) {
+  return (
+    <div
+      className="cb-announcement-marquee-segment inline-flex shrink-0 items-center"
+      aria-hidden={ariaHidden || undefined}
+    >
+      {items.map((item, index) => {
+        const Icon = iconMap[item.icon];
+        return (
+          <span
+            key={`${item.label}-${index}`}
+            className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap"
+          >
+            <Icon className="h-2.5 w-2.5 shrink-0 opacity-90" aria-hidden />
+            {item.label}
+            <span className="mx-3 opacity-60" aria-hidden>
+              ·
+            </span>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
 
 export function AnnouncementBar() {
   const { t } = useLanguage();
@@ -48,29 +82,17 @@ export function AnnouncementBar() {
     return dynamic.length ? [...dynamic, ...base] : base;
   }, [t, freeShippingThreshold, getByType, loaded]);
 
+  const loopItems = useMemo(
+    () => Array.from({ length: MARQUEE_COPIES }, () => tickerItems).flat(),
+    [tickerItems],
+  );
+
   return (
     <div className="cb-pl-announcement">
-      <div className="mx-auto max-w-7xl cb-gutter py-1.5 text-[12px] font-medium">
-        <div className="scrollbar-hide overflow-hidden whitespace-nowrap">
-          <div className="cb-announcement-marquee inline-flex min-w-max items-center gap-8 pe-8">
-            {[...tickerItems, ...tickerItems].map((item, index) => {
-              const Icon = iconMap[item.icon];
-              return (
-                <span
-                  key={`${item.label}-${index}`}
-                  className="inline-flex items-center gap-1.5"
-                >
-                  {index > 0 ? (
-                    <span className="mx-2 opacity-60" aria-hidden>
-                      ·
-                    </span>
-                  ) : null}
-                  <Icon className="h-3 w-3 shrink-0 opacity-90" aria-hidden />
-                  {item.label}
-                </span>
-              );
-            })}
-          </div>
+      <div className="cb-announcement-marquee-viewport overflow-hidden py-0.5 text-[11px] font-medium leading-tight">
+        <div className="cb-announcement-marquee flex w-max">
+          <MarqueeSegment items={loopItems} />
+          <MarqueeSegment items={loopItems} ariaHidden />
         </div>
       </div>
     </div>
