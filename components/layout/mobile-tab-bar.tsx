@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 type MobileTab = {
   href: string;
-  label: string;
+  labelKey: string;
   Icon: LucideIcon;
   match: (p: string, hash?: string) => boolean;
   elevated?: boolean;
@@ -25,34 +25,34 @@ type MobileTab = {
 const tabs: MobileTab[] = [
   {
     href: "/",
-    label: "Home",
+    labelKey: "tabs.home",
     Icon: Home,
     match: (p: string) => p === "/",
   },
   {
     href: "/gift-ideas",
-    label: "Gifts",
+    labelKey: "tabs.gifts",
     Icon: Gift,
     match: (p: string) =>
       p.startsWith("/gift-ideas") || p.startsWith("/gift-box"),
   },
   {
     href: "/shop",
-    label: "Shop",
+    labelKey: "tabs.shop",
     Icon: ShoppingBag,
     elevated: true,
     match: (p: string) => p.startsWith("/shop"),
   },
   {
     href: "/account#wish",
-    label: "Saved",
+    labelKey: "tabs.saved",
     Icon: Heart,
     match: (p: string, hash = "") =>
       p.startsWith("/account") && hash === "#wish",
   },
   {
     href: "/account",
-    label: "Account",
+    labelKey: "tabs.account",
     Icon: User,
     match: (p: string, hash = "") =>
       p.startsWith("/account") && hash !== "#wish",
@@ -70,13 +70,10 @@ export function MobileTabBar() {
     window.addEventListener("hashchange", sync);
     return () => window.removeEventListener("hashchange", sync);
   }, [pathname]);
-  const localizedTabs: MobileTab[] = [
-    { ...tabs[0], label: t("tabs.home") },
-    { ...tabs[1], label: t("tabs.shop") },
-    { ...tabs[2], label: t("tabs.gifts") },
-    { ...tabs[3], label: t("tabs.saved") },
-    { ...tabs[4], label: t("tabs.account") },
-  ];
+  const localizedTabs = tabs.map((tab) => ({
+    ...tab,
+    label: t(tab.labelKey),
+  }));
 
   return (
     <nav
@@ -91,7 +88,7 @@ export function MobileTabBar() {
           if (tab.elevated) {
             return (
               <Link
-                key={tab.label}
+                key={tab.href}
                 href={tab.href}
                 className="mobile-tab-bar__tab mobile-tab-bar__tab--center"
                 aria-label={tab.label}
@@ -115,7 +112,7 @@ export function MobileTabBar() {
 
           return (
             <Link
-              key={tab.label}
+              key={tab.href}
               href={tab.href}
               className="mobile-tab-bar__tab"
               aria-label={tab.label}
