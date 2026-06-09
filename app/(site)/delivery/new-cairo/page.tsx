@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SeoLandingPage } from "@/components/pages/seo-landing-page";
+import { NewCairoDeliveryPage } from "@/components/pages/new-cairo-delivery-page";
 import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { getNewCairoDeliveryContent } from "@/lib/content/delivery-seo";
 import { getPublicShippingZones } from "@/lib/shipping/public-zones-server";
@@ -40,11 +40,15 @@ export default async function DeliveryNewCairoPage() {
     <>
       <JsonLdScript id="delivery-new-cairo-faq" json={faqJsonLd} />
       <JsonLdScript id="delivery-new-cairo-breadcrumb" json={breadcrumbJsonLd} />
-      <SeoLandingPage
+      <NewCairoDeliveryPage
         eyebrow={content.eyebrow}
         title={content.title}
         subtitle={content.subtitle}
-        sections={content.sections}
+        highlights={content.highlights}
+        features={content.features}
+        areasBanner={content.areasBanner}
+        whatsappLabel={content.whatsappLabel}
+        whatsappHint={content.whatsappHint}
         faqs={content.faqs}
         faqHeading={content.faqHeading}
         relatedLinks={content.relatedLinks}

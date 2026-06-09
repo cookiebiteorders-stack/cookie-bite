@@ -1,7 +1,6 @@
 import { brandLocation } from "@/lib/brand";
 import type { Lang } from "@/lib/i18n/translations";
 import {
-  formatZonesCoverageBody,
   formatZonesCoverageFaqAnswer,
   resolveZoneDisplayLabels,
   type PublicShippingZone,
@@ -63,8 +62,6 @@ export function getNewCairoDeliveryContent(
 ) {
   const faqs = getNewCairoDeliveryFaq(lang, zones, freeShippingThresholdEgp);
   const location = brandLocation(lang);
-  const labels = resolveZoneDisplayLabels(zones, lang);
-  const zonesBody = formatZonesCoverageBody(labels, lang);
 
   if (lang === "ar") {
     return {
@@ -75,20 +72,43 @@ export function getNewCairoDeliveryContent(
       ctaLabel: "اطلب الكوكيز الآن",
       ctaHref: "/shop",
       relatedLinksAria: "صفحات ذات صلة",
-      sections: [
+      highlights: [
         {
-          heading: "المناطق التي نغطيها",
-          body: zonesBody,
+          icon: "truck" as const,
+          title: "توصيل في القاهرة الجديدة",
+          body: "من التجمع الخامس وكمبوندات محيطة — تفاصيل المناطق في صفحة مخصّصة.",
         },
         {
-          heading: "حد التوصيل المجاني",
+          icon: "clock" as const,
+          title: "1–2 يوم للجدولة",
+          body: "معظم الطلبات تُحضَّر خلال يوم أو يومين حسب سعة الخبز ومنطقتك.",
+        },
+        {
+          icon: "gift" as const,
+          title: "صناديق هدايا",
+          body: "للطلبات الكبيرة أو المواعيد العاجلة، أكّد العنوان على واتساب قبل الدفع.",
+        },
+      ],
+      features: [
+        {
+          icon: "truck" as const,
+          title: "حد التوصيل المجاني",
           body: `استمتع بالتوصيل المجاني للطلبات المؤهلة فوق ${freeShippingThresholdEgp} جنيه قبل الخصومات عندما تكون منطقتك مؤهلة. تظهر الرسوم وطرق الدفع عند إتمام الطلب.`,
         },
         {
-          heading: "التغليف والعناية بالجودة",
-          body: "تُغلَّف قطع الكوكيز بعناية فائقة في صناديقنا للحفاظ على جودتها وسلامتها أثناء النقل. ولأفضل تجربة تذوّق، ننصح بالاستمتاع بها خلال الأيام القليلة الأولى وحفظها في وعاءٍ محكم الإغلاق.",
+          icon: "package" as const,
+          title: "التغليف والعناية بالجودة",
+          body: "تُغلَّف قطع الكوكيز بعناية في صناديقنا للحفاظ على جودتها أثناء النقل. للاستمتاع بأفضل قوام، تُؤكل خلال أيام قليلة وتُحفظ في وعاء محكم.",
         },
       ],
+      areasBanner: {
+        title: "تبحث عن كمبوندك؟",
+        body: "اعرض قائمة المناطق والكمبوندات التي نخدمها بانتظام — محدَّثة من لوحة الشحن.",
+        ctaLabel: "مناطق التوصيل",
+        ctaHref: "/delivery/areas",
+      },
+      whatsappLabel: "تأكيد العنوان على واتساب",
+      whatsappHint: "أرسل اسم الكمبوند والعنوان قبل طلبات الهدايا الكبيرة أو التوصيل العاجل.",
       relatedLinks: [
         { href: "/delivery/areas", label: "مناطق التوصيل بالتفصيل" },
         { href: "/shop", label: "تسوّق الكوكيز" },
@@ -107,20 +127,43 @@ export function getNewCairoDeliveryContent(
     ctaLabel: "Order cookies",
     ctaHref: "/shop",
     relatedLinksAria: "Related pages",
-    sections: [
+    highlights: [
       {
-        heading: "Zones we serve",
-        body: zonesBody,
+        icon: "truck" as const,
+        title: "New Cairo delivery",
+        body: "From Fifth Settlement and nearby compounds — see the full area list on our zones page.",
       },
       {
-        heading: "Free delivery threshold",
+        icon: "clock" as const,
+        title: "1–2 day scheduling",
+        body: "Most orders are prepared within one or two days depending on bake capacity and your area.",
+      },
+      {
+        icon: "gift" as const,
+        title: "Gift boxes",
+        body: "For large gift orders or urgent dates, confirm your address on WhatsApp before checkout.",
+      },
+    ],
+    features: [
+      {
+        icon: "truck" as const,
+        title: "Free delivery threshold",
         body: `Enjoy free delivery on qualifying orders over ${freeShippingThresholdEgp} EGP before discounts, when your zone is eligible. Fees and payment methods appear at checkout.`,
       },
       {
-        heading: "Packaging & freshness",
+        icon: "package" as const,
+        title: "Packaging & freshness",
         body: "Cookies are packed to travel well in our branded boxes. For the best texture, enjoy within a few days and store in an airtight container.",
       },
     ],
+    areasBanner: {
+      title: "Looking for your compound?",
+      body: "Browse the neighborhoods and compounds we frequently serve — synced from our shipping zones.",
+      ctaLabel: "All delivery areas",
+      ctaHref: "/delivery/areas",
+    },
+    whatsappLabel: "Confirm your address on WhatsApp",
+    whatsappHint: "Send your compound name and address before large gift orders or urgent delivery.",
     relatedLinks: [
       { href: "/delivery/areas", label: "All delivery areas" },
       { href: "/shop", label: "Shop cookies online" },
