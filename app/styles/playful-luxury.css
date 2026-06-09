@@ -340,7 +340,7 @@ html[dir="rtl"] .cb-pl-body {
 .cb-announcement-marquee {
   display: flex;
   width: max-content;
-  animation: cb-marquee 48s linear infinite;
+  animation: cb-marquee 90s linear infinite;
   will-change: transform;
 }
 

@@ -764,7 +764,7 @@ export function AnnouncementsAdminDashboard() {
                 <div className="mt-1 overflow-hidden">
                   <div
                     key={`${previewTitle}${previewMessage}`}
-                    className="flex w-max animate-[cb-marquee_12s_linear_infinite] items-center gap-3 text-[11px] font-medium text-white"
+                    className="flex w-max animate-[cb-marquee_90s_linear_infinite] items-center gap-3 text-[11px] font-medium text-white"
                   >
                     {[...Array(6)].map((_, i) => (
                       <span key={i} className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap">
