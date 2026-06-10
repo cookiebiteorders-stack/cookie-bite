@@ -734,7 +734,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
     <AnimatePresence>
       {open ? (
         <motion.div
-          className="fixed inset-0 z-[85] flex justify-end bg-[#3D2814]/45 backdrop-blur-md"
+          className="fixed inset-0 z-[120] flex justify-end bg-[#3D2814]/45 backdrop-blur-md"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
