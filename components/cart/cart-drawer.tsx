@@ -169,6 +169,11 @@ export function CartDrawer() {
                                 {t("pages.cart.giftBoxBadge")}
                               </p>
                             ) : null}
+                            {line.variantLabel ? (
+                              <p className="mt-0.5 text-xs font-semibold text-cb-text-muted">
+                                {line.variantLabel}
+                              </p>
+                            ) : null}
                             <p className="mt-0.5 text-sm font-bold text-cb-brand-600">
                               {formatPrice(line.finalUnitPriceEgp)}
                             </p>

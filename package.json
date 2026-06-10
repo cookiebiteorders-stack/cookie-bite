@@ -44,6 +44,7 @@
     "supabase:list-migrations": "node scripts/supabase-list-migrations.mjs",
     "auth:strip-oauth-passwords": "node scripts/strip-oauth-temp-passwords.mjs",
     "supabase:migrate": "node scripts/supabase-run-migrations.mjs",
+    "products:merge-duplicates": "node scripts/merge-duplicate-products.mjs",
     "loyalty:backfill": "node scripts/backfill-loyalty-points.mjs",
     "loyalty:backfill:dry": "node scripts/backfill-loyalty-points.mjs --dry-run",
     "e2e:smoke": "node scripts/e2e-smoke-test.mjs",

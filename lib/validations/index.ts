@@ -47,6 +47,8 @@ export type AddressInput = z.infer<typeof addressSchema>;
 export const cartItemSchema = z.object({
   product_id: z.string().min(1),
   quantity: z.number().int().min(1).max(99),
+  /** الحجم المختار من product_variants (اختياري) */
+  variant_id: z.string().uuid().optional(),
   addons: z
     .array(
       z.object({

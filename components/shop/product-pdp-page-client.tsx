@@ -19,12 +19,15 @@ import { PdpViewTracker } from "@/components/shop/pdp-view-tracker";
 import { PdpProductSpecs } from "@/components/shop/pdp-product-specs";
 import { dedupeAddons } from "@/lib/addons/dedupe";
 import type { Addon } from "@/lib/addons/types";
-import type { Product } from "@/lib/data";
+import type { Product, ProductVariant } from "@/lib/data";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { useLanguage } from "@/components/providers/language-provider";
 import type { ProductRow } from "@/lib/db/types";
 import { PRODUCT_IMAGE_WIDTH_PDP } from "@/lib/products/media";
-import { productRowToStorefrontProduct } from "@/lib/storefront/map-product-row";
+import {
+  productRowToStorefrontProduct,
+  type StorefrontVariantRowInput,
+} from "@/lib/storefront/map-product-row";
 import {
   buildBreadcrumbJsonLd,
   buildProductJsonLd,
@@ -44,6 +47,7 @@ type ApiResponse = {
   related?: Product[];
   fbt?: Product[];
   reviews?: PdpReview[];
+  variants?: StorefrontVariantRowInput[];
   review_count?: number;
   avg_rating?: number | null;
   rating_distribution?: RatingDistribution;
@@ -70,8 +74,33 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
   const [ratingDistribution, setRatingDistribution] = useState(
     initialPayload?.ratingDistribution ?? { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
   );
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
+    () => initialPayload?.product?.variants?.[0]?.id ?? null,
+  );
   const fbtPlacement = useExperiment("pdp_fbt_placement");
   const fbtBelowReviews = fbtPlacement === "below_reviews";
+
+  const selectedVariant: ProductVariant | null = useMemo(() => {
+    const variants = product?.variants ?? [];
+    if (variants.length === 0) return null;
+    return variants.find((v) => v.id === selectedVariantId) ?? variants[0];
+  }, [product, selectedVariantId]);
+
+  useEffect(() => {
+    const variants = product?.variants ?? [];
+    if (variants.length === 0) {
+      if (selectedVariantId !== null) setSelectedVariantId(null);
+      return;
+    }
+    if (!variants.some((v) => v.id === selectedVariantId)) {
+      setSelectedVariantId(variants[0].id);
+    }
+  }, [product, selectedVariantId]);
+
+  const displayPrice = selectedVariant?.price ?? product?.price ?? 0;
+  const displayComparePrice = selectedVariant
+    ? selectedVariant.comparePrice ?? null
+    : product?.comparePrice ?? null;
 
   useEffect(() => {
     if (initialPayload?.product) return;
@@ -95,6 +124,7 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
         }
         const mapped = productRowToStorefrontProduct(data.product, FALLBACK_DESC, lang, {
           imageWidth: PRODUCT_IMAGE_WIDTH_PDP,
+          variants: data.variants ?? [],
         });
         setProduct(mapped);
         setAddons(dedupeAddons(data.addons ?? []));
@@ -195,23 +225,33 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
             <p className="mt-4 text-lg text-cb-text">{product.description}</p>
             <div className="mt-6">
               <ProductPriceDisplay
-                price={product.price}
-                comparePrice={product.comparePrice}
+                price={displayPrice}
+                comparePrice={displayComparePrice}
                 size="lg"
               />
             </div>
-            {product.stock != null && product.stock <= 0 ? (
-              <p
-                role="status"
-                className="mt-3 inline-flex rounded-full bg-stone-900 px-4 py-2 text-sm font-bold text-white"
-              >
-                {t("product.outOfStock")}
-              </p>
-            ) : product.stock != null && product.stock <= 10 ? (
-              <p className="mt-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
-                {t("product.stockLeft", { count: product.stock })}
-              </p>
-            ) : null}
+            {(() => {
+              const stock = selectedVariant ? selectedVariant.stock : product.stock;
+              if (stock == null) return null;
+              if (stock <= 0) {
+                return (
+                  <p
+                    role="status"
+                    className="mt-3 inline-flex rounded-full bg-stone-900 px-4 py-2 text-sm font-bold text-white"
+                  >
+                    {t("product.outOfStock")}
+                  </p>
+                );
+              }
+              if (stock <= 10) {
+                return (
+                  <p className="mt-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
+                    {t("product.stockLeft", { count: stock })}
+                  </p>
+                );
+              }
+              return null;
+            })()}
 
             <div className="mt-8">
               {addons.length > 0 ? (
@@ -222,7 +262,12 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
                   {t("product.viewAddons")}
                 </a>
               ) : null}
-              <PdpActions product={product} linkedAddons={addons} />
+              <PdpActions
+                product={product}
+                linkedAddons={addons}
+                selectedVariant={selectedVariant}
+                onVariantChange={setSelectedVariantId}
+              />
               <PdpWhatsAppCta productName={product.name} productSlug={product.id} />
               <PdpTrustStrip />
             </div>
@@ -230,7 +275,7 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
               <ShareButtons title={`${product.name} | Cookie Bite`} />
             </div>
 
-            <PdpProductSpecs product={product} />
+            <PdpProductSpecs product={product} selectedVariant={selectedVariant} />
           </div>
         </div>
 

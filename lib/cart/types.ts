@@ -1,6 +1,14 @@
-import type { Product } from "@/lib/data";
+import type { Product, ProductVariant } from "@/lib/data";
 import { dedupeCartSelectedAddons } from "@/lib/addons/dedupe";
 import type { CartSelectedAddon } from "@/lib/addons/types";
+
+export type CartVariantSnapshot = {
+  name: string;
+  size?: string | null;
+  weight_grams?: number | null;
+  pieces_count?: number | null;
+  sku?: string | null;
+};
 
 export type CartLine = {
   id: string;
@@ -15,6 +23,12 @@ export type CartLine = {
   addons: CartSelectedAddon[];
   addonsTotalEgp: number;
   finalUnitPriceEgp: number;
+  /** UUID للحجم المختار من product_variants */
+  variantId?: string;
+  /** تسمية معروضة للحجم مثل «وسط» */
+  variantLabel?: string;
+  /** لقطة الحجم للفاتورة والطلب */
+  variantSnapshot?: CartVariantSnapshot;
   giftBox?: {
     box_size: string;
     selected_products: {
@@ -35,21 +49,34 @@ export function lineFromProduct(
   quantity: number,
   addons: CartSelectedAddon[] = [],
   addonsTotalEgp = 0,
+  variant?: ProductVariant | null,
 ): CartLine {
   const normalizedAddons = dedupeCartSelectedAddons(addons);
-  const lineId = buildCartLineId(product.id, normalizedAddons);
-  const basePrice = Number(product.price);
+  const lineId = buildCartLineId(product.id, normalizedAddons, variant?.id);
+  const basePrice = variant ? Number(variant.price) : Number(product.price);
+  const variantSnapshot: CartVariantSnapshot | undefined = variant
+    ? {
+        name: variant.name,
+        size: variant.size ?? null,
+        weight_grams: variant.weightGrams ?? null,
+        pieces_count: variant.piecesCount ?? null,
+        sku: variant.sku ?? null,
+      }
+    : undefined;
   return {
     id: lineId,
     productId: product.id,
     productUuid: product.productUuid,
     name: product.name,
     priceEgp: basePrice,
-    image: product.image,
+    image: variant?.image?.trim() || product.image,
     quantity: Math.min(99, Math.max(1, quantity)),
     addons: normalizedAddons,
     addonsTotalEgp,
     finalUnitPriceEgp: basePrice + addonsTotalEgp,
+    variantId: variant?.id,
+    variantLabel: variant?.name,
+    variantSnapshot,
   };
 }
 
@@ -97,8 +124,13 @@ export function cartItemCount(lines: CartLine[]) {
   return lines.reduce((sum, l) => sum + l.quantity, 0);
 }
 
-export function buildCartLineId(productId: string, addons: CartSelectedAddon[]) {
-  if (!addons.length) return productId;
+export function buildCartLineId(
+  productId: string,
+  addons: CartSelectedAddon[],
+  variantId?: string | null,
+) {
+  const base = variantId ? `${productId}@@v:${variantId}` : productId;
+  if (!addons.length) return base;
   const parts = addons
     .map((a) => {
       const options = a.options
@@ -109,5 +141,5 @@ export function buildCartLineId(productId: string, addons: CartSelectedAddon[]) 
     })
     .sort()
     .join(";");
-  return `${productId}::${parts}`;
+  return `${base}::${parts}`;
 }

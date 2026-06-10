@@ -2,6 +2,11 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { CartSelectedAddon } from "@/lib/addons/types";
 import { addonsFromProductAddonJoinRows, dedupeCartSelectedAddons } from "@/lib/addons/dedupe";
 import type { Addon } from "@/lib/addons/types";
+import {
+  listActiveVariantsByProductIds,
+  type ProductVariantRow,
+} from "@/lib/db/product-catalog";
+import type { CartVariantSnapshot } from "@/lib/cart/types";
 
 export type ResolvedCheckoutLine = {
   id: string;
@@ -11,6 +16,8 @@ export type ResolvedCheckoutLine = {
   finalUnitPrice: number;
   quantity: number;
   selectedAddons: CartSelectedAddon[];
+  variantId?: string | null;
+  variantSnapshot?: CartVariantSnapshot | null;
 };
 
 type DbRow = {
@@ -23,12 +30,19 @@ type DbRow = {
   is_active: boolean;
 };
 
+export type CheckoutItemInput = {
+  id: string;
+  quantity: number;
+  variant_id?: string | null;
+  addons?: CartSelectedAddon[];
+};
+
 /**
  * يحل عناصر السلة من قاعدة البيانات (لا تثق بأسعار العميل).
  * `items[].id` يجب أن يكون **slug المنتج** كما في السلة الموحّدة.
  */
 export async function resolveCheckoutLineItems(
-  items: { id: string; quantity: number; addons?: CartSelectedAddon[] }[],
+  items: CheckoutItemInput[],
 ): Promise<
   | { ok: true; lines: ResolvedCheckoutLine[]; subtotal: number }
   | { ok: false; error: string; status: number }
@@ -55,6 +69,15 @@ export async function resolveCheckoutLineItems(
   }
 
   const map = new Map((data as DbRow[] | null)?.map((r) => [r.slug, r]) ?? []);
+
+  const productIdsWithVariants = items
+    .filter((i) => i.variant_id)
+    .map((i) => map.get(i.id)?.id)
+    .filter((id): id is string => Boolean(id));
+  const variantsByProduct: Map<string, ProductVariantRow[]> = productIdsWithVariants.length
+    ? await listActiveVariantsByProductIds(supabase, [...new Set(productIdsWithVariants)])
+    : new Map();
+
   const lines: ResolvedCheckoutLine[] = [];
   let subtotal = 0;
 
@@ -66,16 +89,48 @@ export async function resolveCheckoutLineItems(
     if (!p.is_active) {
       return { ok: false, error: `Product unavailable: ${item.id}`, status: 400 };
     }
-    const stock = Number(p.stock ?? 0);
-    if (stock < item.quantity) {
-      return {
-        ok: false,
-        error: `Insufficient stock for ${item.id}`,
-        status: 400,
-      };
-    }
     const name = (p.title_en?.trim() || p.name || p.slug).trim();
-    const baseUnitPrice = Number(p.price_egp);
+
+    let baseUnitPrice = Number(p.price_egp);
+    let variantId: string | null = null;
+    let variantSnapshot: CartVariantSnapshot | null = null;
+
+    if (item.variant_id) {
+      const variant = (variantsByProduct.get(p.id) ?? []).find(
+        (v) => v.id === item.variant_id,
+      );
+      if (!variant) {
+        return { ok: false, error: `Invalid size for ${item.id}`, status: 400 };
+      }
+      if (Number(variant.stock ?? 0) < item.quantity) {
+        return { ok: false, error: `Insufficient stock for ${item.id}`, status: 400 };
+      }
+      baseUnitPrice =
+        variant.price_egp != null && Number.isFinite(Number(variant.price_egp))
+          ? Number(variant.price_egp)
+          : Number(p.price_egp);
+      variantId = variant.id;
+      variantSnapshot = {
+        name: variant.name,
+        size:
+          variant.options && typeof variant.options.size === "string"
+            ? (variant.options.size as string)
+            : null,
+        weight_grams: variant.weight_grams ?? null,
+        pieces_count: variant.pieces_count ?? null,
+        sku: variant.sku ?? null,
+      };
+    } else {
+      const stock = Number(p.stock ?? 0);
+      if (stock < item.quantity) {
+        return {
+          ok: false,
+          error: `Insufficient stock for ${item.id}`,
+          status: 400,
+        };
+      }
+    }
+
     const selectedAddons = dedupeCartSelectedAddons(item.addons ?? []);
     let addonsTotalUnitPrice = 0;
     if (selectedAddons.length > 0) {
@@ -117,6 +172,8 @@ export async function resolveCheckoutLineItems(
       finalUnitPrice,
       quantity: item.quantity,
       selectedAddons,
+      variantId,
+      variantSnapshot,
     });
     subtotal += finalUnitPrice * item.quantity;
   }

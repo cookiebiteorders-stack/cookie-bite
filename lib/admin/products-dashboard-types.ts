@@ -48,7 +48,10 @@ export type ProductVariantFormItem = {
   sku: string;
   barcode: string;
   price_egp: string;
+  compare_price_egp: string;
   stock: string;
+  weight_grams: string;
+  pieces_count: string;
   option_size: string;
   option_color: string;
   is_active: boolean;
@@ -59,7 +62,10 @@ export const EMPTY_PRODUCT_VARIANT: ProductVariantFormItem = {
   sku: "",
   barcode: "",
   price_egp: "",
+  compare_price_egp: "",
   stock: "0",
+  weight_grams: "",
+  pieces_count: "",
   option_size: "",
   option_color: "",
   is_active: true,

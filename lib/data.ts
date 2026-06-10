@@ -47,6 +47,19 @@ export const IMAGES = {
   signUp: "/images/sign-up-side.png",
 };
 
+export type ProductVariant = {
+  id: string;
+  name: string;
+  size?: string | null;
+  price: number;
+  comparePrice?: number | null;
+  stock: number;
+  weightGrams?: number | null;
+  piecesCount?: number | null;
+  sku?: string | null;
+  image?: string | null;
+};
+
 export type Product = {
   /** Slug المستخدم في الروابط والسلة وعند الدفع */
   id: string;
@@ -73,6 +86,9 @@ export type Product = {
   seasons?: string[];
   /** إضافات مربوطة — تُمرَّر من كتالوج المتجر أو PDP */
   linkedAddons?: Addon[];
+  variants?: ProductVariant[];
+  hasVariants?: boolean;
+  priceFrom?: number;
 };
 
 export const PRODUCTS: Product[] = [];

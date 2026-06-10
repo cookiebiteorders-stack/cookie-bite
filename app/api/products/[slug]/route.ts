@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listLinkedAddonsForProduct } from "@/lib/db/addons";
+import { listActiveVariantsByProductIds } from "@/lib/db/product-catalog";
+import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   getApprovedProductReviews,
   getFbtStorefrontProducts,
@@ -52,7 +54,14 @@ export async function GET(
   const wantFbt = req.nextUrl.searchParams.get("fbt") === "1";
   const wantReviews = req.nextUrl.searchParams.get("reviews") === "1";
 
-  const [addons, related, fbt, reviews] = await Promise.all([
+  const adminClient = tryCreateSupabaseAdminClient();
+  const variantsPromise = adminClient
+    ? listActiveVariantsByProductIds(adminClient, [data.id]).then(
+        (map) => map.get(data.id) ?? [],
+      )
+    : Promise.resolve([]);
+
+  const [addons, related, fbt, reviews, variants] = await Promise.all([
     wantAddons ? listLinkedAddonsForProduct(data.id) : Promise.resolve([]),
     wantRelated
       ? getRelatedStorefrontProducts(
@@ -64,6 +73,7 @@ export async function GET(
       : Promise.resolve([]),
     wantFbt ? getFbtStorefrontProducts(data, lang) : Promise.resolve([]),
     wantReviews ? getApprovedProductReviews(data.id) : Promise.resolve([]),
+    variantsPromise,
   ]);
 
   return NextResponse.json(
@@ -73,6 +83,7 @@ export async function GET(
       related,
       fbt,
       reviews,
+      variants,
       review_count: ratings.length,
       avg_rating,
       rating_distribution,

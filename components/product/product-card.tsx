@@ -20,6 +20,7 @@ import { ProductPriceDisplay } from "@/components/product/product-price-display"
 import { ProductSharedImage } from "@/components/product/product-shared-image";
 import { useLanguage } from "@/components/providers/language-provider";
 import { ProductCartActions } from "@/components/product/product-cart-actions";
+import { buttonClassName } from "@/components/ui/button";
 
 const ProductQuickViewModal = dynamic(
   () =>
@@ -208,9 +209,20 @@ export function ProductCard({
           </p>
         </div>
         <div className="mt-auto flex items-center justify-between gap-3">
-          <ProductPriceDisplay price={product.price} comparePrice={product.comparePrice} size="sm" />
+          <div className="flex items-center gap-1.5">
+            {product.hasVariants ? (
+              <span className="text-xs font-semibold text-cb-text-muted">
+                {t("product.priceFromPrefix")}
+              </span>
+            ) : null}
+            <ProductPriceDisplay
+              price={product.priceFrom ?? product.price}
+              comparePrice={product.hasVariants ? null : product.comparePrice}
+              size="sm"
+            />
+          </div>
         </div>
-        {addons.length > 0 ? (
+        {product.hasVariants ? null : addons.length > 0 ? (
           <ProductAddonPicker
             variant="compact"
             linkedAddons={addons}
@@ -219,19 +231,32 @@ export function ProductCard({
           />
         ) : null}
         <div className="flex flex-col gap-2">
-          <ProductCartActions
-            product={product}
-            addons={addons}
-            selected={selected}
-            selectedAddons={selectedAddons}
-            addonsTotal={addonsTotal}
-            variant="card"
-            onAddonError={setAddonError}
-          />
+          {product.hasVariants ? (
+            <Link
+              href={`/shop/${product.id}`}
+              prefetch={false}
+              className={buttonClassName(
+                "primary",
+                "inline-flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm",
+              )}
+            >
+              {t("product.chooseSize")}
+            </Link>
+          ) : (
+            <ProductCartActions
+              product={product}
+              addons={addons}
+              selected={selected}
+              selectedAddons={selectedAddons}
+              addonsTotal={addonsTotal}
+              variant="card"
+              onAddonError={setAddonError}
+            />
+          )}
           {addonError ? (
             <p className="text-center text-xs font-semibold text-red-700">{addonError}</p>
           ) : null}
-          {layout === "compact" ? (
+          {layout === "compact" && !product.hasVariants ? (
             <Link
               href={`/shop/${product.id}`}
               className="text-center text-sm font-semibold text-cb-terracotta-dark hover:underline"

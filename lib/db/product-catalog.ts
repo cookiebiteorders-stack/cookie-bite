@@ -23,7 +23,11 @@ export type ProductVariantRow = {
   sku: string | null;
   barcode: string | null;
   price_egp: number | null;
+  compare_price_egp: number | null;
   stock: number;
+  weight_grams: number | null;
+  pieces_count: number | null;
+  image_url: string | null;
   options: Record<string, unknown>;
   sort_order: number;
   is_active: boolean;
@@ -35,7 +39,11 @@ export type ProductVariantInput = {
   sku?: string | null;
   barcode?: string | null;
   price_egp?: number | null;
+  compare_price_egp?: number | null;
   stock: number;
+  weight_grams?: number | null;
+  pieces_count?: number | null;
+  image_url?: string | null;
   options?: Record<string, unknown>;
   sort_order?: number;
   is_active?: boolean;
@@ -101,6 +109,31 @@ export async function listProductVariants(
   return (data ?? []) as ProductVariantRow[];
 }
 
+/** أحجام نشطة لعدة منتجات دفعة واحدة (للكتالوج) مرتبة حسب sort_order. */
+export async function listActiveVariantsByProductIds(
+  supabase: SupabaseClient,
+  productIds: string[],
+): Promise<Map<string, ProductVariantRow[]>> {
+  const out = new Map<string, ProductVariantRow[]>();
+  if (productIds.length === 0) return out;
+  const { data, error } = await supabase
+    .from("product_variants")
+    .select("*")
+    .in("product_id", productIds)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+  if (error) {
+    console.error("listActiveVariantsByProductIds", error);
+    return out;
+  }
+  for (const row of (data ?? []) as ProductVariantRow[]) {
+    const list = out.get(row.product_id) ?? [];
+    list.push(row);
+    out.set(row.product_id, list);
+  }
+  return out;
+}
+
 export async function replaceProductVariants(
   supabase: SupabaseClient,
   productId: string,
@@ -115,7 +148,11 @@ export async function replaceProductVariants(
     sku: v.sku?.trim() || null,
     barcode: v.barcode?.trim() || null,
     price_egp: v.price_egp ?? null,
+    compare_price_egp: v.compare_price_egp ?? null,
     stock: Math.max(0, Math.floor(v.stock)),
+    weight_grams: v.weight_grams ?? null,
+    pieces_count: v.pieces_count ?? null,
+    image_url: v.image_url?.trim() || null,
     options: v.options ?? {},
     sort_order: v.sort_order ?? index,
     is_active: v.is_active ?? true,

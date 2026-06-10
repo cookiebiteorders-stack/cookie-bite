@@ -1,7 +1,10 @@
 import type { Product } from "@/lib/data";
 import type { ProductRow } from "@/lib/db/types";
 import type { Lang } from "@/lib/i18n/translations";
-import { productRowToStorefrontProduct } from "@/lib/storefront/map-product-row";
+import {
+  productRowToStorefrontProduct,
+  type StorefrontVariantRowInput,
+} from "@/lib/storefront/map-product-row";
 import type { RatingDistribution } from "@/lib/storefront/review-stats";
 
 export type PdpReview = import("@/lib/storefront/pdp-data").PdpReview;
@@ -42,12 +45,15 @@ export async function fetchPdpPayloadFromApi(
       related?: Product[];
       fbt?: Product[];
       reviews?: PdpReview[];
+      variants?: StorefrontVariantRowInput[];
       review_count?: number;
       avg_rating?: number | null;
       rating_distribution?: RatingDistribution;
     };
     if (!json.product?.slug) return null;
-    const product = productRowToStorefrontProduct(json.product, FALLBACK_DESC, lang);
+    const product = productRowToStorefrontProduct(json.product, FALLBACK_DESC, lang, {
+      variants: json.variants ?? [],
+    });
     const related = (json.related ?? []).filter((p) => p.id !== product.id);
     const fbt = (json.fbt ?? []).filter((p) => p.id !== product.id);
     return {

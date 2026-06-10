@@ -6,7 +6,7 @@ import type { Addon, CartSelectedAddon } from "@/lib/addons/types";
 import type { AddonSelectedMap } from "@/lib/addons/selection";
 import { validateAddonSelection } from "@/lib/addons/selection";
 import { buildCartLineId } from "@/lib/cart/types";
-import type { Product } from "@/lib/data";
+import type { Product, ProductVariant } from "@/lib/data";
 import { isProductOutOfStock } from "@/lib/products/stock";
 import { trackGa4Event } from "@/lib/analytics/ga4";
 import { trackProductEvent } from "@/lib/analytics/track-event";
@@ -21,17 +21,25 @@ export type ProductCartActionsProps = {
   selected: AddonSelectedMap;
   selectedAddons: CartSelectedAddon[];
   addonsTotal: number;
+  /** الحجم المختار — يحدد السعر والمخزون */
+  selectedVariant?: ProductVariant | null;
+  /** للمنتجات ذات الأحجام: يلزم اختيار حجم قبل الإضافة */
+  requireVariantSelection?: boolean;
   variant?: "card" | "pdp";
   /** كمية الإضافة الأولى (صفحة المنتج فقط) */
   addQuantity?: number;
   onAddonError?: (message: string | null) => void;
 };
 
-function useCartLine(product: Product, selectedAddons: CartSelectedAddon[]) {
+function useCartLine(
+  product: Product,
+  selectedAddons: CartSelectedAddon[],
+  variantId?: string | null,
+) {
   const { lines } = useCart();
   const lineId = useMemo(
-    () => buildCartLineId(product.id, selectedAddons),
-    [product.id, selectedAddons],
+    () => buildCartLineId(product.id, selectedAddons, variantId),
+    [product.id, selectedAddons, variantId],
   );
   const cartLine = useMemo(
     () => lines.find((l) => l.id === lineId && !l.giftBox),
@@ -64,6 +72,8 @@ export const ProductCartActions = forwardRef<HTMLButtonElement, ProductCartActio
   selected,
   selectedAddons,
   addonsTotal,
+  selectedVariant = null,
+  requireVariantSelection = false,
   variant = "card",
   addQuantity = 1,
   onAddonError,
@@ -72,7 +82,7 @@ export const ProductCartActions = forwardRef<HTMLButtonElement, ProductCartActio
   ) {
   const { addItem, setQuantity } = useCart();
   const { t, formatPrice } = useLanguage();
-  const { lineId, cartLine } = useCartLine(product, selectedAddons);
+  const { lineId, cartLine } = useCartLine(product, selectedAddons, selectedVariant?.id);
   const [justAdded, setJustAdded] = useState(false);
 
   useEffect(() => {
@@ -81,12 +91,17 @@ export const ProductCartActions = forwardRef<HTMLButtonElement, ProductCartActio
     return () => window.clearTimeout(id);
   }, [justAdded]);
 
-  const outOfStock = isProductOutOfStock(product.stock);
+  const effectiveStock = requireVariantSelection
+    ? selectedVariant?.stock ?? null
+    : product.stock;
+  const outOfStock = requireVariantSelection
+    ? selectedVariant != null && isProductOutOfStock(selectedVariant.stock)
+    : isProductOutOfStock(product.stock);
   const maxQty =
-    product.stock != null && product.stock > 0
-      ? Math.min(99, product.stock)
+    effectiveStock != null && effectiveStock > 0
+      ? Math.min(99, effectiveStock)
       : 99;
-  const unitPrice = product.price + addonsTotal;
+  const unitPrice = (selectedVariant?.price ?? product.price) + addonsTotal;
 
   const stepperShell = cn(
     "flex w-full items-center justify-between gap-1 rounded-full border-2 border-cb-terracotta-dark bg-cb-terracotta-dark px-1 py-1 text-white shadow-sm",
@@ -176,13 +191,17 @@ export const ProductCartActions = forwardRef<HTMLButtonElement, ProductCartActio
         variant === "pdp" ? "min-h-12 flex-1 gap-2 sm:max-w-xs" : "py-3 text-sm",
       )}
       onClick={() => {
+        if (requireVariantSelection && !selectedVariant) {
+          onAddonError?.(t("product.selectSizeFirst"));
+          return;
+        }
         const missing = validateAddonSelection(addons, selected);
         if (missing) {
           onAddonError?.(t("product.addonsRequired", { name: missing }));
           return;
         }
         onAddonError?.(null);
-        addItem(product, qty, selectedAddons, addonsTotal);
+        addItem(product, qty, selectedAddons, addonsTotal, selectedVariant);
         trackAdd(product, qty);
         trackGa4Event("add_to_cart", {
           currency: "EGP",

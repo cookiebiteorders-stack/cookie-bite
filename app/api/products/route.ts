@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
+import { listActiveVariantsByProductIds } from "@/lib/db/product-catalog";
 import {
   readProductsListCache,
   writeProductsListCache,
@@ -59,8 +61,21 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const rows = (data ?? []) as Array<{ id: string } & Record<string, unknown>>;
+    const adminClient = tryCreateSupabaseAdminClient();
+    const variantsByProduct = adminClient
+      ? await listActiveVariantsByProductIds(
+          adminClient,
+          rows.map((r) => r.id),
+        )
+      : new Map();
+    const products = rows.map((row) => ({
+      ...row,
+      variants: variantsByProduct.get(row.id) ?? [],
+    }));
+
     const payload = {
-      products: data ?? [],
+      products,
       total: count ?? 0,
       page: query.page,
       limit: query.limit,

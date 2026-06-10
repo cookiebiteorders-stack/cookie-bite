@@ -114,6 +114,7 @@ export default function CheckoutPage() {
           items: regularLines.map((l) => ({
             id: l.productId,
             quantity: l.quantity,
+            ...(l.variantId ? { variant_id: l.variantId } : {}),
             addons: l.addons,
           })),
           ...(giftBoxSnapshot ? { gift_box: giftBoxSnapshot } : {}),

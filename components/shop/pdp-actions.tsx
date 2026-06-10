@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
-import type { Product } from "@/lib/data";
+import type { Product, ProductVariant } from "@/lib/data";
 import { ProductAddonPicker, useAddonSelectionState } from "@/components/product/product-addon-picker";
 import { ProductCartActions } from "@/components/product/product-cart-actions";
+import { ProductVariantPicker } from "@/components/product/product-variant-picker";
 import { PdpStickyBar } from "@/components/shop/pdp-sticky-bar";
 import { useLanguage } from "@/components/providers/language-provider";
 import { buildCartLineId } from "@/lib/cart/types";
@@ -15,9 +16,16 @@ import type { Addon } from "@/lib/addons/types";
 type Props = {
   product: Product;
   linkedAddons?: Addon[];
+  selectedVariant?: ProductVariant | null;
+  onVariantChange?: (variantId: string) => void;
 };
 
-export function PdpActions({ product, linkedAddons = EMPTY_LINKED_ADDONS }: Props) {
+export function PdpActions({
+  product,
+  linkedAddons = EMPTY_LINKED_ADDONS,
+  selectedVariant = null,
+  onVariantChange,
+}: Props) {
   const { t, formatPrice } = useLanguage();
   const { lines } = useCart();
   const { addons, selected, setSelected, selectedAddons, addonsTotal } =
@@ -28,22 +36,29 @@ export function PdpActions({ product, linkedAddons = EMPTY_LINKED_ADDONS }: Prop
   const purchaseRef = useRef<HTMLDivElement>(null);
   const addBtnRef = useRef<HTMLButtonElement>(null);
 
-  const outOfStock = product.stock != null && product.stock <= 0;
+  const variants = product.variants ?? [];
+  const hasVariants = Boolean(product.hasVariants && variants.length > 0);
+  const effectiveStock = hasVariants
+    ? selectedVariant?.stock ?? null
+    : product.stock ?? null;
+  const effectivePrice = selectedVariant?.price ?? product.price;
+
+  const outOfStock = effectiveStock != null && effectiveStock <= 0;
   const maxQty =
-    product.stock != null && product.stock > 0
-      ? Math.min(99, product.stock)
+    effectiveStock != null && effectiveStock > 0
+      ? Math.min(99, effectiveStock)
       : 99;
 
   const lineId = useMemo(
-    () => buildCartLineId(product.id, selectedAddons),
-    [product.id, selectedAddons],
+    () => buildCartLineId(product.id, selectedAddons, selectedVariant?.id),
+    [product.id, selectedAddons, selectedVariant?.id],
   );
   const inCart = useMemo(
     () => lines.some((l) => l.id === lineId && !l.giftBox),
     [lines, lineId],
   );
 
-  const unitPrice = product.price + addonsTotal;
+  const unitPrice = effectivePrice + addonsTotal;
   const stickyLabel = t("product.addToCartWithPrice", {
     price: formatPrice(unitPrice * qty),
   });
@@ -62,6 +77,15 @@ export function PdpActions({ product, linkedAddons = EMPTY_LINKED_ADDONS }: Prop
   return (
     <>
       <div className="space-y-4">
+        {hasVariants ? (
+          <div id="pdp-variants">
+            <ProductVariantPicker
+              variants={variants}
+              selectedId={selectedVariant?.id ?? null}
+              onSelect={(id) => onVariantChange?.(id)}
+            />
+          </div>
+        ) : null}
         {addons.length > 0 ? (
           <div id="pdp-addons">
             <ProductAddonPicker
@@ -109,6 +133,8 @@ export function PdpActions({ product, linkedAddons = EMPTY_LINKED_ADDONS }: Prop
             selected={selected}
             selectedAddons={selectedAddons}
             addonsTotal={addonsTotal}
+            selectedVariant={selectedVariant}
+            requireVariantSelection={hasVariants}
             variant="pdp"
             addQuantity={qty}
             onAddonError={setError}

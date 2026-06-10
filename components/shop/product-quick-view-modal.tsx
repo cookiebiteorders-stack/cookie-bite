@@ -126,11 +126,18 @@ export function ProductQuickViewModal({ product, open, onClose }: Props) {
                   <h3 className="font-serif text-xl font-semibold text-cb-text-strong">
                     {product.name}
                   </h3>
-                  <ProductPriceDisplay
-                    price={product.price}
-                    comparePrice={product.comparePrice}
-                    size="md"
-                  />
+                  <div className="flex items-center gap-1.5">
+                    {product.hasVariants ? (
+                      <span className="text-xs font-semibold text-cb-text-muted">
+                        {t("product.priceFromPrefix")}
+                      </span>
+                    ) : null}
+                    <ProductPriceDisplay
+                      price={product.priceFrom ?? product.price}
+                      comparePrice={product.hasVariants ? null : product.comparePrice}
+                      size="md"
+                    />
+                  </div>
                   <p className="line-clamp-4 text-sm leading-relaxed text-cb-text-muted">
                     {product.description}
                   </p>
@@ -155,7 +162,7 @@ export function ProductQuickViewModal({ product, open, onClose }: Props) {
               className="flex flex-col gap-2 border-t border-cb-border px-4 py-4 sm:px-5"
               style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
             >
-              {!outOfStock && !hasAddons ? (
+              {!outOfStock && !hasAddons && !product.hasVariants ? (
                 <ProductCartActions
                   product={product}
                   addons={addons}
@@ -173,7 +180,11 @@ export function ProductQuickViewModal({ product, open, onClose }: Props) {
                     "inline-flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-full font-bold",
                   )}
                 >
-                  {hasAddons ? t("product.addonsCustomize") : t("product.viewDetails")}
+                  {product.hasVariants
+                    ? t("product.chooseSize")
+                    : hasAddons
+                      ? t("product.addonsCustomize")
+                      : t("product.viewDetails")}
                   <ExternalLink className="h-4 w-4" aria-hidden />
                 </Link>
               )}

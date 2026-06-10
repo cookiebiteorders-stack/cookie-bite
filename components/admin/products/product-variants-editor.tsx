@@ -20,7 +20,7 @@ export function ProductVariantsEditor({ variants, disabled, onChange }: Props) {
   };
 
   const addVariant = () => {
-    onChange([...variants, { ...EMPTY_PRODUCT_VARIANT, name: `Variant ${variants.length + 1}` }]);
+    onChange([...variants, { ...EMPTY_PRODUCT_VARIANT, name: `حجم ${variants.length + 1}` }]);
   };
 
   const removeVariant = (index: number) => {
@@ -31,7 +31,7 @@ export function ProductVariantsEditor({ variants, disabled, onChange }: Props) {
     <div className="space-y-3 rounded-2xl border border-cb-border/80 bg-cb-surface/60 p-3">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <p className="text-xs font-bold text-cb-text-strong">Variants (مقاس / لون / SKU فرعي)</p>
+          <p className="text-xs font-bold text-cb-text-strong">الأحجام (وزن / قطع / سعر لكل حجم)</p>
           <p className="text-[11px] text-cb-text-muted">
             اختياري — عند الإضافة يُحدَّث مخزون المنتج من مجموع المتغيرات.
           </p>
@@ -94,6 +94,17 @@ export function ProductVariantsEditor({ variants, disabled, onChange }: Props) {
                 />
               </label>
               <label className="space-y-1">
+                <span className="text-[10px] font-bold text-cb-text-muted">سعر المقارنة</span>
+                <input
+                  className={inputClass}
+                  inputMode="decimal"
+                  value={variant.compare_price_egp}
+                  placeholder="قبل الخصم"
+                  disabled={disabled}
+                  onChange={(e) => update(index, { compare_price_egp: e.target.value })}
+                />
+              </label>
+              <label className="space-y-1">
                 <span className="text-[10px] font-bold text-cb-text-muted">المخزون</span>
                 <input
                   className={inputClass}
@@ -108,8 +119,29 @@ export function ProductVariantsEditor({ variants, disabled, onChange }: Props) {
                 <input
                   className={inputClass}
                   value={variant.option_size}
+                  placeholder="صغير / وسط / كبير"
                   disabled={disabled}
                   onChange={(e) => update(index, { option_size: e.target.value })}
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-[10px] font-bold text-cb-text-muted">الوزن (جم)</span>
+                <input
+                  className={inputClass}
+                  inputMode="numeric"
+                  value={variant.weight_grams}
+                  disabled={disabled}
+                  onChange={(e) => update(index, { weight_grams: e.target.value })}
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-[10px] font-bold text-cb-text-muted">عدد القطع</span>
+                <input
+                  className={inputClass}
+                  inputMode="numeric"
+                  value={variant.pieces_count}
+                  disabled={disabled}
+                  onChange={(e) => update(index, { pieces_count: e.target.value })}
                 />
               </label>
               <label className="space-y-1">
@@ -156,12 +188,26 @@ export function variantsToApiPayload(variants: ProductVariantFormItem[]) {
     .map((v, index) => {
       const priceRaw = v.price_egp.trim();
       const price = priceRaw ? Number(priceRaw) : null;
+      const comparePriceRaw = v.compare_price_egp.trim();
+      const comparePrice = comparePriceRaw ? Number(comparePriceRaw) : null;
+      const weightRaw = v.weight_grams.trim();
+      const weight = weightRaw ? Number(weightRaw) : null;
+      const piecesRaw = v.pieces_count.trim();
+      const pieces = piecesRaw ? Number(piecesRaw) : null;
       return {
         id: v.id,
         name: v.name.trim(),
         sku: v.sku.trim() || null,
         barcode: v.barcode.trim() || null,
         price_egp: price != null && Number.isFinite(price) && price > 0 ? price : null,
+        compare_price_egp:
+          comparePrice != null && Number.isFinite(comparePrice) && comparePrice > 0
+            ? comparePrice
+            : null,
+        weight_grams:
+          weight != null && Number.isFinite(weight) && weight >= 0 ? Math.floor(weight) : null,
+        pieces_count:
+          pieces != null && Number.isFinite(pieces) && pieces >= 0 ? Math.floor(pieces) : null,
         stock: Math.max(0, Math.floor(Number(v.stock) || 0)),
         options: {
           ...(v.option_size.trim() ? { size: v.option_size.trim() } : {}),
@@ -180,7 +226,10 @@ export function variantsFromApiRows(
     sku: string | null;
     barcode: string | null;
     price_egp: number | null;
+    compare_price_egp?: number | null;
     stock: number;
+    weight_grams?: number | null;
+    pieces_count?: number | null;
     options?: Record<string, unknown>;
     is_active: boolean;
   }>,
@@ -191,7 +240,10 @@ export function variantsFromApiRows(
     sku: row.sku ?? "",
     barcode: row.barcode ?? "",
     price_egp: row.price_egp != null ? String(row.price_egp) : "",
+    compare_price_egp: row.compare_price_egp != null ? String(row.compare_price_egp) : "",
     stock: String(row.stock ?? 0),
+    weight_grams: row.weight_grams != null ? String(row.weight_grams) : "",
+    pieces_count: row.pieces_count != null ? String(row.pieces_count) : "",
     option_size: typeof row.options?.size === "string" ? row.options.size : "",
     option_color: typeof row.options?.color === "string" ? row.options.color : "",
     is_active: row.is_active,

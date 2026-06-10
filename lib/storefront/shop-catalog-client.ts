@@ -8,6 +8,10 @@ import {
 } from "@/lib/products/media";
 import { isProductInStock } from "@/lib/products/stock";
 import { coerceStringArray } from "@/lib/products/coerce";
+import {
+  mapVariantRowsToStorefront,
+  type StorefrontVariantRowInput,
+} from "@/lib/storefront/map-product-row";
 
 export type ShopApiProduct = {
   id: string;
@@ -28,6 +32,7 @@ export type ShopApiProduct = {
   stock: number;
   created_at: string;
   linked_addons?: Addon[];
+  variants?: StorefrontVariantRowInput[];
 };
 
 export type CatalogProduct = Product & {
@@ -59,12 +64,20 @@ export function mapApiProductToCatalog(
     (b): b is NonNullable<Product["badges"]>[number] => BADGE_SET.has(String(b)),
   );
 
+  const variants = p.variants?.length
+    ? mapVariantRowsToStorefront(p.variants, p.price_egp)
+    : undefined;
+  const hasVariants = Boolean(variants && variants.length > 0);
+  const priceFrom = hasVariants
+    ? Math.min(...variants!.map((v) => v.price))
+    : undefined;
+
   return {
     id: slug || p.id,
     productUuid: p.id,
     name: title,
     description,
-    price: p.price_egp,
+    price: hasVariants ? priceFrom! : p.price_egp,
     comparePrice:
       p.compare_price_egp != null && Number.isFinite(Number(p.compare_price_egp))
         ? Number(p.compare_price_egp)
@@ -79,6 +92,9 @@ export function mapApiProductToCatalog(
       Array.isArray(p.linked_addons) && p.linked_addons.length > 0
         ? p.linked_addons
         : undefined,
+    variants,
+    hasVariants,
+    priceFrom,
   };
 }
 

@@ -7,6 +7,7 @@ import {
   attachLinkedAddonsToRows,
   buildAddonsByProductId,
 } from "@/lib/storefront/enrich-catalog-addons";
+import { listActiveVariantsByProductIds } from "@/lib/db/product-catalog";
 import type { ShopApiProduct } from "@/lib/storefront/shop-catalog-client";
 
 const CATALOG_SELECT =
@@ -25,8 +26,16 @@ async function loadActiveShopCatalog(): Promise<ShopApiProduct[]> {
     return [];
   }
   const rows = (data ?? []) as ShopApiProduct[];
-  const byProduct = await buildAddonsByProductId(rows.map((r) => r.id));
-  return attachLinkedAddonsToRows(rows, byProduct);
+  const productIds = rows.map((r) => r.id);
+  const [byProduct, variantsByProduct] = await Promise.all([
+    buildAddonsByProductId(productIds),
+    listActiveVariantsByProductIds(supabase, productIds),
+  ]);
+  const withAddons = attachLinkedAddonsToRows(rows, byProduct);
+  return withAddons.map((row) => ({
+    ...row,
+    variants: variantsByProduct.get(row.id) ?? [],
+  }));
 }
 
 /** كتالوج المتجر كاملاً — يُمرَّر للعميل لتجنّب waterfall `/api/products`. */

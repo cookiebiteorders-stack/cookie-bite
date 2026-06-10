@@ -40,6 +40,7 @@ const BodySchema = z
     z.object({
       id: z.string().min(1),
       quantity: z.number().int().min(1).max(99),
+      variant_id: z.string().uuid().optional(),
       addons: z
         .array(
           z.object({
@@ -208,6 +209,8 @@ export async function POST(req: Request) {
       selectedAddons: l.selectedAddons,
       addonsTotalUnitPrice: l.addonsTotalUnitPrice,
       finalUnitPrice: l.finalUnitPrice,
+      variantId: l.variantId ?? null,
+      variantSnapshot: l.variantSnapshot ?? null,
     })),
     ...(giftBox
       ? [

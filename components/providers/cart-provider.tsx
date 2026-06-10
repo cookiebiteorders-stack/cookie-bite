@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { Product } from "@/lib/data";
+import type { Product, ProductVariant } from "@/lib/data";
 import { dedupeCartSelectedAddons } from "@/lib/addons/dedupe";
 import type { CartSelectedAddon } from "@/lib/addons/types";
 import {
@@ -47,6 +47,7 @@ type CartContextValue = {
     quantity?: number,
     addons?: CartSelectedAddon[],
     addonsTotalEgp?: number,
+    variant?: ProductVariant | null,
   ) => void;
   addGiftBoxItem: (input: {
     id: string;
@@ -100,7 +101,7 @@ function loadLines(): CartLine[] {
       const addons = dedupeCartSelectedAddons(Array.isArray(line.addons) ? line.addons : []);
       const addonsTotalEgp = Number(line.addonsTotalEgp ?? 0);
       return {
-        id: line.id || buildCartLineId(line.productId, addons),
+        id: line.id || buildCartLineId(line.productId, addons, line.variantId),
         productId: line.productId,
         productUuid: line.productUuid,
         name: line.name,
@@ -111,6 +112,9 @@ function loadLines(): CartLine[] {
         addonsTotalEgp,
         finalUnitPriceEgp: Number(line.finalUnitPriceEgp ?? Number(line.priceEgp ?? 0) + addonsTotalEgp),
         giftBox: line.giftBox,
+        variantId: line.variantId,
+        variantLabel: line.variantLabel,
+        variantSnapshot: line.variantSnapshot,
       };
     });
   } catch {
@@ -228,9 +232,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const toggleDrawer = useCallback(() => setDrawerOpen((v) => !v), []);
 
   const addItem = useCallback(
-    (product: Product, quantity = 1, addons: CartSelectedAddon[] = [], addonsTotalEgp = 0) => {
+    (
+      product: Product,
+      quantity = 1,
+      addons: CartSelectedAddon[] = [],
+      addonsTotalEgp = 0,
+      variant: ProductVariant | null = null,
+    ) => {
     setLines((prev) => {
-      const nextLine = lineFromProduct(product, quantity, addons, addonsTotalEgp);
+      const nextLine = lineFromProduct(product, quantity, addons, addonsTotalEgp, variant);
       const idx = prev.findIndex((l) => l.id === nextLine.id);
       if (idx === -1) {
         return [...prev, nextLine];

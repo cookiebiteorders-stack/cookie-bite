@@ -19,6 +19,8 @@ export type InsertCheckoutOrderInput = {
     finalUnitPrice?: number;
     productSnapshot?: Record<string, unknown> | null;
     skipProductLookup?: boolean;
+    variantId?: string | null;
+    variantSnapshot?: Record<string, unknown> | null;
   }[];
   subtotalEgp: number;
   deliveryFeeEgp: number;
@@ -135,6 +137,8 @@ export async function insertCheckoutOrder(
     addons_total_egp: number;
     final_total_egp: number;
     quantity: number;
+    variant_id?: string | null;
+    variant_snapshot?: Record<string, unknown> | null;
   }[] = [];
 
   for (const line of params.lines) {
@@ -161,6 +165,12 @@ export async function insertCheckoutOrder(
     };
     if (line.productSnapshot) {
       row.product_snapshot = line.productSnapshot;
+    }
+    if (line.variantId) {
+      row.variant_id = line.variantId;
+    }
+    if (line.variantSnapshot) {
+      row.variant_snapshot = line.variantSnapshot;
     }
     itemRows.push(row as (typeof itemRows)[number]);
   }

@@ -1,31 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import type { Product } from "@/lib/data";
+import type { Product, ProductVariant } from "@/lib/data";
 import { useLanguage } from "@/components/providers/language-provider";
 
 type Props = {
   product: Product;
+  /** الحجم المختار — يستبدل الوزن/القطع/SKU عند وجوده */
+  selectedVariant?: ProductVariant | null;
 };
 
-export function PdpProductSpecs({ product }: Props) {
+export function PdpProductSpecs({ product, selectedVariant = null }: Props) {
   const { t } = useLanguage();
 
   const rows: Array<{ label: string; value: string }> = [];
 
-  if (product.sku?.trim()) {
-    rows.push({ label: t("product.pdpSku"), value: product.sku.trim() });
+  const sku = selectedVariant?.sku?.trim() || product.sku?.trim();
+  const weightGrams = selectedVariant?.weightGrams ?? product.weightGrams;
+  const piecesCount = selectedVariant?.piecesCount ?? product.piecesCount;
+
+  if (sku) {
+    rows.push({ label: t("product.pdpSku"), value: sku });
   }
-  if (product.weightGrams != null && product.weightGrams > 0) {
+  if (weightGrams != null && weightGrams > 0) {
     rows.push({
       label: t("product.pdpWeight"),
-      value: t("product.pdpWeightValue", { grams: product.weightGrams }),
+      value: t("product.pdpWeightValue", { grams: weightGrams }),
     });
   }
-  if (product.piecesCount != null && product.piecesCount > 0) {
+  if (piecesCount != null && piecesCount > 0) {
     rows.push({
       label: t("product.pdpPieces"),
-      value: String(product.piecesCount),
+      value: String(piecesCount),
     });
   }
   if (product.dietary?.length) {
