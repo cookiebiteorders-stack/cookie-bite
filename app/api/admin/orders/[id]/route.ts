@@ -34,6 +34,32 @@ const schema = z
     { message: "empty patch" },
   );
 
+function statusUpdateMessage(
+  lang: "ar" | "en",
+  status: string,
+  fallback?: string,
+): string {
+  if (fallback?.trim()) return fallback.trim();
+  const ar: Record<string, string> = {
+    pending: "طلبك قيد المراجعة الآن وسيتم الرد خلال 12–24 ساعة.",
+    processing: "تم تأكيد طلبك وبدء التجهيز في المطبخ.",
+    shipped: "تم شحن طلبك وهو الآن في الطريق.",
+    delivered: "تم تسليم طلبك. نتمنى لك تجربة رائعة!",
+    cancelled: "نعتذر، تم رفض/إلغاء الطلب. يمكنك التواصل معنا لمعرفة السبب أو إعادة الطلب.",
+    refunded: "تمت عملية الاسترداد بنجاح.",
+  };
+  const en: Record<string, string> = {
+    pending: "Your order is under review and will be updated within 12–24 hours.",
+    processing: "Your order has been approved and is now in preparation.",
+    shipped: "Your order has been shipped and is on the way.",
+    delivered: "Your order has been delivered. We hope you enjoy it!",
+    cancelled: "We are sorry — your order has been declined/cancelled. Contact us for details or place a new order.",
+    refunded: "Your refund has been processed successfully.",
+  };
+  const map = lang === "ar" ? ar : en;
+  return map[status] ?? (lang === "ar" ? "تم تحديث حالة طلبك." : "Your order status has been updated.");
+}
+
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   await requireAdminAccess("orders");
   const { id } = await ctx.params;
@@ -128,12 +154,13 @@ export async function PATCH(
         console.error("order_shipped email trigger failed", eventError);
       }
     } else {
+      const lang = order.language === "ar" ? "ar" : "en";
       await sendOrderStatusEmail({
         to,
         payload: {
           orderId: order.order_code ?? String(order.order_number),
           status: parsed.data.status,
-          message: parsed.data.note ?? "Your order status has been updated.",
+          message: statusUpdateMessage(lang, parsed.data.status, parsed.data.note),
         },
       });
     }

@@ -173,10 +173,11 @@ const ORDER_CONFIRMATION_BODY = `
 <div class="email-wrapper">
   <div class="email-header"><div class="logo">YOUR STORE</div></div>
   <div class="email-body">
-    <span class="tag">Order confirmed</span>
-    <h1>Thank you, {{first_name}} — we got your order.</h1>
+    <span class="tag">Order under review</span>
+    <h1>Thanks, {{first_name}} — your order is now under review.</h1>
     <p class="greeting">Hi {{first_name}},</p>
-    <p>Your order <strong>#{{order_number}}</strong> is confirmed. We'll start hand-finishing the moment your batch is ready in the kitchen.</p>
+    <p>We received order <strong>#{{order_number}}</strong> and our team is currently reviewing it.</p>
+    <div class="info-box"><p>⏱️ <strong>Review time:</strong> your order will be confirmed or declined within <strong>12–24 hours</strong>. We will notify you immediately by email and WhatsApp.</p></div>
     <table class="order-table">
       <thead><tr><th>Item</th><th style="text-align:center;">Qty</th><th style="text-align:end;">Price</th></tr></thead>
       <tbody>
@@ -188,7 +189,7 @@ const ORDER_CONFIRMATION_BODY = `
       <div class="col-box"><h4>Delivering to</h4><p>{{customer_name}}<br>{{shipping_address}}</p></div>
       <div class="col-box"><h4>Paid with</h4><p>{{payment_method}}<br><strong>{{total_amount}}</strong></p></div>
     </div>
-    <div class="info-box"><p>Want to add a handwritten gift note? Reply within an hour and we'll tuck one in — at no charge.</p></div>
+    <div class="info-box"><p>Need to edit your address or add a gift note? Reply to this email as soon as possible and our team will try to help before approval.</p></div>
     <div style="text-align:center;margin:22px 0;"><a class="cta-btn" href="{{order_url}}">Track this order</a></div>
     <hr class="divider">
     <p style="font-size:13px;color:#9C8B7A;">Questions? Just reply, or message us on WhatsApp — we usually answer within the hour.</p>
@@ -200,8 +201,8 @@ const ORDER_CONFIRMATION_BODY = `
 export const orderConfirmedTemplate: TemplateBuilder = {
   meta: {
     key: "order-confirmed",
-    name: "Order Confirmation",
-    description: "Sent immediately after a customer places an order.",
+    name: "Order Received (Under Review)",
+    description: "Sent immediately after checkout to confirm order intake and 12–24h review window.",
     category: "transactional",
     variant: "email",
     sampleVars: {
@@ -222,8 +223,8 @@ export const orderConfirmedTemplate: TemplateBuilder = {
   },
   build(vars, options) {
     const merged = { ...orderConfirmedTemplate.meta.sampleVars, ...vars };
-    const enSubject = `Order #${merged.order_number} confirmed — your cookies are queued for the oven`;
-    const enPreheader = `Thanks ${merged.first_name ?? ""} — total ${merged.total_amount}. We've started hand-finishing your batch.`;
+    const enSubject = `Order #${merged.order_number} received — under review (12–24h)`;
+    const enPreheader = `Thanks ${merged.first_name ?? ""} — we received your order and will confirm within 12–24 hours.`;
     const copy = resolveCopy(
       "order-confirmed",
       options?.lang,
@@ -231,7 +232,7 @@ export const orderConfirmedTemplate: TemplateBuilder = {
         body: ORDER_CONFIRMATION_BODY,
         subject: enSubject,
         preheader: enPreheader,
-        title: "Order confirmed",
+        title: "Order under review",
       },
       merged,
     );

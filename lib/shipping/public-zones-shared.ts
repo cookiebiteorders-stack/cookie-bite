@@ -72,18 +72,6 @@ export function formatZonesCoverageBody(labels: string[], lang: Lang): string {
   return `We deliver across ${list}, and many more compounds. Confirm your address on WhatsApp before large gift orders.`;
 }
 
-export function formatZonesCoverageFaqAnswer(
-  location: string,
-  labels: string[],
-  lang: Lang,
-): string {
-  const list = formatZoneList(labels, lang);
-  if (lang === "ar") {
-    return `نعم — نوصّل من مطبخنا في ${location} إلى ${list} ومناطق القاهرة الجديدة المجاورة.`;
-  }
-  return `Yes — we deliver from our kitchen in ${location} across ${list} and nearby New Cairo neighborhoods.`;
-}
-
 /** Grouped lines for help article «delivery areas» (zone name + cities). */
 export function formatZonesGroupedLines(
   zones: PublicShippingZone[],

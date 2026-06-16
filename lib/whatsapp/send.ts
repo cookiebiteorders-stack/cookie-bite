@@ -122,7 +122,8 @@ export function buildOrderConfirmedWhatsAppBody(opts: {
   const first = opts.customerName.split(/\s+/)[0] ?? "there";
   return (
     `مرحباً ${first}! 🍪\n` +
-    `تم تأكيد طلبك #${opts.orderNumber} من Cookie Bite.\n` +
+    `استلمنا طلبك #${opts.orderNumber} وهو الآن قيد المراجعة.\n` +
+    `سيتم تأكيده خلال 12–24 ساعة كحد أقصى.\n` +
     `الإجمالي: ${opts.totalEgp.toFixed(0)} ${BRAND.currency}.\n` +
     `تتبّع الطلب: ${opts.trackUrl}\n` +
     `للاستفسار: واتساب ${BRAND.phoneDisplay}`

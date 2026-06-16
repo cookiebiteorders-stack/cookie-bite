@@ -27,6 +27,7 @@ import {
 } from "@/lib/mr-brownie/brain/personality-router";
 import {
   buildProductCardsFromSearch,
+  resolveChatPersona,
   type ChatPersona,
   type ChatProductCard,
   type PersonaPreference,
@@ -196,7 +197,15 @@ export function buildBrainPipelineMeta(params: {
   );
 
   const isStorefront = params.role === "guest" || params.role === "customer";
-  const active_persona: ChatPersona = isStorefront ? STOREFRONT_PERSONA : STOREFRONT_PERSONA;
+  const active_persona: ChatPersona = isStorefront
+    ? STOREFRONT_PERSONA
+    : resolveChatPersona({
+        preference: persona_preference,
+        intent: intent_engine.primary,
+        pageIntent: params.pageIntent,
+        sentimentScore: sentiment_score,
+        personalityMode: active_personality,
+      });
 
   const gift_occasion = detectGiftOccasion(params.lastUserMessage ?? "");
   const knowledge_snippets = params.knowledgeSnippets ?? [];

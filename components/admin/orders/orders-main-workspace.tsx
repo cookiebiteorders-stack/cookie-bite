@@ -63,7 +63,7 @@ function deliveryLabel(status: AdminOrderRow["status"]) {
   if (status === "processing") return "قيد التجهيز";
   if (status === "cancelled") return "ملغى";
   if (status === "refunded") return "مسترد";
-  return "قيد الانتظار";
+  return "قيد المراجعة";
 }
 
 function exportCsv(rows: AdminOrderRow[]) {
@@ -547,6 +547,7 @@ export function OrdersMainWorkspace({ searchInputRef, onOpenDetail }: Props) {
                 }}
               >
                 <option value="">تغيير الحالة</option>
+                <option value="pending">pending</option>
                 <option value="processing">processing</option>
                 <option value="shipped">shipped</option>
                 <option value="delivered">delivered</option>

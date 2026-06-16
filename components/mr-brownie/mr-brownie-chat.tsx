@@ -20,6 +20,7 @@ import { MrBrownieChatActionStrip } from "@/components/mr-brownie/chat-action-ca
 import { MrBrownieChatClientActionStrip } from "@/components/mr-brownie/chat-client-action-strip";
 import { MrBrownieChatProductStrip } from "@/components/mr-brownie/chat-product-card";
 import { AnswerStyleBar } from "@/components/mr-brownie/answer-style-bar";
+import { PersonaBar } from "@/components/mr-brownie/persona-bar";
 import type { ChatClientAction } from "@/lib/mr-brownie/chat-client-actions";
 import type { Product } from "@/lib/data";
 import { VoiceInputButton } from "@/components/mr-brownie/voice-input-button";
@@ -40,9 +41,12 @@ import {
 } from "@/lib/storefront/shop-catalog-client";
 import { fetchMrBrownieNonStreamReply, streamMrBrownieChat } from "@/lib/mr-brownie/stream-client";
 import {
+  loadPersonaPreference,
   PERSONA_CONFIG,
+  savePersonaPreference,
   type ChatPersona,
   type ChatProductCard,
+  type PersonaPreference,
 } from "@/lib/mr-brownie/personas";
 import { STOREFRONT_PERSONA } from "@/lib/mr-brownie/storefront-persona";
 import {
@@ -108,6 +112,10 @@ function dragThresholdPx(): number {
 
 function isShopAssistantRole(role: string | null): boolean {
   return !role || role === "guest" || role === "customer";
+}
+
+function canPickPersona(role: string | null): boolean {
+  return role === "admin" || role === "owner" || role === "staff";
 }
 
 function parseProductCards(meta: Record<string, unknown> | undefined): ChatProductCard[] {
@@ -334,6 +342,9 @@ export function MrBrownieChat({
   const [answerStylePref, setAnswerStylePref] = useState<AnswerStylePreference>(() =>
     loadAnswerStylePreference(),
   );
+  const [personaPref, setPersonaPref] = useState<PersonaPreference>(() =>
+    loadPersonaPreference(),
+  );
   const fabRef = useRef<HTMLButtonElement>(null);
   const dragSession = useRef<{
     startX: number;
@@ -366,12 +377,19 @@ export function MrBrownieChat({
   }, [user?.id]);
 
   const shopAssistant = isShopAssistantRole(sessionRole);
-  const displayPersona: ChatPersona = STOREFRONT_PERSONA;
+  const personaPicker = canPickPersona(sessionRole);
+  const displayPersona: ChatPersona =
+    personaPicker && personaPref !== "auto" ? personaPref : STOREFRONT_PERSONA;
   const personaCfg = PERSONA_CONFIG[displayPersona];
 
   const handleAnswerStyleChange = useCallback((pref: AnswerStylePreference) => {
     setAnswerStylePref(pref);
     saveAnswerStylePreference(pref);
+  }, []);
+
+  const handlePersonaChange = useCallback((pref: PersonaPreference) => {
+    setPersonaPref(pref);
+    savePersonaPreference(pref);
   }, []);
   const chipSuggestions =
     dynamicChips.length > 0 ? dynamicChips : suggestionsForRole(sessionRole, t);
@@ -1010,8 +1028,8 @@ export function MrBrownieChat({
             locale: lang,
             productSlug,
           },
-          persona: shopAssistant ? "auto" : undefined,
-          answerStyle: shopAssistant ? answerStylePref : undefined,
+          persona: shopAssistant ? "auto" : personaPref,
+          answerStyle: answerStylePref,
           signal: controller.signal,
           callbacks: {
             onToken: (fullText) => {
@@ -1101,8 +1119,8 @@ export function MrBrownieChat({
                     ? pathname.split("/").filter(Boolean)[1]
                     : undefined,
               },
-              persona: shopAssistant ? "auto" : undefined,
-              answerStyle: shopAssistant ? answerStylePref : undefined,
+              persona: shopAssistant ? "auto" : personaPref,
+              answerStyle: answerStylePref,
             });
             fallbackReply = fallback?.reply ?? null;
           } catch {
@@ -1155,6 +1173,7 @@ export function MrBrownieChat({
       lang,
       shopAssistant,
       answerStylePref,
+      personaPref,
     ],
   );
 
@@ -1516,12 +1535,21 @@ export function MrBrownieChat({
               </div>
             </div>
 
-            {shopAssistant && viewMode === "chat" ? (
-              <AnswerStyleBar
-                value={answerStylePref}
-                onChange={handleAnswerStyleChange}
-                compact
-              />
+            {viewMode === "chat" ? (
+              <div className="shrink-0 space-y-0">
+                {personaPicker ? (
+                  <PersonaBar
+                    value={personaPref}
+                    onChange={handlePersonaChange}
+                    compact
+                  />
+                ) : null}
+                <AnswerStyleBar
+                  value={answerStylePref}
+                  onChange={handleAnswerStyleChange}
+                  compact
+                />
+              </div>
             ) : null}
 
             <div

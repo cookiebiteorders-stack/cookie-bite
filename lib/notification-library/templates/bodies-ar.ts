@@ -63,10 +63,11 @@ export const AR_EMAIL: Record<string, ArEmailCopy> = {
 <div class="email-wrapper">
   <div class="email-header"><div class="logo">كوكي بايت</div></div>
   <div class="email-body">
-    <span class="tag">تم تأكيد الطلب</span>
-    <h1>شكراً {{first_name}} — استلمنا طلبك.</h1>
+    <span class="tag">الطلب قيد المراجعة</span>
+    <h1>شكراً {{first_name}} — استلمنا طلبك وهو الآن قيد المراجعة.</h1>
     <p class="greeting">مرحباً {{first_name}}،</p>
-    <p>طلبك <strong>#{{order_number}}</strong> مؤكد. سنبدأ تحضيره فور جاهزية الدفعة في المطبخ.</p>
+    <p>طلبك <strong>#{{order_number}}</strong> وصلنا بنجاح ويجري مراجعته الآن من الفريق.</p>
+    <div class="info-box"><p>⏱️ <strong>مدة المراجعة:</strong> سيتم تأكيد الطلب أو الاعتذار عنه خلال <strong>12–24 ساعة</strong>. سنرسل لك التحديث فوراً عبر البريد وواتساب.</p></div>
     <table class="order-table">
       <thead><tr><th>المنتج</th><th style="text-align:center;">الكمية</th><th style="text-align:end;">السعر</th></tr></thead>
       <tbody>
@@ -78,7 +79,7 @@ export const AR_EMAIL: Record<string, ArEmailCopy> = {
       <div class="col-box"><h4>التوصيل إلى</h4><p>{{customer_name}}<br>{{shipping_address}}</p></div>
       <div class="col-box"><h4>الدفع</h4><p>{{payment_method}}<br><strong>{{total_amount}}</strong></p></div>
     </div>
-    <div class="info-box"><p>تريد إضافة رسالة هدية مكتوبة بخط اليد؟ رد خلال ساعة وسنضيفها إلى الصندوق — مجاناً.</p></div>
+    <div class="info-box"><p>تحتاج تعديل عنوان التوصيل أو إضافة رسالة هدية؟ رد على هذا البريد بسرعة قبل اعتماد الطلب.</p></div>
     <div style="text-align:center;margin:22px 0;"><a class="cta-btn" href="{{order_url}}">تتبع الطلب</a></div>
     <hr class="divider">
     <p style="font-size:13px;color:#9C8B7A;">أسئلة؟ رد على البريد أو تواصل عبر واتساب — نرد عادةً خلال ساعة.</p>
@@ -86,11 +87,11 @@ export const AR_EMAIL: Record<string, ArEmailCopy> = {
   <div class="email-footer"><p>© 2026 كوكي بايت · مُخبز بعناية في {{company_address}}<br><a href="{{order_url}}">طلباتي</a> · <a href="{{privacy_url}}">الخصوصية</a> · <a href="{{unsubscribe_url}}">إلغاء الاشتراك</a></p></div>
 </div>
 `,
-    title: "تم تأكيد الطلب",
+    title: "الطلب قيد المراجعة",
     subject: (v) =>
-      `طلب #${v.order_number} مؤكد — التحضير بدأ في المطبخ 🍪`,
+      `استلمنا طلب #${v.order_number} — قيد المراجعة خلال 12–24 ساعة`,
     preheader: (v) =>
-      `شكراً ${v.first_name ?? ""} — الإجمالي ${v.total_amount}. بدأنا تحضير طلبك.`,
+      `شكراً ${v.first_name ?? ""} — طلبك قيد المراجعة الآن، وسنؤكده خلال 12–24 ساعة.`,
   },
   "order-shipped": {
     body: `

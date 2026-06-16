@@ -274,7 +274,8 @@ export async function POST(req: NextRequest) {
   );
 
   // 6) إنشاء الطلب
-  const status = data.payment_method === "cod" ? "processing" : "pending";
+  // جميع الطلبات الجديدة تبدأ "قيد المراجعة" حتى يعتمدها الفريق.
+  const status = "pending";
   const payment_status = "unpaid";
 
   const { data: order, error: oErr } = await supabase

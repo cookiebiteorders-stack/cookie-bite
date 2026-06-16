@@ -410,10 +410,48 @@ export function OrderDetailsDrawer({
                   </section>
 
                   {canWrite ? (
+                    <section className="rounded-2xl border border-emerald-200/80 bg-emerald-50/50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+                      <p className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
+                        قرار الطلب (قبول / رفض)
+                      </p>
+                      <p className="mt-1 text-xs text-emerald-900/85 dark:text-emerald-200/80">
+                        عند القبول يتم تحويل الحالة إلى <strong>processing</strong>، وعند الرفض إلى{" "}
+                        <strong>cancelled</strong> مع إرسال إشعار للعميل.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white"
+                          onClick={() =>
+                            void patchOrder(order.id, {
+                              status: "processing",
+                              note: "تم تأكيد طلبك وبدء التجهيز في المطبخ.",
+                            })
+                          }
+                        >
+                          قبول الطلب
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white"
+                          onClick={() =>
+                            void patchOrder(order.id, {
+                              status: "cancelled",
+                              note: "نعتذر، تم رفض الطلب. تواصل معنا لمعرفة التفاصيل.",
+                            })
+                          }
+                        >
+                          رفض الطلب
+                        </button>
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {canWrite ? (
                     <section className="rounded-2xl border border-dashed border-amber-300/80 bg-amber-50/40 p-4 dark:border-amber-800 dark:bg-amber-950/20">
                       <p className="text-xs font-bold text-amber-950 dark:text-amber-100">تحديث سريع للحالة</p>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {(["processing", "shipped", "delivered", "cancelled", "refunded"] as const).map((st) => (
+                        {(["pending", "processing", "shipped", "delivered", "cancelled", "refunded"] as const).map((st) => (
                           <button
                             key={st}
                             type="button"

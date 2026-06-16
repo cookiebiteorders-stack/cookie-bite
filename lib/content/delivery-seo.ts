@@ -1,24 +1,17 @@
 import { brandLocation } from "@/lib/brand";
 import type { Lang } from "@/lib/i18n/translations";
-import {
-  formatZonesCoverageFaqAnswer,
-  resolveZoneDisplayLabels,
-  type PublicShippingZone,
-} from "@/lib/shipping/public-zones-shared";
+import type { PublicShippingZone } from "@/lib/shipping/public-zones-shared";
 
 export function getNewCairoDeliveryFaq(
   lang: Lang,
-  zones: PublicShippingZone[],
+  _zones: PublicShippingZone[],
   freeShippingThresholdEgp: number,
 ): Array<{ q: string; a: string }> {
-  const location = brandLocation(lang);
-  const labels = resolveZoneDisplayLabels(zones, lang);
-
   if (lang === "ar") {
     return [
       {
         q: "هل توصّلون في جميع أنحاء القاهرة الجديدة؟",
-        a: formatZonesCoverageFaqAnswer(location, labels, lang),
+        a: "نعم — جميع تفاصيل الشحن والتوصيل والمناطق والرسوم في صفحة الشحن والتوصيل.",
       },
       {
         q: "ما حد التوصيل المجاني؟",
@@ -38,7 +31,7 @@ export function getNewCairoDeliveryFaq(
   return [
     {
       q: "Do you deliver across New Cairo?",
-      a: formatZonesCoverageFaqAnswer(location, labels, lang),
+      a: "Yes — all shipping and delivery details, zones, and fees are on our shipping & delivery page.",
     },
     {
       q: "What is the free delivery threshold?",
@@ -110,6 +103,7 @@ export function getNewCairoDeliveryContent(
       whatsappLabel: "تأكيد العنوان على واتساب",
       whatsappHint: "أرسل اسم الكمبوند والعنوان قبل طلبات الهدايا الكبيرة أو التوصيل العاجل.",
       relatedLinks: [
+        { href: "/shipping", label: "الشحن والتوصيل" },
         { href: "/delivery/areas", label: "مناطق التوصيل بالتفصيل" },
         { href: "/shop", label: "تسوّق الكوكيز" },
         { href: "/gift-box/build", label: "صمّم صندوق هدايا" },
@@ -165,6 +159,7 @@ export function getNewCairoDeliveryContent(
     whatsappLabel: "Confirm your address on WhatsApp",
     whatsappHint: "Send your compound name and address before large gift orders or urgent delivery.",
     relatedLinks: [
+      { href: "/shipping", label: "Shipping & delivery" },
       { href: "/delivery/areas", label: "All delivery areas" },
       { href: "/shop", label: "Shop cookies online" },
       { href: "/gift-box/build", label: "Build a custom gift box" },

@@ -52,14 +52,27 @@ Response structure (every customer reply):
 If uncertain, offer graceful escalation (support paths) — never dead-end.
 `.trim();
 
-/** @deprecated المتجر يستخدم STOREFRONT_PERSONA فقط — Mrs. Cookie في الأدمن */
-export function resolveChatPersona(_params: {
+/** المتجر للعملاء = Mr. Brownie فقط. الأدمن/الأونر يمكنهم اختيار الشخصية يدوياً. */
+export function resolveChatPersona(params: {
   preference: PersonaPreference;
   intent: CommerceIntent;
   pageIntent: MrBrowniePageIntent;
   sentimentScore: number;
   personalityMode: PersonalityMode;
 }): ChatPersona {
+  if (params.preference === "mr_brownie" || params.preference === "mrs_cookie") {
+    return params.preference;
+  }
+
+  if (
+    params.personalityMode === "support" ||
+    params.sentimentScore < -0.25 ||
+    params.intent === "complaint" ||
+    params.intent === "order_status"
+  ) {
+    return "mrs_cookie";
+  }
+
   return "mr_brownie";
 }
 
