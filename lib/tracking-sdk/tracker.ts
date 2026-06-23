@@ -131,8 +131,13 @@ export class Tracker {
   }
 
   setUserId(userId: string | null): void {
+    const prev = this.userId;
+    if (prev === userId) return;
     this.userId = userId;
     this.visitor.user_id = userId;
+    if (userId && this.started) {
+      this.track("identify", { clerk_user_id: userId });
+    }
   }
 
   /**

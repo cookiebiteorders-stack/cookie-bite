@@ -1,6 +1,7 @@
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchSessionDetail, type SessionDetailPayload } from "@/lib/tracking-server/session-detail";
+import { enrichSessionRows, type EnrichedSessionRow } from "@/lib/tracking-server/session-enrich";
 
 export type { SessionDetailPayload };
 
@@ -250,12 +251,19 @@ export async function getRecentSessions(limit = 30) {
   const { data } = await supabase
     .from("tracking_sessions")
     .select(
-      "session_id, visitor_id, started_at, last_event_at, ended_at, duration_seconds, entry_page, exit_page, device_type, browser, os, country, city, ip, utm_source, utm_medium, utm_campaign, pageview_count, click_count, event_count, is_bot, is_bounce, referrer",
+      "session_id, visitor_id, user_id, started_at, last_event_at, ended_at, duration_seconds, entry_page, exit_page, device_type, browser, os, country, city, ip, utm_source, utm_medium, utm_campaign, pageview_count, click_count, event_count, is_bot, is_bounce, referrer",
     )
     .order("started_at", { ascending: false })
     .eq("is_bot", false)
     .limit(limit);
   return data ?? [];
+}
+
+export async function getRecentSessionsEnriched(limit = 30): Promise<EnrichedSessionRow[]> {
+  const supabase = getClient();
+  if (!supabase) return [];
+  const rows = await getRecentSessions(limit);
+  return enrichSessionRows(supabase, rows as Array<Record<string, unknown>>);
 }
 
 export async function getSessionDetail(sessionId: string): Promise<SessionDetailPayload | null> {

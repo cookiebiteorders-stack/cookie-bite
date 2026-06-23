@@ -1,5 +1,6 @@
 import { runAutomationJob } from "@/lib/admin/automation/run-job";
 import type { AutomationJobId } from "@/lib/admin/automation/registry";
+import { FIFTEEN_DAYS_MS } from "@/lib/cloudinary/list-resources";
 import { countPendingEmailQueue } from "@/lib/email/automation/db";
 
 declare global {
@@ -45,6 +46,14 @@ function resolveSchedules(): JobSchedule[] {
     {
       id: "product_catalog",
       intervalMs: parsePositiveInt(process.env.BACKGROUND_WORKER_CATALOG_MS, 15 * 60_000),
+      limit: 1,
+    },
+    {
+      id: "cloudinary_orphan_cleanup",
+      intervalMs: parsePositiveInt(
+        process.env.BACKGROUND_WORKER_CLOUDINARY_CLEANUP_MS,
+        FIFTEEN_DAYS_MS,
+      ),
       limit: 1,
     },
   ];

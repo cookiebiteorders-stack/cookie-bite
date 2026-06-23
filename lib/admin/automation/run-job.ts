@@ -7,6 +7,7 @@ import { drainBullNotificationJobs } from "@/lib/notifications/bull-queue";
 import { processPendingNotificationJobs } from "@/lib/notifications/schedule";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { runProductCatalogAutomation } from "@/lib/admin/run-product-catalog-automation";
+import { runCloudinaryOrphanCleanup } from "@/lib/cloudinary/orphan-cleanup";
 
 export async function runAutomationJob(
   jobId: AutomationJobId,
@@ -39,6 +40,11 @@ export async function runAutomationJob(
     case "product_catalog": {
       const supabase = createSupabaseAdminClient();
       const result = await runProductCatalogAutomation(supabase);
+      return { ...result };
+    }
+    case "cloudinary_orphan_cleanup": {
+      const supabase = createSupabaseAdminClient();
+      const result = await runCloudinaryOrphanCleanup(supabase);
       return { ...result };
     }
     default:

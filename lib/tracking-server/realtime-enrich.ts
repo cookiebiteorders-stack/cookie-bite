@@ -1,9 +1,14 @@
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { RealtimeEventEntry, RealtimeVisitorSnapshot } from "@/lib/tracking-server/ingest";
+import {
+  loadUsersByClerkIds,
+  resolveIdentityFromUser,
+  type VisitorPresenceType,
+} from "@/lib/tracking-server/visitor-identity";
+
+export type { VisitorPresenceType };
 
 export type RealtimeVisitorRaw = RealtimeVisitorSnapshot;
-
-export type VisitorPresenceType = "guest" | "customer" | "staff" | "admin" | "owner";
 
 export type EnrichedRealtimeVisitor = Omit<
   RealtimeVisitorRaw,
@@ -23,14 +28,6 @@ export type EnrichedRealtimeVisitor = Omit<
   recent_events: RealtimeEventEntry[];
 };
 
-type UserLookup = {
-  id: string;
-  clerk_user_id: string;
-  email: string;
-  full_name: string | null;
-  role: string;
-};
-
 const STOREFRONT_PATH_PREFIX = "/admin";
 const PASSIVE_TRACK_EVENTS = new Set(["page_view", "heartbeat", "time_on_page"]);
 
@@ -43,14 +40,6 @@ export function filterStorefrontVisitors<T extends { path?: string | null }>(
   visitors: T[],
 ): T[] {
   return visitors.filter((v) => isStorefrontVisitorPath(v.path));
-}
-
-function resolveVisitorType(role: string | null | undefined): VisitorPresenceType {
-  if (role === "owner") return "owner";
-  if (role === "admin") return "admin";
-  if (role === "staff") return "staff";
-  if (role === "customer") return "customer";
-  return "guest";
 }
 
 function toIso(ms: number | null | undefined, fallbackMs: number): string {
@@ -160,17 +149,8 @@ export async function enrichRealtimeVisitors(
     ),
   ];
 
-  const userByClerk = new Map<string, UserLookup>();
   const supabase = tryCreateSupabaseAdminClient();
-  if (clerkIds.length > 0 && supabase) {
-    const { data } = await supabase
-      .from("users")
-      .select("id, clerk_user_id, email, full_name, role")
-      .in("clerk_user_id", clerkIds);
-    for (const row of data ?? []) {
-      userByClerk.set(String(row.clerk_user_id), row as UserLookup);
-    }
-  }
+  const userByClerk = supabase ? await loadUsersByClerkIds(supabase, clerkIds) : new Map();
 
   const timing = await loadVisitorTimingFromDb(visitors);
 
@@ -209,23 +189,15 @@ export async function enrichRealtimeVisitors(
     const sessionStartedMs = new Date(sessionStartedIso).getTime();
     const pageStartedMs = new Date(currentPageStartedIso).getTime();
 
-    const identity = !clerkId || !user
-      ? {
-          visitor_type: "guest" as const,
-          display_name: null,
-          email: null,
-          user_db_id: null,
-        }
-      : {
-          visitor_type: resolveVisitorType(user.role),
-          display_name: user.full_name?.trim() || null,
-          email: user.email,
-          user_db_id: user.id,
-        };
+    const guestFallback = `#${visitor.visitor_id.slice(0, 10)}`;
+    const resolved = resolveIdentityFromUser(user, guestFallback);
 
     return {
       ...visitor,
-      ...identity,
+      visitor_type: resolved.visitor_type,
+      display_name: resolved.display_name,
+      email: resolved.email,
+      user_db_id: resolved.user_db_id,
       session_started_at: sessionStartedIso,
       first_seen_at: firstSeenIso,
       first_interaction_at: firstInteractionIso,

@@ -2,6 +2,7 @@ import "server-only";
 
 import { dedupeAddons } from "@/lib/addons/dedupe";
 import type { Addon } from "@/lib/addons/types";
+import { enrichAddonsWithCategories } from "@/lib/db/addon-categories";
 import { listAllAddons, listLinkedAddonIdsByProductIds } from "@/lib/db/addons";
 
 export async function buildAddonsByProductId(
@@ -12,7 +13,8 @@ export async function buildAddonsByProductId(
     listLinkedAddonIdsByProductIds(productIds),
     listAllAddons(),
   ]);
-  const addonById = new Map(allAddons.map((a) => [a.id, a]));
+  const enriched = await enrichAddonsWithCategories(allAddons);
+  const addonById = new Map(enriched.map((a) => [a.id, a]));
   const out = new Map<string, Addon[]>();
   for (const productId of productIds) {
     const ids = linkMap.get(productId) ?? [];

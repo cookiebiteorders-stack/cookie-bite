@@ -1,6 +1,7 @@
 import { addonsFromProductAddonJoinRows, dedupeIds } from "@/lib/addons/dedupe";
 import { createSupabaseAdminClient, tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Addon } from "@/lib/addons/types";
+import { enrichAddonsWithCategories } from "@/lib/db/addon-categories";
 
 export async function listAllAddons(): Promise<Addon[]> {
   const supabase = createSupabaseAdminClient();
@@ -12,10 +13,11 @@ export async function listAllAddons(): Promise<Addon[]> {
     console.error("listAllAddons", error);
     return [];
   }
-  return ((data as Addon[] | null) ?? []).map((addon) => ({
+  const raw = ((data as Addon[] | null) ?? []).map((addon) => ({
     ...addon,
     options: Array.isArray(addon.options) ? addon.options : [],
   }));
+  return enrichAddonsWithCategories(raw);
 }
 
 export async function listLinkedAddonsForProduct(productId: string): Promise<Addon[]> {
@@ -30,7 +32,8 @@ export async function listLinkedAddonsForProduct(productId: string): Promise<Add
     return [];
   }
   const rows = (data ?? []) as Array<{ addons?: Addon | Addon[] | null }>;
-  return addonsFromProductAddonJoinRows(rows);
+  const linked = addonsFromProductAddonJoinRows(rows);
+  return enrichAddonsWithCategories(linked);
 }
 
 export async function listLinkedAddonIdsByProductIds(productIds: string[]) {

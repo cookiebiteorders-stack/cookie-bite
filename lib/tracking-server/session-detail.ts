@@ -1,4 +1,10 @@
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
+import {
+  buildGuestSessionLabel,
+  loadUsersByDbIds,
+  resolveIdentityFromUser,
+  type ResolvedVisitorIdentity,
+} from "@/lib/tracking-server/visitor-identity";
 
 const PASSIVE_EVENTS = new Set(["heartbeat", "replay_chunk"]);
 
@@ -70,6 +76,7 @@ export type SessionConversion = {
 export type SessionDetailPayload = {
   session: Record<string, unknown>;
   visitor: SessionVisitorInfo | null;
+  identity: ResolvedVisitorIdentity;
   stats: {
     duration_seconds: number;
     page_views: number;
@@ -113,6 +120,8 @@ function formatActionLabel(name: string, props: Record<string, unknown>): string
       return "Session started";
     case "session_end":
       return "Session ended";
+    case "identify":
+      return props.email ? `Signed in · ${props.email}` : "Signed in";
     default:
       return name.replace(/_/g, " ");
   }
@@ -390,9 +399,25 @@ export async function fetchSessionDetail(sessionId: string): Promise<SessionDeta
       }
     : null;
 
+  const dbUserId =
+    (session.user_id ? String(session.user_id) : null) ?? visitor?.user_id ?? null;
+  const usersByDb = dbUserId ? await loadUsersByDbIds(supabase, [dbUserId]) : new Map();
+  const guestFallback = buildGuestSessionLabel({
+    visitor_id: session.visitor_id as string,
+    device_type: session.device_type as string,
+    browser: session.browser as string,
+    city: session.city as string,
+    country: session.country as string,
+  });
+  const identity = resolveIdentityFromUser(
+    dbUserId ? usersByDb.get(dbUserId) : undefined,
+    guestFallback,
+  );
+
   return {
     session: session as Record<string, unknown>,
     visitor,
+    identity,
     stats: {
       duration_seconds: durationSeconds,
       page_views: pages.length || Number(session.pageview_count ?? 0),

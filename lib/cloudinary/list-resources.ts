@@ -26,16 +26,18 @@ type CloudinaryResource = {
 
 async function fetchResourcePage(
   resourceType: "image" | "video",
-  maxResults: number,
-): Promise<CloudinaryAsset[]> {
+  opts?: { maxResults?: number; nextCursor?: string },
+): Promise<{ items: CloudinaryAsset[]; nextCursor?: string }> {
   const cfg = cloudinaryConfig();
-  if (!cfg) return [];
+  if (!cfg) return { items: [] };
 
+  const maxResults = Math.min(100, opts?.maxResults ?? 100);
   const params = new URLSearchParams({
     type: "upload",
     prefix: "cookie-bite",
-    max_results: String(Math.min(100, maxResults)),
+    max_results: String(maxResults),
   });
+  if (opts?.nextCursor) params.set("next_cursor", opts.nextCursor);
 
   const auth = Buffer.from(`${cfg.apiKey}:${cfg.apiSecret}`).toString("base64");
   const res = await fetch(
@@ -52,8 +54,11 @@ async function fetchResourcePage(
     throw new Error(err || `Cloudinary list failed (${res.status})`);
   }
 
-  const json = (await res.json()) as { resources?: CloudinaryResource[] };
-  return (json.resources ?? []).map((r) => ({
+  const json = (await res.json()) as {
+    resources?: CloudinaryResource[];
+    next_cursor?: string;
+  };
+  const items = (json.resources ?? []).map((r) => ({
     id: r.public_id,
     publicId: r.public_id,
     url: r.secure_url,
@@ -65,6 +70,28 @@ async function fetchResourcePage(
     createdAt: r.created_at ?? new Date().toISOString(),
     folder: r.public_id.includes("/") ? r.public_id.split("/").slice(0, -1).join("/") : "",
   }));
+
+  return { items, nextCursor: json.next_cursor };
+}
+
+async function fetchAllResourcePages(
+  resourceType: "image" | "video",
+  maxTotal: number,
+): Promise<CloudinaryAsset[]> {
+  const all: CloudinaryAsset[] = [];
+  let nextCursor: string | undefined;
+
+  while (all.length < maxTotal) {
+    const page = await fetchResourcePage(resourceType, {
+      maxResults: Math.min(100, maxTotal - all.length),
+      nextCursor,
+    });
+    all.push(...page.items);
+    nextCursor = page.nextCursor;
+    if (!nextCursor || page.items.length === 0) break;
+  }
+
+  return all;
 }
 
 /** List uploaded assets under prefix `cookie-bite/` from Cloudinary. */
@@ -76,8 +103,8 @@ export async function listCloudinaryAssets(opts?: {
 
   const cap = opts?.maxPerType ?? 80;
   const [images, videos] = await Promise.all([
-    fetchResourcePage("image", cap),
-    fetchResourcePage("video", Math.min(40, cap)),
+    fetchAllResourcePages("image", cap),
+    fetchAllResourcePages("video", Math.min(40, cap)),
   ]);
 
   const items = [...images, ...videos].sort(
@@ -86,3 +113,27 @@ export async function listCloudinaryAssets(opts?: {
 
   return { configured: true, items };
 }
+
+const FIFTEEN_DAYS_MS = 15 * 24 * 60 * 60 * 1000;
+
+/** Paginated listing for orphan cleanup (up to ~2000 assets per type). */
+export async function listAllCloudinaryAssets(opts?: {
+  maxPerType?: number;
+}): Promise<{ configured: boolean; items: CloudinaryAsset[] }> {
+  const cfg = cloudinaryConfig();
+  if (!cfg) return { configured: false, items: [] };
+
+  const cap = opts?.maxPerType ?? 2000;
+  const [images, videos] = await Promise.all([
+    fetchAllResourcePages("image", cap),
+    fetchAllResourcePages("video", Math.min(500, cap)),
+  ]);
+
+  const items = [...images, ...videos].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
+  return { configured: true, items };
+}
+
+export { FIFTEEN_DAYS_MS };

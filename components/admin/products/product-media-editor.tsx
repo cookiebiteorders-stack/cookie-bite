@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 
 type Props = {
+  productId?: string | null;
   images: ProductImageFormItem[];
   videoUrl: string;
   canWrite: boolean;
@@ -36,6 +37,7 @@ function normalizeSlots(images: ProductImageFormItem[]): ProductImageFormItem[] 
 }
 
 export function ProductMediaEditor({
+  productId = null,
   images,
   videoUrl,
   canWrite,
@@ -117,6 +119,7 @@ export function ProductMediaEditor({
       setSlotProgress((p) => ({ ...p, [target]: 0 }));
 
       enqueueProductMediaUpload({
+        productId,
         file,
         kind: "image",
         onProgress: (pct) => setSlotProgress((p) => ({ ...p, [target]: pct })),
@@ -138,7 +141,7 @@ export function ProductMediaEditor({
         },
       });
     },
-    [applyUrlToSlot],
+    [applyUrlToSlot, productId],
   );
 
   const uploadFilesToSlots = useCallback(
@@ -150,6 +153,7 @@ export function ProductMediaEditor({
         const file = files[0];
         if (!file) return;
         enqueueProductMediaUpload({
+          productId,
           file,
           kind: "video",
           onSuccess: (url) => onVideoUrlChange(url),

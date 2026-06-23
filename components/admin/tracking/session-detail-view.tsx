@@ -19,6 +19,8 @@ import {
   formatTrackingDateTime,
   formatTrackingDuration,
 } from "@/lib/tracking-server/session-detail";
+import type { VisitorPresenceType } from "@/lib/tracking-server/visitor-identity";
+import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -52,10 +54,20 @@ function kindBadge(kind: string) {
   return map[kind] ?? "bg-cb-surface-2 text-cb-text";
 }
 
+const TYPE_BADGE: Record<VisitorPresenceType, string> = {
+  guest: "bg-slate-100 text-slate-700",
+  customer: "bg-violet-100 text-violet-800",
+  staff: "bg-emerald-100 text-emerald-800",
+  admin: "bg-sky-100 text-sky-800",
+  owner: "bg-amber-100 text-amber-900",
+};
+
 export function SessionDetailView({ detail }: Props) {
+  const { t } = useLanguage();
   const [tab, setTab] = useState<"pages" | "timeline">("pages");
   const session = detail.session;
   const sessionId = String(session.session_id);
+  const identity = detail.identity;
 
   const utmParts = [
     session.utm_source,
@@ -79,19 +91,35 @@ export function SessionDetailView({ detail }: Props) {
           href="/admin/analytics/sessions"
           className="text-xs font-semibold text-cb-text-muted hover:underline"
         >
-          ← Back to sessions
+          {t("analyticsSessions.backToList")}
         </Link>
         <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="font-serif text-2xl font-bold text-cb-text-strong">Session detail</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-serif text-2xl font-bold text-cb-text-strong">
+                {identity.session_label}
+              </h1>
+              <span
+                className={cn(
+                  "inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                  TYPE_BADGE[identity.visitor_type],
+                )}
+              >
+                {t(`visitorPresence.types.${identity.visitor_type}`)}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-cb-text-muted">{t("analyticsSessions.sessionTitle")}</p>
             <p className="mt-1 font-mono text-xs text-cb-text-muted">{sessionId}</p>
+            {identity.email ? (
+              <p className="mt-1 text-sm text-cb-text">{identity.email}</p>
+            ) : null}
             <p className="mt-2 text-sm text-cb-text">
-              Started{" "}
+              {t("analyticsSessions.started")}{" "}
               <strong>{formatTrackingDateTime(String(session.started_at))}</strong>
               {session.last_event_at ? (
                 <>
                   {" "}
-                  · Last activity{" "}
+                  · {t("analyticsSessions.lastActivity")}{" "}
                   <strong>{formatTrackingDateTime(String(session.last_event_at))}</strong>
                 </>
               ) : null}
@@ -103,21 +131,50 @@ export function SessionDetailView({ detail }: Props) {
               className="inline-flex items-center gap-2 rounded-xl bg-cb-terracotta-dark px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
             >
               <Play className="h-4 w-4" aria-hidden />
-              Watch replay
+              {t("analyticsSessions.watchReplay")}
             </Link>
           ) : null}
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-          <StatCard label="Duration" value={formatTrackingDuration(detail.stats.duration_seconds)} />
-          <StatCard label="Pages" value={detail.stats.page_views} />
-          <StatCard label="Clicks" value={detail.stats.clicks} />
-          <StatCard label="Events" value={detail.stats.custom_events} />
-          <StatCard label="Scrolls" value={detail.stats.scroll_events} />
-          <StatCard label="Conversions" value={detail.stats.conversions} />
-          <StatCard label="Rage clicks" value={detail.stats.rage_clicks} />
+          <StatCard
+            label={t("presenceTiming.sessionDuration")}
+            value={formatTrackingDuration(detail.stats.duration_seconds)}
+          />
+          <StatCard label={t("analyticsSessions.colPvs")} value={detail.stats.page_views} />
+          <StatCard label={t("analyticsSessions.clicksHeading")} value={detail.stats.clicks} />
+          <StatCard label={t("analyticsSessions.actionsHeading")} value={detail.stats.custom_events} />
+          <StatCard label={t("presenceTiming.events.scroll")} value={detail.stats.scroll_events} />
+          <StatCard label={t("analyticsSessions.conversions")} value={detail.stats.conversions} />
+          <StatCard label={t("presenceTiming.events.rage_click")} value={detail.stats.rage_clicks} />
         </div>
       </header>
+
+      <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5">
+        <h2 className="text-base font-semibold text-cb-text-strong">
+          {t("analyticsSessions.identityTitle")}
+        </h2>
+        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <dt className="text-xs text-cb-text-muted">{t("analyticsSessions.colType")}</dt>
+            <dd>{t(`visitorPresence.types.${identity.visitor_type}`)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-cb-text-muted">{t("analyticsSessions.colVisitor")}</dt>
+            <dd className="font-semibold">{identity.session_label}</dd>
+          </div>
+          {identity.email ? (
+            <div>
+              <dt className="text-xs text-cb-text-muted">{t("analyticsSessions.email")}</dt>
+              <dd>{identity.email}</dd>
+            </div>
+          ) : null}
+          <div>
+            <dt className="text-xs text-cb-text-muted">{t("analyticsSessions.visitorId")}</dt>
+            <dd className="font-mono text-xs break-all">{String(session.visitor_id)}</dd>
+          </div>
+        </dl>
+      </section>
 
       <div className="grid gap-5 lg:grid-cols-3">
         <section className="rounded-2xl border border-cb-border bg-cb-surface-elevated p-5 lg:col-span-2">
@@ -282,7 +339,7 @@ export function SessionDetailView({ detail }: Props) {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-xs font-bold uppercase tracking-wide text-cb-terracotta-dark">
-                      Page {page.index}
+                      {t("analyticsSessions.pageN", { n: String(page.index) })}
                     </p>
                     <p className="mt-1 font-mono text-sm font-semibold text-cb-text-strong">{page.path}</p>
                     {page.title ? <p className="mt-1 text-sm text-cb-text">{page.title}</p> : null}
@@ -300,15 +357,15 @@ export function SessionDetailView({ detail }: Props) {
                   {page.max_scroll_pct != null ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-neutral-500/10 px-2 py-0.5">
                       <ScrollText className="h-3 w-3" aria-hidden />
-                      Scroll {page.max_scroll_pct}%
+                      {t("analyticsSessions.scrollPct", { pct: String(page.max_scroll_pct) })}
                     </span>
                   ) : null}
                   <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2 py-0.5">
                     <MousePointerClick className="h-3 w-3" aria-hidden />
-                    {page.clicks.length} clicks
+                    {t("analyticsSessions.clicksCount", { n: String(page.clicks.length) })}
                   </span>
                   <span className="rounded-full bg-violet-500/10 px-2 py-0.5">
-                    {page.actions.length} actions
+                    {t("analyticsSessions.actionsCount", { n: String(page.actions.length) })}
                   </span>
                 </div>
 
@@ -361,7 +418,7 @@ export function SessionDetailView({ detail }: Props) {
               </li>
             ))}
             {detail.pages.length === 0 ? (
-              <li className="text-sm text-cb-text-muted">No page views recorded for this session.</li>
+              <li className="text-sm text-cb-text-muted">{t("analyticsSessions.noPages")}</li>
             ) : null}
           </ol>
         ) : (
@@ -384,7 +441,7 @@ export function SessionDetailView({ detail }: Props) {
               </li>
             ))}
             {detail.timeline.length === 0 ? (
-              <li className="text-sm text-cb-text-muted">No timeline events.</li>
+              <li className="text-sm text-cb-text-muted">{t("analyticsSessions.noTimeline")}</li>
             ) : null}
           </ol>
         )}

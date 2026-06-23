@@ -18,6 +18,8 @@ export async function POST(req: NextRequest) {
   const fileValue = form?.get("file");
   const kindRaw = String(form?.get("kind") ?? "image").toLowerCase();
   const kind: CloudinaryUploadKind = kindRaw === "video" ? "video" : "image";
+  const folderRaw = String(form?.get("folder") ?? "").trim();
+  const folder = folderRaw.startsWith("cookie-bite/") ? folderRaw : undefined;
 
   if (!(fileValue instanceof File)) {
     return NextResponse.json(
@@ -27,7 +29,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const uploaded = await uploadToCloudinary(fileValue, kind);
+    const uploaded = await uploadToCloudinary(fileValue, kind, folder ? { folder } : undefined);
     return NextResponse.json({
       ok: true,
       kind,

@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Product } from "@/lib/data";
 import { EMPTY_LINKED_ADDONS } from "@/lib/addons/constants";
 import {
   ProductAddonPicker,
   useAddonSelectionState,
 } from "@/components/product/product-addon-picker";
+import { ProductCardImageCarousel } from "@/components/product/product-card-image-carousel";
 import { ProductCartActions } from "@/components/product/product-cart-actions";
 import { ProductPriceDisplay } from "@/components/product/product-price-display";
 import { cn } from "@/lib/utils";
@@ -19,33 +20,29 @@ type Props = {
 };
 
 export function CarouselProductCard({ product, className }: Props) {
+  const router = useRouter();
   const [addonError, setAddonError] = useState<string | null>(null);
   const linkedAddons = product.linkedAddons ?? EMPTY_LINKED_ADDONS;
   const { addons, selected, setSelected, selectedAddons, addonsTotal } =
     useAddonSelectionState(linkedAddons, { emptyOptional: true });
+  const galleryImages = product.images?.length ? product.images : [product.image];
 
   return (
     <article
       className={cn(
-        "flex flex-col overflow-hidden rounded-2xl border border-cb-peach-deep/80 bg-cb-cream cb-shadow-editorial cb-shadow-editorial-hover",
+        "group flex flex-col overflow-hidden rounded-2xl border border-cb-peach-deep/80 bg-cb-cream cb-shadow-editorial cb-shadow-editorial-hover",
         className,
       )}
     >
-      <Link
-        href={`/shop/${product.id}`}
-        prefetch={false}
-        className="relative block aspect-square shrink-0"
-      >
-        <Image
-          src={product.image}
-          alt={product.name}
-          fill
-          loading="lazy"
-          decoding="async"
-          className="object-cover transition-transform duration-200 hover:scale-[1.02]"
+      <div className="relative aspect-square shrink-0 overflow-hidden">
+        <ProductCardImageCarousel
+          productId={product.id}
+          productName={product.name}
+          images={galleryImages}
           sizes="(max-width:1024px) 50vw, 25vw"
+          onImageClick={() => router.push(`/shop/${product.id}`)}
         />
-      </Link>
+      </div>
       <div className="flex flex-1 flex-col gap-3 px-5 pb-6 pt-5 text-center">
         <Link href={`/shop/${product.id}`} prefetch={false}>
           <h3 className="font-serif text-lg font-semibold text-cb-text-strong transition-colors hover:text-cb-terracotta-dark">

@@ -279,6 +279,7 @@ export const adminSectionsEn = {
         every5m: "every ~5 min",
         every10m: "every ~10 min",
         every15m: "every ~15 min",
+        every15d: "every ~15 days",
         hourly: "hourly",
       },
       triggers: {
@@ -287,6 +288,7 @@ export const adminSectionsEn = {
         providerHealth: "Health check + smart retries",
         cartIdle: "Carts with email idle 1h / 24h",
         productCatalog: "Catalog publish, stock & discounts",
+        cloudinaryOrphanCleanup: "Unlinked Cloudinary media older than 14 days",
       },
       jobs: {
         notificationJobs: "Notification worker",
@@ -299,6 +301,9 @@ export const adminSectionsEn = {
         abandonedCartDesc: "Reminder 1 after 1h, reminder 2 + 10% code after 24h.",
         productCatalog: "Product catalog automation",
         productCatalogDesc: "Scheduled publish, discount expiry, stock rules, low-stock alerts.",
+        cloudinaryOrphanCleanup: "Cloudinary orphan cleanup",
+        cloudinaryOrphanCleanupDesc:
+          "Removes cookie-bite media not linked to products, variants, or gift boxes (14+ days old).",
       },
       pipelines: {
         orderConfirm: "Order confirmation",
@@ -1012,6 +1017,7 @@ export const adminSectionsAr = {
         every5m: "كل ~5 دقائق",
         every10m: "كل ~10 دقائق",
         every15m: "كل ~15 دقيقة",
+        every15d: "كل ~15 يوم",
         hourly: "كل ساعة",
       },
       triggers: {
@@ -1020,6 +1026,7 @@ export const adminSectionsAr = {
         providerHealth: "فحص المزود + إعادة محاولة ذكية",
         cartIdle: "سلة بريد خاملة 1 س / 24 س",
         productCatalog: "نشر المنتجات والمخزون والخصومات",
+        cloudinaryOrphanCleanup: "وسائط Cloudinary غير المربوطة (أقدم من 14 يوم)",
       },
       jobs: {
         notificationJobs: "عامل الإشعارات",
@@ -1032,6 +1039,9 @@ export const adminSectionsAr = {
         abandonedCartDesc: "تذكير 1 بعد ساعة، تذكير 2 + خصم 10% بعد 24 ساعة.",
         productCatalog: "أتمتة كتالوج المنتجات",
         productCatalogDesc: "نشر مجدول، انتهاء خصومات، قواعد مخزون، تنبيهات.",
+        cloudinaryOrphanCleanup: "تنظيف وسائط Cloudinary",
+        cloudinaryOrphanCleanupDesc:
+          "حذف صور/فيديو cookie-bite غير المربوطة بمنتج أو متغير أو صندوق هدية (أقدم من 14 يوم).",
       },
       pipelines: {
         orderConfirm: "تأكيد الطلب",

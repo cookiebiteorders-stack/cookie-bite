@@ -11,7 +11,9 @@ export type AddonSubmitPayload = {
     id: string;
     name: string;
     size: string | null;
+    weight_grams: number | null;
     price: number;
+    stock: number | null;
     quantity_limit: number | null;
     default_selected: boolean;
   }>;
@@ -28,6 +30,8 @@ export function normalizeAddonInput(raw: unknown): unknown {
       const row = { ...(opt as Record<string, unknown>) };
       if (row.size === "") row.size = null;
       if (typeof row.name === "string") row.name = row.name.trim();
+      if (row.weight_grams === "") row.weight_grams = null;
+      if (row.stock === "") row.stock = null;
       return row;
     });
   }
@@ -58,7 +62,15 @@ export function buildAddonSubmitPayload(form: Addon, editingId: string | null): 
     id: o.id?.trim() || crypto.randomUUID(),
     name: o.name.trim(),
     size: o.size?.trim() ? o.size.trim() : null,
+    weight_grams:
+      o.weight_grams != null && Number.isFinite(o.weight_grams) && o.weight_grams >= 0
+        ? Math.floor(o.weight_grams)
+        : null,
     price: Math.max(0, Number(o.price) || 0),
+    stock:
+      o.stock != null && Number.isFinite(o.stock) && o.stock >= 0
+        ? Math.floor(o.stock)
+        : null,
     quantity_limit:
       o.quantity_limit != null && Number.isFinite(o.quantity_limit) && o.quantity_limit > 0
         ? o.quantity_limit

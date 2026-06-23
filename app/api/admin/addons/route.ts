@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { listAddonCategoriesWithItems } from "@/lib/db/addon-categories";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizeAddonInput } from "@/lib/addons/submit-payload";
 import { addonSchema } from "@/lib/addons/validation";
@@ -12,15 +13,19 @@ const deleteSchema = z.object({ id: z.string().uuid() });
 
 export async function GET() {
   await requireAdminAccess("addons");
-  const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("addons")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (error) {
-    return NextResponse.json(bilingualError("Database error", "خطأ في قاعدة البيانات"), { status: 500 });
-  }
-  return NextResponse.json({ addons: data ?? [] });
+  const categories = await listAddonCategoriesWithItems();
+  const addons = categories
+    .filter((c) => c.addon_id)
+    .map((c) => ({
+      id: c.addon_id!,
+      name: c.name,
+      description: c.description ?? null,
+      type: c.selection_type,
+      required: c.required,
+      options: c.items ?? [],
+      category_id: c.id,
+    }));
+  return NextResponse.json({ addons, categories });
 }
 
 export async function POST(req: NextRequest) {
@@ -43,6 +48,7 @@ export async function POST(req: NextRequest) {
       type: parsed.data.type,
       required: parsed.data.required,
       options: parsed.data.options,
+      category_id: parsed.data.category_id ?? null,
     })
     .select("*")
     .single();

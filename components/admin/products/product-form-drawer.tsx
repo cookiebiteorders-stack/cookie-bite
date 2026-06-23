@@ -30,8 +30,8 @@ import {
 } from "@/lib/admin/products-dashboard-types";
 import { ProductMediaEditor } from "@/components/admin/products/product-media-editor";
 import {
+  bindPendingUploadsToProduct,
   getProductMediaUploadBusyCount,
-  setProductMediaPatchContext,
 } from "@/lib/client/product-media-upload";
 import { ProductAiImagePicker } from "@/components/admin/products/product-ai-image-picker";
 import type { ProductImageCandidate } from "@/lib/admin/product-ai-assist";
@@ -698,10 +698,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
 
       const uploadsPending = getProductMediaUploadBusyCount() > 0;
       if (savedProductId) {
-        setProductMediaPatchContext({
-          productId: savedProductId,
-          baseImages: form.images.filter((img) => img.url.trim()),
-        });
+        bindPendingUploadsToProduct(savedProductId);
       }
 
       const homepageNote =
@@ -1372,6 +1369,7 @@ export function ProductFormDrawer({ open, onOpenChange, editing, canWrite }: Pro
                     </div>
                   </motion.div>
                   <ProductMediaEditor
+                    productId={editingId}
                     images={form.images}
                     videoUrl={form.video_url}
                     canWrite={canWrite}

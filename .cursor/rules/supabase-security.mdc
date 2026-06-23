@@ -1,0 +1,47 @@
+---
+description: قواعد أمن Supabase — RLS وpolicies إلزامية لكل جدول جديد
+globs: supabase/migrations/**/*.sql
+alwaysApply: false
+---
+
+# أمن Supabase عند إضافة migrations
+
+عند **إنشاء أو تعديل** أي جدول/دالة في `supabase/migrations/`:
+
+## جداول `public` (إلزامي)
+
+1. **فعّل RLS** على كل جدول جديد:
+   ```sql
+   ALTER TABLE public.my_table ENABLE ROW LEVEL SECURITY;
+   ```
+
+2. **أضف policies صريحة** — لا تترك RLS مفعّلاً بدون policy (Supabase Advisor يحذّر):
+   - **بيانات إدارية/حساسة** (طلبات، مستخدمون، إعدادات، تتبع، إيميل…):
+     ```sql
+     CREATE POLICY "my_table service role all"
+       ON public.my_table FOR ALL
+       USING (auth.role() = 'service_role')
+       WITH CHECK (auth.role() = 'service_role');
+     ```
+   - **قراءة عامة مقصودة** (منتجات، مناطق شحن نشطة، أحجام هدايا نشطة…):
+     ```sql
+     CREATE POLICY "my_table public read active"
+       ON public.my_table FOR SELECT
+       USING (is_active = true);
+     ```
+     + سياسة `service role all` للكتابة من السيرفر.
+
+3. **لا تستخدم** `using (true)` أو `with check (true)` إلا لقراءة بيانات عامة غير حساسة، ويفضّل فلتر `is_active`.
+
+4. **لا تعرّض** `auth.users` عبر views في `public` — راجع `0024` / `0071`.
+
+## دوال `public`
+
+- دوال تعدّل مخزون/ولاء/مدفوعات: **service_role فقط** + `SET search_path = public`.
+- دوال للعملاء: `SECURITY DEFINER` + `SET search_path = public` + تحقق صارم من المدخلات.
+- بعد كل migration أمنية: شغّل **`npm run supabase:migrate`** وتحقق من Security Advisor في لوحة Supabase.
+
+## مرجع
+
+- قالب شامل: `0071_security_hardening.sql`
+- إصلاح auth.users: `0024_fix_auth_users_exposed_api_grant.sql`

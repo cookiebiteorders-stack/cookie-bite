@@ -5,7 +5,8 @@ export type AutomationJobId =
   | "email_worker"
   | "email_health"
   | "abandoned_cart"
-  | "product_catalog";
+  | "product_catalog"
+  | "cloudinary_orphan_cleanup";
 
 export type AutomationJobDef = {
   id: AutomationJobId;
@@ -56,6 +57,14 @@ export const AUTOMATION_JOBS: AutomationJobDef[] = [
     triggerKey: "settings.automation.triggers.productCatalog",
     cronPath: "/api/cron/product-catalog-automation",
     scheduleKey: "settings.automation.schedule.every15m",
+  },
+  {
+    id: "cloudinary_orphan_cleanup",
+    labelKey: "settings.automation.jobs.cloudinaryOrphanCleanup",
+    descKey: "settings.automation.jobs.cloudinaryOrphanCleanupDesc",
+    triggerKey: "settings.automation.triggers.cloudinaryOrphanCleanup",
+    cronPath: "/api/cron/cloudinary-orphan-cleanup",
+    scheduleKey: "settings.automation.schedule.every15d",
   },
 ];
 

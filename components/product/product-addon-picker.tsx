@@ -1,45 +1,54 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Plus, Sparkles } from "lucide-react";
+import { Check, ChevronDown, Minus, Plus, Sparkles } from "lucide-react";
+import { AddonCustomSelect } from "@/components/product/addon-custom-select";
 import { dedupeAddonsByName } from "@/lib/addons/dedupe";
 import {
   addonGroupHasSelection,
+  addonSelectionKey,
   buildCartAddonsFromSelection,
   buildInitialAddonSelection,
   clearAddonSelection,
   computeAddonsTotalEgp,
+  getAddonOptionMaxQty,
   getSelectedOptionIdForAddon,
+  isAddonOptionInStock,
   setAddonOptionQty,
   setSingleAddonChoice,
   toggleMultiAddonOption,
   type AddonSelectedMap,
 } from "@/lib/addons/selection";
-import { addonSelectionKey } from "@/lib/addons/selection";
-import type { Addon } from "@/lib/addons/types";
+import type { Addon, AddonOption } from "@/lib/addons/types";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 
-const selectClass =
-  "w-full appearance-none rounded-xl border border-cb-border/80 bg-cb-cream/90 py-2.5 pe-10 ps-3 text-sm font-medium text-cb-text-strong shadow-sm transition focus:border-cb-terracotta-dark focus:outline-none focus:ring-2 focus:ring-cb-terracotta-dark/25 dark:bg-cb-surface-2 dark:text-cb-text-strong";
-
 type Props = {
   linkedAddons: Addon[];
-  /** compact = بطاقة المتجر، full = صفحة المنتج (قوائم منسدلة) */
   variant?: "compact" | "full";
   selected: AddonSelectedMap;
   onSelectedChange: (next: AddonSelectedMap) => void;
   className?: string;
 };
 
-function optionLabel(
-  name: string,
-  size: string | null | undefined,
-  price: number,
-  formatPrice: (n: number) => string,
-) {
-  const bit = size?.trim() ? `${name} (${size.trim()})` : name;
-  return price > 0 ? `${bit} — ${formatPrice(price)}` : bit;
+function formatWeight(grams: number | null | undefined, locale: string): string | null {
+  if (grams == null || grams <= 0) return null;
+  return locale === "ar" ? `${grams} جم` : `${grams} g`;
+}
+
+function optionMetaLine(
+  opt: AddonOption,
+  lang: string,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): string | undefined {
+  const parts: string[] = [];
+  const weight = formatWeight(opt.weight_grams, lang);
+  if (weight) parts.push(weight);
+  if (opt.stock != null) {
+    if (opt.stock <= 0) parts.push(t("product.addonsOutOfStock"));
+    else if (opt.stock <= 5) parts.push(t("product.addonsLowStock", { count: opt.stock }));
+  }
+  return parts.length ? parts.join(" · ") : undefined;
 }
 
 function AddonSingleDropdown({
@@ -53,46 +62,53 @@ function AddonSingleDropdown({
   onSelectedChange: (next: AddonSelectedMap) => void;
   compact?: boolean;
 }) {
-  const { t, formatPrice } = useLanguage();
+  const { t, formatPrice, lang } = useLanguage();
   const chosenId = getSelectedOptionIdForAddon(selected, addon.id);
   const chosen = addon.options.find((o) => o.id === chosenId);
 
+  const selectOptions = addon.options.map((opt) => {
+    const inStock = isAddonOptionInStock(opt);
+    const price = Number(opt.price);
+    return {
+      id: opt.id,
+      label: opt.name,
+      sublabel: optionMetaLine(opt, lang, t),
+      priceLabel: price > 0 ? `+${formatPrice(price)}` : undefined,
+      disabled: !inStock,
+      badge: !inStock ? t("product.addonsOutOfStock") : undefined,
+    };
+  });
+
   return (
     <div className={cn("space-y-2", compact && "space-y-1.5")}>
-      <label
-        className={cn(
-          "block font-semibold text-cb-text-strong",
-          compact ? "text-[11px]" : "text-sm",
-        )}
-      >
-        {addon.name}
-        {addon.required ? (
-          <span className="ms-1 text-cb-terracotta-dark">*</span>
-        ) : null}
-      </label>
-      <div className="relative">
-        <select
-          className={cn(selectClass, compact && "py-2 text-xs")}
-          value={chosenId}
-          onChange={(e) =>
-            onSelectedChange(setSingleAddonChoice(selected, addon.id, e.target.value))
-          }
+      <div className="flex items-baseline justify-between gap-2">
+        <label
+          className={cn(
+            "block font-semibold text-cb-text-strong",
+            compact ? "text-[11px]" : "text-sm",
+          )}
         >
-          <option value="">{t("product.addonsChoose")}</option>
-          {addon.options.map((opt) => (
-            <option key={opt.id} value={opt.id}>
-              {optionLabel(opt.name, opt.size, Number(opt.price), formatPrice)}
-            </option>
-          ))}
-        </select>
-        <ChevronDown
-          className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cb-text-muted"
-          aria-hidden
-        />
+          {addon.name}
+          {addon.required ? (
+            <span className="ms-1 text-cb-terracotta-dark">*</span>
+          ) : null}
+        </label>
+        {addon.description?.trim() ? (
+          <span className="text-[10px] text-cb-text-muted">{addon.description}</span>
+        ) : null}
       </div>
+      <AddonCustomSelect
+        value={chosenId}
+        placeholder={t("product.addonsChoose")}
+        options={selectOptions}
+        compact={compact}
+        onChange={(id) => onSelectedChange(setSingleAddonChoice(selected, addon.id, id))}
+      />
       {chosen ? (
         <SelectedAddonChip
-          label={optionLabel(chosen.name, chosen.size, Number(chosen.price), formatPrice)}
+          label={chosen.name}
+          price={Number(chosen.price) > 0 ? formatPrice(Number(chosen.price)) : undefined}
+          meta={optionMetaLine(chosen, lang, t)}
           onClear={
             addon.required
               ? undefined
@@ -107,10 +123,14 @@ function AddonSingleDropdown({
 
 function SelectedAddonChip({
   label,
+  price,
+  meta,
   onClear,
   compact,
 }: {
   label: string;
+  price?: string;
+  meta?: string;
   onClear?: () => void;
   compact?: boolean;
 }) {
@@ -118,13 +138,17 @@ function SelectedAddonChip({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-2 rounded-xl border border-cb-terracotta-dark/25 bg-cb-peach/30 px-3 py-2",
+        "flex items-center justify-between gap-2 rounded-xl border border-cb-terracotta-dark/25 bg-gradient-to-r from-cb-peach/40 to-cb-cream/60 px-3 py-2",
         compact && "px-2 py-1.5 text-[11px]",
       )}
     >
-      <span className="min-w-0 truncate font-semibold text-cb-text-strong">
-        <span className="text-cb-terracotta-dark">{t("product.addonsSelected")}: </span>
-        {label}
+      <span className="min-w-0">
+        <span className="block truncate font-semibold text-cb-text-strong">
+          <span className="text-cb-terracotta-dark">{t("product.addonsSelected")}: </span>
+          {label}
+          {price ? <span className="ms-1 text-cb-terracotta-dark">({price})</span> : null}
+        </span>
+        {meta ? <span className="text-[10px] text-cb-text-muted">{meta}</span> : null}
       </span>
       {onClear ? (
         <button
@@ -150,7 +174,7 @@ function AddonMultiCollapsible({
   onSelectedChange: (next: AddonSelectedMap) => void;
   compact?: boolean;
 }) {
-  const { t, formatPrice } = useLanguage();
+  const { t, formatPrice, lang } = useLanguage();
   const map = selected[addon.id] ?? {};
   const hasPick = addonGroupHasSelection(selected, addon.id);
   const [open, setOpen] = useState(false);
@@ -191,7 +215,7 @@ function AddonMultiCollapsible({
       <button
         type="button"
         className={cn(
-          "flex w-full items-center justify-between gap-2 rounded-xl border border-cb-border/80 bg-cb-cream/90 px-3 py-2.5 text-start text-sm font-medium shadow-sm transition hover:border-cb-terracotta-dark/40 dark:bg-cb-surface-2",
+          "flex w-full items-center justify-between gap-2 rounded-xl border border-cb-border/80 bg-gradient-to-b from-cb-cream to-cb-surface/95 px-3 py-2.5 text-start text-sm font-medium shadow-sm transition hover:border-cb-terracotta-dark/40",
           compact && "py-2 text-xs",
           showPanel && "border-cb-terracotta-dark/35 ring-1 ring-cb-terracotta-dark/15",
         )}
@@ -211,26 +235,62 @@ function AddonMultiCollapsible({
       {showPanel ? (
         <div
           className={cn(
-            "space-y-1.5 rounded-xl border border-cb-border/60 bg-cb-surface/90 p-2.5",
+            "space-y-2 rounded-xl border border-cb-border/60 bg-cb-surface/95 p-2.5 shadow-inner",
             compact && "p-2 text-[11px]",
           )}
         >
           {addon.options.map((opt) => {
+            const inStock = isAddonOptionInStock(opt);
             const checked = (map[opt.id] ?? 0) > 0;
             const currentQty = map[opt.id] ?? 0;
+            const maxQty = getAddonOptionMaxQty(opt);
+            const price = Number(opt.price);
+            const meta = optionMetaLine(opt, lang, t);
             return (
               <div
                 key={opt.id}
-                className="rounded-lg border border-cb-border/50 bg-cb-cream/50 px-2.5 py-2 dark:bg-cb-surface-2/80"
+                className={cn(
+                  "rounded-xl border px-3 py-2.5 transition",
+                  checked
+                    ? "border-cb-terracotta-dark/35 bg-cb-peach/25"
+                    : "border-cb-border/50 bg-cb-cream/40",
+                  !inStock && "opacity-50",
+                )}
               >
-                <label className="flex cursor-pointer items-center justify-between gap-2">
-                  <span className="min-w-0 leading-snug">
-                    {optionLabel(opt.name, opt.size, Number(opt.price), formatPrice)}
+                <label
+                  className={cn(
+                    "flex cursor-pointer items-start justify-between gap-3",
+                    !inStock && "cursor-not-allowed",
+                  )}
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2 font-semibold text-cb-text-strong">
+                      {opt.name}
+                      {price > 0 ? (
+                        <span className="text-xs font-bold text-cb-terracotta-dark">
+                          +{formatPrice(price)}
+                        </span>
+                      ) : null}
+                    </span>
+                    {meta ? (
+                      <span className="mt-0.5 block text-[11px] text-cb-text-muted">{meta}</span>
+                    ) : null}
+                  </span>
+                  <span
+                    className={cn(
+                      "flex size-5 shrink-0 items-center justify-center rounded-md border-2 transition",
+                      checked
+                        ? "border-cb-terracotta-dark bg-cb-terracotta-dark text-white"
+                        : "border-cb-border bg-cb-surface",
+                    )}
+                  >
+                    {checked ? <Check className="size-3" strokeWidth={3} /> : null}
                   </span>
                   <input
                     type="checkbox"
+                    className="sr-only"
                     checked={checked}
-                    className="size-4 shrink-0 accent-[var(--cb-terracotta-dark)]"
+                    disabled={!inStock}
                     onChange={(e) =>
                       onSelectedChange(
                         toggleMultiAddonOption(
@@ -243,12 +303,11 @@ function AddonMultiCollapsible({
                     }
                   />
                 </label>
-                {checked &&
-                (opt.quantity_limit != null || addon.type === "multiple_choice") ? (
-                  <div className="mt-1.5 flex items-center gap-2">
+                {checked && maxQty > 1 ? (
+                  <div className="mt-2 flex items-center gap-2">
                     <button
                       type="button"
-                      className="rounded-lg border border-cb-border px-2 py-0.5 text-xs"
+                      className="flex size-7 items-center justify-center rounded-lg border border-cb-border bg-cb-surface text-cb-text-strong"
                       onClick={() =>
                         onSelectedChange(
                           setAddonOptionQty(
@@ -257,16 +316,18 @@ function AddonMultiCollapsible({
                             opt.id,
                             currentQty - 1,
                             opt.quantity_limit,
+                            opt.stock,
                           ),
                         )
                       }
                     >
-                      −
+                      <Minus className="size-3.5" />
                     </button>
-                    <span className="min-w-5 text-center text-xs font-bold">{currentQty}</span>
+                    <span className="min-w-6 text-center text-xs font-bold">{currentQty}</span>
                     <button
                       type="button"
-                      className="rounded-lg border border-cb-border px-2 py-0.5 text-xs"
+                      className="flex size-7 items-center justify-center rounded-lg border border-cb-border bg-cb-surface text-cb-text-strong disabled:opacity-40"
+                      disabled={currentQty >= maxQty}
                       onClick={() =>
                         onSelectedChange(
                           setAddonOptionQty(
@@ -275,11 +336,12 @@ function AddonMultiCollapsible({
                             opt.id,
                             currentQty + 1,
                             opt.quantity_limit,
+                            opt.stock,
                           ),
                         )
                       }
                     >
-                      +
+                      <Plus className="size-3.5" />
                     </button>
                   </div>
                 ) : null}
@@ -392,7 +454,6 @@ export function ProductAddonPicker({
   );
 }
 
-/** يُهيّئ الاختيار — صفحة المنتج تبدأ بدون اختيار للإضافات الاختيارية */
 export function useAddonSelectionState(
   linkedAddons: Addon[],
   opts?: { emptyOptional?: boolean },
@@ -406,8 +467,7 @@ export function useAddonSelectionState(
 
   useEffect(() => {
     setSelected(buildInitialAddonSelection(addons, { emptyOptional }));
-    // addonKey يعكس المحتوى — لا نعتمد على مرجع addons (?? [] ينشئ مصفوفة جديدة كل render)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- addons مشتق من addonKey
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- addonKey يعكس المحتوى
   }, [addonKey, emptyOptional]);
 
   const selectedAddons = useMemo(

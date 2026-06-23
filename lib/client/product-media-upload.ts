@@ -7,14 +7,10 @@ import {
   type UploadProgress,
 } from "@/lib/client/cloudinary-signed-upload";
 import { fetchJson } from "@/lib/http/fetch-json";
-import {
-  EMPTY_PRODUCT_IMAGE_SLOT,
-  type ProductImageFormItem,
-} from "@/lib/admin/products-dashboard-types";
-import { MAX_PRODUCT_IMAGES } from "@/lib/products/media";
+import type { ProductMediaUploadKind } from "@/lib/client/product-media-upload-types";
 import { useProductsDashboardStore } from "@/stores/products-dashboard-store";
 
-export type ProductMediaUploadKind = "image" | "video";
+export type { ProductMediaUploadKind } from "@/lib/client/product-media-upload-types";
 
 function networkErrorMessage(err: unknown): string {
   if (err instanceof DOMException && err.name === "AbortError") {
@@ -27,10 +23,27 @@ function networkErrorMessage(err: unknown): string {
   return msg || "فشل الرفع";
 }
 
-async function uploadViaApiRoute(file: File, kind: ProductMediaUploadKind): Promise<string> {
+export function productMediaUploadFolder(
+  productId: string | null | undefined,
+  kind: ProductMediaUploadKind,
+): string {
+  if (!productId) {
+    return kind === "video" ? "cookie-bite/products/_pending/videos" : "cookie-bite/products/_pending";
+  }
+  return kind === "video"
+    ? `cookie-bite/products/${productId}/videos`
+    : `cookie-bite/products/${productId}`;
+}
+
+async function uploadViaApiRoute(
+  file: File,
+  kind: ProductMediaUploadKind,
+  folder?: string,
+): Promise<string> {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("kind", kind);
+  if (folder) fd.append("folder", folder);
   const res = await fetch("/api/admin/products/upload-media", {
     method: "POST",
     body: fd,
@@ -54,32 +67,34 @@ async function uploadViaApiRoute(file: File, kind: ProductMediaUploadKind): Prom
 export async function uploadProductMediaFile(
   file: File,
   kind: ProductMediaUploadKind,
-  onProgress?: UploadProgress,
+  opts?: { onProgress?: UploadProgress; productId?: string | null; folder?: string },
 ): Promise<string> {
+  const folder = opts?.folder ?? productMediaUploadFolder(opts?.productId, kind);
   const prepared =
     kind === "image" ? await compressImageFileForUpload(file).catch(() => file) : file;
 
-  onProgress?.(2);
+  opts?.onProgress?.(2);
   const signed = await fetchSignedCloudinaryUpload({
     kind,
     signPath: "/api/admin/products/upload-media/sign",
+    folder,
   });
-  onProgress?.(5);
+  opts?.onProgress?.(5);
 
   try {
     if (signed) {
-      return await uploadFileToCloudinarySigned(prepared, signed, onProgress);
+      return await uploadFileToCloudinarySigned(prepared, signed, opts?.onProgress);
     }
-    onProgress?.(10);
-    const url = await uploadViaApiRoute(prepared, kind);
-    onProgress?.(100);
+    opts?.onProgress?.(10);
+    const url = await uploadViaApiRoute(prepared, kind, folder);
+    opts?.onProgress?.(100);
     return url;
   } catch (err) {
     if (signed) {
       try {
-        onProgress?.(15);
-        const url = await uploadViaApiRoute(prepared, kind);
-        onProgress?.(100);
+        opts?.onProgress?.(15);
+        const url = await uploadViaApiRoute(prepared, kind, folder);
+        opts?.onProgress?.(100);
         return url;
       } catch (fallbackErr) {
         throw new Error(networkErrorMessage(fallbackErr));
@@ -89,15 +104,24 @@ export async function uploadProductMediaFile(
   }
 }
 
-// ——— طابور رفع يستمر بعد إغلاق النموذج ———
+async function appendProductMediaOnServer(
+  productId: string,
+  kind: ProductMediaUploadKind,
+  url: string,
+): Promise<void> {
+  await fetchJson(`/api/admin/products/${productId}/media`, {
+    method: "POST",
+    jsonBody: { kind, url },
+    timeoutMs: 30_000,
+  });
+  void useProductsDashboardStore.getState().loadProducts();
+}
 
-type PatchContext = {
-  productId: string;
-  baseImages: ProductImageFormItem[];
-};
+// ——— طابور رفع — كل job مربوط بمنتج محدد (لا سياق عام) ———
 
 type QueueJob = {
   id: string;
+  productId: string | null;
   file: File;
   kind: ProductMediaUploadKind;
   onProgress?: UploadProgress;
@@ -105,7 +129,6 @@ type QueueJob = {
   onError: (message: string) => void;
 };
 
-let patchContext: PatchContext | null = null;
 const queue: QueueJob[] = [];
 let active = 0;
 const MAX_CONCURRENT = 2;
@@ -124,57 +147,28 @@ export function getProductMediaUploadBusyCount(): number {
   return active + queue.length;
 }
 
-export function setProductMediaPatchContext(ctx: PatchContext | null) {
-  patchContext = ctx;
-}
-
-async function patchProductImages(productId: string, images: ProductImageFormItem[]) {
-  const payload = images
-    .map((img, order) => ({
-      url: img.url.trim(),
-      alt_en: img.alt_en.trim() || null,
-      alt_ar: img.alt_ar.trim() || null,
-      order,
-    }))
-    .filter((img) => img.url);
-
-  await fetchJson("/api/admin/products", {
-    method: "PATCH",
-    jsonBody: {
-      ids: [productId],
-      patch: {
-        images: payload,
-        image_url: payload[0]?.url ?? null,
-      },
-    },
-    timeoutMs: 30_000,
-  });
-}
-
-function mergeImageUrl(base: ProductImageFormItem[], url: string): ProductImageFormItem[] {
-  if (base.some((x) => x.url.trim() === url)) return base;
-  const emptyIdx = base.findIndex((x) => !x.url.trim());
-  if (emptyIdx >= 0) {
-    const next = [...base];
-    next[emptyIdx] = { ...next[emptyIdx], url };
-    return next;
+/** بعد إنشاء منتج جديد — اربط الرفعات المعلّقة (بدون productId) بالمنتج المحفوظ. */
+export function bindPendingUploadsToProduct(productId: string) {
+  const trimmed = productId.trim();
+  if (!trimmed) return;
+  for (const job of queue) {
+    if (!job.productId) job.productId = trimmed;
   }
-  if (base.length >= MAX_PRODUCT_IMAGES) return base;
-  return [...base, { ...EMPTY_PRODUCT_IMAGE_SLOT, url }];
 }
 
 async function runJob(job: QueueJob) {
   active += 1;
   emit();
   try {
-    const url = await uploadProductMediaFile(job.file, job.kind, job.onProgress);
+    const url = await uploadProductMediaFile(job.file, job.kind, {
+      productId: job.productId,
+      onProgress: job.onProgress,
+    });
     job.onSuccess(url);
 
-    if (patchContext && job.kind === "image") {
-      const merged = mergeImageUrl(patchContext.baseImages, url);
-      patchContext = { ...patchContext, baseImages: merged };
-      await patchProductImages(patchContext.productId, merged);
-      void useProductsDashboardStore.getState().loadProducts();
+    const productId = job.productId?.trim();
+    if (productId) {
+      await appendProductMediaOnServer(productId, job.kind, url);
     }
   } catch (e) {
     job.onError(e instanceof Error ? e.message : "فشل الرفع");
@@ -192,8 +186,14 @@ function drainQueue() {
   }
 }
 
-export function enqueueProductMediaUpload(job: Omit<QueueJob, "id"> & { id?: string }) {
-  const entry: QueueJob = { ...job, id: job.id ?? crypto.randomUUID() };
+export function enqueueProductMediaUpload(
+  job: Omit<QueueJob, "id" | "productId"> & { id?: string; productId?: string | null },
+) {
+  const entry: QueueJob = {
+    ...job,
+    id: job.id ?? crypto.randomUUID(),
+    productId: job.productId?.trim() || null,
+  };
   queue.push(entry);
   emit();
   drainQueue();

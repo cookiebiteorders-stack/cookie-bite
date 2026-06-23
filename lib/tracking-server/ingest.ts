@@ -4,6 +4,7 @@ import { getTrackingRedis } from "./redis";
 import type { ParsedTrackBatch, ParsedTrackEvent } from "./schema";
 import type { GeoContext } from "./geo";
 import { isUserAgentBot } from "./geo";
+import { resolveDbUserId } from "./visitor-identity";
 
 export interface IngestContext {
   geo: GeoContext;
@@ -58,10 +59,12 @@ export async function ingestBatch(
     return { events: batch.events.length, bot: isBot, persisted: false };
   }
 
+  const dbUserId = await resolveDbUserId(supabase, batch.visitor.user_id);
+
   await Promise.allSettled([
-    upsertVisitor(supabase, batch, ctx, isBot),
-    upsertSession(supabase, batch, ctx, isBot),
-    insertEvents(supabase, batch, ctx, isBot),
+    upsertVisitor(supabase, batch, ctx, isBot, dbUserId),
+    upsertSession(supabase, batch, ctx, isBot, dbUserId),
+    insertEvents(supabase, batch, ctx, isBot, dbUserId),
     upsertRealtime(batch, ctx, isBot),
   ]);
 
@@ -73,6 +76,7 @@ async function upsertVisitor(
   batch: ParsedTrackBatch,
   ctx: IngestContext,
   isBot: boolean,
+  dbUserId: string | null,
 ): Promise<void> {
   const { visitor, device, page } = batch;
   const firstUtm = batch.utm ?? null;
@@ -82,6 +86,7 @@ async function upsertVisitor(
       {
         visitor_id: visitor.visitor_id,
         fingerprint: visitor.fingerprint ?? null,
+        user_id: dbUserId,
         last_seen_at: ctx.receivedAt.toISOString(),
         device_type: device.device_type,
         browser: device.browser ?? null,
@@ -107,6 +112,7 @@ async function upsertSession(
   batch: ParsedTrackBatch,
   ctx: IngestContext,
   isBot: boolean,
+  dbUserId: string | null,
 ): Promise<void> {
   const { visitor, device, page, utm } = batch;
   const lastEvent = batch.events[batch.events.length - 1];
@@ -116,6 +122,7 @@ async function upsertSession(
       {
         session_id: visitor.session_id,
         visitor_id: visitor.visitor_id,
+        user_id: dbUserId,
         last_event_at: ctx.receivedAt.toISOString(),
         entry_page: page.path,
         exit_page: lastEvent?.page?.path ?? page.path,
@@ -142,8 +149,9 @@ async function insertEvents(
   batch: ParsedTrackBatch,
   ctx: IngestContext,
   isBot: boolean,
+  dbUserId: string | null,
 ): Promise<void> {
-  const eventsRows = batch.events.map((event) => buildEventRow(event, ctx, isBot));
+  const eventsRows = batch.events.map((event) => buildEventRow(event, ctx, isBot, dbUserId));
   if (eventsRows.length === 0) return;
 
   await supabase.from("tracking_events").upsert(eventsRows, {
@@ -180,11 +188,17 @@ async function insertEvents(
   }
 }
 
-function buildEventRow(event: InternalEvent, ctx: IngestContext, isBot: boolean) {
+function buildEventRow(
+  event: InternalEvent,
+  ctx: IngestContext,
+  isBot: boolean,
+  dbUserId: string | null,
+) {
   return {
     event_id: event.event_id,
     visitor_id: event.visitor_id,
     session_id: event.session_id,
+    user_id: dbUserId,
     name: event.name,
     path: event.page?.path ?? null,
     url: event.page?.url ?? null,
@@ -422,15 +436,7 @@ async function upsertRealtime(
 
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return;
-  let dbUserId: string | null = null;
-  if (clerkUserId) {
-    const { data: userRow } = await supabase
-      .from("users")
-      .select("id")
-      .eq("clerk_user_id", clerkUserId)
-      .maybeSingle();
-    dbUserId = userRow?.id ? String(userRow.id) : null;
-  }
+  const dbUserId = await resolveDbUserId(supabase, clerkUserId);
 
   await supabase
     .from("tracking_realtime_users")

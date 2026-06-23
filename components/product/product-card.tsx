@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
@@ -10,6 +9,7 @@ import type { Product } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { EMPTY_LINKED_ADDONS } from "@/lib/addons/constants";
 import { useAddonSelectionState } from "@/components/product/product-addon-picker";
+import { ProductCardImageCarousel } from "@/components/product/product-card-image-carousel";
 
 const ProductAddonPicker = dynamic(
   () =>
@@ -17,7 +17,6 @@ const ProductAddonPicker = dynamic(
   { ssr: false, loading: () => null },
 );
 import { ProductPriceDisplay } from "@/components/product/product-price-display";
-import { ProductSharedImage } from "@/components/product/product-shared-image";
 import { useLanguage } from "@/components/providers/language-provider";
 import { ProductCartActions } from "@/components/product/product-cart-actions";
 import { buttonClassName } from "@/components/ui/button";
@@ -27,7 +26,6 @@ const ProductQuickViewModal = dynamic(
     import("@/components/shop/product-quick-view-modal").then((m) => m.ProductQuickViewModal),
   { ssr: false },
 );
-import { PRODUCT_PLACEHOLDER_IMAGE } from "@/lib/products/media";
 import { isProductOutOfStock } from "@/lib/products/stock";
 
 type Props = {
@@ -68,11 +66,8 @@ export function ProductCard({
 
   const uuid = product.productUuid;
   const outOfStock = isProductOutOfStock(product.stock);
-  const isPlaceholderImage = product.image === PRODUCT_PLACEHOLDER_IMAGE;
-  const hoverImage =
-    product.images?.[1] && product.images[1] !== product.image
-      ? product.images[1]
-      : null;
+  const galleryImages = product.images?.length ? product.images : [product.image];
+  const hasGallery = galleryImages.length > 1;
   const controlled = onWishlistToggled !== undefined;
   const saved = controlled ? wishlisted : uncontrolledSaved;
 
@@ -125,37 +120,13 @@ export function ProductCard({
       )}
     >
       <div className="relative aspect-square overflow-hidden bg-cb-peach/40">
-        <button
-          type="button"
-          className="absolute inset-0 block w-full cursor-zoom-in text-start"
-          onClick={() => setQuickViewOpen(true)}
-          aria-label={t("search.quickView")}
-        >
-          <ProductSharedImage
-            productId={product.id}
-            src={product.image}
-            alt={product.name}
-            sizes="(max-width:768px) 50vw, 25vw"
-            sharedLayout={sharedLayout}
-            imgClassName={cn(
-              "transition-all duration-300 group-hover:scale-[1.01]",
-              hoverImage && "group-hover:opacity-0",
-              isPlaceholderImage && "object-contain p-3",
-            )}
-          />
-          {hoverImage ? (
-            <Image
-              src={hoverImage}
-              alt=""
-              fill
-              sizes="(max-width:768px) 100vw, 25vw"
-              loading="lazy"
-              decoding="async"
-              className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-              aria-hidden
-            />
-          ) : null}
-        </button>
+        <ProductCardImageCarousel
+          productId={product.id}
+          productName={product.name}
+          images={galleryImages}
+          sharedLayout={sharedLayout}
+          onImageClick={() => setQuickViewOpen(true)}
+        />
         <span className="pointer-events-none absolute bottom-3 start-3 z-10 rounded-full bg-cb-surface/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-cb-text-strong opacity-0 shadow-sm transition group-hover:opacity-100">
           {t("search.quickView")}
         </span>
@@ -175,7 +146,12 @@ export function ProductCard({
           <Heart className={cn("h-4 w-4", saved && "fill-current")} />
         </button>
         {outOfStock ? (
-          <span className="pointer-events-none absolute inset-x-3 bottom-3 z-10 rounded-full bg-stone-900/90 px-3 py-1.5 text-center text-xs font-bold text-white">
+          <span
+            className={cn(
+              "pointer-events-none absolute inset-x-3 z-10 rounded-full bg-stone-900/90 px-3 py-1.5 text-center text-xs font-bold text-white",
+              hasGallery ? "bottom-10" : "bottom-3",
+            )}
+          >
             {t("product.outOfStock")}
           </span>
         ) : null}

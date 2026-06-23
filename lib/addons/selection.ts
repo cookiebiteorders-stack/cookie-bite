@@ -78,6 +78,22 @@ export function computeAddonsTotalEgp(selectedAddons: CartSelectedAddon[]): numb
   );
 }
 
+export function isAddonOptionInStock(opt: { stock?: number | null }): boolean {
+  if (opt.stock == null) return true;
+  return opt.stock > 0;
+}
+
+export function getAddonOptionMaxQty(
+  opt: { stock?: number | null; quantity_limit?: number | null },
+  fallback = 99,
+): number {
+  const limits: number[] = [];
+  if (opt.quantity_limit != null && opt.quantity_limit > 0) limits.push(opt.quantity_limit);
+  if (opt.stock != null && opt.stock >= 0) limits.push(opt.stock);
+  if (limits.length === 0) return fallback;
+  return Math.min(...limits);
+}
+
 export function validateAddonSelection(
   addons: Addon[],
   selected: AddonSelectedMap,
@@ -90,7 +106,11 @@ export function validateAddonSelection(
     }
     for (const option of addon.options) {
       const q = map[option.id] ?? 0;
-      if (option.quantity_limit != null && q > option.quantity_limit) {
+      if (q > 0 && !isAddonOptionInStock(option)) {
+        return option.name;
+      }
+      const maxQty = getAddonOptionMaxQty(option);
+      if (q > maxQty) {
         return option.name;
       }
     }
@@ -128,8 +148,10 @@ export function setAddonOptionQty(
   optionId: string,
   qtyValue: number,
   limit?: number | null,
+  stock?: number | null,
 ): AddonSelectedMap {
-  const safe = Math.max(0, Math.min(limit ?? 99, qtyValue));
+  const maxQty = getAddonOptionMaxQty({ quantity_limit: limit, stock });
+  const safe = Math.max(0, Math.min(maxQty, qtyValue));
   const addonMap = { ...(selected[addonId] ?? {}) };
   if (safe === 0) delete addonMap[optionId];
   else addonMap[optionId] = safe;
