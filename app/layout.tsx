@@ -197,11 +197,11 @@ export default async function RootLayout({
           </>
         ) : null}
         <ClerkProvider
-          {...(clerkJsScriptUrl
-            ? { __internal_clerkJSUrl: clerkJsScriptUrl }
-            : {})}
-          {...(clerkUIScriptUrl
-            ? { __internal_clerkUIUrl: clerkUIScriptUrl }
+          {...(clerkJsScriptUrl && clerkUIScriptUrl
+            ? {
+                __internal_clerkJSUrl: clerkJsScriptUrl,
+                __internal_clerkUIUrl: clerkUIScriptUrl,
+              }
             : {})}
           localization={clerkLocalization}
           appearance={{

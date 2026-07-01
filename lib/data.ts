@@ -41,10 +41,9 @@ export const IMAGES = {
     "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=1200&q=80",
   ingredients:
     "https://images.unsplash.com/photo-1586444248909-04c3d5c8c0e0?auto=format&fit=crop&w=900&q=80",
-  /** Local asset: mascot (sign-in panel) */
-  signIn: "/images/sign-in-side.png",
-  /** Local asset: teddy mascot (sign-up panel) */
-  signUp: "/images/sign-up-side.png",
+  /** Same hero cookie photo used on the homepage */
+  signIn: "/images/hero.webp",
+  signUp: "/images/hero.webp",
 };
 
 export type ProductVariant = {

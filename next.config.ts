@@ -153,7 +153,7 @@ const nextConfig: NextConfig = {
       static: 300,
     },
   },
-  /** في التطوير: CDN لـ clerk-js و clerk-ui إذا لم تُضبط (انظر clerk-js-fallback.ts) */
+  /** CDN مُثبَّت لـ clerk-js و clerk-ui (انظر clerk-js-fallback.ts) */
   env: {
     NEXT_PUBLIC_CLERK_JS_URL: resolveClerkJsUrlForNextEnv(),
     NEXT_PUBLIC_CLERK_UI_URL: resolveClerkUiUrlForNextEnv(),

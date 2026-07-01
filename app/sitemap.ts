@@ -61,7 +61,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       route.path === "/"
         ? [
             `${APP_URL}/images/web-logo.png`,
-            `${APP_URL}/images/sign-in-side.png`,
+            `${APP_URL}/images/hero.webp`,
           ]
         : undefined,
   }));
