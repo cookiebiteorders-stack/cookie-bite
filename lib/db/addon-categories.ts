@@ -1,6 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Addon, AddonCategory, AddonOption } from "@/lib/addons/types";
-import { dedupeAddonOptions } from "@/lib/addons/dedupe";
+import { dedupeAddonOptions, mergeAddonOptionsWithIdRemap } from "@/lib/addons/dedupe";
 
 function parseOptions(raw: unknown): AddonOption[] {
   if (!Array.isArray(raw)) return [];
@@ -69,16 +69,24 @@ export async function listAddonCategoriesWithItems(): Promise<AddonCategory[]> {
     console.error("listAddonCategoriesWithItems addons", addonErr);
   }
 
-  const addonByCategory = new Map<string, Addon>();
+  const addonByCategory = new Map<string, Addon[]>();
   for (const row of addons ?? []) {
     const addon = addonRowToAddon(row as Record<string, unknown>);
-    if (addon.category_id) addonByCategory.set(addon.category_id, addon);
+    if (!addon.category_id) continue;
+    const list = addonByCategory.get(addon.category_id) ?? [];
+    list.push(addon);
+    addonByCategory.set(addon.category_id, list);
   }
 
   return (categories ?? []).map((row) => {
     const cat = row as Record<string, unknown>;
     const id = String(cat.id);
-    const linked = addonByCategory.get(id);
+    const linkedList = addonByCategory.get(id) ?? [];
+    const linked = linkedList[0] ?? null;
+    const mergedItems = linkedList.reduce<AddonOption[]>((acc, addon) => {
+      const { options } = mergeAddonOptionsWithIdRemap(acc, addon.options);
+      return options;
+    }, []);
     return {
       id,
       name: String(cat.name ?? ""),
@@ -89,19 +97,171 @@ export async function listAddonCategoriesWithItems(): Promise<AddonCategory[]> {
       created_at: cat.created_at as string | undefined,
       updated_at: cat.updated_at as string | undefined,
       addon_id: linked?.id ?? null,
-      items: linked?.options ?? [],
+      items: mergedItems.length ? mergedItems : (linked?.options ?? []),
     } satisfies AddonCategory;
   });
 }
 
 export async function getAddonContainerForCategory(categoryId: string): Promise<Addon | null> {
   const supabase = createSupabaseAdminClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("addons")
     .select("*")
     .eq("category_id", categoryId)
+    .order("created_at", { ascending: true })
+    .limit(1)
     .maybeSingle();
+  if (error) {
+    console.error("getAddonContainerForCategory", error);
+    return null;
+  }
   return data ? addonRowToAddon(data as Record<string, unknown>) : null;
+}
+
+async function ensureAddonContainerForCategory(categoryId: string): Promise<Addon | null> {
+  const consolidated = await consolidateCategoryAddonContainers(categoryId);
+  if (consolidated) return consolidated;
+
+  const supabase = createSupabaseAdminClient();
+  const { data: cat, error: catErr } = await supabase
+    .from("addon_categories")
+    .select("*")
+    .eq("id", categoryId)
+    .maybeSingle();
+  if (catErr || !cat) {
+    console.error("ensureAddonContainerForCategory category", catErr);
+    return null;
+  }
+
+  const row = cat as Record<string, unknown>;
+  const { data: addon, error: addonErr } = await supabase
+    .from("addons")
+    .insert({
+      name: String(row.name ?? ""),
+      description: (row.description as string | null) ?? null,
+      type: (row.selection_type as Addon["type"]) ?? "single_choice",
+      required: Boolean(row.required),
+      options: [],
+      category_id: categoryId,
+    })
+    .select("*")
+    .single();
+  if (addonErr || !addon) {
+    console.error("ensureAddonContainerForCategory container", addonErr);
+    return null;
+  }
+  return addonRowToAddon(addon as Record<string, unknown>);
+}
+
+async function migrateProductAddonLinks(fromAddonId: string, toAddonId: string): Promise<void> {
+  const supabase = createSupabaseAdminClient();
+  const { data: links } = await supabase
+    .from("product_addons")
+    .select("product_id")
+    .eq("addon_id", fromAddonId);
+
+  for (const row of links ?? []) {
+    const productId = String((row as { product_id: string }).product_id);
+    const { data: existing } = await supabase
+      .from("product_addons")
+      .select("addon_id")
+      .eq("product_id", productId)
+      .eq("addon_id", toAddonId)
+      .maybeSingle();
+    if (!existing) {
+      await supabase.from("product_addons").insert({
+        product_id: productId,
+        addon_id: toAddonId,
+      });
+    }
+    await supabase
+      .from("product_addons")
+      .delete()
+      .eq("product_id", productId)
+      .eq("addon_id", fromAddonId);
+  }
+}
+
+async function remapBundleOfferAddonReferences(
+  fromAddonId: string,
+  toAddonId: string,
+  optionIdMap: Map<string, string>,
+): Promise<void> {
+  const supabase = createSupabaseAdminClient();
+  const { data: offers } = await supabase.from("bundle_offers").select("id, addon_items");
+  for (const offer of offers ?? []) {
+    const row = offer as { id: string; addon_items: unknown };
+    let changed = false;
+    const rawItems = Array.isArray(row.addon_items) ? row.addon_items : [];
+    const items = rawItems
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const entry = item as Record<string, unknown>;
+        if (typeof entry.addon_id !== "string" || typeof entry.option_id !== "string") {
+          return null;
+        }
+        if (entry.addon_id !== fromAddonId) {
+          return { addon_id: entry.addon_id, option_id: entry.option_id };
+        }
+        changed = true;
+        return {
+          addon_id: toAddonId,
+          option_id: optionIdMap.get(entry.option_id) ?? entry.option_id,
+        };
+      })
+      .filter(Boolean) as Array<{ addon_id: string; option_id: string }>;
+    if (changed) {
+      await supabase
+        .from("bundle_offers")
+        .update({ addon_items: items, updated_at: new Date().toISOString() })
+        .eq("id", row.id);
+    }
+  }
+}
+
+async function consolidateCategoryAddonContainers(categoryId: string): Promise<Addon | null> {
+  const supabase = createSupabaseAdminClient();
+  const { data: rows, error } = await supabase
+    .from("addons")
+    .select("*")
+    .eq("category_id", categoryId)
+    .order("created_at", { ascending: true });
+  if (error) {
+    console.error("consolidateCategoryAddonContainers", error);
+    return null;
+  }
+  if (!rows?.length) return null;
+  if (rows.length === 1) {
+    return addonRowToAddon(rows[0] as Record<string, unknown>);
+  }
+
+  const primary = addonRowToAddon(rows[0] as Record<string, unknown>);
+  let mergedOptions = [...primary.options];
+  const duplicateAddonIds: string[] = [];
+
+  for (let i = 1; i < rows.length; i += 1) {
+    const extra = addonRowToAddon(rows[i] as Record<string, unknown>);
+    duplicateAddonIds.push(extra.id);
+    const { options, optionIdMap } = mergeAddonOptionsWithIdRemap(mergedOptions, extra.options);
+    mergedOptions = options;
+    await migrateProductAddonLinks(extra.id, primary.id);
+    await remapBundleOfferAddonReferences(extra.id, primary.id, optionIdMap);
+  }
+
+  const { error: updateErr } = await supabase
+    .from("addons")
+    .update({ options: mergedOptions, updated_at: new Date().toISOString() })
+    .eq("id", primary.id);
+  if (updateErr) {
+    console.error("consolidateCategoryAddonContainers update", updateErr);
+    return primary;
+  }
+
+  for (const duplicateId of duplicateAddonIds) {
+    await supabase.from("addons").delete().eq("id", duplicateId);
+  }
+
+  return { ...primary, options: mergedOptions };
 }
 
 export function categoryToStorefrontAddon(category: AddonCategory, container: Addon | null): Addon | null {
@@ -199,7 +359,7 @@ export async function saveAddonCategoryItems(
   items: AddonOption[],
 ): Promise<AddonCategory | null> {
   const supabase = createSupabaseAdminClient();
-  const container = await getAddonContainerForCategory(categoryId);
+  const container = await ensureAddonContainerForCategory(categoryId);
   if (!container) return null;
   const options = dedupeAddonOptions(items);
   const { error } = await supabase
@@ -224,19 +384,36 @@ export async function mergeAddonCategories(
   }
 
   const supabase = createSupabaseAdminClient();
-  const targetContainer = await getAddonContainerForCategory(targetId);
+  const targetContainer = await ensureAddonContainerForCategory(targetId);
   if (!targetContainer) {
     return { ok: false, error: "Target category has no add-on container." };
   }
 
   let mergedOptions = [...targetContainer.options];
   const sourceAddonIds: string[] = [];
+  const processedSourceCategoryIds: string[] = [];
 
   for (const sourceId of uniqueSources) {
-    const sourceContainer = await getAddonContainerForCategory(sourceId);
+    const sourceContainer = await ensureAddonContainerForCategory(sourceId);
     if (!sourceContainer) continue;
+    processedSourceCategoryIds.push(sourceId);
+    if (sourceContainer.id === targetContainer.id) continue;
+
     sourceAddonIds.push(sourceContainer.id);
-    mergedOptions = dedupeAddonOptions([...mergedOptions, ...sourceContainer.options]);
+    const { options, optionIdMap } = mergeAddonOptionsWithIdRemap(
+      mergedOptions,
+      sourceContainer.options,
+    );
+    mergedOptions = options;
+    await remapBundleOfferAddonReferences(
+      sourceContainer.id,
+      targetContainer.id,
+      optionIdMap,
+    );
+  }
+
+  if (processedSourceCategoryIds.length === 0) {
+    return { ok: false, error: "No valid source categories to merge." };
   }
 
   const { error: optErr } = await supabase
@@ -248,35 +425,21 @@ export async function mergeAddonCategories(
   }
 
   for (const oldAddonId of sourceAddonIds) {
-    const { data: links } = await supabase
-      .from("product_addons")
-      .select("product_id")
-      .eq("addon_id", oldAddonId);
-    for (const row of links ?? []) {
-      const productId = String((row as { product_id: string }).product_id);
-      const { data: existing } = await supabase
-        .from("product_addons")
-        .select("addon_id")
-        .eq("product_id", productId)
-        .eq("addon_id", targetContainer.id)
-        .maybeSingle();
-      if (!existing) {
-        await supabase.from("product_addons").insert({
-          product_id: productId,
-          addon_id: targetContainer.id,
-        });
-      }
-      await supabase
-        .from("product_addons")
-        .delete()
-        .eq("product_id", productId)
-        .eq("addon_id", oldAddonId);
+    await migrateProductAddonLinks(oldAddonId, targetContainer.id);
+    const { error: deleteErr } = await supabase.from("addons").delete().eq("id", oldAddonId);
+    if (deleteErr) {
+      return { ok: false, error: deleteErr.message };
     }
-    await supabase.from("addons").delete().eq("id", oldAddonId);
   }
 
-  for (const sourceId of uniqueSources) {
-    await supabase.from("addon_categories").delete().eq("id", sourceId);
+  for (const sourceId of processedSourceCategoryIds) {
+    const { error: deleteCatErr } = await supabase
+      .from("addon_categories")
+      .delete()
+      .eq("id", sourceId);
+    if (deleteCatErr) {
+      return { ok: false, error: deleteCatErr.message };
+    }
   }
 
   const rows = await listAddonCategoriesWithItems();

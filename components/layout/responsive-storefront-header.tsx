@@ -26,7 +26,7 @@ export function ResponsiveStorefrontHeader() {
     return (
       <div className="desktop-header">
         <SiteHeader />
-        <div className="cb-header-spacer hidden md:block" aria-hidden />
+        <div className="cb-header-spacer cb-header-spacer--desktop" aria-hidden />
       </div>
     );
   }

@@ -14,6 +14,7 @@ export function StorefrontHeaderShell() {
         </div>
         <div className="mobile-header__right w-[7.75rem]" />
       </header>
+      <div className="cb-header-spacer cb-header-spacer--mobile" aria-hidden />
       <div className="desktop-header hidden md:block">
         <header className="cb-header-shell cb-pl-navbar" aria-hidden>
           <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 cb-gutter py-2">
@@ -25,7 +26,7 @@ export function StorefrontHeaderShell() {
             </div>
           </div>
         </header>
-        <div className="cb-header-spacer" aria-hidden />
+        <div className="cb-header-spacer cb-header-spacer--desktop" aria-hidden />
       </div>
     </>
   );

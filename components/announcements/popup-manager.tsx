@@ -139,42 +139,46 @@ export function PopupManager() {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[80] flex items-end justify-center bg-black/45 p-4 sm:items-center"
+        className="fixed inset-0 z-[110] flex items-center justify-center bg-black/55 p-4 backdrop-blur-[2px] sm:p-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="cb-popup-title"
+        onClick={() => active.dismissible && close(true)}
       >
         <motion.div
           className={cn(
-            "relative w-full max-w-md rounded-2xl border border-cb-border/60 bg-cb-surface p-5 shadow-xl",
-            "max-sm:max-h-[85vh] max-sm:overflow-y-auto max-sm:rounded-b-none",
+            "relative w-full max-w-md rounded-2xl border border-cb-border bg-cb-surface p-5 shadow-2xl",
+            "max-h-[min(85dvh,calc(100dvh-2rem))] overflow-y-auto",
+            "ring-1 ring-black/5",
           )}
-          initial={{ y: 24, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 16, opacity: 0 }}
+          initial={{ scale: 0.94, opacity: 0, y: 8 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.96, opacity: 0, y: 6 }}
+          transition={{ type: "spring", stiffness: 420, damping: 32 }}
+          onClick={(e) => e.stopPropagation()}
         >
           {active.dismissible ? (
             <button
               type="button"
-              className="absolute end-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full hover:bg-cb-hover-overlay"
+              className="absolute end-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-cb-surface-2 text-cb-text-strong hover:bg-cb-hover-overlay"
               aria-label="Close"
               onClick={() => close(true)}
             >
               <X className="h-4 w-4" aria-hidden />
             </button>
           ) : null}
-          <h2 id="cb-popup-title" className="pe-8 text-lg font-semibold text-cb-text-strong">
+          <h2 id="cb-popup-title" className="pe-10 text-xl font-bold leading-snug text-cb-text-strong">
             {active.title}
           </h2>
-          <p className="mt-2 text-sm text-cb-text">{active.message}</p>
+          <p className="mt-3 text-base leading-relaxed text-cb-text">{active.message}</p>
           {active.cta ? (
-            <div className="mt-4 flex gap-2">
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
               <Link
                 href={active.cta.url}
-                className={buttonClassName("primary")}
+                className={cn(buttonClassName("primary"), "w-full justify-center sm:w-auto")}
                 onClick={() => {
                   void track(active.id, "click", { variantKey: active.abVariantKey });
                   close(false);
@@ -183,7 +187,7 @@ export function PopupManager() {
                 {active.cta.label}
               </Link>
               {active.dismissible ? (
-                <Button variant="outline" onClick={() => close(true)}>
+                <Button variant="outline" className="w-full sm:w-auto" onClick={() => close(true)}>
                   Later
                 </Button>
               ) : null}

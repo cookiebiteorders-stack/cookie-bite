@@ -13,6 +13,7 @@ export const APP_DATABASE_TABLES = [
   "addons",
   "product_addons",
   "promo_codes",
+  "bundle_offers",
   "shipping_zones",
   "gift_boxes",
   "payments",

@@ -25,7 +25,9 @@ import { checkoutDeliverySchema } from "@/lib/checkout/delivery-scheduling";
 import { resolveDeliveryForCheckout } from "@/lib/checkout/resolve-delivery-persist";
 import { checkGiftBoxSnapshotAvailability } from "@/lib/gift-box/check-availability";
 import { giftBoxOrderSnapshotSchema } from "@/lib/gift-box/order-snapshot";
+import { bundleOfferOrderSnapshotSchema } from "@/lib/offers/order-snapshot";
 import { markAbandonedCartRecovered } from "@/lib/cart/abandoned";
+import { validateBundleOfferSnapshot } from "@/lib/offers/order-snapshot";
 import {
   fetchRecoveryDiscountByCode,
   markRecoveryDiscountUsed,
@@ -69,9 +71,10 @@ const BodySchema = z
   promo_code: z.string().min(3).max(20).optional(),
   delivery: checkoutDeliverySchema,
   gift_box: giftBoxOrderSnapshotSchema.optional(),
+  bundle_offers: z.array(bundleOfferOrderSnapshotSchema).optional(),
 })
-  .refine((d) => d.items.length > 0 || d.gift_box, {
-    message: "Cart must include products or a gift box",
+  .refine((d) => d.items.length > 0 || d.gift_box || (d.bundle_offers?.length ?? 0) > 0, {
+    message: "Cart must include products, a gift box, or bundle offers",
   });
 
 async function resolveSupabaseUserId(): Promise<string | null> {
@@ -105,7 +108,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { items, shipping, paymentMethod, promo_code: promoCodeRaw, delivery, gift_box: giftBox } =
+  const { items, shipping, paymentMethod, promo_code: promoCodeRaw, delivery, gift_box: giftBox, bundle_offers: bundleOffers = [] } =
     parsed.data;
 
   const deliveryResolved = await resolveDeliveryForCheckout(delivery);
@@ -136,6 +139,17 @@ export async function POST(req: Request) {
       );
     }
     subtotal += giftBox.totalPrice;
+  }
+
+  for (const bundleOffer of bundleOffers) {
+    const validation = await validateBundleOfferSnapshot(bundleOffer);
+    if (!validation.ok) {
+      return Response.json(
+        { ok: false, error: validation.error, error_ar: validation.error_ar },
+        { status: 400 },
+      );
+    }
+    subtotal += bundleOffer.offer_price_egp;
   }
 
   if (items.length > 0) {
@@ -225,6 +239,15 @@ export async function POST(req: Request) {
           },
         ]
       : []),
+    ...bundleOffers.map((bundleOffer) => ({
+      slug: `bundle-offer:${bundleOffer.offer_id}`,
+      name: bundleOffer.name_en,
+      unitPrice: bundleOffer.offer_price_egp,
+      quantity: 1,
+      skipProductLookup: true,
+      productSnapshot: { type: "bundle_offer", snapshot: bundleOffer },
+      finalUnitPrice: bundleOffer.offer_price_egp,
+    })),
   ];
 
   const paymobProductLines = [
@@ -244,6 +267,12 @@ export async function POST(req: Request) {
           },
         ]
       : []),
+    ...bundleOffers.map((bundleOffer) => ({
+      id: `bundle-offer:${bundleOffer.offer_id}`,
+      name: bundleOffer.name_en,
+      unitPrice: bundleOffer.offer_price_egp,
+      quantity: 1,
+    })),
   ];
   const total = Math.max(0, subtotal - discountAmount + deliveryFee + giftWrappingFee);
 

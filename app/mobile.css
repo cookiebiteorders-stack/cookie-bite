@@ -149,7 +149,6 @@
   .desktop-footer { display: none !important; }
   .desktop-whatsapp-fab { display: none !important; }
   body {
-    padding-top: calc(56px + var(--cb-announcement-offset, 0px));
     padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
   html, body { overflow-x: hidden; }

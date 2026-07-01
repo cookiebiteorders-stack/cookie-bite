@@ -263,6 +263,7 @@ export function MobileHeader() {
         )}
       </div>
     </header>
+    <div className="cb-header-spacer cb-header-spacer--mobile" aria-hidden />
     {mobileMenuOpen ? (
       <MobileHeaderNavDrawer
         links={mobileLinks}

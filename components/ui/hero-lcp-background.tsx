@@ -34,8 +34,8 @@ export function HeroLcpBackground() {
           />
         </picture>
       )}
-      <div className="pointer-events-none absolute inset-0 cb-pl-hero-overlay lg:hidden" />
-      <div className="pointer-events-none absolute inset-0 cb-pl-hero-overlay hidden lg:block" />
+      <div className="pointer-events-none absolute inset-0 cb-pl-hero-overlay cb-pl-hero-overlay--mobile lg:hidden" />
+      <div className="pointer-events-none absolute inset-0 cb-pl-hero-overlay cb-pl-hero-overlay--desktop hidden lg:block" />
     </div>
   );
 }

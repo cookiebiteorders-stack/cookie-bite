@@ -192,6 +192,7 @@ export const translations: Record<Lang, Dictionary> = {
       kitchen: "Kitchen board",
       customers: "Customers",
       discounts: "Discounts",
+      offers: "Bundle Offers",
       analytics: "Analytics",
       mrBrownie: "Mr. Brownie AI",
       reports: "Reports & BI",
@@ -528,6 +529,10 @@ export const translations: Record<Lang, Dictionary> = {
     adminPages: {
       reports: { title: "Advanced Analytics & BI", subtitle: "Charts, cohorts, and export-ready business intelligence." },
       discounts: { title: "Discounts & Promotions", subtitle: "Codes, campaigns, and usage limits." },
+      offers: {
+        title: "Bundle Offers",
+        subtitle: "Create fixed-price bundles from products and add-ons with automatic pricing.",
+      },
       addons: {
         title: "Product Add-ons",
         subtitle: "Organize extras by category — name, weight, price, and stock per item.",
@@ -1170,6 +1175,11 @@ export const translations: Record<Lang, Dictionary> = {
         freeDeliveryThreshold: "Free delivery on orders over {threshold} EGP",
         drawerUpsellTitle: "Pairs perfectly with",
         drawerUpsellAdd: "Add — {price}",
+        bundleOffersTitle: "Special bundle offers",
+        bundleOffersHint: "Save more when you grab these curated combos.",
+        bundleOfferAdd: "Add bundle — {price}",
+        bundleOfferSave: "Save {amount}",
+        bundleOfferBadge: "Bundle offer",
       },
       checkout: {
         title: "Checkout",
@@ -2240,6 +2250,7 @@ export const translations: Record<Lang, Dictionary> = {
       kitchen: "لوحة المطبخ",
       customers: "العملاء",
       discounts: "الخصومات",
+      offers: "عروض الباقات",
       analytics: "التحليلات",
       mrBrownie: "ذكاء Mr. Brownie",
       reports: "التقارير والتحليلات",
@@ -2575,6 +2586,10 @@ export const translations: Record<Lang, Dictionary> = {
     adminPages: {
       reports: { title: "تحليلات متقدمة و BI", subtitle: "رسوم بيانية، مجموعات، وذكاء أعمال جاهز للتصدير." },
       discounts: { title: "الخصومات والعروض", subtitle: "أكواد، حملات، وحدود الاستخدام." },
+      offers: {
+        title: "عروض الباقات",
+        subtitle: "أنشئ عروضاً بسعر ثابت من المنتجات والإضافات مع حساب تلقائي للأسعار.",
+      },
       addons: {
         title: "إضافات المنتج",
         subtitle: "نظّم الإضافات بتصنيفات — الاسم، الوزن، السعر، والمخزون لكل عنصر.",
@@ -3219,6 +3234,11 @@ export const translations: Record<Lang, Dictionary> = {
         freeDeliveryThreshold: "توصيل مجاني للطلبات فوق {threshold} جنيه",
         drawerUpsellTitle: "يتناسب مع طلبك",
         drawerUpsellAdd: "أضف — {price}",
+        bundleOffersTitle: "عروض الباقات",
+        bundleOffersHint: "وفّر أكثر مع هذه التركيبات المختارة.",
+        bundleOfferAdd: "أضف العرض — {price}",
+        bundleOfferSave: "وفّر {amount}",
+        bundleOfferBadge: "عرض باقة",
       },
       checkout: {
         title: "إتمام الطلب",

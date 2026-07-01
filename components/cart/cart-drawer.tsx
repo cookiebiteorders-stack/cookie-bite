@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { CartDrawerUpsell } from "@/components/cart/cart-drawer-upsell";
+import { CartBundleOffers } from "@/components/cart/cart-bundle-offers";
 import { FreeDeliveryBar } from "@/components/cart/free-delivery-bar";
 import { buttonClassName } from "@/components/ui/button";
 import { easeSoft } from "@/lib/motion/presets";
@@ -130,8 +131,13 @@ export function CartDrawer() {
                 <ul className="space-y-3">
                   <AnimatePresence initial={false}>
                     {lines.map((line) => {
-                      const lineHref = line.giftBox ? "/gift-box" : `/shop/${line.productId}`;
+                      const lineHref = line.giftBox
+                        ? "/gift-box"
+                        : line.bundleOffer
+                          ? "/cart"
+                          : `/shop/${line.productId}`;
                       const isGiftBox = Boolean(line.giftBox);
+                      const isBundleOffer = Boolean(line.bundleOffer);
                       return (
                       <motion.li
                         key={line.id}
@@ -169,6 +175,21 @@ export function CartDrawer() {
                                 {t("pages.cart.giftBoxBadge")}
                               </p>
                             ) : null}
+                            {isBundleOffer ? (
+                              <p className="mt-0.5 text-xs font-semibold text-cb-brand-600">
+                                {t("pages.cart.bundleOfferBadge")}
+                              </p>
+                            ) : null}
+                            {isBundleOffer && line.bundleOffer ? (
+                              <ul className="mt-1 space-y-0.5 text-[11px] text-cb-text-muted">
+                                {line.bundleOffer.products.map((p) => (
+                                  <li key={p.product_id}>• {p.name}</li>
+                                ))}
+                                {line.bundleOffer.addons.map((a) => (
+                                  <li key={`${a.addon_id}:${a.option_id}`}>+ {a.name}</li>
+                                ))}
+                              </ul>
+                            ) : null}
                             {line.variantLabel ? (
                               <p className="mt-0.5 text-xs font-semibold text-cb-text-muted">
                                 {line.variantLabel}
@@ -178,7 +199,7 @@ export function CartDrawer() {
                               {formatPrice(line.finalUnitPriceEgp)}
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
-                              {isGiftBox ? (
+                              {isGiftBox || isBundleOffer ? (
                                 <span className="text-xs text-cb-text-muted">
                                   {t("pages.cart.quantityFixed")}
                                 </span>
@@ -222,6 +243,7 @@ export function CartDrawer() {
                   </AnimatePresence>
                 </ul>
               )}
+              <CartBundleOffers variant="drawer" />
               {lines.length > 0 && lastUpsellSourceProductId ? (
                 <CartDrawerUpsell sourceProductId={lastUpsellSourceProductId} />
               ) : null}

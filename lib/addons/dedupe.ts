@@ -26,6 +26,33 @@ export function dedupeAddonOptions(options: AddonOption[]): AddonOption[] {
   return out;
 }
 
+/** دمج خيارات مع إعادة توليد id عند التعارض — للدمج بين تصنيفات. */
+export function mergeAddonOptionsWithIdRemap(
+  base: AddonOption[],
+  incoming: AddonOption[],
+): { options: AddonOption[]; optionIdMap: Map<string, string> } {
+  const optionIdMap = new Map<string, string>();
+  const seen = new Set(
+    base.map((o) => o.id?.trim()).filter((id): id is string => Boolean(id)),
+  );
+  const merged = [...base];
+
+  for (const opt of incoming) {
+    const oldId = opt.id?.trim();
+    let id = oldId || crypto.randomUUID();
+    if (oldId && seen.has(oldId)) {
+      id = crypto.randomUUID();
+      optionIdMap.set(oldId, id);
+    } else if (!oldId) {
+      id = crypto.randomUUID();
+    }
+    seen.add(id);
+    merged.push({ ...opt, id });
+  }
+
+  return { options: merged, optionIdMap };
+}
+
 export function dedupeAddons(addons: Addon[]): Addon[] {
   const seen = new Set<string>();
   const out: Addon[] = [];

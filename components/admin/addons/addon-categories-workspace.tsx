@@ -241,8 +241,12 @@ export function AddonCategoriesWorkspace() {
       setMergeMode(false);
       setMergeSources([]);
       await load();
-    } catch {
-      setError(pick({ en: "Merge failed.", ar: "فشل الدمج." }));
+    } catch (e) {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : pick({ en: "Merge failed.", ar: "فشل الدمج." });
+      setError(msg);
     } finally {
       setSaving(false);
     }

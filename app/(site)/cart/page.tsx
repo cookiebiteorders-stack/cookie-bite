@@ -11,6 +11,7 @@ import { useLanguage } from "@/components/providers/language-provider";
 import { useFreeShippingThreshold } from "@/components/providers/store-commerce-settings-provider";
 import { InlineAlerts } from "@/components/announcements/inline-alerts";
 import { PromoCodeField } from "@/components/checkout/promo-code-field";
+import { CartBundleOffers } from "@/components/cart/cart-bundle-offers";
 
 export default function CartPage() {
   const { t, formatPrice } = useLanguage();
@@ -51,12 +52,17 @@ export default function CartPage() {
               >
                 {t("pages.cart.shopCookies")}
               </Link>
+              <CartBundleOffers variant="page" className="mt-8 text-start" />
             </div>
           ) : (
             <>
               <ul className="mt-10 space-y-4">
                 {lines.map((item) => {
-                  const itemHref = item.giftBox ? "/gift-box" : `/shop/${item.productId}`;
+                  const itemHref = item.giftBox
+                    ? "/gift-box"
+                    : item.bundleOffer
+                      ? "/cart"
+                      : `/shop/${item.productId}`;
                   return (
                   <li
                     key={item.id}
@@ -88,9 +94,31 @@ export default function CartPage() {
                           {t("pages.cart.giftBoxLine", { size: item.giftBox.box_size })}
                         </p>
                       ) : null}
+                      {item.bundleOffer ? (
+                        <p className="text-xs font-semibold text-cb-terracotta-dark">
+                          {t("pages.cart.bundleOfferBadge")}
+                        </p>
+                      ) : null}
                       <p className="text-sm font-bold text-cb-terracotta-dark">
                         {formatPrice(item.finalUnitPriceEgp)} {t("pages.cart.each")}
                       </p>
+                      {item.bundleOffer ? (
+                        <ul className="mt-1 space-y-1 text-xs text-cb-text-muted">
+                          {item.bundleOffer.products.map((p) => (
+                            <li key={p.product_id}>• {p.name}</li>
+                          ))}
+                          {item.bundleOffer.addons.map((a) => (
+                            <li key={`${a.addon_id}:${a.option_id}`}>+ {a.name}</li>
+                          ))}
+                          {item.bundleOffer.savings_egp > 0 ? (
+                            <li className="font-semibold text-emerald-700">
+                              {t("pages.cart.bundleOfferSave", {
+                                amount: formatPrice(item.bundleOffer.savings_egp),
+                              })}
+                            </li>
+                          ) : null}
+                        </ul>
+                      ) : null}
                       {item.addons.length > 0 ? (
                         <ul className="mt-1 space-y-1 text-xs text-cb-text-muted">
                           {item.addons.map((addon) => (
@@ -101,7 +129,7 @@ export default function CartPage() {
                         </ul>
                       ) : null}
                       <div className="mt-3 flex items-center gap-2">
-                        {item.giftBox ? (
+                        {item.giftBox || item.bundleOffer ? (
                           <span className="text-xs text-cb-text-muted">{t("pages.cart.quantityFixed")}</span>
                         ) : (
                           <QuantitySelector
@@ -126,6 +154,7 @@ export default function CartPage() {
                   );
                 })}
               </ul>
+              <CartBundleOffers variant="page" />
             </>
           )}
         </section>

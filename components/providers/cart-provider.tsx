@@ -15,10 +15,12 @@ import {
   cartItemCount,
   cartSubtotal,
   buildCartLineId,
+  bundleOfferLine,
   giftBoxLine,
   lineFromProduct,
   type CartLine,
 } from "@/lib/cart/types";
+import type { StorefrontBundleOffer } from "@/lib/offers/storefront";
 import { persistGiftBoxState } from "@/lib/gift-box-builder/state";
 import { builderStateFromSnapshot, type GiftBoxOrderSnapshot } from "@/lib/gift-box/order-snapshot";
 
@@ -65,6 +67,7 @@ type CartContextValue = {
     totalPrice: number;
     builder?: Record<string, unknown>;
   }) => void;
+  addBundleOfferItem: (offer: StorefrontBundleOffer) => void;
   restoreGiftBox: (snapshot: GiftBoxOrderSnapshot) => void;
   restoreCart: (lines: CartLine[], discountCode?: string | null) => Promise<void>;
   setQuantity: (lineId: string, quantity: number) => void;
@@ -112,6 +115,7 @@ function loadLines(): CartLine[] {
         addonsTotalEgp,
         finalUnitPriceEgp: Number(line.finalUnitPriceEgp ?? Number(line.priceEgp ?? 0) + addonsTotalEgp),
         giftBox: line.giftBox,
+        bundleOffer: line.bundleOffer,
         variantId: line.variantId,
         variantLabel: line.variantLabel,
         variantSnapshot: line.variantSnapshot,
@@ -264,7 +268,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const q = Math.min(99, Math.max(0, quantity));
     setLines((prev) => {
       const target = prev.find((l) => l.id === lineId);
-      if (target?.giftBox) return prev;
+      if (target?.giftBox || target?.bundleOffer) return prev;
       if (q === 0) return prev.filter((l) => l.id !== lineId);
       return prev.map((l) =>
         l.id === lineId ? { ...l, quantity: q } : l,
@@ -297,6 +301,40 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     },
     [],
   );
+
+  const addBundleOfferItem = useCallback((offer: StorefrontBundleOffer) => {
+    setLines((prev) => {
+      const existingIdx = prev.findIndex((l) => l.bundleOffer?.offer_id === offer.id);
+      const nextLine = bundleOfferLine({
+        offerId: offer.id,
+        name: offer.name,
+        nameEn: offer.name_en,
+        nameAr: offer.name_ar,
+        image: offer.products[0]?.image || "/images/web-logo.png",
+        offerPriceEgp: offer.offer_price_egp,
+        originalTotalEgp: offer.original_total_egp,
+        savingsEgp: offer.savings_egp,
+        products: offer.products.map((p) => ({
+          product_id: p.id,
+          slug: p.slug,
+          name: p.name,
+          price_snapshot: p.price_egp,
+          image: p.image,
+        })),
+        addons: offer.addons.map((a) => ({
+          addon_id: a.addon_id,
+          option_id: a.option_id,
+          name: a.name,
+          price_snapshot: a.price,
+        })),
+      });
+      if (existingIdx === -1) return [...prev, nextLine];
+      const next = [...prev];
+      next[existingIdx] = nextLine;
+      return next;
+    });
+    setDrawerOpen(true);
+  }, []);
 
   const restoreGiftBox = useCallback((snapshot: GiftBoxOrderSnapshot) => {
     const state = builderStateFromSnapshot(snapshot);
@@ -371,6 +409,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       toggleDrawer,
       addItem,
       addGiftBoxItem,
+      addBundleOfferItem,
       restoreGiftBox,
       restoreCart,
       setQuantity,
@@ -392,6 +431,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       toggleDrawer,
       addItem,
       addGiftBoxItem,
+      addBundleOfferItem,
       restoreGiftBox,
       restoreCart,
       setQuantity,

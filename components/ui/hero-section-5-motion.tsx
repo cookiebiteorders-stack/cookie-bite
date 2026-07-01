@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import { InfiniteSlider } from "@/components/ui/infinite-slider";
+import { HeroDecorations } from "@/components/ui/hero-decorations";
 import { buttonClassName } from "@/components/ui/button";
 import { HeroSection5Copy } from "@/components/ui/hero-section-5-copy";
 import { useLanguage } from "@/components/providers/language-provider";
@@ -27,34 +28,31 @@ export function HeroSection5Motion() {
   const { t } = useLanguage();
 
   return (
-    <div className="cb-pl-hero cb-grain overflow-x-hidden">
+    <div className="cb-pl-hero-surface cb-grain overflow-x-hidden">
+      <HeroDecorations />
       <section className="relative min-h-[100svh] w-full">
         <div className="relative z-10 flex min-h-[100svh] w-full flex-col pb-[max(4rem,env(safe-area-inset-bottom))] pt-[max(calc(4.5rem+var(--cb-announcement-offset,0px)),env(safe-area-inset-top))] md:pb-28 md:pt-[calc(6rem+var(--cb-announcement-offset,0px))] lg:pb-36 lg:pt-[calc(7rem+var(--cb-announcement-offset,0px))]">
           <HeroSection5Copy
             kicker={
-              <motion.p
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.08, duration: 0.7, ease: soft }}
-                className="inline-flex rotate-[-0.8deg] flex-col gap-1"
+                className="cb-hero-kicker-wrap"
               >
-                <span className="cb-pl-hero-kicker text-[max(10px,0.65rem)] font-bold uppercase tracking-[0.22em] sm:tracking-[0.28em]">
-                  {t("hero.kicker")}
-                </span>
-                <span className="cb-pl-hero-kicker font-playful text-[clamp(1rem,3.5vw,1.35rem)] md:text-xl">
-                  {t("hero.brand")}
-                </span>
-              </motion.p>
+                <p className="cb-hero-kicker-badge">{t("hero.kicker")}</p>
+                <p className="cb-hero-brand-name font-playful">{t("hero.brand")}</p>
+              </motion.div>
             }
             title={
               <motion.h1
                 initial={{ opacity: 0, y: 28 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.18, duration: 0.75, ease: soft }}
-                className="cb-pl-hero-title mt-6 max-w-[min(100%,22rem)] text-balance font-serif text-[length:var(--fluid-display)] font-semibold leading-[1.06] sm:mt-7 sm:max-w-3xl lg:mt-8"
+                className="cb-pl-hero-title cb-hero-title mt-5 max-w-[min(100%,22rem)] text-balance font-serif text-[length:var(--fluid-display)] font-semibold leading-[1.06] sm:mt-6 sm:max-w-3xl lg:mt-7"
               >
                 {t("hero.titleBefore")}
-                <span className="italic text-[var(--color-caramel)]">{t("hero.titleAccent")}</span>
+                <span className="cb-hero-title-accent italic">{t("hero.titleAccent")}</span>
                 {t("hero.titleComma")}
                 <br className="hidden sm:block" />
                 <span className="mt-1 block sm:mt-0 sm:inline">{t("hero.titleLine2")}</span>
@@ -81,7 +79,7 @@ export function HeroSection5Motion() {
                   href="/shop"
                   className={buttonClassName(
                     "primary",
-                    "cb-touch-manipulation min-h-[3rem] w-full justify-center rounded-full px-7 py-3 text-base sm:w-auto",
+                    "cb-hero-cta-primary cb-touch-manipulation min-h-[3rem] w-full justify-center rounded-full px-7 py-3 text-base sm:w-auto",
                   )}
                 >
                   <span className="text-center sm:text-nowrap">{t("hero.ctaShop")}</span>
@@ -93,7 +91,7 @@ export function HeroSection5Motion() {
                 <Link
                   href="/our-cookies"
                   className={cn(
-                    "cb-pl-btn-ghost cb-touch-manipulation min-h-[3rem] w-full justify-center sm:w-auto",
+                    "cb-pl-btn-ghost cb-hero-cta-ghost cb-touch-manipulation min-h-[3rem] w-full justify-center sm:w-auto",
                   )}
                 >
                   <span className="text-center sm:text-nowrap">{t("hero.ctaDiscover")}</span>

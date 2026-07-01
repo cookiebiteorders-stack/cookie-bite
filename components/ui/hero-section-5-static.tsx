@@ -1,6 +1,7 @@
 "use client";
 
 import { InfiniteSlider } from "@/components/ui/infinite-slider";
+import { HeroDecorations } from "@/components/ui/hero-decorations";
 import { HeroSection5Copy } from "@/components/ui/hero-section-5-copy";
 import { useLanguage } from "@/components/providers/language-provider";
 
@@ -20,7 +21,8 @@ export function HeroSection5Static() {
   const { t } = useLanguage();
 
   return (
-    <div className="cb-pl-hero cb-grain overflow-x-hidden">
+    <div className="cb-pl-hero-surface cb-grain overflow-x-hidden">
+      <HeroDecorations />
       <section className="relative min-h-[100svh] w-full">
         <div className="relative z-10 flex min-h-[100svh] w-full flex-col pb-[max(4rem,env(safe-area-inset-bottom))] pt-[max(calc(4.5rem+var(--cb-announcement-offset,0px)),env(safe-area-inset-top))] md:pb-28 md:pt-[calc(6rem+var(--cb-announcement-offset,0px))] lg:pb-36 lg:pt-[calc(7rem+var(--cb-announcement-offset,0px))]">
           <HeroSection5Copy />

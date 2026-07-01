@@ -26,6 +26,7 @@ import {
   buildSnapshotFromCartLine,
   type GiftBoxCartBuilderPayload,
 } from "@/lib/gift-box/order-snapshot";
+import { buildBundleOfferSnapshotFromCartLine } from "@/lib/offers/order-snapshot";
 
 const GIFT_WRAP_FEE_EGP = 30;
 
@@ -55,7 +56,8 @@ export default function CheckoutPage() {
   const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
   const [delivery, setDelivery] = useState<DeliverySchedulingState>(emptyDeliveryScheduling);
   const giftBoxLine = lines.find((l) => Boolean(l.giftBox));
-  const regularLines = lines.filter((l) => !l.giftBox);
+  const bundleOfferLines = lines.filter((l) => Boolean(l.bundleOffer));
+  const regularLines = lines.filter((l) => !l.giftBox && !l.bundleOffer);
 
   useEffect(() => {
     if (itemCount === 0) {
@@ -99,6 +101,9 @@ export default function CheckoutPage() {
           giftBoxLine.giftBox?.builder as GiftBoxCartBuilderPayload | undefined,
         )
       : null;
+    const bundleOfferSnapshots = bundleOfferLines
+      .map((line) => buildBundleOfferSnapshotFromCartLine(line))
+      .filter(Boolean);
     if (giftBoxLine && !giftBoxSnapshot) {
       setErrorMsg(t("pages.checkout.errGiftBox"));
       setStatus("error");
@@ -118,6 +123,7 @@ export default function CheckoutPage() {
             addons: l.addons,
           })),
           ...(giftBoxSnapshot ? { gift_box: giftBoxSnapshot } : {}),
+          ...(bundleOfferSnapshots.length ? { bundle_offers: bundleOfferSnapshots } : {}),
           shipping: { name, email, phone, address, city, notes },
           paymentMethod: payment,
           promo_code: promo?.code,

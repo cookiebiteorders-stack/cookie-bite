@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, MapPin } from "lucide-react";
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { buttonClassName } from "@/components/ui/button";
+import { HeroTrustPills, HeroVisual } from "@/components/ui/hero-visual";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 
@@ -34,22 +35,18 @@ export function HeroSection5Copy({
   const kickerBlock =
     kicker ??
     (
-      <p className="inline-flex rotate-[-0.8deg] flex-col gap-1">
-        <span className="cb-pl-hero-kicker text-[max(10px,0.65rem)] font-bold uppercase tracking-[0.22em] sm:tracking-[0.28em]">
-          {t("hero.kicker")}
-        </span>
-        <span className="cb-pl-hero-kicker font-playful text-[clamp(1rem,3.5vw,1.35rem)] md:text-xl">
-          {t("hero.brand")}
-        </span>
-      </p>
+      <div className="cb-hero-kicker-wrap">
+        <p className="cb-hero-kicker-badge">{t("hero.kicker")}</p>
+        <p className="cb-hero-brand-name font-playful">{t("hero.brand")}</p>
+      </div>
     );
 
   const titleBlock =
     title ??
     (
-      <h1 className="cb-pl-hero-title mt-6 max-w-[min(100%,22rem)] text-balance font-serif text-[length:var(--fluid-display)] font-semibold leading-[1.06] sm:mt-7 sm:max-w-3xl lg:mt-8">
+      <h1 className="cb-pl-hero-title cb-hero-title mt-5 max-w-[min(100%,22rem)] text-balance font-serif text-[length:var(--fluid-display)] font-semibold leading-[1.06] sm:mt-6 sm:max-w-3xl lg:mt-7">
         {t("hero.titleBefore")}
-        <span className="italic text-[var(--color-caramel)]">{t("hero.titleAccent")}</span>
+        <span className="cb-hero-title-accent italic">{t("hero.titleAccent")}</span>
         {t("hero.titleComma")}
         <br className="hidden sm:block" />
         <span className="mt-1 block sm:mt-0 sm:inline">{t("hero.titleLine2")}</span>
@@ -67,12 +64,12 @@ export function HeroSection5Copy({
   const actionsBlock =
     actions ??
     (
-      <div className="mt-9 flex w-full max-w-md flex-col items-stretch gap-3 sm:mt-11 sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-4 lg:max-w-none lg:justify-start">
+      <div className="mt-8 flex w-full max-w-md flex-col items-stretch gap-3 sm:mt-10 sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-4 lg:max-w-none lg:justify-start">
         <Link
           href="/shop"
           className={buttonClassName(
             "primary",
-            "cb-touch-manipulation min-h-[3rem] w-full justify-center rounded-full px-7 py-3 text-base sm:w-auto",
+            "cb-hero-cta-primary cb-touch-manipulation min-h-[3rem] w-full justify-center rounded-full px-7 py-3 text-base sm:w-auto",
           )}
         >
           <span className="text-center sm:text-nowrap">{t("hero.ctaShop")}</span>
@@ -84,7 +81,7 @@ export function HeroSection5Copy({
         <Link
           href="/our-cookies"
           className={cn(
-            "cb-pl-btn-ghost cb-touch-manipulation min-h-[3rem] w-full justify-center sm:w-auto",
+            "cb-pl-btn-ghost cb-hero-cta-ghost cb-touch-manipulation min-h-[3rem] w-full justify-center sm:w-auto",
           )}
         >
           <span className="text-center sm:text-nowrap">{t("hero.ctaDiscover")}</span>
@@ -104,18 +101,17 @@ export function HeroSection5Copy({
           {bodyBlock}
           {actionsBlock}
 
-          <p
-            className={cn(
-              "mt-10 hidden max-w-xs text-start text-xs leading-relaxed text-cb-text-muted lg:block",
-              "border-s-2 border-cb-pink/80 ps-4",
-            )}
-          >
-            {t("hero.noteDesktop")}
+          <HeroTrustPills />
+
+          <p className="cb-hero-location-note mt-6 inline-flex items-center justify-center gap-1.5 text-xs text-cb-text-muted lg:justify-start">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--color-caramel)]" aria-hidden />
+            <span>{t("hero.noteDesktop")}</span>
           </p>
         </div>
 
-        <div className="cb-hero-layout__promo hidden lg:flex" aria-hidden={false}>
-          <HeroAnnouncement variant="panel" />
+        <div className="cb-hero-layout__promo" aria-hidden={false}>
+          <HeroVisual />
+          <HeroAnnouncement variant="panel" className="hidden lg:block" />
         </div>
       </div>
     </div>

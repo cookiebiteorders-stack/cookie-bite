@@ -135,6 +135,7 @@ export const adminRouteModuleMap: Record<string, ModuleKey> = {
   "/admin/orders": "orders",
   "/admin/customers": "customers",
   "/admin/discounts": "discounts",
+  "/admin/offers": "discounts",
   "/admin/analytics": "analytics",
   "/admin/reports": "analytics",
   "/admin/financial": "financial",

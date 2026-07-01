@@ -42,6 +42,27 @@ export type CartLine = {
     total_price: number;
     builder?: Record<string, unknown>;
   };
+  bundleOffer?: {
+    offer_id: string;
+    name_en: string;
+    name_ar: string;
+    offer_price_egp: number;
+    original_total_egp: number;
+    savings_egp: number;
+    products: {
+      product_id: string;
+      slug: string;
+      name: string;
+      price_snapshot: number;
+      image?: string;
+    }[];
+    addons: {
+      addon_id: string;
+      option_id: string;
+      name: string;
+      price_snapshot: number;
+    }[];
+  };
 };
 
 export function lineFromProduct(
@@ -77,6 +98,52 @@ export function lineFromProduct(
     variantId: variant?.id,
     variantLabel: variant?.name,
     variantSnapshot,
+  };
+}
+
+export function bundleOfferLine(input: {
+  offerId: string;
+  name: string;
+  nameEn: string;
+  nameAr: string;
+  image: string;
+  offerPriceEgp: number;
+  originalTotalEgp: number;
+  savingsEgp: number;
+  products: {
+    product_id: string;
+    slug: string;
+    name: string;
+    price_snapshot: number;
+    image?: string;
+  }[];
+  addons: {
+    addon_id: string;
+    option_id: string;
+    name: string;
+    price_snapshot: number;
+  }[];
+}): CartLine {
+  return {
+    id: `bundle-offer:${input.offerId}`,
+    productId: `bundle-offer:${input.offerId}`,
+    name: input.name,
+    image: input.image,
+    priceEgp: input.offerPriceEgp,
+    quantity: 1,
+    addons: [],
+    addonsTotalEgp: 0,
+    finalUnitPriceEgp: input.offerPriceEgp,
+    bundleOffer: {
+      offer_id: input.offerId,
+      name_en: input.nameEn,
+      name_ar: input.nameAr,
+      offer_price_egp: input.offerPriceEgp,
+      original_total_egp: input.originalTotalEgp,
+      savings_egp: input.savingsEgp,
+      products: input.products,
+      addons: input.addons,
+    },
   };
 }
 

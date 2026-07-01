@@ -48,7 +48,7 @@ export function AdminShell({ role, children }: AdminShellProps) {
           <div className="desktop-header cb-no-print">
             <SiteHeader />
           </div>
-          <div className="cb-header-spacer hidden md:block" aria-hidden />
+          <div className="cb-header-spacer cb-header-spacer--desktop" aria-hidden />
 
           <div className="cb-no-print">
             <MobileHeader />
