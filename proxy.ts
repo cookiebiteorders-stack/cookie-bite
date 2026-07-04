@@ -1,30 +1,30 @@
-import { clerkClient, clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { adminRouteModuleMap, canAccess } from "@/lib/admin/rbac";
 import { resolveStaffRole } from "@/lib/admin/auth-role";
 import { PRODUCTION_HOST } from "@/lib/config/production-lock";
 import { getOwnerFlags } from "@/lib/store/owner-flags-server";
+import { updateSupabaseSession } from "@/lib/supabase/middleware";
 
-const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
-const isAccountRoute = createRouteMatcher(["/account(.*)"]);
-const isWebhook = createRouteMatcher(["/api/webhooks(.*)"]);
-const isMaintenanceBypass = createRouteMatcher([
-  "/maintenance",
-  "/admin(.*)",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
-  "/api/(.*)",
-  "/_next/(.*)",
-  "/favicon.ico",
-  "/icon.png",
-  "/icon.svg",
-  "/manifest.webmanifest",
-]);
+const isAdminRoute = (pathname: string) =>
+  pathname === "/admin" || pathname.startsWith("/admin/");
+const isAccountRoute = (pathname: string) =>
+  pathname === "/account" || pathname.startsWith("/account/");
+const isWebhook = (pathname: string) =>
+  pathname === "/api/webhooks" || pathname.startsWith("/api/webhooks/");
+const isMaintenanceBypass = (pathname: string) =>
+  pathname === "/maintenance" ||
+  isAdminRoute(pathname) ||
+  pathname.startsWith("/sign-in") ||
+  pathname.startsWith("/sign-up") ||
+  pathname.startsWith("/forgot-password") ||
+  pathname.startsWith("/reset-password") ||
+  pathname.startsWith("/api/") ||
+  pathname.startsWith("/_next/") ||
+  pathname === "/favicon.ico" ||
+  pathname === "/icon.png" ||
+  pathname === "/icon.svg" ||
+  pathname === "/manifest.webmanifest";
 
-/**
- * Rate limit في الذاكرة (يكفي لمرحلة الاختبار + Vercel Edge بعد التوسعة).
- * بدّله لـ Upstash/Vercel KV قبل الإنتاج عالي الحمل.
- */
 const rateBuckets = new Map<string, { count: number; reset: number }>();
 
 function rateOk(key: string, max: number, windowMs: number) {
@@ -51,10 +51,9 @@ function resolveModule(pathname: string) {
   return matched ? adminRouteModuleMap[matched] : "dashboard";
 }
 
-export default clerkMiddleware(async (auth, request) => {
+export default async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
-  // 0) Canonical host enforcement (production فقط)
   if (process.env.NODE_ENV === "production") {
     const url = request.nextUrl;
     const host = (request.headers.get("host") ?? url.host).toLowerCase();
@@ -70,31 +69,27 @@ export default clerkMiddleware(async (auth, request) => {
     }
   }
 
-  // 1) Webhooks تمر بدون أي تدخل (Clerk/Paymob/Sanity verify HMAC داخلياً)
-  if (isWebhook(request)) {
-    return;
+  if (isWebhook(path)) {
+    return NextResponse.next();
   }
 
-  // 1b) Maintenance mode — storefront only; admin + APIs stay up
-  if (!isMaintenanceBypass(request)) {
+  if (!isMaintenanceBypass(path)) {
     try {
       const flags = await getOwnerFlags();
       if (flags.maintenance_mode && path !== "/maintenance") {
         return NextResponse.redirect(new URL("/maintenance", request.url));
       }
     } catch {
-      /* fail open — do not block traffic if flags cannot load */
+      /* fail open */
     }
   }
 
-  // 2) Rate limit للنقاط الحساسة
   if (path.startsWith("/api/")) {
     const ip =
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       request.headers.get("x-real-ip") ||
       "unknown";
 
-    // حدّ عام يحمي ضد flood على كل المسارات بغض النظر عن النوع
     if (!rateOk(`all:${ip}`, 240, 60_000)) return tooMany();
 
     if (
@@ -123,12 +118,10 @@ export default clerkMiddleware(async (auth, request) => {
     } else if (path.startsWith("/api/admin/")) {
       if (!rateOk(`admin:${ip}`, 60, 60_000)) return tooMany();
     } else if (path.startsWith("/api/revalidate")) {
-      // tight limit — secret rotation/abuse مقاومة
       if (!rateOk(`reval:${ip}`, 10, 60_000)) return tooMany();
     }
   }
 
-  // Cleanup العالم للذاكرة من entries منتهية (يحدث كل 5 دقائق تقريبياً)
   if (Math.random() < 0.001) {
     const now = Date.now();
     for (const [k, v] of rateBuckets) {
@@ -136,10 +129,13 @@ export default clerkMiddleware(async (auth, request) => {
     }
   }
 
-  // 3) حماية /account
-  if (isAccountRoute(request)) {
-    const { userId } = await auth();
-    if (!userId) {
+  const needsAuth = isAccountRoute(path) || isAdminRoute(path);
+  const { response, user } = needsAuth
+    ? await updateSupabaseSession(request)
+    : { response: NextResponse.next({ request }), user: null as null };
+
+  if (isAccountRoute(path)) {
+    if (!user) {
       const signIn = new URL("/sign-in", request.url);
       signIn.searchParams.set(
         "redirect_url",
@@ -147,17 +143,14 @@ export default clerkMiddleware(async (auth, request) => {
       );
       return NextResponse.redirect(signIn);
     }
-    return NextResponse.next();
+    return response;
   }
 
-  // 4) كل ما تبقى = عام، إلا لوحة الإدارة
-  if (!isAdminRoute(request)) {
-    return;
+  if (!isAdminRoute(path)) {
+    return response;
   }
 
-  // 5) Admin RBAC
-  const { userId } = await auth();
-  if (!userId) {
+  if (!user) {
     const signIn = new URL("/sign-in", request.url);
     signIn.searchParams.set(
       "redirect_url",
@@ -166,11 +159,8 @@ export default clerkMiddleware(async (auth, request) => {
     return NextResponse.redirect(signIn);
   }
 
-  const client = await clerkClient();
-  const user = await client.users.getUser(userId);
-  const email = user.primaryEmailAddress?.emailAddress ?? null;
-
-  const role = await resolveStaffRole({ email, clerkUserId: userId });
+  const email = user.email ?? null;
+  const role = await resolveStaffRole({ email, supabaseUserId: user.id });
   if (!["owner", "admin", "staff"].includes(role)) {
     return NextResponse.redirect(new URL("/403", request.url));
   }
@@ -180,12 +170,12 @@ export default clerkMiddleware(async (auth, request) => {
     return NextResponse.redirect(new URL("/403", request.url));
   }
 
-  return NextResponse.next();
-});
+  return response;
+}
 
 export const config = {
   matcher: [
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc|__clerk)(.*)",
+    "/(api|trpc)(.*)",
   ],
 };
