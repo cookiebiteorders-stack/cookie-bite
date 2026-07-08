@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { resolveStaffRole } from "@/lib/admin/auth-role";
 import { getAiProductNamePool } from "@/lib/ai/website-knowledge";
@@ -23,23 +23,15 @@ export async function POST(req: NextRequest) {
     const cartSubtotal = parsed.success ? (parsed.data.cartSubtotalEgp ?? 0) : 0;
     const locale = parsed.success && parsed.data.locale === "en" ? "en" : "ar";
 
-    const { userId } = await auth();
-
-    /** `currentUser()` hits Clerk over the network — skip for guests; on failure use Supabase + userId only */
-    let clerkEmail: string | null = null;
-    if (userId) {
-      try {
-        const clerkUser = await currentUser();
-        clerkEmail = clerkUser?.primaryEmailAddress?.emailAddress ?? null;
-      } catch (e) {
-        console.error("[mr-brownie/ambient] currentUser failed:", e);
-      }
-    }
+    const supabaseClient = await createSupabaseServerClient();
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    const userId = user?.id;
+    const userEmail = user?.email ?? null;
 
     const resolvedRole = userId
       ? await resolveStaffRole({
-          email: clerkEmail,
-          clerkUserId: userId,
+          email: userEmail,
+          supabaseUserId: userId,
         })
       : "guest";
 

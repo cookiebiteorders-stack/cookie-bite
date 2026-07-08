@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useCart } from "@/components/providers/cart-provider";
 import { ProductCard } from "@/components/product/product-card";
 import { SectionHeading } from "@/components/sections/section-heading";
@@ -126,7 +126,7 @@ export function ShopClient({
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn } = useSupabaseAuth();
 
   const categoryLabelLookup = useMemo(
     () => buildShopCategoryLabelLookup(categoryLabels, lang, t),

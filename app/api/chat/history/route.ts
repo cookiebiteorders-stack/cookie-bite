@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { isChatSessionUuid } from "@/lib/chat/session-id";
 import { resolveDbUserId } from "@/lib/chat/resolve-user";
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -18,10 +18,10 @@ export async function GET(req: NextRequest) {
   }
 
   const limit = parseLimit(req);
-  const { userId: clerkUserId } = await auth();
+  const { userId } = await auth();
 
-  if (clerkUserId) {
-    const dbUserId = await resolveDbUserId(supabase, clerkUserId);
+  if (userId) {
+    const dbUserId = await resolveDbUserId(supabase, userId);
     if (!dbUserId) {
       return NextResponse.json({ messages: [] as const });
     }

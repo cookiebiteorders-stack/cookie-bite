@@ -1,6 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { z } from "zod";
-import { getUserByClerkId } from "@/lib/db/users";
+import { getUserBySupabaseId } from "@/lib/db/users";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const EventSchema = z
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
   const { userId } = await auth();
   let user_id: string | null = null;
   if (userId) {
-    const profile = await getUserByClerkId(userId);
+    const profile = await getUserBySupabaseId(userId);
     user_id = profile?.id ?? null;
   }
 

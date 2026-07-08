@@ -1,9 +1,9 @@
 "use client";
 
-import { SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AccountSectionLink } from "@/components/account/account-section-link";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   Bell,
   CreditCard,
@@ -55,6 +55,7 @@ export function AccountSidebar({
   adminConsoleLinks = [],
 }: AccountSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { t } = useLanguage();
   const { items: staffAdminNavItems } = useStaffAdminNav();
   const adminLinks: AdminConsoleNavItem[] =
@@ -65,6 +66,13 @@ export function AccountSidebar({
           navKey: item.navKey,
           module: item.module,
         }));
+
+  const handleSignOut = async () => {
+    const supabase = createSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  };
 
   const labels: Record<(typeof customerNavItems)[number]["key"], string> = {
     dashboard: t("accountNav.dashboard"),
@@ -164,15 +172,14 @@ export function AccountSidebar({
             </>
           ) : null}
           <li>
-            <SignOutButton redirectUrl="/">
-              <button
-                type="button"
-                className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-semibold text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
-              >
-                <LogOut className="h-4 w-4" aria-hidden />
-                {t("userMenu.signOut")}
-              </button>
-            </SignOutButton>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-semibold text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+            >
+              <LogOut className="h-4 w-4" aria-hidden />
+              {t("userMenu.signOut")}
+            </button>
           </li>
         </ul>
       </nav>

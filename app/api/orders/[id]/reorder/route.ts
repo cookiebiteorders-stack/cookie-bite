@@ -1,7 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getUserByClerkId } from "@/lib/db/users";
+import { getUserBySupabaseId } from "@/lib/db/users";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { checkGiftBoxSnapshotAvailability } from "@/lib/gift-box/check-availability";
 import { parseGiftBoxSnapshot } from "@/lib/gift-box/order-snapshot";
@@ -15,12 +15,12 @@ export async function POST(
   _req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
-  const { userId: clerkUserId } = await auth();
-  if (!clerkUserId) {
+  const { userId: supabaseUserId } = await auth();
+  if (!supabaseUserId) {
     return NextResponse.json(bilingualError("Unauthorized", "غير مصرح"), { status: 401 });
   }
 
-  const profile = await getUserByClerkId(clerkUserId);
+  const profile = await getUserBySupabaseId(supabaseUserId);
   if (!profile?.id) {
     return NextResponse.json(bilingualError("Unauthorized", "غير مصرح"), { status: 401 });
   }

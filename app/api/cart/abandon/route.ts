@@ -1,11 +1,11 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { z } from "zod";
 import {
   buildAbandonedCartSnapshot,
   upsertAbandonedCart,
 } from "@/lib/cart/abandoned";
 import type { CartLine } from "@/lib/cart/types";
-import { getUserByClerkId } from "@/lib/db/users";
+import { getUserBySupabaseId } from "@/lib/db/users";
 
 const BodySchema = z.object({
   lines: z.array(z.record(z.string(), z.unknown())).min(1),
@@ -42,9 +42,9 @@ export async function POST(req: Request) {
   let userId: string | null = null;
   let profileEmail: string | null = null;
   try {
-    const { userId: clerkId } = await auth();
-    if (clerkId) {
-      const profile = await getUserByClerkId(clerkId);
+    const { userId: supabaseId } = await auth();
+    if (supabaseId) {
+      const profile = await getUserBySupabaseId(supabaseId);
       userId = profile?.id ?? null;
       profileEmail = profile?.email ?? null;
     }

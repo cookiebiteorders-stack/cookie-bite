@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getUserByClerkId } from "@/lib/db/users";
+import { getUserBySupabaseId } from "@/lib/db/users";
 import { bilingualError } from "@/lib/validations";
 
 export async function GET(
@@ -41,7 +41,7 @@ export async function GET(
 
   // التحقق من ملكية الطلب: مالكه أو ضيف بنفس البريد
   if (userId) {
-    const profile = await getUserByClerkId(userId);
+    const profile = await getUserBySupabaseId(userId);
     if (!profile || order.user_id !== profile.id) {
       return NextResponse.json(
         bilingualError("Forbidden", "ممنوع"),

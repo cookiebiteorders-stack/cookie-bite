@@ -86,16 +86,24 @@ export function resolveIdentityFromUser(
 
 export async function resolveDbUserId(
   supabase: SupabaseClient,
-  clerkUserId: string | null | undefined,
+  authUserId: string | null | undefined,
 ): Promise<string | null> {
-  const clerk = typeof clerkUserId === "string" ? clerkUserId.trim() : "";
-  if (!clerk) return null;
-  const { data } = await supabase
+  const id = typeof authUserId === "string" ? authUserId.trim() : "";
+  if (!id) return null;
+
+  const { data: byId } = await supabase
     .from("users")
     .select("id")
-    .eq("clerk_user_id", clerk)
+    .eq("id", id)
     .maybeSingle();
-  return data?.id ? String(data.id) : null;
+  if (byId?.id) return String(byId.id);
+
+  const { data: byLegacyClerk } = await supabase
+    .from("users")
+    .select("id")
+    .eq("clerk_user_id", id)
+    .maybeSingle();
+  return byLegacyClerk?.id ? String(byLegacyClerk.id) : null;
 }
 
 export async function loadUsersByDbIds(

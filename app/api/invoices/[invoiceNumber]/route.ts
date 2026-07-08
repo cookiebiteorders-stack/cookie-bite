@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { resolveStaffRole } from "@/lib/admin/auth-role";
 import { bilingualError } from "@/lib/validations";
@@ -86,7 +86,10 @@ export async function GET(
     );
   }
 
-  const { userId } = await auth();
+  const supabaseClient = await createSupabaseServerClient();
+  const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+  const userId = authUser?.id;
+
   if (!userId) {
     return NextResponse.json(
       bilingualError("Unauthorized", "غير مصرح"),
@@ -94,10 +97,8 @@ export async function GET(
     );
   }
 
-  const client = await clerkClient();
-  const clerkUser = await client.users.getUser(userId);
-  const email = clerkUser.primaryEmailAddress?.emailAddress ?? null;
-  const role = await resolveStaffRole({ email, clerkUserId: userId });
+  const email = authUser?.email ?? null;
+  const role = await resolveStaffRole({ email, supabaseUserId: userId });
   const isStaff = role === "owner" || role === "admin" || role === "staff";
 
   const supabase = createSupabaseAdminClient();
@@ -105,7 +106,7 @@ export async function GET(
   const { data: dbUserRow } = await supabase
     .from("users")
     .select("id, email")
-    .eq("clerk_user_id", userId)
+    .eq("id", userId)
     .maybeSingle();
   const dbUserId = (dbUserRow as { id?: string } | null)?.id ?? null;
   const dbUserEmail = (dbUserRow as { email?: string | null } | null)?.email ?? email;

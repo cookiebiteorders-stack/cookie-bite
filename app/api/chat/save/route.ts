@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { z } from "zod";
 import { isChatSessionUuid } from "@/lib/chat/session-id";
 import { resolveDbUserId } from "@/lib/chat/resolve-user";
@@ -32,10 +32,10 @@ export async function POST(req: NextRequest) {
   }
 
   const { sessionId, message } = parsed.data;
-  const { userId: clerkUserId } = await auth();
+  const { userId } = await auth();
 
-  if (clerkUserId) {
-    const dbUserId = await resolveDbUserId(supabase, clerkUserId);
+  if (userId) {
+    const dbUserId = await resolveDbUserId(supabase, userId);
     const { error } = await supabase.from("chat_messages").insert({
       user_id: dbUserId,
       session_id: sessionId,

@@ -1,4 +1,4 @@
-import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { isProfileComplete } from "@/lib/account/profile-complete";
 import {
@@ -9,11 +9,10 @@ import {
   isSkipProfileRequest,
 } from "@/lib/account/profile-schema";
 import {
-  ensureDbUserForClerk,
   isSupabaseAdminConfigured,
 } from "@/lib/db/ensure-db-user";
 import {
-  getUserByClerkId,
+  getUserBySupabaseId,
   markProfileCompleted,
   updateUserProfile,
 } from "@/lib/db/users";
@@ -69,7 +68,7 @@ export async function GET() {
     return supabaseUnavailableResponse();
   }
 
-  let dbUser = await ensureDbUserForClerk(userId);
+  let dbUser = await getUserBySupabaseId(userId);
   if (!dbUser) {
     return NextResponse.json(
       bilingualError("Profile not found", "لم يُعثر على الملف"),
@@ -108,14 +107,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ...bilingualError(en, ar) }, { status: 400 });
   }
 
-  const dbUser = await ensureDbUserForClerk(userId);
+  const dbUser = await getUserBySupabaseId(userId);
   if (!dbUser) {
     return profileError(
       "Could not save profile",
       "تعذّر حفظ الملف",
       500,
       "ENSURE_DB_USER_FAILED",
-      "البريد مسجّل بحساب Clerk آخر — جرّب تسجيل الدخول بنفس الطريقة السابقة أو تواصل مع الدعم",
+      "البريد مسجّل بحساب آخر — جرّب تسجيل الدخول بنفس الطريقة السابقة أو تواصل مع الدعم",
     );
   }
 
@@ -246,21 +245,6 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     console.error("staff profile alert failed", err);
-  }
-
-  if (!isSkipProfileRequest(body) && body.full_name_en) {
-    try {
-      const client = await clerkClient();
-      const parts = body.full_name_en.trim().split(/\s+/);
-      const firstName = parts[0] ?? body.full_name_en;
-      const lastName = parts.slice(1).join(" ") || undefined;
-      await client.users.updateUser(userId, {
-        firstName,
-        lastName: lastName || undefined,
-      });
-    } catch (err) {
-      console.error("sync clerk name after profile complete", err);
-    }
   }
 
   return NextResponse.json({

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Link2, Check } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useLanguage } from "@/components/providers/language-provider";
 import { buttonClassName } from "@/components/ui/button";
 import { fetchJson } from "@/lib/http/fetch-json";
@@ -14,7 +14,7 @@ type Props = {
 };
 
 export function ShareWishlistButton({ itemCount, className }: Props) {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useSupabaseAuth();
   const { t } = useLanguage();
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);

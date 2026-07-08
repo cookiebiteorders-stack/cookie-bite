@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useCart } from "@/components/providers/cart-provider";
 
 const IDLE_MS = 10 * 60 * 1000;
@@ -24,7 +24,7 @@ function sendAbandonPayload(body: object) {
 /** Tracks cart idle / tab hide and syncs snapshot for recovery emails. */
 export function AbandonedCartTracker() {
   const { lines } = useCart();
-  const { user } = useUser();
+  const { user } = useSupabaseAuth();
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const linesRef = useRef(lines);
@@ -40,7 +40,7 @@ export function AbandonedCartTracker() {
 
       sendAbandonPayload({
         lines: current,
-        email: user?.primaryEmailAddress?.emailAddress ?? "",
+        email: user?.email ?? "",
         reason,
       });
     }
@@ -76,7 +76,7 @@ export function AbandonedCartTracker() {
       window.removeEventListener("keydown", onActivity);
       window.removeEventListener("scroll", onActivity);
     };
-  }, [user?.primaryEmailAddress?.emailAddress]);
+  }, [user?.email]);
 
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
@@ -85,7 +85,7 @@ export function AbandonedCartTracker() {
     debounceTimer.current = setTimeout(() => {
       sendAbandonPayload({
         lines,
-        email: user?.primaryEmailAddress?.emailAddress ?? "",
+        email: user?.email ?? "",
         reason: "debounce",
       });
     }, DEBOUNCE_MS);
@@ -93,7 +93,7 @@ export function AbandonedCartTracker() {
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
-  }, [lines, user?.primaryEmailAddress?.emailAddress]);
+  }, [lines, user?.email]);
 
   return null;
 }

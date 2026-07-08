@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { buildMrBrownieLocalFallbackReply } from "@/lib/mr-brownie/local-fallback-reply";
 import { AI_AGENT_IDS } from "@/lib/ai-agent/agents";
@@ -36,22 +36,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { userId } = await auth();
-    let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
-    if (userId) {
-      try {
-        clerkUser = await currentUser();
-      } catch (e) {
-        console.error("[mr-brownie/chat] currentUser failed:", e);
-      }
-    }
+    const supabaseClient = await createSupabaseServerClient();
+    const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+    const userId = authUser?.id;
 
     const prepared = await prepareMrBrownieChat({
       messages: parsed.data.messages,
       cartLines: (parsed.data.cart?.lines ?? []) as CartLine[],
       session: parsed.data.session,
       userId: userId ?? null,
-      clerkUser,
+      user: authUser,
       persona: parsed.data.persona,
       answerStyle: parsed.data.answer_style,
     });

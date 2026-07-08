@@ -1,6 +1,6 @@
 export type UserRow = {
   id: string;
-  clerk_user_id: string;
+  clerk_user_id: string | null;
   email: string;
   full_name: string | null;
   full_name_en: string | null;

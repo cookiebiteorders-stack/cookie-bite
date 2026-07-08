@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import type { AdminNavMenuItem } from "@/lib/admin/admin-nav-menu";
 
 type StaffAdminNavContextValue = {
@@ -22,7 +22,7 @@ const StaffAdminNavContext = createContext<StaffAdminNavContextValue>({
 });
 
 export function StaffAdminNavProvider({ children }: { children: ReactNode }) {
-  const { userId, isLoaded } = useAuth();
+  const { userId, isLoaded } = useSupabaseAuth();
   const [items, setItems] = useState<AdminNavMenuItem[]>([]);
   const [ready, setReady] = useState(false);
 

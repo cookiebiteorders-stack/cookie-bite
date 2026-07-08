@@ -1,4 +1,4 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { cookies } from "next/headers";
 import { AI_AGENT_IDS } from "@/lib/ai-agent/agents";
 import { finalizeAgentResponse } from "@/lib/ai-agent/post-response";
@@ -48,15 +48,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { userId } = await auth();
-  let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
-  if (userId) {
-    try {
-      clerkUser = await currentUser();
-    } catch (e) {
-      console.error("[api/chat] currentUser failed:", e);
-    }
-  }
+  const { userId, user } = await auth();
 
   const jar = await cookies();
   const guestRaw = jar.get(MR_BROWNIE_GUEST_SESSION_COOKIE)?.value;
@@ -67,7 +59,7 @@ export async function POST(req: Request) {
     cartLines: (parsed.data.cart?.lines ?? []) as CartLine[],
     session: parsed.data.session,
     userId: userId ?? null,
-    clerkUser,
+    user: user ?? null,
   });
 
   return createGeminiStreamResponse(
@@ -96,7 +88,7 @@ export async function POST(req: Request) {
             pathname: prepared.turnLogMeta.pathname,
             locale: prepared.turnLogMeta.locale,
             catalogTotal: prepared.turnLogMeta.catalogTotal,
-            clerkUserId: userId,
+            clerkUserId: userId ?? null,
             guestSessionId,
           },
         });

@@ -42,8 +42,8 @@ export const IMAGES = {
   ingredients:
     "https://images.unsplash.com/photo-1586444248909-04c3d5c8c0e0?auto=format&fit=crop&w=900&q=80",
   /** Same hero cookie photo used on the homepage */
-  signIn: "/images/hero.webp",
-  signUp: "/images/hero.webp",
+  signIn: "/images/sign-in-side.png",
+  signUp: "/images/sign-up-side.png",
 };
 
 export type ProductVariant = {

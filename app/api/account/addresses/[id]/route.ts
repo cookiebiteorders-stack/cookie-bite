@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { NextRequest, NextResponse } from "next/server";
 import {
   addressUpsertSchema,
@@ -11,14 +11,14 @@ import {
   normalizeAddressRow,
   updateAddressWithFallback,
 } from "@/lib/db/addresses";
-import { ensureDbUserForClerk, isSupabaseAdminConfigured } from "@/lib/db/ensure-db-user";
+import { ensureDbUserForSupabase, isSupabaseAdminConfigured } from "@/lib/db/ensure-db-user";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { bilingualError } from "@/lib/validations";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
-  const { userId } = await auth();
+  const { userId, user } = await auth();
   if (!userId) {
     return NextResponse.json(bilingualError("Unauthorized", "غير مصرح"), { status: 401 });
   }
@@ -36,7 +36,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     return NextResponse.json({ ...bilingualError(en, ar) }, { status: 400 });
   }
 
-  const dbUser = await ensureDbUserForClerk(userId);
+  const dbUser = await ensureDbUserForSupabase(userId, user?.email ?? "", user?.user_metadata?.full_name, user?.user_metadata?.avatar_url);
   if (!dbUser) {
     return NextResponse.json(
       bilingualError("Profile not found", "لم يُعثر على الملف"),
@@ -75,7 +75,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 }
 
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
-  const { userId } = await auth();
+  const { userId, user } = await auth();
   if (!userId) {
     return NextResponse.json(bilingualError("Unauthorized", "غير مصرح"), { status: 401 });
   }
@@ -87,7 +87,7 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
   }
 
   const { id } = await ctx.params;
-  const dbUser = await ensureDbUserForClerk(userId);
+  const dbUser = await ensureDbUserForSupabase(userId, user?.email ?? "", user?.user_metadata?.full_name, user?.user_metadata?.avatar_url);
   if (!dbUser) {
     return NextResponse.json(
       bilingualError("Profile not found", "لم يُعثر على الملف"),

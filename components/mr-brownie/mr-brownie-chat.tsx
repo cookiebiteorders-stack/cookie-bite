@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { ArrowLeft, ArrowRight, History, Send, Square, X } from "lucide-react";
 import {
   ChatImageAttachButton,
@@ -291,8 +291,8 @@ export function MrBrownieChat({
   const pathname = usePathname() ?? "/";
   const { lang, t } = useLanguage();
   const BackIcon = lang === "ar" ? ArrowRight : ArrowLeft;
-  const { isSignedIn, user } = useUser();
-  const clerkKey = isSignedIn && user?.id ? user.id : null;
+  const { isSignedIn, user } = useSupabaseAuth();
+  const supabaseKey = isSignedIn && user?.id ? user.id : null;
   const [open, setOpen] = useState(initialOpen);
   const [input, setInput] = useState("");
   const [pendingImages, setPendingImages] = useState<PendingChatImage[]>([]);
@@ -793,7 +793,7 @@ export function MrBrownieChat({
   }, []);
 
   const pullRemoteHistory = useCallback(async () => {
-    const key = mrBrownieChatLsKey(clerkKey);
+    const key = mrBrownieChatLsKey(supabaseKey);
     skipLsSaveRef.current = true;
     if (typeof window !== "undefined") {
       getOrCreateChatSessionId();
@@ -828,10 +828,10 @@ export function MrBrownieChat({
       skipLsSaveRef.current = false;
       setHistoryLoading(false);
     }
-  }, [clerkKey, isSignedIn]);
+  }, [supabaseKey, isSignedIn]);
 
   const clearConversation = useCallback(async () => {
-    const key = mrBrownieChatLsKey(clerkKey);
+    const key = mrBrownieChatLsKey(supabaseKey);
     const sid = getOrCreateChatSessionId();
     try {
       const res = await fetch("/api/chat/clear", {
@@ -849,7 +849,7 @@ export function MrBrownieChat({
     } catch {
       /* ignore */
     }
-  }, [clerkKey, isSignedIn]);
+  }, [supabaseKey, isSignedIn]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -877,12 +877,12 @@ export function MrBrownieChat({
 
   useEffect(() => {
     if (skipLsSaveRef.current) return;
-    const key = mrBrownieChatLsKey(clerkKey);
+    const key = mrBrownieChatLsKey(supabaseKey);
     const id = window.setTimeout(() => {
       savePersistedMessages(key, messages);
     }, 400);
     return () => window.clearTimeout(id);
-  }, [messages, clerkKey]);
+  }, [messages, supabaseKey]);
 
   useLayoutEffect(() => {
     openRef.current = open;

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import type { CartLine } from "@/lib/cart/types";
 import { AI_AGENT_IDS } from "@/lib/ai-agent/agents";
@@ -38,15 +38,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { userId } = await auth();
-    let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
-    if (userId) {
-      try {
-        clerkUser = await currentUser();
-      } catch (e) {
-        console.error("[mr-brownie/chat/stream] currentUser failed:", e);
-      }
-    }
+    const supabaseClient = await createSupabaseServerClient();
+    const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+    const userId = authUser?.id;
 
     const jar = await cookies();
     const guestRaw = jar.get(MR_BROWNIE_GUEST_SESSION_COOKIE)?.value;
@@ -57,7 +51,7 @@ export async function POST(req: NextRequest) {
       cartLines: (parsed.data.cart?.lines ?? []) as CartLine[],
       session: parsed.data.session,
       userId: userId ?? null,
-      clerkUser,
+      user: authUser,
       persona: parsed.data.persona,
       answerStyle: parsed.data.answer_style,
     });

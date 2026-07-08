@@ -34,11 +34,7 @@ const REQUIRED_PROD_KEYS = [
   // App
   "NEXT_PUBLIC_APP_URL",
   "APP_BASE_URL",
-  // Clerk
-  "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-  "CLERK_SECRET_KEY",
-  "CLERK_WEBHOOK_SIGNING_SECRET",
-  // Supabase
+  // Supabase Auth + DB
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_KEY",
@@ -57,12 +53,7 @@ const REQUIRED_PROD_KEYS = [
 /** مجموعات متغيرات الإنتاج لكل تكامل — تُستخدم في لوحة الصحة وليست قياسات ping. */
 export const INTEGRATION_ENV_GROUPS = {
   app_urls: ["NEXT_PUBLIC_APP_URL", "APP_BASE_URL"],
-  clerk: [
-    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-    "CLERK_SECRET_KEY",
-    "CLERK_WEBHOOK_SIGNING_SECRET",
-  ],
-  supabase: ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_KEY"],
+  supabase_auth: ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_KEY"],
   /** مرجع لواجهة الإعدادات؛ الجاهزية الفعلية لـ Paymob تستخدم hasPaymobHmacSecret() أيضاً */
   paymob: [
     "PAYMOB_API_KEY",
@@ -103,8 +94,7 @@ export function getIntegrationEnvStatus(check: ProductionEnvCheck): IntegrationE
   if (process.env.NODE_ENV !== "production") {
     return {
       app_urls: true,
-      clerk: true,
-      supabase: true,
+      supabase_auth: true,
       paymob: true,
       resend: true,
       internal_api: true,
@@ -125,8 +115,7 @@ export function getIntegrationEnvStatus(check: ProductionEnvCheck): IntegrationE
 
   return {
     app_urls: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.app_urls),
-    clerk: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.clerk),
-    supabase: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.supabase),
+    supabase_auth: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.supabase_auth),
     paymob: paymobReady,
     resend: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.resend),
     internal_api: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.internal_api),

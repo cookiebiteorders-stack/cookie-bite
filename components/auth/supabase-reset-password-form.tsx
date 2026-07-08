@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { AuthInput } from "@/components/auth/auth-input";
@@ -8,6 +8,7 @@ import { AuthButton } from "@/components/auth/auth-button";
 import { PasswordRulesHint } from "@/components/auth/password-rules-hint";
 
 export function SupabaseResetPasswordForm() {
+  const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -50,7 +51,7 @@ export function SupabaseResetPasswordForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+    <form ref={formRef} onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
       <div className="space-y-2">
         <h3 className="text-lg font-semibold text-cb-text-strong">Set new password</h3>
         <p className="text-sm text-cb-text-muted">
@@ -75,7 +76,7 @@ export function SupabaseResetPasswordForm() {
         placeholder="Confirm your new password"
         autoComplete="new-password"
       />
-      <PasswordRulesHint password={password} />
+      <PasswordRulesHint containerRef={formRef} variant="auth" />
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300">
           {error}

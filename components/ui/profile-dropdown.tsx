@@ -1,6 +1,6 @@
 "use client";
 
-import { useClerk, useUser } from "@clerk/nextjs";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -15,7 +15,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useLanguage } from "@/components/providers/language-provider";
 import { useStaffAdminNav } from "@/components/providers/staff-admin-nav-provider";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { SITE } from "@/lib/data";
 import { duration, easeSoft } from "@/lib/motion/presets";
 import { cn } from "@/lib/utils";
@@ -27,11 +27,11 @@ const menuSurface =
   "rounded-2xl border border-cb-border bg-cb-surface/98 py-1 shadow-[0_20px_50px_-12px_rgba(40,28,20,0.25)] backdrop-blur-xl dark:border-cb-border dark:bg-cb-surface-2/98 dark:shadow-[0_24px_56px_-8px_rgba(0,0,0,0.5)]";
 
 /**
- * قائمة حساب مستخدم بنمط القالب المرفق، مدمجة مع Clerk وألوان Cookie Bite.
+ * قائمة حساب مستخدم بنمط القالب المرفق، مدمجة مع Supabase Auth وألوان Cookie Bite.
  */
 export function UserAccountDropdown() {
-  const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
+  const { user, isLoaded, signOut } = useSupabaseAuth();
+  const router = useRouter();
   const { t } = useLanguage();
   const { items: staffAdminNavItems } = useStaffAdminNav();
   const pathname = usePathname();
@@ -76,10 +76,9 @@ export function UserAccountDropdown() {
     );
   }
 
-  const email = user.primaryEmailAddress?.emailAddress ?? "";
-  const displayName =
-    user.fullName || [user.firstName, user.lastName].filter(Boolean).join(" ") || t("nav.account");
-  const initials = (user.firstName?.[0] ?? "") + (user.lastName?.[0] ?? "") || displayName.slice(0, 2).toUpperCase();
+  const email = user?.email ?? "";
+  const displayName = user?.user_metadata?.full_name || email || t("nav.account");
+  const initials = displayName.slice(0, 2).toUpperCase();
 
 
   return (
@@ -94,9 +93,9 @@ export function UserAccountDropdown() {
         onClick={() => setOpen((v) => !v)}
       >
         <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full ring-2 ring-cb-peach-deep/80 dark:ring-cb-border">
-          {user.imageUrl ? (
+          {user?.user_metadata?.avatar_url ? (
             <img
-              src={user.imageUrl}
+              src={user.user_metadata.avatar_url}
               alt=""
               className="h-full w-full object-cover"
               decoding="async"
@@ -132,9 +131,9 @@ export function UserAccountDropdown() {
             <div className="shrink-0 border-b border-cb-border px-4 py-3 dark:border-cb-border">
               <div className="flex items-start gap-3">
                 <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full ring-2 ring-cb-peach-deep/70 dark:ring-cb-border">
-                  {user.imageUrl ? (
+                  {user?.user_metadata?.avatar_url ? (
                     <img
-                      src={user.imageUrl}
+                      src={user.user_metadata.avatar_url}
                       alt=""
                       className="h-full w-full object-cover"
                       decoding="async"
@@ -229,9 +228,10 @@ export function UserAccountDropdown() {
                 type="button"
                 role="menuitem"
                 className="flex w-full items-center gap-3 px-4 py-2.5 text-start text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/30"
-                onClick={() => {
+                onClick={async () => {
                   close();
-                  void signOut({ redirectUrl: "/" });
+                  await signOut();
+                  router.push("/");
                 }}
               >
                 <LogOut className="h-4 w-4 shrink-0" aria-hidden />

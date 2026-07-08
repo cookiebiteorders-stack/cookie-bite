@@ -59,6 +59,20 @@ export const mrBrownieChatBodySchema = z.object({
   answer_style: z
     .enum(["auto", "friendly", "concise", "detailed", "enthusiastic", "calm", "expert"])
     .optional(),
+  /** Supabase auth user (optional) */
+  user: z
+    .object({
+      email: z.string().email().nullable().optional(),
+      user_metadata: z
+        .object({
+          full_name: z.string().nullable().optional(),
+          avatar_url: z.string().nullable().optional(),
+        })
+        .nullable()
+        .optional(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export function temperatureForRole(role: UserRole | "guest"): number {
@@ -107,12 +121,7 @@ export async function prepareMrBrownieChat(params: {
   cartLines: CartLine[];
   userId: string | null;
   session?: z.infer<typeof mrBrownieChatBodySchema>["session"];
-  clerkUser: {
-    primaryEmailAddress?: { emailAddress?: string | null } | null;
-    firstName?: string | null;
-    lastName?: string | null;
-    username?: string | null;
-  } | null;
+  user?: z.infer<typeof mrBrownieChatBodySchema>["user"];
   persona?: PersonaPreference;
   answerStyle?: AnswerStylePreference;
 }): Promise<MrBrowniePreparedChat> {
@@ -124,15 +133,8 @@ export async function prepareMrBrownieChat(params: {
   let pastOrdersHint = "";
 
   if (params.userId) {
-    email = params.clerkUser?.primaryEmailAddress?.emailAddress ?? null;
-    name = params.clerkUser
-      ? [params.clerkUser.firstName, params.clerkUser.lastName]
-          .filter(Boolean)
-          .join(" ")
-          .trim() ||
-        params.clerkUser.username ||
-        email
-      : null;
+    email = params.user?.email ?? null;
+    name = params.user?.user_metadata?.full_name ?? email;
 
     resolvedRole = await resolveStaffRole({
       email,
@@ -144,7 +146,7 @@ export async function prepareMrBrownieChat(params: {
       const { data: row } = await supabase
         .from("users")
         .select("id")
-        .eq("clerk_user_id", params.userId)
+        .eq("id", params.userId)
         .maybeSingle();
       if (row?.id) dbUserId = row.id as string;
 

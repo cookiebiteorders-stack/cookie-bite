@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { NextRequest, NextResponse } from "next/server";
 import {
   addressUpsertSchema,
@@ -12,12 +12,12 @@ import {
   listAddressesForUser,
   normalizeAddressRow,
 } from "@/lib/db/addresses";
-import { ensureDbUserForClerk, isSupabaseAdminConfigured } from "@/lib/db/ensure-db-user";
+import { ensureDbUserForSupabase, isSupabaseAdminConfigured } from "@/lib/db/ensure-db-user";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { bilingualError } from "@/lib/validations";
 
 export async function GET() {
-  const { userId } = await auth();
+  const { userId, user } = await auth();
   if (!userId) {
     return NextResponse.json(bilingualError("Unauthorized", "غير مصرح"), { status: 401 });
   }
@@ -28,7 +28,7 @@ export async function GET() {
     );
   }
 
-  const dbUser = await ensureDbUserForClerk(userId);
+  const dbUser = await ensureDbUserForSupabase(userId, user?.email ?? "", user?.user_metadata?.full_name, user?.user_metadata?.avatar_url);
   if (!dbUser) {
     return NextResponse.json(
       bilingualError("Profile not found", "لم يُعثر على الملف"),
@@ -41,7 +41,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
+  const { userId, user } = await auth();
   if (!userId) {
     return NextResponse.json(bilingualError("Unauthorized", "غير مصرح"), { status: 401 });
   }
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ...bilingualError(en, ar) }, { status: 400 });
   }
 
-  const dbUser = await ensureDbUserForClerk(userId);
+  const dbUser = await ensureDbUserForSupabase(userId, user?.email ?? "", user?.user_metadata?.full_name, user?.user_metadata?.avatar_url);
   if (!dbUser) {
     return NextResponse.json(
       bilingualError("Profile not found", "لم يُعثر على الملف"),

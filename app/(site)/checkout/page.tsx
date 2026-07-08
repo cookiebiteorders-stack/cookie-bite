@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -36,7 +36,7 @@ const OFFLINE_PAYMENT_METHODS = new Set<PaymentMethodType>(["cod", "instapay", "
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useSupabaseAuth();
   const { lang, t, formatPrice } = useLanguage();
   const { lines, subtotalEgp, discountEgp, itemCount, clearCart, promo, applyPromo, clearPromo } =
     useCart();

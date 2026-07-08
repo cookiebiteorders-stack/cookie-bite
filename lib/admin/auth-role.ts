@@ -34,10 +34,12 @@ export function resolveStaffRoleFromEmail(email: string | null | undefined): Use
  */
 export async function resolveStaffRole(params: {
   email: string | null | undefined;
+  supabaseUserId?: string | null;
+  /** @deprecated — استخدم supabaseUserId */
   clerkUserId?: string | null;
 }): Promise<UserRole> {
   const normalizedEmail = (params.email ?? "").trim().toLowerCase();
-  const clerkUserId = (params.clerkUserId ?? "").trim();
+  const supabaseUserId = (params.supabaseUserId ?? params.clerkUserId ?? "").trim();
 
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) {
@@ -47,8 +49,8 @@ export async function resolveStaffRole(params: {
   try {
     let query = supabase.from("users").select("role").limit(1);
 
-    if (clerkUserId) {
-      query = query.eq("clerk_user_id", clerkUserId);
+    if (supabaseUserId) {
+      query = query.eq("id", supabaseUserId);
     } else if (normalizedEmail) {
       query = query.ilike("email", normalizedEmail);
     } else {

@@ -14,16 +14,10 @@ export type SettingsIntegrationDef = {
 /** Integrations shown in Settings — status from `getIntegrationEnvStatus`. */
 export const SETTINGS_INTEGRATION_DEFS: SettingsIntegrationDef[] = [
   {
-    key: "supabase",
+    key: "supabase_auth",
     labelKey: "settings.integrations.supabase",
     required: true,
-    envKeys: INTEGRATION_ENV_GROUPS.supabase,
-  },
-  {
-    key: "clerk",
-    labelKey: "settings.integrations.clerk",
-    required: true,
-    envKeys: INTEGRATION_ENV_GROUPS.clerk,
+    envKeys: INTEGRATION_ENV_GROUPS.supabase_auth,
     adminPath: "/admin/roles",
   },
   {
@@ -91,11 +85,10 @@ export const SETTINGS_INTEGRATION_DEFS: SettingsIntegrationDef[] = [
 
 export const CORE_HEALTH_CARD_KEYS = [
   "internal_api",
-  "supabase",
+  "supabase_auth",
   "paymob",
   "app_urls",
   "resend",
-  "clerk",
 ] as const;
 
 export type CoreHealthCardKey = (typeof CORE_HEALTH_CARD_KEYS)[number];
@@ -105,16 +98,19 @@ export const CORE_HEALTH_CARD_DEFS: {
   labelKey: string;
 }[] = [
   { key: "internal_api", labelKey: "settings.healthCards.apiGateway" },
-  { key: "supabase", labelKey: "settings.healthCards.postgres" },
+  { key: "supabase_auth", labelKey: "settings.healthCards.postgres" },
   { key: "paymob", labelKey: "settings.healthCards.queueWorker" },
   { key: "app_urls", labelKey: "settings.healthCards.cdnEdge" },
   { key: "resend", labelKey: "settings.healthCards.emailService" },
-  { key: "clerk", labelKey: "settings.healthCards.webhookDelivery" },
 ];
 
 export const INTEGRATION_FIX_HINTS: Record<CoreHealthCardKey, string[]> = {
   internal_api: ["INTERNAL_API_SECRET", "REVALIDATE_SECRET"],
-  supabase: ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_KEY"],
+  supabase_auth: [
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_KEY",
+  ],
   paymob: [
     "PAYMOB_API_KEY",
     "PAYMOB_INTEGRATION_ID_CARD",
@@ -123,9 +119,4 @@ export const INTEGRATION_FIX_HINTS: Record<CoreHealthCardKey, string[]> = {
   ],
   app_urls: ["NEXT_PUBLIC_APP_URL", "APP_BASE_URL"],
   resend: ["RESEND_API_KEY", "RESEND_FROM_EMAIL"],
-  clerk: [
-    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-    "CLERK_SECRET_KEY",
-    "CLERK_WEBHOOK_SIGNING_SECRET",
-  ],
 };

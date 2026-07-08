@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { ClerkProvider } from "@clerk/nextjs";
-import { getClerkLocalization } from "@/lib/auth/clerk-auth-localization";
 import { SiteJsonLd } from "@/components/seo/site-jsonld";
 import { SeasonalThemeProvider } from "@/components/providers/seasonal-theme-provider";
-import { Cairo, DM_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { LanguageProvider } from "@/components/providers/language-provider";
 import { StoreFlagsProvider } from "@/components/providers/store-flags-provider";
@@ -13,11 +11,6 @@ import { StoreCommerceSettingsProvider } from "@/components/providers/store-comm
 import { ErrorBoundary } from "@/components/error-boundary";
 import { getLangFromCookies } from "@/lib/seo/server";
 import { cn } from "@/lib/utils";
-import { clerkAuthAppearance } from "@/components/auth/clerk-auth-appearance";
-import {
-  resolveClerkJsScriptUrl,
-  resolveClerkUIScriptUrl,
-} from "@/lib/auth/clerk-js-fallback";
 import { CssRecoveryBootstrap } from "@/components/pwa/css-recovery-bootstrap";
 import { PreloadProbe } from "@/components/debug/preload-probe";
 import { ClickBlockProbe } from "@/components/debug/click-block-probe";
@@ -28,22 +21,29 @@ import { getPublicShippingZones } from "@/lib/shipping/public-zones-server";
 import { getPublicCommerceSettings } from "@/lib/store/commerce-settings-server";
 import "./globals.css";
 
-const clerkJsScriptUrl = resolveClerkJsScriptUrl();
-const clerkUIScriptUrl = resolveClerkUIScriptUrl();
-
-/** Storefront: two families only — Arabic + Latin body (display uses system serif via tokens). */
-const cairo = Cairo({
+/**
+ * Storefront: two families only — Arabic + Latin body.
+ * Loaded via next/font/local (woff2 from @fontsource) so builds succeed
+ * without network access to fonts.googleapis.com.
+ */
+const cairo = localFont({
+  src: [
+    { path: "../public/fonts/cairo-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/cairo-latin-600-normal.woff2", weight: "600", style: "normal" },
+    { path: "../public/fonts/cairo-arabic-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/cairo-arabic-600-normal.woff2", weight: "600", style: "normal" },
+  ],
   variable: "--font-cairo",
-  subsets: ["latin", "arabic"],
-  weight: ["400", "600"],
   display: "swap",
   preload: false,
 });
 
-const dmSans = DM_Sans({
+const dmSans = localFont({
+  src: [
+    { path: "../public/fonts/dm-sans-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/dm-sans-latin-700-normal.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-dm-sans",
-  subsets: ["latin"],
-  weight: ["400", "700"],
   display: "swap",
   preload: false,
 });
@@ -147,19 +147,15 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const lang = await getLangFromCookies();
-  const [storeFlags, businessSettings, shippingZones, commerceSettings, clerkLocalization] =
-    await Promise.all([
+  const [storeFlags, businessSettings, shippingZones, commerceSettings] = await Promise.all([
     getPublicStoreFlags(),
     getPublicBusinessSettings(),
     getPublicShippingZones(),
     getPublicCommerceSettings(),
-    getClerkLocalization(lang),
   ]);
   const dir = lang === "ar" ? "rtl" : "ltr";
-  const fontClass =
-    lang === "ar" ? cairo.className : dmSans.className;
-  const fontVariable =
-    lang === "ar" ? cairo.variable : dmSans.variable;
+  const fontClass = lang === "ar" ? cairo.className : dmSans.className;
+  const fontVariable = lang === "ar" ? cairo.variable : dmSans.variable;
   return (
     <html
       lang={lang}
@@ -172,7 +168,6 @@ export default async function RootLayout({
       style={{ colorScheme: "light" }}
     >
       <head>
-        {/* Inline shell rules — survive main CSS load failures (PWA stale cache, static 503). */}
         <style
           id="cb-critical-shell"
           suppressHydrationWarning
@@ -184,7 +179,7 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="https://clerk.cookie-bite.com" />
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""} crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="//www.googletagmanager.com" />
         <link rel="dns-prefetch" href="//www.google-analytics.com" />
       </head>
@@ -196,43 +191,21 @@ export default async function RootLayout({
             <ClickBlockProbe />
           </>
         ) : null}
-        <ClerkProvider
-          {...(clerkJsScriptUrl && clerkUIScriptUrl
-            ? {
-                __internal_clerkJSUrl: clerkJsScriptUrl,
-                __internal_clerkUIUrl: clerkUIScriptUrl,
-              }
-            : {})}
-          localization={clerkLocalization}
-          appearance={{
-            ...clerkAuthAppearance,
-            layout: {
-              ...clerkAuthAppearance.layout,
-              unsafe_disableDevelopmentModeWarnings: true,
-            },
-          }}
-          signInUrl="/sign-in"
-          signUpUrl="/sign-up"
-          afterSignOutUrl="/"
-          signInFallbackRedirectUrl="/account"
-          signUpFallbackRedirectUrl="/account"
-        >
-          <ThemeProvider>
-            <LanguageProvider initialLang={lang}>
-              <StoreFlagsProvider initialFlags={storeFlags}>
-                <StoreBusinessSettingsProvider initialSettings={businessSettings}>
-                  <StoreShippingZonesProvider initialZones={shippingZones}>
-                    <StoreCommerceSettingsProvider initialSettings={commerceSettings}>
-                      <SiteJsonLd />
-                      <SeasonalThemeProvider />
-                      <ErrorBoundary>{children}</ErrorBoundary>
-                    </StoreCommerceSettingsProvider>
-                  </StoreShippingZonesProvider>
-                </StoreBusinessSettingsProvider>
-              </StoreFlagsProvider>
-            </LanguageProvider>
-          </ThemeProvider>
-        </ClerkProvider>
+        <ThemeProvider>
+          <LanguageProvider initialLang={lang}>
+            <StoreFlagsProvider initialFlags={storeFlags}>
+              <StoreBusinessSettingsProvider initialSettings={businessSettings}>
+                <StoreShippingZonesProvider initialZones={shippingZones}>
+                  <StoreCommerceSettingsProvider initialSettings={commerceSettings}>
+                    <SiteJsonLd />
+                    <SeasonalThemeProvider />
+                    <ErrorBoundary>{children}</ErrorBoundary>
+                  </StoreCommerceSettingsProvider>
+                </StoreShippingZonesProvider>
+              </StoreBusinessSettingsProvider>
+            </StoreFlagsProvider>
+          </LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { z } from "zod";
 import { isChatSessionUuid } from "@/lib/chat/session-id";
 import { resolveDbUserId } from "@/lib/chat/resolve-user";
@@ -11,8 +11,8 @@ const bodySchema = z.object({
 
 /** يربط رسائل الضيف (session_id) بحساب المستخدم بعد تسجيل الدخول */
 export async function POST(req: NextRequest) {
-  const { userId: clerkUserId } = await auth();
-  if (!clerkUserId) {
+  const { userId } = await auth();
+  if (!userId) {
     return NextResponse.json(
       { error: { en: "Unauthorized", ar: "يجب تسجيل الدخول." } },
       { status: 401 },
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const dbUserId = await resolveDbUserId(supabase, clerkUserId);
+  const dbUserId = await resolveDbUserId(supabase, userId);
   if (!dbUserId) {
     return NextResponse.json(
       { error: { en: "User profile not found", ar: "لم يُعثر على ملف المستخدم." } },

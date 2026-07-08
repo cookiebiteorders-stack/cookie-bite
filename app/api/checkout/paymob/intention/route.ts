@@ -1,7 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { z } from "zod";
 import { insertCheckoutOrder } from "@/lib/db/orders";
-import { getUserByClerkId } from "@/lib/db/users";
+import { getUserBySupabaseId } from "@/lib/db/users";
 import { resolveCheckoutLineItems, type ResolvedCheckoutLine } from "@/lib/checkout/resolve-line-items";
 import { onOrderCreated } from "@/lib/email/automation/triggers";
 import { scheduleOrderConfirmed } from "@/lib/notifications/schedule";
@@ -83,7 +83,7 @@ async function resolveSupabaseUserId(): Promise<string | null> {
   }
   const { userId } = await auth();
   if (!userId) return null;
-  const row = await getUserByClerkId(userId);
+  const row = await getUserBySupabaseId(userId);
   return row?.id ?? null;
 }
 

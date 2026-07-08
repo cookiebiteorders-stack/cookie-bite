@@ -3,7 +3,7 @@ import { resolveStaffRoleFromEmail } from "@/lib/admin/auth-role";
 import type { UserRow } from "@/lib/db/types";
 
 type UpsertInput = {
-  clerkUserId: string;
+  supabaseUserId: string;
   email: string;
   fullName?: string | null;
   avatarUrl?: string | null;
@@ -18,7 +18,7 @@ export type ProfileUpdateInput = {
   full_name?: string | null;
 };
 
-async function relinkClerkToExistingUser(
+async function relinkSupabaseToExistingUser(
   input: UpsertInput,
   existing: UserRow,
 ): Promise<UserRow | null> {
@@ -28,7 +28,7 @@ async function relinkClerkToExistingUser(
   const { data, error } = await supabase
     .from("users")
     .update({
-      clerk_user_id: input.clerkUserId,
+      id: input.supabaseUserId,
       full_name: input.fullName ?? existing.full_name,
       avatar_url: input.avatarUrl ?? existing.avatar_url,
     })
@@ -37,7 +37,7 @@ async function relinkClerkToExistingUser(
     .maybeSingle();
 
   if (error) {
-    console.error("relinkClerkToExistingUser error", error.message, error.code, error.details);
+    console.error("relinkSupabaseToExistingUser error", error.message, error.code, error.details);
     return null;
   }
   return (data as UserRow) ?? null;
@@ -59,35 +59,65 @@ export async function getUserByEmail(email: string): Promise<UserRow | null> {
   return (data as UserRow) ?? null;
 }
 
-export async function upsertUserFromClerk(input: UpsertInput): Promise<UserRow | null> {
+export async function upsertUserFromSupabase(input: UpsertInput): Promise<UserRow | null> {
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return null;
   const email = input.email.trim().toLowerCase();
   const role = resolveStaffRoleFromEmail(email);
 
+  // First, check if user exists by email to preserve existing data
+  const existingByEmail = await getUserByEmail(email);
+  if (existingByEmail) {
+    console.log(`[upsertUserFromSupabase] Found existing user by email: ${email}, preserving data`);
+    // Update existing user with new Supabase ID if different
+    if (existingByEmail.id !== input.supabaseUserId) {
+      console.log(`[upsertUserFromSupabase] Relinking user from ${existingByEmail.id} to ${input.supabaseUserId}`);
+      return relinkSupabaseToExistingUser(input, existingByEmail);
+    }
+    // User already has correct ID, just update metadata if provided
+    if (input.fullName || input.avatarUrl) {
+      const { data, error } = await supabase
+        .from("users")
+        .update({
+          full_name: input.fullName ?? existingByEmail.full_name,
+          avatar_url: input.avatarUrl ?? existingByEmail.avatar_url,
+        })
+        .eq("id", existingByEmail.id)
+        .select("*")
+        .maybeSingle();
+      if (error) {
+        console.error("upsertUserFromSupabase update error", error.message, error.code, error.details);
+        return existingByEmail;
+      }
+      return (data as UserRow) ?? existingByEmail;
+    }
+    return existingByEmail;
+  }
+
+  // No existing user by email, proceed with upsert
   const { data, error } = await supabase
     .from("users")
     .upsert(
       {
-        clerk_user_id: input.clerkUserId,
+        id: input.supabaseUserId,
         email,
         full_name: input.fullName ?? null,
         avatar_url: input.avatarUrl ?? null,
         role,
       },
-      { onConflict: "clerk_user_id" },
+      { onConflict: "id" },
     )
     .select("*")
     .single();
 
   if (error) {
-    console.error("upsertUserFromClerk error", error.message, error.code, error.details);
+    console.error("upsertUserFromSupabase error", error.message, error.code, error.details);
     if (error.code === "23505") {
-      const byClerk = await getUserByClerkId(input.clerkUserId);
-      if (byClerk) return byClerk;
+      const bySupabase = await getUserBySupabaseId(input.supabaseUserId);
+      if (bySupabase) return bySupabase;
       const byEmail = await getUserByEmail(email);
       if (byEmail) {
-        return relinkClerkToExistingUser(input, byEmail);
+        return relinkSupabaseToExistingUser(input, byEmail);
       }
     }
     return null;
@@ -95,14 +125,14 @@ export async function upsertUserFromClerk(input: UpsertInput): Promise<UserRow |
   return data as UserRow;
 }
 
-export async function deleteUserByClerkId(clerkUserId: string) {
+export async function deleteUserBySupabaseId(supabaseUserId: string) {
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return;
   const { error } = await supabase
     .from("users")
     .delete()
-    .eq("clerk_user_id", clerkUserId);
-  if (error) console.error("deleteUserByClerkId error", error);
+    .eq("id", supabaseUserId);
+  if (error) console.error("deleteUserBySupabaseId error", error);
 }
 
 export async function markProfileCompleted(userId: string): Promise<UserRow | null> {
@@ -206,16 +236,16 @@ export async function updateUserProfile(
   return (data as UserRow) ?? null;
 }
 
-export async function getUserByClerkId(clerkUserId: string): Promise<UserRow | null> {
+export async function getUserBySupabaseId(supabaseUserId: string): Promise<UserRow | null> {
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return null;
   const { data, error } = await supabase
     .from("users")
     .select("*")
-    .eq("clerk_user_id", clerkUserId)
+    .eq("id", supabaseUserId)
     .maybeSingle();
   if (error) {
-    console.error("getUserByClerkId error", error);
+    console.error("getUserBySupabaseId error", error);
     return null;
   }
   return (data as UserRow) ?? null;

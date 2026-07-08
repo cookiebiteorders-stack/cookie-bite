@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { clerkClient } from "@clerk/nextjs/server";
 import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { readOnlineAdminStaff, upsertAdminPresence } from "@/lib/admin/presence";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -33,23 +32,14 @@ export async function POST(req: NextRequest) {
   }
 
   let fullName: string | null = null;
-  try {
-    const client = await clerkClient();
-    const user = await client.users.getUser(actor.clerk_user_id);
-    const first = user.firstName?.trim() ?? "";
-    const last = user.lastName?.trim() ?? "";
-    fullName = [first, last].filter(Boolean).join(" ") || null;
-  } catch {
-    fullName = null;
-  }
-
-  if (!fullName && actor.user_id) {
+  const targetUserId = actor.user_id || actor.supabase_user_id;
+  if (targetUserId) {
     try {
       const supabase = createSupabaseAdminClient();
       const { data } = await supabase
         .from("users")
         .select("full_name")
-        .eq("id", actor.user_id)
+        .eq("id", targetUserId)
         .maybeSingle();
       fullName = (data?.full_name as string | null) ?? null;
     } catch {

@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -14,7 +14,7 @@ export async function GET() {
 
   try {
     const supabase = createSupabaseAdminClient();
-    const { data: profile } = await supabase.from("users").select("*").eq("clerk_user_id", userId).maybeSingle();
+    const { data: profile } = await supabase.from("users").select("*").eq("id", userId).maybeSingle();
     const uid = typeof profile?.id === "string" ? profile.id : null;
 
     let orders: unknown[] = [];

@@ -324,7 +324,7 @@ export function AdminSettingsDashboard() {
     if (!health) return [];
     return CORE_HEALTH_CARD_DEFS.map(({ labelKey, key }) => {
       let ok = health.integrations[key];
-      if (key === "supabase" && health.database) ok = ok && health.database.ok;
+      if (key === "supabase_auth" && health.database) ok = ok && health.database.ok;
       const missingForCard = INTEGRATION_FIX_HINTS[key].filter((k) => health.env.missing.includes(k));
       return { name: adminT(labelKey), key, ok, missingForCard };
     });
@@ -891,10 +891,10 @@ export function AdminSettingsDashboard() {
                     >
                       {adminT("settings.security.roles")}
                     </Link>
-                    <AdminBadge tone={health?.integrations.clerk ? "success" : "warning"} className="w-full rounded-xl px-3 py-2">
-                      {health?.integrations.clerk
-                        ? adminT("settings.security.clerkOk")
-                        : adminT("settings.security.clerkIssue")}
+                    <AdminBadge tone={health?.integrations.supabase_auth ? "success" : "warning"} className="w-full rounded-xl px-3 py-2">
+                      {health?.integrations.supabase_auth
+                        ? adminT("settings.security.supabaseOk")
+                        : adminT("settings.security.supabaseIssue")}
                     </AdminBadge>
                   </div>
                 </article>

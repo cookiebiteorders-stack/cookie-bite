@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { SignOutButton } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { AccountSectionLink } from "@/components/account/account-section-link";
 import { ChevronRight, Package, MapPin, Heart, Star, User, MessageSquare, Bell, LogOut, LayoutDashboard, CreditCard, HelpCircle } from "lucide-react";
 
@@ -28,6 +29,14 @@ export function MobileAccountView({
   isAdmin,
 }: MobileAccountViewProps) {
   const initial = (fullName || email || "?").trim().slice(0, 1).toUpperCase();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    const supabase = createSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  };
 
   const navItems = [
     { label: "My Orders", href: "/account/orders", icon: Package },
@@ -109,13 +118,11 @@ export function MobileAccountView({
         })}
         
         {/* Logout */}
-        <div className="mobile-account-nav__item mobile-account-nav__item--danger cursor-pointer">
+        <button type="button" onClick={handleSignOut} className="mobile-account-nav__item mobile-account-nav__item--danger cursor-pointer w-full border-none bg-transparent">
           <LogOut className="mobile-account-nav__icon text-[#C0392B]" />
-          <SignOutButton>
-            <span className="flex-1 w-full text-left">Sign Out</span>
-          </SignOutButton>
-          <ChevronRight className="mobile-account-nav__chevron" />
-        </div>
+          <span className="flex-1 w-full text-left text-[#C0392B] font-medium text-[15px]">Sign Out</span>
+          <ChevronRight className="mobile-account-nav__chevron text-[#C0392B]" />
+        </button>
       </nav>
 
       <div className="mobile-spacer-lg" />

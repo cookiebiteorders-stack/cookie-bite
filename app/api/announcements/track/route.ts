@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { NextResponse } from "next/server";
 import { trackAnnouncementEvent } from "@/lib/announcements/server";
 import type { TrackEventType } from "@/lib/announcements/types";
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       const { data } = await supabase
         .from("users")
         .select("id")
-        .eq("clerk_user_id", userId)
+        .eq("id", userId)
         .maybeSingle();
       dbUserId = (data?.id as string | undefined) ?? null;
     } catch {

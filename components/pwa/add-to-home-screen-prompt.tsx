@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { Smartphone, Share, X } from "lucide-react";
 import Image from "next/image";
 import { motion } from "motion/react";
@@ -19,7 +19,7 @@ import { useBeforeInstallPrompt } from "@/lib/pwa/use-before-install-prompt";
 import { cn } from "@/lib/utils";
 
 export function AddToHomeScreenPrompt() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn } = useSupabaseAuth();
   const { t, lang } = useLanguage();
   const [open, setOpen] = useState(false);
   const [platform, setPlatform] = useState<InstallPlatform | null>(null);

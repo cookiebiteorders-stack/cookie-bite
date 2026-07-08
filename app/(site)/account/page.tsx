@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { Heart, MapPin, Package, Star } from "lucide-react";
 
 import { AccountHashScroll } from "@/components/account/account-hash-scroll";
@@ -29,7 +29,7 @@ import {
 import { countOrdersForUser, listRecentOrdersForUser } from "@/lib/db/orders";
 import { requireCustomerProfileComplete } from "@/lib/account/require-complete-profile";
 import { trySendWelcomeEmailOnce } from "@/lib/email/welcome-onboarding";
-import { getUserByClerkId } from "@/lib/db/users";
+import { getUserBySupabaseId } from "@/lib/db/users";
 import { cn } from "@/lib/utils";
 import { buildPageMetadata } from "@/lib/seo";
 import { getLangFromCookies } from "@/lib/seo/server";
@@ -47,7 +47,7 @@ export const metadata: Metadata = buildPageMetadata({
 function resolveAccountRole(
   dbUser: { role: UserRole } | null,
   email: string | null,
-  clerkUserId: string,
+  supabaseUserId: string,
 ): Promise<UserRole> {
   if (
     dbUser &&
@@ -58,7 +58,7 @@ function resolveAccountRole(
   ) {
     return Promise.resolve(dbUser.role);
   }
-  return resolveStaffRole({ email, clerkUserId });
+  return resolveStaffRole({ email, clerkUserId: supabaseUserId });
 }
 
 type ProductImageItem = { url?: string | null };
@@ -102,29 +102,18 @@ type TestimonialItem = {
 export default async function AccountPage() {
   const lang = await getLangFromCookies();
   const t = getServerT(lang);
-  const { userId } = await auth();
-  if (!userId) {
+  const { userId, user } = await auth();
+  if (!userId || !user) {
     redirect("/sign-in?redirect_url=/account");
   }
 
-  let user: Awaited<ReturnType<typeof currentUser>> = null;
-  try {
-    user = await currentUser();
-  } catch (e) {
-    console.error("AccountPage currentUser failed:", e);
-  }
-
-  const email = user?.primaryEmailAddress?.emailAddress ?? null;
-  const fullName =
-    [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
-    user?.username ||
-    email ||
-    t("accountDashboard.defaultFriend");
+  const email = user.email ?? null;
+  const fullName = user.user_metadata?.full_name ?? email ?? t("accountDashboard.defaultFriend");
 
   let dbUser = await requireCustomerProfileComplete(userId, {
     email,
     fullName,
-    avatarUrl: user?.imageUrl ?? null,
+    avatarUrl: user.user_metadata?.avatar_url ?? null,
   });
   const createdDbUserThisVisit = false;
 
@@ -133,7 +122,7 @@ export default async function AccountPage() {
       await trySendWelcomeEmailOnce({
         userId: dbUser.id,
         to: email,
-        name: user?.firstName ?? undefined,
+        name: fullName ?? undefined,
         force: createdDbUserThisVisit,
         createdAt: dbUser.created_at,
       });
@@ -271,7 +260,7 @@ export default async function AccountPage() {
         <AccountSidebar
           userName={fullName}
           userEmail={email}
-          avatarUrl={user?.imageUrl ?? null}
+          avatarUrl={user?.user_metadata?.avatar_url ?? null}
           roleLabel={
             accountRole === "customer" ? t("accountDashboard.member") : getRoleLabel(accountRole)
           }
@@ -333,7 +322,7 @@ export default async function AccountPage() {
             <div className="grid gap-6 p-6 lg:grid-cols-2 lg:items-center">
               <div>
                 <h1 className="font-serif text-3xl font-semibold text-cb-text-strong">
-                  {t("accountDashboard.welcome", { name: user?.firstName ?? fullName })}
+                  {t("accountDashboard.welcome", { name: fullName.split(' ')[0] ?? fullName })}
                 </h1>
                 <p className="mt-2 text-cb-text-muted">
                   {accountRole !== "customer"

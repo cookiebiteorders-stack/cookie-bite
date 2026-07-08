@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { usePathname } from "next/navigation";
 import {
   createContext,
@@ -58,22 +58,20 @@ function resolveUserType(
 export function AnnouncementProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { lang } = useLanguage();
-  const { isSignedIn, isLoaded } = useAuth();
-  const { user } = useUser();
+  const { isSignedIn, isLoaded, user } = useSupabaseAuth();
   const [announcements, setAnnouncements] = useState<AnnouncementView[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [behaviorTick, setBehaviorTick] = useState(0);
 
   const userName =
-    user?.firstName ??
-    user?.username ??
-    user?.primaryEmailAddress?.emailAddress?.split("@")[0] ??
+    user?.user_metadata?.full_name ??
+    user?.email?.split("@")[0] ??
     null;
 
   const page = resolvePageFromPath(pathname);
   const isStaff = Boolean(
-    user?.publicMetadata?.role &&
-      ["owner", "admin", "staff"].includes(String(user.publicMetadata.role)),
+    user?.user_metadata?.role &&
+      ["owner", "admin", "staff"].includes(String(user.user_metadata.role)),
   );
 
   const context = useMemo<AnnouncementUserContext>(

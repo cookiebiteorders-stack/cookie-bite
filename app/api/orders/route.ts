@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getUserByClerkId } from "@/lib/db/users";
+import { getUserBySupabaseId } from "@/lib/db/users";
 import { onOrderCreated } from "@/lib/email/automation/triggers";
 import { recordOrderCreatedLifecycle } from "@/lib/orders/order-lifecycle";
 import { scheduleOrderConfirmed } from "@/lib/notifications/schedule";
@@ -234,7 +234,7 @@ export async function POST(req: NextRequest) {
   let user_email: string | null = null;
   let user_name: string | null = null;
   if (userId) {
-    const profile = await getUserByClerkId(userId);
+    const profile = await getUserBySupabaseId(userId);
     user_id = profile?.id ?? null;
     user_email = profile?.email ?? null;
     user_name = profile?.full_name ?? null;
@@ -473,7 +473,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const profile = await getUserByClerkId(userId);
+  const profile = await getUserBySupabaseId(userId);
   if (!profile) {
     return NextResponse.json(
       bilingualError("Profile not found", "الملف غير موجود"),

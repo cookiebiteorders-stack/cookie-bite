@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { redirect } from "next/navigation";
 import { CopilotChat } from "@/components/admin/copilot/copilot-chat";
 import { AdminCopilotPageHeader } from "@/components/admin/copilot/admin-copilot-page-header";
@@ -15,17 +15,10 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminCopilotPage() {
-  const { userId } = await auth();
-  if (!userId) redirect("/sign-in?redirect_url=%2Fadmin%2Fcopilot");
+  const { userId, user } = await auth();
+  if (!userId || !user) redirect("/sign-in?redirect_url=%2Fadmin%2Fcopilot");
 
-  let email: string | null = null;
-  try {
-    const user = await currentUser();
-    email = user?.primaryEmailAddress?.emailAddress ?? null;
-  } catch {
-    /* ignore */
-  }
-
+  const email = user.email ?? null;
   const role = await resolveStaffRole({ email, clerkUserId: userId });
   if (!canAccessMrsCookieCopilot(role)) {
     redirect("/admin");

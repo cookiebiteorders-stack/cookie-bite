@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { redirect } from "next/navigation";
 import { CompleteProfileForm } from "@/components/account/complete-profile-form";
 import { isProfileComplete } from "@/lib/account/profile-complete";
-import { ensureDbUserForClerk } from "@/lib/db/ensure-db-user";
+import { ensureDbUserForSupabase } from "@/lib/db/ensure-db-user";
 import { buildPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -14,12 +14,12 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 export default async function CompleteProfilePage() {
-  const { userId } = await auth();
-  if (!userId) {
+  const { userId, user } = await auth();
+  if (!userId || !user) {
     redirect("/sign-in?redirect_url=/account/complete-profile");
   }
 
-  const dbUser = await ensureDbUserForClerk(userId);
+  const dbUser = await ensureDbUserForSupabase(userId, user.email ?? "", user.user_metadata?.full_name ?? null, user.user_metadata?.avatar_url ?? null);
   if (dbUser && isProfileComplete(dbUser)) {
     redirect("/account");
   }

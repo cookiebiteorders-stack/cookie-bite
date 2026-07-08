@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { z } from "zod";
 import { requireMrsCookieAccess } from "@/lib/admin/require-admin";
 import {
@@ -41,8 +41,8 @@ export async function PATCH(req: NextRequest) {
 
   let updatedBy: string | null = null;
   try {
-    const user = await currentUser();
-    updatedBy = user?.primaryEmailAddress?.emailAddress ?? user?.id ?? null;
+    const { user } = await auth();
+    updatedBy = user?.email ?? user?.id ?? null;
   } catch {
     /* ignore */
   }

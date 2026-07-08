@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
 import { z } from "zod";
 import { requireAdminAccess } from "@/lib/admin/require-admin";
 import {
@@ -23,7 +22,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  await requireAdminAccess("settings");
+  const actor = await requireAdminAccess("settings");
 
   const parsed = patchSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
@@ -32,13 +31,7 @@ export async function PATCH(req: NextRequest) {
     });
   }
 
-  let updatedBy: string | null = null;
-  try {
-    const user = await currentUser();
-    updatedBy = user?.primaryEmailAddress?.emailAddress ?? user?.id ?? null;
-  } catch {
-    /* ignore */
-  }
+  const updatedBy = actor.email ?? actor.supabase_user_id ?? null;
 
   const result = await savePersonaPrompt({
     ...parsed.data,

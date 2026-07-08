@@ -1,4 +1,4 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { NextResponse } from "next/server";
 import { resolveServerBehaviors } from "@/lib/announcements/behavior-server";
 import { resolvePageFromPath } from "@/lib/announcements/shared";
@@ -31,16 +31,11 @@ async function resolveUserContext(
   let dbUserId: string | null = null;
 
   try {
-    const client = await clerkClient();
-    const user = await client.users.getUser(userId);
-    userName =
-      user.firstName ??
-      user.username ??
-      user.primaryEmailAddress?.emailAddress?.split("@")[0] ??
-      null;
+    const { user } = await auth();
+    userName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? null;
 
     const role = await resolveStaffRole({
-      email: user.primaryEmailAddress?.emailAddress ?? null,
+      email: user?.email ?? null,
       clerkUserId: userId,
     });
     if (["owner", "admin", "staff"].includes(role)) {
@@ -51,7 +46,7 @@ async function resolveUserContext(
     const { data } = await supabase
       .from("users")
       .select("id, loyalty_tier")
-      .eq("clerk_user_id", userId)
+      .eq("id", userId)
       .maybeSingle();
 
     dbUserId = (data?.id as string | undefined) ?? null;

@@ -1,4 +1,4 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { redirect } from "next/navigation";
 import { AccountSettingsClient } from "@/components/account/account-settings-client";
 import { requireCustomerProfileComplete } from "@/lib/account/require-complete-profile";
@@ -15,29 +15,18 @@ export const metadata = buildPageMetadata({
 });
 
 export default async function AccountSettingsPage() {
-  const { userId } = await auth();
-  if (!userId) {
+  const { userId, user } = await auth();
+  if (!userId || !user) {
     redirect("/sign-in?redirect_url=/account/settings");
   }
 
-  let user: Awaited<ReturnType<typeof currentUser>> = null;
-  try {
-    user = await currentUser();
-  } catch {
-    /* Clerk unavailable — still render shell */
-  }
-
-  const email = user?.primaryEmailAddress?.emailAddress ?? null;
-  const fullName =
-    [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
-    user?.username ||
-    email ||
-    "Cookie Bite friend";
+  const email = user.email ?? null;
+  const fullName = user.user_metadata?.full_name ?? email ?? "Cookie Bite friend";
 
   await requireCustomerProfileComplete(userId, {
     email,
     fullName,
-    avatarUrl: user?.imageUrl ?? null,
+    avatarUrl: user.user_metadata?.avatar_url ?? null,
   });
 
   let role: UserRole = "customer";
@@ -54,7 +43,7 @@ export default async function AccountSettingsPage() {
     <AccountSettingsClient
       userName={fullName}
       userEmail={email}
-      avatarUrl={user?.imageUrl ?? null}
+      avatarUrl={user.user_metadata?.avatar_url ?? null}
       roleLabel={roleLabel}
       showAdminLinks={adminConsoleLinks.length > 0}
       adminConsoleLinks={adminConsoleLinks}

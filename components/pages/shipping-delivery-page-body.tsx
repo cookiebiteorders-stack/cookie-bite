@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useCallback, useMemo, useState } from "react";
 import { MapPin, Truck } from "lucide-react";
 import {
@@ -38,8 +38,7 @@ function toPayload(values: AddressFormValues) {
 export function ShippingDeliveryPageBody() {
   const { t } = useLanguage();
   const { zones, loaded: zonesLoaded } = useStoreShippingZones();
-  const { isSignedIn } = useAuth();
-  const { user } = useUser();
+  const { isSignedIn, user } = useSupabaseAuth();
 
   const [selectedAreaKey, setSelectedAreaKey] = useState<string | null>(null);
   const [formSeed, setFormSeed] = useState(0);
@@ -48,12 +47,9 @@ export function ShippingDeliveryPageBody() {
   const [saved, setSaved] = useState(false);
 
   const displayName = useMemo(() => {
-    const fromClerk =
-      [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
-      user?.username ||
-      "";
-    return fromClerk || "";
-  }, [user?.firstName, user?.lastName, user?.username]);
+    const fromSupabase = user?.user_metadata?.full_name || user?.email || "";
+    return fromSupabase || "";
+  }, [user?.user_metadata?.full_name, user?.email]);
 
   const selectedArea = useMemo(() => {
     if (!selectedAreaKey) return null;

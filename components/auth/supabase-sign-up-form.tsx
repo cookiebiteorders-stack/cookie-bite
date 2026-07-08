@@ -88,6 +88,7 @@ export function SupabaseSignUpForm({ afterAuth }: SupabaseSignUpFormProps) {
         provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          skipBrowserRedirect: false,
         },
       });
 

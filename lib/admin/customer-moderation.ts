@@ -1,4 +1,3 @@
-import { clerkClient } from "@clerk/nextjs/server";
 import {
   sendAccountBlockedNotification,
   sendAccountDeletedNotification,
@@ -10,13 +9,13 @@ import type { AdminActor } from "@/lib/admin/require-admin";
 export type CustomerModerationTarget = {
   id: string;
   email: string;
-  clerk_user_id: string;
+  supabase_user_id: string;
   role: string;
   full_name?: string | null;
 };
 
-export function isManualCrmClerkId(clerkUserId: string): boolean {
-  return clerkUserId.startsWith("crm-manual:");
+export function isManualCrmSupabaseId(supabaseUserId: string): boolean {
+  return supabaseUserId.startsWith("crm-manual:");
 }
 
 export async function loadCustomerModerationTarget(
@@ -25,11 +24,11 @@ export async function loadCustomerModerationTarget(
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("users")
-    .select("id,email,clerk_user_id,role,full_name")
+    .select("id,email,supabase_user_id:id,role,full_name")
     .eq("id", userId)
     .maybeSingle();
   if (error || !data) return null;
-  return data as CustomerModerationTarget;
+  return data as unknown as CustomerModerationTarget;
 }
 
 export function assertCustomerModerationAllowed(
@@ -61,31 +60,31 @@ export function assertCustomerModerationAllowed(
   return null;
 }
 
-function clerkErrorLooksBenign(err: unknown): boolean {
+function supabaseErrorLooksBenign(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
   return /not found|already|banned|deleted/i.test(msg);
 }
 
-async function banClerkUser(clerkUserId: string): Promise<void> {
-  if (isManualCrmClerkId(clerkUserId)) return;
+async function disableSupabaseUser(supabaseUserId: string): Promise<void> {
+  if (isManualCrmSupabaseId(supabaseUserId)) return;
   try {
-    const client = await clerkClient();
-    await client.users.banUser(clerkUserId);
+    const supabase = createSupabaseAdminClient();
+    await supabase.auth.admin.updateUserById(supabaseUserId, { ban_duration: '876000h' }); // Ban for 100 years
   } catch (err) {
-    if (clerkErrorLooksBenign(err)) return;
-    console.error("banClerkUser failed", clerkUserId, err);
+    if (supabaseErrorLooksBenign(err)) return;
+    console.error("disableSupabaseUser failed", supabaseUserId, err);
     throw err;
   }
 }
 
-async function deleteClerkUser(clerkUserId: string): Promise<void> {
-  if (isManualCrmClerkId(clerkUserId)) return;
+async function deleteSupabaseUser(supabaseUserId: string): Promise<void> {
+  if (isManualCrmSupabaseId(supabaseUserId)) return;
   try {
-    const client = await clerkClient();
-    await client.users.deleteUser(clerkUserId);
+    const supabase = createSupabaseAdminClient();
+    await supabase.auth.admin.deleteUser(supabaseUserId);
   } catch (err) {
-    if (clerkErrorLooksBenign(err)) return;
-    console.error("deleteClerkUser failed", clerkUserId, err);
+    if (supabaseErrorLooksBenign(err)) return;
+    console.error("deleteSupabaseUser failed", supabaseUserId, err);
     throw err;
   }
 }
@@ -110,13 +109,13 @@ export async function blockCustomerEmailAccount(input: {
   }
 
   try {
-    await banClerkUser(input.target.clerk_user_id);
+    await disableSupabaseUser(input.target.supabase_user_id);
   } catch {
     return {
       ok: false,
       message: {
-        en: "Email blocked locally but Clerk ban failed",
-        ar: "تم حظر البريد محلياً لكن فشل الحظر في Clerk",
+        en: "Email blocked locally but Supabase ban failed",
+        ar: "تم حظر البريد محلياً لكن فشل الحظر في Supabase",
       },
     };
   }
@@ -148,13 +147,13 @@ export async function deleteCustomerAccount(input: {
   }
 
   try {
-    await deleteClerkUser(input.target.clerk_user_id);
+    await deleteSupabaseUser(input.target.supabase_user_id);
   } catch {
     return {
       ok: false,
       message: {
-        en: "Customer removed from database but Clerk delete failed",
-        ar: "تم حذف العميل من قاعدة البيانات لكن فشل الحذف من Clerk",
+        en: "Customer removed from database but Supabase delete failed",
+        ar: "تم حذف العميل من قاعدة البيانات لكن فشل الحذف من Supabase",
       },
     };
   }
@@ -162,7 +161,7 @@ export async function deleteCustomerAccount(input: {
   return { ok: true };
 }
 
-/** Block email, remove Clerk access, and delete the CRM profile. */
+/** Block email, remove Supabase access, and delete the CRM profile. */
 export async function blockAndDeleteCustomerAccount(input: {
   target: CustomerModerationTarget;
   actor: AdminActor;
@@ -209,13 +208,13 @@ export async function blockAndDeleteCustomerAccount(input: {
   }
 
   try {
-    await deleteClerkUser(input.target.clerk_user_id);
+    await deleteSupabaseUser(input.target.supabase_user_id);
   } catch {
     return {
       ok: false,
       message: {
-        en: "Email blocked and profile removed, but Clerk delete failed",
-        ar: "تم الحظر وحذف الملف محلياً لكن فشل الحذف من Clerk",
+        en: "Email blocked and profile removed, but Supabase delete failed",
+        ar: "تم الحظر وحذف الملف محلياً لكن فشل الحذف من Supabase",
       },
     };
   }

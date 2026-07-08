@@ -1,10 +1,6 @@
 import { createRequire } from "node:module";
 import path from "node:path";
 import type { NextConfig } from "next";
-import {
-  resolveClerkJsUrlForNextEnv,
-  resolveClerkUiUrlForNextEnv,
-} from "./lib/auth/clerk-js-fallback";
 import { assertProductionEnvOrWarn } from "./lib/config/production-lock";
 
 assertProductionEnvOrWarn();
@@ -104,7 +100,7 @@ const PRODUCTION_SECURITY_HEADERS = [
   {
     key: "Content-Security-Policy",
     value:
-      "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com https://clerk.cookie-bite.com https://*.clerk.accounts.dev https://*.clerk.com https://*.clerk.dev https://*.googletagmanager.com; style-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: blob: https://res.cloudinary.com https://cdn.sanity.io https://images.unsplash.com https://img.clerk.com https://images.clerk.dev https://*.cdninstagram.com https://*.fbcdn.net https://*.tile.openstreetmap.org https://tile.openstreetmap.org; connect-src 'self' https://api.cloudinary.com https://*.supabase.co wss://*.supabase.co https://clerk.cookie-bite.com wss://clerk.cookie-bite.com https://*.clerk.accounts.dev wss://*.clerk.accounts.dev https://*.clerk.com wss://*.clerk.com https://*.clerk.dev wss://*.clerk.dev; font-src 'self' https://fonts.gstatic.com cdn.jsdelivr.net;",
+      "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com https://*.googletagmanager.com; style-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: blob: https://res.cloudinary.com https://cdn.sanity.io https://images.unsplash.com https://*.cdninstagram.com https://*.fbcdn.net https://*.tile.openstreetmap.org https://tile.openstreetmap.org; connect-src 'self' https://api.cloudinary.com https://*.supabase.co wss://*.supabase.co; font-src 'self' https://fonts.gstatic.com cdn.jsdelivr.net;",
   },
   {
     key: "Permissions-Policy",
@@ -144,19 +140,12 @@ const nextConfig: NextConfig = {
       "date-fns",
       "@tanstack/react-table",
       "recharts",
-      "@clerk/nextjs",
-      "@clerk/localizations",
       "@supabase/supabase-js",
     ],
     staleTimes: {
       dynamic: 30,
       static: 300,
     },
-  },
-  /** CDN مُثبَّت لـ clerk-js و clerk-ui (انظر clerk-js-fallback.ts) */
-  env: {
-    NEXT_PUBLIC_CLERK_JS_URL: resolveClerkJsUrlForNextEnv(),
-    NEXT_PUBLIC_CLERK_UI_URL: resolveClerkUiUrlForNextEnv(),
   },
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   turbopack: {
@@ -203,16 +192,6 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "img.clerk.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "images.clerk.dev",
         pathname: "/**",
       },
       {

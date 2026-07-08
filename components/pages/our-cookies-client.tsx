@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Cookie, Heart, Leaf, Sparkles, Star } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { SeoRelatedLinks } from "@/components/seo/seo-related-links";
 import { ProductCard } from "@/components/product/product-card";
 import { buttonClassName } from "@/components/ui/button";
@@ -50,7 +50,7 @@ function sectionDescriptionKey(sectionId: string, shopCategory: string) {
 
 export function OurCookiesClient() {
   const { t, lang } = useLanguage();
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn } = useSupabaseAuth();
   const [catalog, setCatalog] = useState<Product[]>([]);
   const [wishlistUuids, setWishlistUuids] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);

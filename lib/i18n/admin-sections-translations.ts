@@ -487,8 +487,8 @@ export const adminSectionsEn = {
     security: {
       auditLogs: "Audit logs (all modules)",
       roles: "Roles & staff permissions",
-      clerkOk: "Clerk authentication configured",
-      clerkIssue: "Clerk env incomplete — check CLERK_* variables",
+      supabaseOk: "Supabase authentication configured",
+      supabaseIssue: "Supabase auth env incomplete — check SUPABASE_* variables",
     },
     ownerControls: {
       title: "Owner Controls",
@@ -1293,8 +1293,8 @@ export const adminSectionsAr = {
     security: {
       auditLogs: "سجل التدقيق (كل الوحدات)",
       roles: "الأدوار وصلاحيات الموظفين",
-      clerkOk: "مصادقة Clerk مضبوطة",
-      clerkIssue: "بيئة Clerk ناقصة — راجع متغيرات CLERK_*",
+      supabaseOk: "مصادقة Supabase مضبوطة",
+      supabaseIssue: "بيئة Supabase ناقصة — راجع متغيرات SUPABASE_*",
     },
     ownerControls: {
       title: "تحكم المالك",

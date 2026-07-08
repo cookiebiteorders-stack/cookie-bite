@@ -1,9 +1,11 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth/supabase-auth";
 import { resolveStaffRole } from "@/lib/admin/auth-role";
 import { canAccess, type ModuleKey, type PermissionLevel, type UserRole, roleMatrix } from "@/lib/admin/rbac";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export type AdminActor = {
+  supabase_user_id: string;
+  /** نفس supabase_user_id — أعمدة DB القديمة (presence/copilot) */
   clerk_user_id: string;
   user_id: string | null;
   email: string | null;
@@ -13,18 +15,16 @@ export type AdminActor = {
 
 /** يرفض الوصول إذا لم يكن owner/admin/staff أو لم يملك صلاحية الوحدة. */
 export async function requireAdminAccess(module: ModuleKey): Promise<AdminActor> {
-  const { userId } = await auth();
-  if (!userId) {
+  const { userId, user } = await auth();
+  if (!userId || !user) {
     throw new Response(
       JSON.stringify({ error: { en: "Unauthorized", ar: "غير مصرح" } }),
       { status: 401, headers: { "Content-Type": "application/json" } },
     );
   }
 
-  const client = await clerkClient();
-  const user = await client.users.getUser(userId);
-  const email = user.primaryEmailAddress?.emailAddress ?? null;
-  const role = await resolveStaffRole({ email, clerkUserId: userId });
+  const email = user.email ?? null;
+  const role = await resolveStaffRole({ email, supabaseUserId: userId });
 
   if (!["owner", "admin", "staff"].includes(role)) {
     throw new Response(
@@ -46,14 +46,14 @@ export async function requireAdminAccess(module: ModuleKey): Promise<AdminActor>
     );
   }
 
-  // اربط هوية Clerk بمستخدم Supabase (إن وُجد)
+  // اربط هوية Supabase بمستخدم Supabase (إن وُجد)
   let dbUserId: string | null = null;
   try {
     const supabase = createSupabaseAdminClient();
     const { data } = await supabase
       .from("users")
       .select("id")
-      .eq("clerk_user_id", userId)
+      .eq("id", userId)
       .maybeSingle();
     dbUserId = (data?.id as string | undefined) ?? null;
   } catch {
@@ -61,6 +61,7 @@ export async function requireAdminAccess(module: ModuleKey): Promise<AdminActor>
   }
 
   return {
+    supabase_user_id: userId,
     clerk_user_id: userId,
     user_id: dbUserId,
     email,
