@@ -5,7 +5,7 @@ import { rateLimit } from "@/lib/tracking-server/rate-limit";
 
 const MAX_BODY_BYTES = 64 * 1024;
 const CORS_HEADERS: Record<string, string> = {
-  "Access-Control-Allow-Origin": process.env.NEXT_PUBLIC_APP_URL ?? "*",
+  "Access-Control-Allow-Origin": process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, x-tracking-token",
   "Access-Control-Max-Age": "86400",

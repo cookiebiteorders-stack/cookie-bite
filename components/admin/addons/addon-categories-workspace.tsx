@@ -114,8 +114,12 @@ export function AddonCategoriesWorkspace() {
       setShowNewCategory(false);
       await load();
       setSelectedId(res.category.id);
-    } catch {
-      setError(pick({ en: "Failed to create category.", ar: "فشل إنشاء التصنيف." }));
+    } catch (e) {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : pick({ en: "Failed to create category.", ar: "فشل إنشاء التصنيف." });
+      setError(msg);
     } finally {
       setSaving(false);
     }
@@ -141,8 +145,12 @@ export function AddonCategoriesWorkspace() {
         },
       });
       await load();
-    } catch {
-      setError(pick({ en: "Failed to update category.", ar: "فشل تحديث التصنيف." }));
+    } catch (e) {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : pick({ en: "Failed to update category.", ar: "فشل تحديث التصنيف." });
+      setError(msg);
     } finally {
       setSaving(false);
     }
@@ -177,8 +185,12 @@ export function AddonCategoriesWorkspace() {
         },
       });
       await load();
-    } catch {
-      setError(pick({ en: "Failed to save items.", ar: "فشل حفظ العناصر." }));
+    } catch (e) {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : pick({ en: "Failed to save items.", ar: "فشل حفظ العناصر." });
+      setError(msg);
     } finally {
       setSaving(false);
     }
@@ -216,12 +228,19 @@ export function AddonCategoriesWorkspace() {
   }
 
   async function runMerge() {
-    if (!selectedId || mergeSources.length === 0) return;
+    if (!selectedId) {
+      setError(pick({ en: "Please select a target category first.", ar: "يرجى اختيار تصنيف هدف أولاً." }));
+      return;
+    }
+    if (mergeSources.length === 0) {
+      setError(pick({ en: "Please select at least one category to merge.", ar: "يرجى اختيار تصنيف واحد على الأقل للدمج." }));
+      return;
+    }
     if (
       !window.confirm(
         pick({
-          en: "Merge selected categories into the current one? Source categories will be removed.",
-          ar: "دمج التصنيفات المحددة في الحالي؟ سيتم حذف المصادر.",
+          en: `Merge ${mergeSources.length} categor${mergeSources.length === 1 ? "y" : "ies"} into "${categories.find(c => c.id === selectedId)?.name}"? Source categories will be removed.`,
+          ar: `دمج ${mergeSources.length} تصنيف${mergeSources.length === 1 ? "" : "ات"} في "${categories.find(c => c.id === selectedId)?.name}"؟ سيتم حذف المصادر.`,
         }),
       )
     ) {
@@ -267,9 +286,16 @@ export function AddonCategoriesWorkspace() {
       <AdminPageIntro titleKey="adminPages.addons.title" subtitleKey="adminPages.addons.subtitle" />
 
       {error ? (
-        <p className="rounded-lg border border-red-300/60 bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">
-          {error}
-        </p>
+        <div className="flex items-start justify-between gap-2 rounded-lg border border-red-300/60 bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">
+          <p className="flex-1">{error}</p>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="rounded p-0.5 text-red-600 hover:bg-red-100 dark:text-red-300 dark:hover:bg-red-900/30"
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+        </div>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(240px,300px)_1fr]">
@@ -383,7 +409,10 @@ export function AddonCategoriesWorkspace() {
                         </span>
                         <span className="text-[10px] text-cb-text-muted">
                           {(cat.items?.length ?? 0)}{" "}
-                          {pick({ en: "items", ar: "عنصر" })}
+                          {pick({
+                            en: (cat.items?.length ?? 0) === 1 ? "item" : "items",
+                            ar: (cat.items?.length ?? 0) === 1 ? "عنصر" : "عناصر",
+                          })}
                           {cat.required
                             ? ` · ${pick({ en: "Required", ar: "إلزامي" })}`
                             : ""}

@@ -40,9 +40,7 @@ export function CartBundleOffers({ variant = "drawer", className }: Props) {
     setLoading(true);
     void (async () => {
       try {
-        const data = await fetchJson<ApiResponse>(`/api/offers/active?lang=${lang}`, {
-          cache: "no-store",
-        });
+        const data = await fetchJson<ApiResponse>(`/api/offers/active?lang=${lang}`);
         if (cancelled) return;
         setOffers(data.offers ?? []);
       } catch {

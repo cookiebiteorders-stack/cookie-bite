@@ -29,9 +29,16 @@ export function SupabaseSignInForm({ afterAuth }: SupabaseSignInFormProps) {
     setLoading(true);
 
     try {
+      // Check if Supabase environment variables are set
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        setError("Supabase configuration is missing. Please contact support.");
+        console.error("Missing Supabase environment variables");
+        return;
+      }
+
       const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       );
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -40,7 +47,14 @@ export function SupabaseSignInForm({ afterAuth }: SupabaseSignInFormProps) {
       });
 
       if (signInError) {
-        setError(signInError.message);
+        // Provide more helpful error messages
+        if (signInError.message === "Invalid login credentials") {
+          setError("Invalid email or password. Please check your credentials or reset your password.");
+        } else if (signInError.message.includes("Email not confirmed")) {
+          setError("Please confirm your email address before signing in.");
+        } else {
+          setError(signInError.message);
+        }
         return;
       }
 
@@ -48,7 +62,7 @@ export function SupabaseSignInForm({ afterAuth }: SupabaseSignInFormProps) {
       router.push(afterAuth);
       router.refresh();
     } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
+      setError("Connection error. Please check your internet and try again.");
       console.error("Sign in error", err);
     } finally {
       setLoading(false);
@@ -60,9 +74,16 @@ export function SupabaseSignInForm({ afterAuth }: SupabaseSignInFormProps) {
     setSocialLoading(provider);
 
     try {
+      // Check if Supabase environment variables are set
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        setError("Supabase configuration is missing. Please contact support.");
+        console.error("Missing Supabase environment variables");
+        return;
+      }
+
       const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       );
 
       const { error: socialError } = await supabase.auth.signInWithOAuth({
@@ -74,11 +95,16 @@ export function SupabaseSignInForm({ afterAuth }: SupabaseSignInFormProps) {
       });
 
       if (socialError) {
-        setError(socialError.message);
+        // Provide more helpful error messages for OAuth
+        if (socialError.message.includes("not enabled")) {
+          setError(`${provider.charAt(0).toUpperCase() + provider.slice(1)} sign-in is not configured. Please use email/password or contact support.`);
+        } else {
+          setError(socialError.message);
+        }
         return;
       }
     } catch (err) {
-      setError(`Failed to sign in with ${provider}. Please try again.`);
+      setError(`Connection error. Please check your internet and try again.`);
       console.error("Social sign in error", err);
     } finally {
       setSocialLoading(null);

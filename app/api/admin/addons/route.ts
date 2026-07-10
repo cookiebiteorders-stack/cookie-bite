@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { listAddonCategoriesWithItems } from "@/lib/db/addon-categories";
+import { linkAddonsToAllProducts } from "@/lib/db/addons";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizeAddonInput } from "@/lib/addons/submit-payload";
 import { addonSchema } from "@/lib/addons/validation";
@@ -10,6 +11,7 @@ import { requireAdminAccess, requireWritePermission } from "@/lib/admin/require-
 const createAddonSchema = addonSchema.omit({ id: true });
 const updateSchema = addonSchema.extend({ id: z.string().uuid() });
 const deleteSchema = z.object({ id: z.string().uuid() });
+const linkToAllSchema = z.object({ addon_ids: z.array(z.string().uuid()).min(1) });
 
 export async function GET() {
   await requireAdminAccess("addons");

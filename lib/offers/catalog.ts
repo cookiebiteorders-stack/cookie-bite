@@ -40,9 +40,9 @@ export async function loadOfferCatalog() {
   }));
 
   const catalogAddons: OfferCatalogAddonOption[] = categories.flatMap((category) => {
-    if (!category.addon_id) return [];
-    return (category.items ?? []).map((option) => ({
-      addon_id: category.addon_id!,
+    if (!category.items || category.items.length === 0) return [];
+    return category.items.map((option) => ({
+      addon_id: category.addon_id ?? category.id,
       addon_name: category.name,
       category_name: category.name,
       option_id: option.id,

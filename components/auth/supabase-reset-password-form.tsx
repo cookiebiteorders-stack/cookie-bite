@@ -37,7 +37,14 @@ export function SupabaseResetPasswordForm() {
       });
 
       if (updateError) {
-        setError(updateError.message);
+        // Provide more helpful error messages
+        if (updateError.message.includes("Password should be")) {
+          setError("Password must be at least 8 characters long");
+        } else if (updateError.message.includes("same as old password")) {
+          setError("New password must be different from your current password");
+        } else {
+          setError(updateError.message);
+        }
         return;
       }
 

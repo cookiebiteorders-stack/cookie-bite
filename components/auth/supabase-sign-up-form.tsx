@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
 import { AuthButton } from "@/components/auth/auth-button";
 import { useLanguage } from "@/components/providers/language-provider";
-import { Mail, Lock, User, Chrome, Facebook, X } from "lucide-react";
+import { Mail, Lock, User, Phone, Chrome, Facebook, X } from "lucide-react";
 
 type SupabaseSignUpFormProps = {
   afterAuth: string;
@@ -29,10 +29,24 @@ export function SupabaseSignUpForm({ afterAuth }: SupabaseSignUpFormProps) {
     setError(null);
     setLoading(true);
 
+    // Validate password strength
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      setLoading(false);
+      return;
+    }
+
     try {
+      // Check if Supabase environment variables are set
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        setError("Supabase configuration is missing. Please contact support.");
+        console.error("Missing Supabase environment variables");
+        return;
+      }
+
       const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       );
 
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -48,7 +62,16 @@ export function SupabaseSignUpForm({ afterAuth }: SupabaseSignUpFormProps) {
       });
 
       if (signUpError) {
-        setError(signUpError.message);
+        // Provide more helpful error messages
+        if (signUpError.message === "User already registered") {
+          setError("An account with this email already exists. Please sign in instead.");
+        } else if (signUpError.message.includes("Password should be")) {
+          setError("Password must be at least 8 characters long.");
+        } else if (signUpError.message.includes("Invalid email")) {
+          setError("Please enter a valid email address.");
+        } else {
+          setError(signUpError.message);
+        }
         return;
       }
 
@@ -67,7 +90,7 @@ export function SupabaseSignUpForm({ afterAuth }: SupabaseSignUpFormProps) {
         router.refresh();
       }
     } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
+      setError("Connection error. Please check your internet and try again.");
       console.error("Sign up error", err);
     } finally {
       setLoading(false);
@@ -79,9 +102,16 @@ export function SupabaseSignUpForm({ afterAuth }: SupabaseSignUpFormProps) {
     setSocialLoading(provider);
 
     try {
+      // Check if Supabase environment variables are set
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        setError("Supabase configuration is missing. Please contact support.");
+        console.error("Missing Supabase environment variables");
+        return;
+      }
+
       const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       );
 
       const { error: socialError } = await supabase.auth.signInWithOAuth({
@@ -93,11 +123,16 @@ export function SupabaseSignUpForm({ afterAuth }: SupabaseSignUpFormProps) {
       });
 
       if (socialError) {
-        setError(socialError.message);
+        // Provide more helpful error messages for OAuth
+        if (socialError.message.includes("not enabled")) {
+          setError(`${provider.charAt(0).toUpperCase() + provider.slice(1)} sign-in is not configured. Please use email/password or contact support.`);
+        } else {
+          setError(socialError.message);
+        }
         return;
       }
     } catch (err) {
-      setError(`Failed to sign up with ${provider}. Please try again.`);
+      setError(`Connection error. Please check your internet and try again.`);
       console.error("Social sign up error", err);
     } finally {
       setSocialLoading(null);
@@ -187,7 +222,7 @@ export function SupabaseSignUpForm({ afterAuth }: SupabaseSignUpFormProps) {
         </div>
 
         <div className="relative">
-          <Mail className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 ${isRTL ? 'right-4' : 'left-4'}`} />
+          <Phone className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 ${isRTL ? 'right-4' : 'left-4'}`} />
           <input
             type="tel"
             value={phone}
