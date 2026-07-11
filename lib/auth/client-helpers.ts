@@ -130,7 +130,7 @@ export async function signInWithOAuth(provider: 'google' | 'facebook' | 'twitter
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: options?.redirectTo || `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/callback`,
+        redirectTo: options?.redirectTo || `${window.location.origin}/auth/callback`,
         skipBrowserRedirect: false,
       },
     });
