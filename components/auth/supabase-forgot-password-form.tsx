@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createBrowserClient } from "@supabase/ssr";
 import { AuthInput } from "@/components/auth/auth-input";
 import { AuthButton } from "@/components/auth/auth-button";
 import { CheckCircle } from "lucide-react";
+import { resetPasswordForEmail } from "@/lib/auth/client-helpers";
+import { validateForgotPasswordForm } from "@/lib/auth/validation";
+import { getAuthError, AuthErrorCode } from "@/lib/auth/errors";
+import { checkRateLimit, getRateLimitIdentifier } from "@/lib/auth/rate-limit";
 
 export function SupabaseForgotPasswordForm() {
   const router = useRouter();
@@ -13,34 +16,59 @@ export function SupabaseForgotPasswordForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [rateLimitError, setRateLimitError] = useState<{ remaining: number; resetAt: number } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setRateLimitError(null);
+
+    // Validate form
+    const validation = validateForgotPasswordForm(email);
+    if (!validation.isValid) {
+      const errorMessage = Object.values(validation.errors)[0];
+      setError(errorMessage);
+      return;
+    }
+
+    // Check rate limit
+    const rateLimitId = getRateLimitIdentifier('password-reset', email.toLowerCase());
+    const rateLimitCheck = checkRateLimit(rateLimitId, 'PASSWORD_RESET');
+    
+    if (!rateLimitCheck.allowed) {
+      setRateLimitError({
+        remaining: rateLimitCheck.remaining,
+        resetAt: rateLimitCheck.resetAt,
+      });
+      setError("Too many password reset attempts. Please wait a few minutes before trying again.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      const { error: resetError } = await resetPasswordForEmail(email);
 
       if (resetError) {
-        setError(resetError.message);
+        const authError = getAuthError(resetError);
+        setError(authError.message);
         return;
       }
 
       setSuccess(true);
     } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
-      console.error("Forgot password error", err);
+      const authError = getAuthError(AuthErrorCode.NETWORK_ERROR);
+      setError(authError.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatResetTime = (resetAt: number) => {
+    const seconds = Math.ceil((resetAt - Date.now()) / 1000);
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.ceil(seconds / 60);
+    return `${minutes}m`;
   };
 
   if (success) {
@@ -84,8 +112,13 @@ export function SupabaseForgotPasswordForm() {
         autoComplete="email"
       />
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300" role="alert">
           {error}
+          {rateLimitError && (
+            <p className="mt-1 text-xs opacity-90">
+              Try again in {formatResetTime(rateLimitError.resetAt)}
+            </p>
+          )}
         </div>
       )}
       <AuthButton type="submit" loading={loading}>

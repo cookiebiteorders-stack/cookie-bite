@@ -19,6 +19,7 @@ import { getPublicStoreFlags } from "@/lib/store/owner-flags-server";
 import { getPublicBusinessSettings } from "@/lib/store/business-settings-server";
 import { getPublicShippingZones } from "@/lib/shipping/public-zones-server";
 import { getPublicCommerceSettings } from "@/lib/store/commerce-settings-server";
+import { SupabaseAuthProvider } from "@/components/providers/auth-provider";
 import "./globals.css";
 
 /**
@@ -199,7 +200,9 @@ export default async function RootLayout({
                   <StoreCommerceSettingsProvider initialSettings={commerceSettings}>
                     <SiteJsonLd />
                     <SeasonalThemeProvider />
-                    <ErrorBoundary>{children}</ErrorBoundary>
+                    <SupabaseAuthProvider>
+                      <ErrorBoundary>{children}</ErrorBoundary>
+                    </SupabaseAuthProvider>
                   </StoreCommerceSettingsProvider>
                 </StoreShippingZonesProvider>
               </StoreBusinessSettingsProvider>

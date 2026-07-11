@@ -2,10 +2,12 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createBrowserClient } from "@supabase/ssr";
 import { AuthInput } from "@/components/auth/auth-input";
 import { AuthButton } from "@/components/auth/auth-button";
 import { PasswordRulesHint } from "@/components/auth/password-rules-hint";
+import { updatePassword } from "@/lib/auth/client-helpers";
+import { validateResetPasswordForm } from "@/lib/auth/validation";
+import { getAuthError, AuthErrorCode } from "@/lib/auth/errors";
 
 export function SupabaseResetPasswordForm() {
   const formRef = useRef<HTMLFormElement>(null);
@@ -19,39 +21,29 @@ export function SupabaseResetPasswordForm() {
     e.preventDefault();
     setError(null);
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
+    // Validate form
+    const validation = validateResetPasswordForm(password, confirmPassword);
+    if (!validation.isValid) {
+      const errorMessage = Object.values(validation.errors)[0];
+      setError(errorMessage);
       return;
     }
 
     setLoading(true);
 
     try {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
-      const { error: updateError } = await supabase.auth.updateUser({
-        password,
-      });
+      const { error: updateError } = await updatePassword(password);
 
       if (updateError) {
-        // Provide more helpful error messages
-        if (updateError.message.includes("Password should be")) {
-          setError("Password must be at least 8 characters long");
-        } else if (updateError.message.includes("same as old password")) {
-          setError("New password must be different from your current password");
-        } else {
-          setError(updateError.message);
-        }
+        const authError = getAuthError(updateError);
+        setError(authError.message);
         return;
       }
 
       router.push("/sign-in?message=Password reset successfully");
     } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
-      console.error("Reset password error", err);
+      const authError = getAuthError(AuthErrorCode.NETWORK_ERROR);
+      setError(authError.message);
     } finally {
       setLoading(false);
     }
@@ -85,7 +77,7 @@ export function SupabaseResetPasswordForm() {
       />
       <PasswordRulesHint containerRef={formRef} variant="auth" />
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300" role="alert">
           {error}
         </div>
       )}

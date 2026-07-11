@@ -10,11 +10,13 @@
  */
 
 import { useRef, useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
 import { AuthInput } from "@/components/auth/auth-input";
 import { PasswordRulesHint } from "@/components/auth/password-rules-hint";
 import { CheckCircle2, KeyRound, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getBrowserClient, signInWithEmail, updatePassword } from "@/lib/auth/client-helpers";
+import { validateResetPasswordForm } from "@/lib/auth/validation";
+import { getAuthError, AuthErrorCode } from "@/lib/auth/errors";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -30,25 +32,18 @@ export function ClerkUserProfileEmbed() {
     e.preventDefault();
     setMessage(null);
 
-    if (next !== confirm) {
+    // Validate new password
+    const validation = validateResetPasswordForm(next, confirm);
+    if (!validation.isValid) {
       setStatus("error");
-      setMessage("New passwords do not match.");
-      return;
-    }
-
-    if (next.length < 8) {
-      setStatus("error");
-      setMessage("Password must be at least 8 characters.");
+      setMessage(Object.values(validation.errors)[0]);
       return;
     }
 
     setStatus("loading");
 
     try {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      );
+      const supabase = getBrowserClient();
 
       // Re-authenticate with current password first to verify ownership.
       const {
@@ -62,24 +57,21 @@ export function ClerkUserProfileEmbed() {
         return;
       }
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: current,
-      });
+      const { error: signInError } = await signInWithEmail(user.email, current);
 
       if (signInError) {
         setStatus("error");
-        setMessage("Current password is incorrect.");
+        const authError = getAuthError(signInError);
+        setMessage(authError.message);
         return;
       }
 
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: next,
-      });
+      const { error: updateError } = await updatePassword(next);
 
       if (updateError) {
         setStatus("error");
-        setMessage(updateError.message);
+        const authError = getAuthError(updateError);
+        setMessage(authError.message);
         return;
       }
 
@@ -88,9 +80,10 @@ export function ClerkUserProfileEmbed() {
       setCurrent("");
       setNext("");
       setConfirm("");
-    } catch {
+    } catch (err) {
       setStatus("error");
-      setMessage("An unexpected error occurred. Please try again.");
+      const authError = getAuthError(AuthErrorCode.NETWORK_ERROR);
+      setMessage(authError.message);
     }
   };
 

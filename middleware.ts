@@ -4,6 +4,7 @@ import { resolveStaffRole } from "@/lib/admin/auth-role";
 import { PRODUCTION_HOST } from "@/lib/config/production-lock";
 import { getOwnerFlags } from "@/lib/store/owner-flags-server";
 import { updateSupabaseSession } from "@/lib/supabase/middleware";
+import { getBaseUrl } from "@/lib/auth/safe-redirect";
 
 const isAdminRoute = (pathname: string) =>
   pathname === "/admin" || pathname.startsWith("/admin/");
@@ -77,7 +78,7 @@ export default async function proxy(request: NextRequest) {
     try {
       const flags = await getOwnerFlags();
       if (flags.maintenance_mode && path !== "/maintenance") {
-        return NextResponse.redirect(new URL("/maintenance", request.url));
+        return NextResponse.redirect(new URL("/maintenance", getBaseUrl()));
       }
     } catch {
       /* fail open */
@@ -136,7 +137,7 @@ export default async function proxy(request: NextRequest) {
 
   if (isAccountRoute(path)) {
     if (!user) {
-      const signIn = new URL("/sign-in", request.url);
+      const signIn = new URL("/sign-in", getBaseUrl());
       signIn.searchParams.set(
         "redirect_url",
         `${request.nextUrl.pathname}${request.nextUrl.search}`,
@@ -151,7 +152,7 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (!user) {
-    const signIn = new URL("/sign-in", request.url);
+    const signIn = new URL("/sign-in", getBaseUrl());
     signIn.searchParams.set(
       "redirect_url",
       `${request.nextUrl.pathname}${request.nextUrl.search}`,
@@ -162,12 +163,12 @@ export default async function proxy(request: NextRequest) {
   const email = user.email ?? null;
   const role = await resolveStaffRole({ email, supabaseUserId: user.id });
   if (!["owner", "admin", "staff"].includes(role)) {
-    return NextResponse.redirect(new URL("/403", request.url));
+    return NextResponse.redirect(new URL("/403", getBaseUrl()));
   }
 
   const adminModule = resolveModule(request.nextUrl.pathname);
   if (!canAccess(role, adminModule)) {
-    return NextResponse.redirect(new URL("/403", request.url));
+    return NextResponse.redirect(new URL("/403", getBaseUrl()));
   }
 
   return response;
