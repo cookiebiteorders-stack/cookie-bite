@@ -9,6 +9,7 @@ import {
   isSkipProfileRequest,
 } from "@/lib/account/profile-schema";
 import {
+  ensureDbUserForSupabase,
   isSupabaseAdminConfigured,
 } from "@/lib/db/ensure-db-user";
 import {
@@ -59,8 +60,8 @@ function supabaseUnavailableResponse() {
 }
 
 export async function GET() {
-  const { userId } = await auth();
-  if (!userId) {
+  const { userId, user: authUser } = await auth();
+  if (!userId || !authUser) {
     return NextResponse.json(bilingualError("Unauthorized", "غير مصرح"), { status: 401 });
   }
 
@@ -69,6 +70,15 @@ export async function GET() {
   }
 
   let dbUser = await getUserBySupabaseId(userId);
+  if (!dbUser && authUser.email) {
+    dbUser = await ensureDbUserForSupabase(
+      authUser.id,
+      authUser.email,
+      authUser.user_metadata?.full_name || authUser.user_metadata?.name,
+      authUser.user_metadata?.avatar_url
+    );
+  }
+
   if (!dbUser) {
     return NextResponse.json(
       bilingualError("Profile not found", "لم يُعثر على الملف"),
@@ -92,8 +102,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) {
+  const { userId, user: authUser } = await auth();
+  if (!userId || !authUser) {
     return NextResponse.json(bilingualError("Unauthorized", "غير مصرح"), { status: 401 });
   }
 
@@ -107,7 +117,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ...bilingualError(en, ar) }, { status: 400 });
   }
 
-  const dbUser = await getUserBySupabaseId(userId);
+  let dbUser = await getUserBySupabaseId(userId);
+  if (!dbUser && authUser.email) {
+    dbUser = await ensureDbUserForSupabase(
+      authUser.id,
+      authUser.email,
+      authUser.user_metadata?.full_name || authUser.user_metadata?.name,
+      authUser.user_metadata?.avatar_url
+    );
+  }
+
   if (!dbUser) {
     return profileError(
       "Could not save profile",

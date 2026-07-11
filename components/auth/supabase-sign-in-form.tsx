@@ -66,8 +66,7 @@ export function SupabaseSignInForm({ afterAuth }: SupabaseSignInFormProps) {
         return;
       }
 
-      router.push(afterAuth);
-      router.refresh();
+      window.location.assign(afterAuth);
     } catch (err) {
       const authError = getAuthError(AuthErrorCode.NETWORK_ERROR);
       setError(lang === "ar" ? authError.messageAr : authError.message);
