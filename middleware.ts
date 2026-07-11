@@ -78,7 +78,8 @@ export default async function proxy(request: NextRequest) {
     try {
       const flags = await getOwnerFlags();
       if (flags.maintenance_mode && path !== "/maintenance") {
-        return NextResponse.redirect(new URL("/maintenance", getBaseUrl()));
+        const origin = process.env.NODE_ENV === "development" ? request.nextUrl.origin.replace("0.0.0.0", "localhost").replace("https://localhost", "http://localhost") : getBaseUrl();
+        return NextResponse.redirect(new URL("/maintenance", origin));
       }
     } catch {
       /* fail open */
@@ -137,7 +138,8 @@ export default async function proxy(request: NextRequest) {
 
   if (isAccountRoute(path)) {
     if (!user) {
-      const signIn = new URL("/sign-in", getBaseUrl());
+      const origin = process.env.NODE_ENV === "development" ? request.nextUrl.origin.replace("0.0.0.0", "localhost").replace("https://localhost", "http://localhost") : getBaseUrl();
+      const signIn = new URL("/sign-in", origin);
       signIn.searchParams.set(
         "redirect_url",
         `${request.nextUrl.pathname}${request.nextUrl.search}`,
@@ -152,7 +154,8 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (!user) {
-    const signIn = new URL("/sign-in", getBaseUrl());
+    const origin = process.env.NODE_ENV === "development" ? request.nextUrl.origin.replace("0.0.0.0", "localhost").replace("https://localhost", "http://localhost") : getBaseUrl();
+    const signIn = new URL("/sign-in", origin);
     signIn.searchParams.set(
       "redirect_url",
       `${request.nextUrl.pathname}${request.nextUrl.search}`,
@@ -163,12 +166,14 @@ export default async function proxy(request: NextRequest) {
   const email = user.email ?? null;
   const role = await resolveStaffRole({ email, supabaseUserId: user.id });
   if (!["owner", "admin", "staff"].includes(role)) {
-    return NextResponse.redirect(new URL("/403", getBaseUrl()));
+    const origin = process.env.NODE_ENV === "development" ? request.nextUrl.origin.replace("0.0.0.0", "localhost").replace("https://localhost", "http://localhost") : getBaseUrl();
+    return NextResponse.redirect(new URL("/403", origin));
   }
 
   const adminModule = resolveModule(request.nextUrl.pathname);
   if (!canAccess(role, adminModule)) {
-    return NextResponse.redirect(new URL("/403", getBaseUrl()));
+    const origin = process.env.NODE_ENV === "development" ? request.nextUrl.origin.replace("0.0.0.0", "localhost").replace("https://localhost", "http://localhost") : getBaseUrl();
+    return NextResponse.redirect(new URL("/403", origin));
   }
 
   return response;

@@ -10,7 +10,15 @@ export async function GET(request: Request) {
   const errorDescription = requestUrl.searchParams.get("error_description");
   const next = requestUrl.searchParams.get("next") ?? requestUrl.searchParams.get("redirect_url") ?? "/account";
 
-  const baseUrl = getBaseUrl();
+  let baseUrl = getBaseUrl();
+  
+  // Use request origin in development to avoid redirecting to production or invalid 0.0.0.0
+  if (process.env.NODE_ENV === "development") {
+    baseUrl = requestUrl.origin;
+    if (baseUrl.includes("0.0.0.0")) {
+      baseUrl = baseUrl.replace("0.0.0.0", "localhost").replace("https://", "http://");
+    }
+  }
 
   // Handle OAuth errors
   if (error) {
