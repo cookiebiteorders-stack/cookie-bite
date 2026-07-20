@@ -113,6 +113,8 @@ export const INTEGRATION_FIX_HINTS: Record<CoreHealthCardKey, string[]> = {
   ],
   paymob: [
     "PAYMOB_API_KEY",
+    "PAYMOB_SECRET_KEY",
+    "PAYMOB_PUBLIC_KEY",
     "PAYMOB_INTEGRATION_ID_CARD",
     "PAYMOB_INTEGRATION_ID_WALLET",
     "PAYMOB_HMAC_SECRET",

@@ -43,7 +43,7 @@ test.describe("Checkout & Paymob API smoke", () => {
       headers: { "Content-Type": "application/json" },
       data: JSON.stringify({ obj: { id: 1 }, hmac: "invalid" }),
     });
-    // بدون سر في البيئة المحلية قد يكون 500؛ مع سر خاطئ متوقع 400 Invalid HMAC
-    expect([400, 500]).toContain(res.status());
+    // بدون سر في البيئة المحلية قد يكون 500؛ مع سر خاطئ متوقع 401 Invalid HMAC
+    expect([401, 400, 500]).toContain(res.status());
   });
 });

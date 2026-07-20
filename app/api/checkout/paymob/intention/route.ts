@@ -1,19 +1,25 @@
 import { auth } from "@/lib/auth/supabase-auth";
 import { z } from "zod";
-import { insertCheckoutOrder } from "@/lib/db/orders";
+import {
+  getCheckoutOrderByIdempotencyKey,
+  insertCheckoutOrder,
+  updatePaymobAcceptOrderId,
+} from "@/lib/db/orders";
 import { getUserBySupabaseId } from "@/lib/db/users";
 import { resolveCheckoutLineItems, type ResolvedCheckoutLine } from "@/lib/checkout/resolve-line-items";
 import { onOrderCreated } from "@/lib/email/automation/triggers";
 import { scheduleOrderConfirmed } from "@/lib/notifications/schedule";
 import {
-  buildPaymobBillingData,
-  buildPaymobLineItems,
-  paymobAuthToken,
-  paymobCreatePaymentKey,
-  paymobIframeUrl,
-  paymobRegisterEcommerceOrder,
-} from "@/lib/paymob/accept";
-import { resolvePaymobHmacSecret } from "@/lib/paymob/env";
+  buildPaymobIntentionBillingData,
+  buildPaymobIntentionItems,
+  createPaymobIntention,
+  PaymobApiError,
+} from "@/lib/paymob/intention";
+import {
+  getPaymobConfigStatus,
+  hasPaymobOnlineCheckout,
+  resolvePaymobIntegrationId,
+} from "@/lib/paymob/config";
 import { siteConfig } from "@/lib/site-config";
 import { getFreeShippingThresholdEgp } from "@/lib/store/commerce-settings-server";
 import {
@@ -21,7 +27,6 @@ import {
   validatePromoForCartAsync,
 } from "@/lib/promo/validate-promo";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { checkoutDeliverySchema } from "@/lib/checkout/delivery-scheduling";
 import { resolveDeliveryForCheckout } from "@/lib/checkout/resolve-delivery-persist";
 import { checkGiftBoxSnapshotAvailability } from "@/lib/gift-box/check-availability";
 import { giftBoxOrderSnapshotSchema } from "@/lib/gift-box/order-snapshot";
@@ -36,43 +41,49 @@ import {
 
 const GIFT_WRAP_FEE_EGP = 30;
 
+/**
+ * Shipping is now optional — Paymob collects real billing data on their hosted page.
+ * When absent, we use the authenticated user's profile or safe placeholder values.
+ */
 const BodySchema = z
   .object({
-  items: z.array(
-    z.object({
-      id: z.string().min(1),
-      quantity: z.number().int().min(1).max(99),
-      variant_id: z.string().uuid().optional(),
-      addons: z
-        .array(
-          z.object({
-            addon_id: z.string().uuid(),
-            options: z.array(
-              z.object({
-                option_id: z.string().min(1),
-                quantity: z.number().int().min(1).max(99),
-                price_snapshot: z.number().nonnegative(),
-              }),
-            ),
-          }),
-        )
-        .optional(),
-    }),
-  ),
-  shipping: z.object({
-    name: z.string().min(2),
-    phone: z.string().regex(/^01[0125][0-9]{8}$/),
-    address: z.string().min(5),
-    city: z.string().min(2),
-    notes: z.string().optional(),
-    email: z.union([z.string().email(), z.literal("")]).optional(),
-  }),
-  paymentMethod: z.enum(["card", "wallet", "instapay", "fawry", "cod"]),
-  promo_code: z.string().min(3).max(20).optional(),
-  delivery: checkoutDeliverySchema,
-  gift_box: giftBoxOrderSnapshotSchema.optional(),
-  bundle_offers: z.array(bundleOfferOrderSnapshotSchema).optional(),
-})
+    items: z.array(
+      z.object({
+        id: z.string().min(1),
+        quantity: z.number().int().min(1).max(99),
+        variant_id: z.string().uuid().optional(),
+        addons: z
+          .array(
+            z.object({
+              addon_id: z.string().uuid(),
+              options: z.array(
+                z.object({
+                  option_id: z.string().min(1),
+                  quantity: z.number().int().min(1).max(99),
+                  price_snapshot: z.number().nonnegative(),
+                }),
+              ),
+            }),
+          )
+          .optional(),
+      }),
+    ),
+    /** Optional — Paymob collects real shipping info on their hosted page. */
+    shipping: z
+      .object({
+        name: z.string().min(2),
+        phone: z.string().regex(/^01[0125][0-9]{8}$/),
+        address: z.string().min(5),
+        city: z.string().min(2),
+        notes: z.string().optional(),
+        email: z.union([z.string().email(), z.literal("")]).optional(),
+      })
+      .optional(),
+    promo_code: z.string().min(3).max(20).optional(),
+    gift_box: giftBoxOrderSnapshotSchema.optional(),
+    bundle_offers: z.array(bundleOfferOrderSnapshotSchema).optional(),
+    idempotency_key: z.string().uuid().optional(),
+  })
   .refine((d) => d.items.length > 0 || d.gift_box || (d.bundle_offers?.length ?? 0) > 0, {
     message: "Cart must include products, a gift box, or bundle offers",
   });
@@ -88,9 +99,71 @@ async function resolveSupabaseUserId(): Promise<string | null> {
 }
 
 /**
- * يعيد المجاميع من السيرفر فقط — لا تثق بأسعار العميل.
- * COD: حفظ في Supabase عند توفر المفاتيح + بريد تأكيد (اختياري).
- * Card/Wallet: Accept API + حفظ الطلب مع paymob_accept_order_id.
+ * Resolves billing data for Paymob.
+ * Priority: provided shipping object → authenticated user profile → safe placeholders.
+ * Paymob will collect real shipping/billing details on their hosted checkout page.
+ */
+async function resolveBillingData(
+  shipping: { name: string; phone: string; address: string; city: string; email?: string; notes?: string } | undefined,
+  dbUserId: string | null,
+) {
+  if (shipping) {
+    return {
+      name: shipping.name,
+      email: shipping.email ?? "",
+      phone: shipping.phone,
+      street: `${shipping.address}, ${shipping.city}`,
+      city: shipping.city,
+      notes: shipping.notes ?? "",
+      rawEmail: shipping.email && shipping.email.length > 0 ? shipping.email : undefined,
+    };
+  }
+
+  // Try to pull from authenticated user profile
+  if (dbUserId) {
+    try {
+      const supabase = createSupabaseAdminClient();
+      const { data: user } = await supabase
+        .from("users")
+        .select("full_name, email, phone")
+        .eq("id", dbUserId)
+        .single();
+      if (user) {
+        return {
+          name: (user.full_name as string | null) ?? "Customer",
+          email: (user.email as string | null) ?? "",
+          phone: (user.phone as string | null) ?? "+201000000000",
+          street: "NA",
+          city: "Cairo",
+          notes: "",
+          rawEmail: (user.email as string | null) ?? undefined,
+        };
+      }
+    } catch {
+      // fall through to placeholders
+    }
+  }
+
+  // Safe guest placeholders — Paymob hosted page will collect the real data
+  return {
+    name: "Guest Customer",
+    email: "",
+    phone: "+201000000000",
+    street: "NA",
+    city: "Cairo",
+    notes: "",
+    rawEmail: undefined as string | undefined,
+  };
+}
+
+/**
+ * Single-step Paymob checkout:
+ * - Validates cart items and promo code server-side.
+ * - Creates the order in the database.
+ * - Creates a Paymob payment intention.
+ * - Returns the Paymob hosted checkout URL.
+ *
+ * Shipping/billing info is optional — Paymob collects it on their hosted page.
  */
 export async function POST(req: Request) {
   let json: unknown;
@@ -108,19 +181,24 @@ export async function POST(req: Request) {
     );
   }
 
-  const { items, shipping, paymentMethod, promo_code: promoCodeRaw, delivery, gift_box: giftBox, bundle_offers: bundleOffers = [] } =
-    parsed.data;
+  const {
+    items,
+    shipping,
+    promo_code: promoCodeRaw,
+    gift_box: giftBox,
+    bundle_offers: bundleOffers = [],
+    idempotency_key: idempotencyKey,
+  } = parsed.data;
 
-  const deliveryResolved = await resolveDeliveryForCheckout(delivery);
-  if (!deliveryResolved.ok) {
-    return Response.json(
-      { ok: false, error: deliveryResolved.error_en, error_ar: deliveryResolved.error_ar },
-      { status: deliveryResolved.status },
-    );
-  }
-  const deliveryPersist = deliveryResolved.persist;
-  const shippingEmail =
-    shipping.email && shipping.email.length > 0 ? shipping.email : undefined;
+  // Resolve delivery with empty defaults (scheduling is no longer collected from UI)
+  const deliveryResolved = await resolveDeliveryForCheckout({
+    date: "",
+    slot_id: "",
+    is_gift: false,
+    hide_price: false,
+    anonymous_sender: false,
+  });
+  const deliveryPersist = deliveryResolved.ok ? deliveryResolved.persist : null;
 
   let resolved: ResolvedCheckoutLine[] = [];
   let subtotal = 0;
@@ -211,8 +289,75 @@ export async function POST(req: Request) {
   let deliveryFee = subtotal >= threshold ? 0 : siteConfig.standardDeliveryFeeEgp;
   if (promoFreeShipping) deliveryFee = 0;
 
-  const giftWrappingFee =
-    deliveryPersist.isGift || giftBox ? GIFT_WRAP_FEE_EGP : 0;
+  const giftWrappingFee = giftBox ? GIFT_WRAP_FEE_EGP : 0;
+
+  const total = Math.max(0, subtotal - discountAmount + deliveryFee + giftWrappingFee);
+
+  // Verify Paymob is configured
+  const paymentMethod = "card";
+  const paymobConfig = getPaymobConfigStatus();
+  const integrationId = resolvePaymobIntegrationId(paymentMethod);
+  const hasPaymobOnline = hasPaymobOnlineCheckout(paymentMethod);
+
+  if (!hasPaymobOnline) {
+    const missing: string[] = [];
+    if (!paymobConfig.secretKey) missing.push("PAYMOB_SECRET_KEY or PAYMOB_API_KEY");
+    if (!paymobConfig.publicKey) missing.push("PAYMOB_PUBLIC_KEY");
+    if (!paymobConfig.hmacSecret) missing.push("PAYMOB_HMAC_SECRET");
+    if (!paymobConfig.integrationCard) missing.push("PAYMOB_INTEGRATION_ID_CARD");
+    return Response.json(
+      {
+        ok: false,
+        error:
+          missing.length > 0
+            ? `Paymob configuration incomplete: ${missing.join(", ")}`
+            : "Paymob integration ID missing.",
+        error_ar:
+          missing.length > 0
+            ? `إعداد Paymob غير مكتمل: ${missing.join("، ")}`
+            : "معرف تكامل Paymob غير موجود.",
+      },
+      { status: 503 },
+    );
+  }
+
+  if (!integrationId) {
+    return Response.json({ ok: false, error: "Invalid Paymob integration" }, { status: 400 });
+  }
+
+  // Idempotency check
+  if (idempotencyKey) {
+    const existing = await getCheckoutOrderByIdempotencyKey(idempotencyKey);
+    if (existing) {
+      if (existing.payment_status === "paid") {
+        return Response.json({
+          ok: true,
+          configured: false,
+          alreadyPaid: true,
+          paymentMethod,
+          orderId: String(existing.order_number),
+          totalEgp: Number(existing.total_egp),
+          message: "Order already paid.",
+        });
+      }
+    }
+  }
+
+  const guestRef = `CB-${Date.now().toString(36)}`.toUpperCase();
+  const dbUserId = await resolveSupabaseUserId();
+
+  // Resolve billing data — from provided shipping, user profile, or safe placeholders
+  const billing = await resolveBillingData(shipping, dbUserId);
+
+  const shippingAddress = {
+    name: billing.name,
+    phone: billing.phone,
+    address: billing.street,
+    city: billing.city,
+    notes: billing.notes,
+    email: billing.email,
+    guestRef,
+  };
 
   const orderLines = [
     ...resolved.map((l) => ({
@@ -274,157 +419,21 @@ export async function POST(req: Request) {
       quantity: 1,
     })),
   ];
-  const total = Math.max(0, subtotal - discountAmount + deliveryFee + giftWrappingFee);
-
-  const apiKey = process.env.PAYMOB_API_KEY?.trim() ?? "";
-  const hmacSecret = resolvePaymobHmacSecret();
-  const integrationCard = Number(process.env.PAYMOB_INTEGRATION_ID_CARD);
-  const integrationWallet = Number(process.env.PAYMOB_INTEGRATION_ID_WALLET);
-  const hasPaymobAuth = Boolean(apiKey && hmacSecret);
-  const integrationId =
-    paymentMethod === "wallet" ? integrationWallet : integrationCard;
-  const hasPaymobOnline =
-    hasPaymobAuth && Number.isFinite(integrationId) && integrationId > 0;
-
-  const guestRef = `CB-${Date.now().toString(36)}`.toUpperCase();
-  const dbUserId = await resolveSupabaseUserId();
-  const shippingAddress = {
-    name: shipping.name,
-    phone: shipping.phone,
-    address: shipping.address,
-    city: shipping.city,
-    notes: shipping.notes ?? "",
-    email: shippingEmail ?? "",
-    guestRef,
-  };
-
-  const offlinePaymentMethods = ["cod", "instapay", "fawry"] as const;
-  if (offlinePaymentMethods.includes(paymentMethod as (typeof offlinePaymentMethods)[number])) {
-    const inserted = await insertCheckoutOrder({
-      userId: dbUserId,
-      lines: orderLines,
-      subtotalEgp: subtotal,
-      deliveryFeeEgp: deliveryFee,
-      discountAmountEgp: discountAmount,
-      promoCode: appliedPromoCode,
-      promoId: appliedPromoId,
-      totalEgp: total,
-      paymentMethod,
-      paymentStatus: "unpaid",
-      shippingAddress,
-      notes: `Web checkout · ${guestRef}`,
-      guestEmail: shippingEmail ?? null,
-      giftWrappingFeeEgp: giftWrappingFee,
-      deliveryScheduling: deliveryPersist,
-      orderType: giftBox ? "gift_box" : "standard",
-      giftBoxSnapshot: giftBox ?? null,
-    });
-
-    const orderId = inserted ? String(inserted.orderNumber) : guestRef;
-
-    if (inserted?.id) {
-      scheduleOrderConfirmed(inserted.id);
-    }
-
-    if (inserted) {
-      try {
-        await markAbandonedCartRecovered({
-          userId: dbUserId,
-          email: shippingEmail ?? null,
-        });
-        if (isRecoveryPromo && appliedPromoCode) {
-          const supabase = createSupabaseAdminClient();
-          await markRecoveryDiscountUsed(supabase, appliedPromoCode);
-        }
-      } catch (recoveryErr) {
-        console.error("abandoned cart recovery cleanup failed", recoveryErr);
-      }
-    }
-
-    if (inserted && shippingEmail) {
-      try {
-        await onOrderCreated({
-          email: shippingEmail,
-          userId: dbUserId,
-          userName: shipping.name,
-          orderId: String(inserted.orderNumber),
-          orderItems: [
-            ...resolved.map((line) => `${line.name} x${line.quantity}`),
-            ...(giftBox ? [`Custom Gift Box (${giftBox.totalItems} items)`] : []),
-          ].join(", "),
-          totalPrice: total.toFixed(2),
-        });
-      } catch (eventError) {
-        console.error("order_created email trigger failed", eventError);
-      }
-    }
-
-    return Response.json({
-      ok: true,
-      configured: false,
-      paymentMethod,
-      orderId,
-      persisted: Boolean(inserted),
-      subtotalEgp: subtotal,
-      deliveryFeeEgp: deliveryFee,
-      discountAmountEgp: discountAmount,
-      promoCode: appliedPromoCode,
-      promoId: appliedPromoId,
-      totalEgp: total,
-      lines: resolved,
-      shipping: { ...shipping, email: shippingEmail ?? "" },
-      message: inserted
-        ? "Order saved. Pay cash on delivery."
-        : "Order recorded in session only — set Supabase service key + run migration 0002 to persist.",
-    });
-  }
-
-  if (!hasPaymobAuth) {
-    return Response.json({
-      ok: true,
-      configured: false,
-      paymentMethod,
-      subtotalEgp: subtotal,
-      deliveryFeeEgp: deliveryFee,
-      discountAmountEgp: discountAmount,
-      promoCode: appliedPromoCode,
-      promoId: appliedPromoId,
-      totalEgp: total,
-      lines: resolved,
-      shipping,
-      message:
-        "Paymob keys missing. Set PAYMOB_API_KEY and PAYMOB_HMAC_SECRET (or legacy PAYMOB_HMAC), plus PAYMOB_INTEGRATION_ID_CARD / WALLET.",
-    });
-  }
-
-  if (!hasPaymobOnline) {
-    return Response.json({
-      ok: false,
-      error:
-        "Paymob integration ID missing for this payment method. Set PAYMOB_INTEGRATION_ID_CARD or PAYMOB_INTEGRATION_ID_WALLET in .env.",
-    }, { status: 400 });
-  }
 
   const amountCents = Math.round(total * 100);
-  const paymobItems = buildPaymobLineItems(paymobProductLines, deliveryFee, discountAmount);
-  if (giftWrappingFee > 0) {
-    paymobItems.push({
-      name: "Gift wrapping",
-      amount_cents: Math.round(giftWrappingFee * 100),
-      description: "gift_wrap",
-      quantity: "1",
-    });
-  }
-  const itemsSum = paymobItems.reduce((s, i) => s + i.amount_cents, 0);
+  const paymobItems = buildPaymobIntentionItems(
+    paymobProductLines,
+    deliveryFee,
+    discountAmount,
+    giftWrappingFee,
+  );
+  const itemsSum = paymobItems.reduce((s, i) => s + i.amount, 0);
   if (itemsSum !== amountCents) {
-    console.error("Paymob line items sum mismatch", { itemsSum, amountCents });
+    console.error("Paymob intention items sum mismatch", { itemsSum, amountCents, paymobItems });
     return Response.json({ ok: false, error: "Amount mismatch" }, { status: 500 });
   }
 
   try {
-    const token = await paymobAuthToken(apiKey);
-    const paymobOrderId = await paymobRegisterEcommerceOrder(token, amountCents, paymobItems);
-
     const inserted = await insertCheckoutOrder({
       userId: dbUserId,
       lines: orderLines,
@@ -438,40 +447,65 @@ export async function POST(req: Request) {
       paymentStatus: "unpaid",
       shippingAddress,
       notes: `Paymob checkout · ${guestRef}`,
-      paymobAcceptOrderId: paymobOrderId,
-      guestEmail: shippingEmail ?? null,
+      guestEmail: billing.rawEmail ?? null,
       giftWrappingFeeEgp: giftWrappingFee,
       deliveryScheduling: deliveryPersist,
       orderType: giftBox ? "gift_box" : "standard",
       giftBoxSnapshot: giftBox ?? null,
+      checkoutIdempotencyKey: idempotencyKey ?? null,
     });
 
-    if (inserted?.id) {
+    if (!inserted) {
+      return Response.json(
+        { ok: false, error: "Failed to save order before payment" },
+        { status: 500 },
+      );
+    }
+
+    const specialReference = String(inserted.orderNumber);
+    const paymobBilling = buildPaymobIntentionBillingData({
+      name: billing.name,
+      email: billing.email || "guest@cookiebite.local",
+      phone: billing.phone,
+      street: billing.street,
+      city: billing.city,
+    });
+
+    const intention = await createPaymobIntention({
+      amountCents,
+      integrationId,
+      items: paymobItems,
+      billingData: paymobBilling,
+      specialReference,
+      extras: { order_id: inserted.id, guest_ref: guestRef },
+    });
+
+    await updatePaymobAcceptOrderId(inserted.id, intention.intentionOrderId);
+
+    if (inserted.id) {
       scheduleOrderConfirmed(inserted.id);
     }
 
-    if (inserted) {
-      try {
-        await markAbandonedCartRecovered({
-          userId: dbUserId,
-          email: shippingEmail ?? null,
-        });
-        if (isRecoveryPromo && appliedPromoCode) {
-          const supabase = createSupabaseAdminClient();
-          await markRecoveryDiscountUsed(supabase, appliedPromoCode);
-        }
-      } catch (recoveryErr) {
-        console.error("abandoned cart recovery cleanup failed", recoveryErr);
+    try {
+      await markAbandonedCartRecovered({
+        userId: dbUserId,
+        email: billing.rawEmail ?? null,
+      });
+      if (isRecoveryPromo && appliedPromoCode) {
+        const supabase = createSupabaseAdminClient();
+        await markRecoveryDiscountUsed(supabase, appliedPromoCode);
       }
+    } catch (recoveryErr) {
+      console.error("abandoned cart recovery cleanup failed", recoveryErr);
     }
 
-    if (inserted && shippingEmail) {
+    if (billing.rawEmail) {
       try {
         await onOrderCreated({
-          email: shippingEmail,
+          email: billing.rawEmail,
           userId: dbUserId,
-          userName: shipping.name,
-          orderId: String(inserted.orderNumber),
+          userName: billing.name,
+          orderId: specialReference,
           orderItems: [
             ...resolved.map((line) => `${line.name} x${line.quantity}`),
             ...(giftBox ? [`Custom Gift Box (${giftBox.totalItems} items)`] : []),
@@ -483,32 +517,16 @@ export async function POST(req: Request) {
       }
     }
 
-    const billing = buildPaymobBillingData({
-      name: shipping.name,
-      email: shippingEmail ?? "",
-      phone: shipping.phone,
-      street: `${shipping.address}, ${shipping.city}`,
-      city: shipping.city,
-    });
-
-    const paymentToken = await paymobCreatePaymentKey(
-      token,
-      amountCents,
-      paymobOrderId,
-      integrationId,
-      billing,
-    );
-
-    const paymentUrl = paymobIframeUrl(paymentToken);
-
     return Response.json({
       ok: true,
       configured: true,
       paymentMethod,
-      paymentUrl,
-      orderId: inserted ? String(inserted.orderNumber) : guestRef,
-      persisted: Boolean(inserted),
-      paymobOrderId,
+      paymentUrl: intention.paymentUrl,
+      clientSecret: intention.clientSecret,
+      orderId: specialReference,
+      persisted: true,
+      paymobOrderId: intention.intentionOrderId,
+      paymobIntentionId: intention.intentionId,
       subtotalEgp: subtotal,
       deliveryFeeEgp: deliveryFee,
       discountAmountEgp: discountAmount,
@@ -516,10 +534,28 @@ export async function POST(req: Request) {
       promoId: appliedPromoId,
       totalEgp: total,
       lines: resolved,
-      shipping: { ...shipping, email: shippingEmail ?? "" },
     });
   } catch (err) {
     console.error("Paymob checkout failed", err);
+    if (err instanceof PaymobApiError) {
+      const status =
+        err.status === 401 || err.status === 403
+          ? 502
+          : err.status === 404 || err.status === 422
+            ? 400
+            : err.status >= 500
+              ? 502
+              : err.status;
+      return Response.json(
+        {
+          ok: false,
+          error: err.message,
+          error_ar: "فشل إنشاء الدفع — يرجى المحاولة مرة أخرى.",
+          paymob_status: err.status,
+        },
+        { status },
+      );
+    }
     return Response.json(
       {
         ok: false,

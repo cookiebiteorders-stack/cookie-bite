@@ -12,8 +12,8 @@ export const recipientAddressSchema = z.object({
 
 export const checkoutDeliverySchema = z
   .object({
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    slot_id: z.string().min(1).max(80),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
+    slot_id: z.string().max(80).optional().or(z.literal("")),
     slot_label: z.string().max(120).optional(),
     is_gift: z.boolean().default(false),
     hide_price: z.boolean().default(false),
@@ -164,9 +164,9 @@ export function deliveryInputToPersist(
   slotStartTime: string | null,
 ): DeliverySchedulingPersist {
   return {
-    scheduledDeliveryDate: input.date,
+    scheduledDeliveryDate: input.date ?? "",
     scheduledDeliveryTime: slotStartTime,
-    deliverySlotId: input.slot_id,
+    deliverySlotId: input.slot_id ?? "",
     deliverySlotLabel: input.slot_label ?? null,
     isGift: input.is_gift,
     hidePrice: input.hide_price,

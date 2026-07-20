@@ -40,6 +40,7 @@ const REQUIRED_PROD_KEYS = [
   "SUPABASE_SERVICE_KEY",
   // Paymob
   "PAYMOB_API_KEY",
+  "PAYMOB_PUBLIC_KEY",
   "PAYMOB_INTEGRATION_ID_CARD",
   "PAYMOB_INTEGRATION_ID_WALLET",
   // Resend
@@ -57,6 +58,7 @@ export const INTEGRATION_ENV_GROUPS = {
   /** مرجع لواجهة الإعدادات؛ الجاهزية الفعلية لـ Paymob تستخدم hasPaymobHmacSecret() أيضاً */
   paymob: [
     "PAYMOB_API_KEY",
+    "PAYMOB_PUBLIC_KEY",
     "PAYMOB_INTEGRATION_ID_CARD",
     "PAYMOB_INTEGRATION_ID_WALLET",
     "PAYMOB_HMAC_SECRET",
@@ -109,6 +111,7 @@ export function getIntegrationEnvStatus(check: ProductionEnvCheck): IntegrationE
   const paymobReady =
     integrationGroupReady(m, [
       "PAYMOB_API_KEY",
+      "PAYMOB_PUBLIC_KEY",
       "PAYMOB_INTEGRATION_ID_CARD",
       "PAYMOB_INTEGRATION_ID_WALLET",
     ]) && hasPaymobHmacSecret();

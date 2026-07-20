@@ -19,14 +19,21 @@ type Props = {
 export default async function ThankYouPage({ searchParams }: Props) {
   const { ref, order, status } = await searchParams;
   const isFailed = status === "failed";
+  const isPending = status === "pending";
   const orderLabel = order ?? (ref === "demo" ? "demo" : null);
   const isDemo = orderLabel === "demo";
+  const clearCart = !isFailed;
 
   return (
     <>
-      <ClearCartOnce when={!isFailed} />
-      <PurchaseEventsTracker enabled={!isFailed} />
-      <ThankYouContent isFailed={isFailed} orderLabel={orderLabel} isDemo={isDemo} />
+      <ClearCartOnce when={clearCart} />
+      <PurchaseEventsTracker enabled={!isFailed && !isPending} />
+      <ThankYouContent
+        isFailed={isFailed}
+        isPending={isPending}
+        orderLabel={orderLabel}
+        isDemo={isDemo}
+      />
     </>
   );
 }

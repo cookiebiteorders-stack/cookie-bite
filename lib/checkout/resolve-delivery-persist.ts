@@ -23,7 +23,9 @@ export async function resolveDeliveryForCheckout(
   }
 
   try {
-    await assertSlotAvailable(parsed.data.slot_id, parsed.data.date);
+    if (parsed.data.slot_id && parsed.data.date) {
+      await assertSlotAvailable(parsed.data.slot_id, parsed.data.date);
+    }
   } catch (e) {
     const code = e instanceof Error ? e.message : "";
     if (code === "SLOT_FULL") {
@@ -44,7 +46,7 @@ export async function resolveDeliveryForCheckout(
     }
   }
 
-  const startTime = await getSlotStartTime(parsed.data.slot_id);
+  const startTime = parsed.data.slot_id ? await getSlotStartTime(parsed.data.slot_id) : null;
   return {
     ok: true,
     input: parsed.data,

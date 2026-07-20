@@ -38,6 +38,15 @@ export type InsertCheckoutOrderInput = {
   deliveryScheduling?: DeliverySchedulingPersist | null;
   orderType?: "standard" | "gift_box";
   giftBoxSnapshot?: Record<string, unknown> | null;
+  checkoutIdempotencyKey?: string | null;
+};
+
+export type CheckoutOrderIdempotencyRow = {
+  id: string;
+  order_number: number;
+  payment_status: OrderRow["payment_status"];
+  paymob_accept_order_id: number | null;
+  total_egp: number;
 };
 
 /** حفظ طلب + البنود؛ يعيد null إذا لم يُضبط Supabase أو فشل الإدراج. */
@@ -83,6 +92,9 @@ export async function insertCheckoutOrder(
   if (params.giftBoxSnapshot) {
     insertRow.gift_box_snapshot = params.giftBoxSnapshot;
   }
+  if (params.checkoutIdempotencyKey) {
+    insertRow.checkout_idempotency_key = params.checkoutIdempotencyKey;
+  }
 
   const sched = params.deliveryScheduling;
   if (sched) {
@@ -121,6 +133,13 @@ export async function insertCheckoutOrder(
     .single();
 
   if (orderErr || !orderRow) {
+    const dupCode = (orderErr as { code?: string } | null)?.code;
+    if (dupCode === "23505" && params.checkoutIdempotencyKey) {
+      const existing = await getCheckoutOrderByIdempotencyKey(params.checkoutIdempotencyKey);
+      if (existing) {
+        return { id: existing.id, orderNumber: existing.order_number };
+      }
+    }
     console.error("insertCheckoutOrder order error", orderErr);
     return null;
   }
@@ -210,6 +229,45 @@ export async function insertCheckoutOrder(
   return { id: orderId, orderNumber };
 }
 
+export async function getCheckoutOrderByIdempotencyKey(
+  idempotencyKey: string,
+): Promise<CheckoutOrderIdempotencyRow | null> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    return null;
+  }
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("orders")
+    .select("id, order_number, payment_status, paymob_accept_order_id, total_egp")
+    .eq("checkout_idempotency_key", idempotencyKey)
+    .maybeSingle<CheckoutOrderIdempotencyRow>();
+
+  if (error) {
+    console.error("getCheckoutOrderByIdempotencyKey", error);
+    return null;
+  }
+  return data ?? null;
+}
+
+export async function updatePaymobAcceptOrderId(
+  orderId: string,
+  paymobAcceptOrderId: number,
+): Promise<boolean> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    return false;
+  }
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("orders")
+    .update({ paymob_accept_order_id: paymobAcceptOrderId })
+    .eq("id", orderId);
+  if (error) {
+    console.error("updatePaymobAcceptOrderId", error);
+    return false;
+  }
+  return true;
+}
+
 export type PaymobPaymentUpdateResult =
   | { ok: false }
   | { ok: true; orderId: string; becamePaid: boolean; orderNumber: number };
@@ -241,6 +299,16 @@ export async function updateOrderPaymentByPaymobAcceptOrderId(
   const nextStatus = patch.status ?? current.status;
   const wasPaid = current.payment_status === "paid";
   const willBePaid = patch.payment_status === "paid";
+
+  // Never downgrade a paid order when a late/duplicate failure callback arrives.
+  if (wasPaid && !willBePaid) {
+    return {
+      ok: true,
+      orderId: current.id,
+      becamePaid: false,
+      orderNumber: Number(current.order_number),
+    };
+  }
 
   if (
     txId &&

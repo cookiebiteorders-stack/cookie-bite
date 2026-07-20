@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { buildPageMetadata } from "@/lib/seo";
+import { resolvePaymobHmacSecret } from "@/lib/paymob/env";
+import { verifyPaymobResponseHmac } from "@/lib/paymob/hmac";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Payment Response",
@@ -25,14 +27,43 @@ function first(value: string | string[] | undefined): string | undefined {
   return value;
 }
 
+function flatParams(
+  q: Record<string, string | string[] | undefined>,
+): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {};
+  for (const [key, value] of Object.entries(q)) {
+    out[key] = first(value);
+  }
+  return out;
+}
+
+/**
+ * Browser return from Paymob Unified Checkout.
+ * Payment status truth source remains the webhook — this page is UX only.
+ * Optional HMAC check when Paymob includes hmac on the redirect query.
+ */
 export default async function PaymobResponsePage({ searchParams }: Props) {
   const q = await searchParams;
+  const params = flatParams(q);
+  const hmac = params.hmac;
+  const secret = resolvePaymobHmacSecret();
+
+  if (hmac && secret) {
+    const ok = verifyPaymobResponseHmac(params, hmac, secret);
+    if (!ok) {
+      console.error("Paymob redirect: HMAC mismatch");
+      redirect("/checkout/thank-you?status=failed");
+    }
+  }
+
+  const pending = toBool(params.pending);
   const success =
-    toBool(first(q.success)) || toBool(first(q.is_success));
+    !pending && (toBool(params.success) || toBool(params.is_success));
+
   const order =
-    first(q.merchant_order_id) ??
-    first(q.order) ??
-    first(q.order_id) ??
+    params.merchant_order_id ??
+    params.order ??
+    params.order_id ??
     "";
 
   if (success && order) {
@@ -40,7 +71,11 @@ export default async function PaymobResponsePage({ searchParams }: Props) {
   }
 
   const target = new URLSearchParams();
-  target.set("status", success ? "success" : "failed");
+  if (pending) {
+    target.set("status", "pending");
+  } else {
+    target.set("status", success ? "success" : "failed");
+  }
   if (order) target.set("order", order);
   redirect(`/checkout/thank-you?${target.toString()}`);
 }

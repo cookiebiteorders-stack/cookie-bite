@@ -2,55 +2,43 @@
 
 ## Webhook URL Configuration
 
-Configure the following webhook URL in your Paymob dashboard:
-
 ```
 https://cookie-bite.com/api/webhooks/paymob
 ```
 
-## Setup Steps
+Return / redirection URL (set in Intention API by the app):
 
-1. **Login to Paymob Dashboard**
-   - Go to https://accept.paymob.com/en/dashboard
-   - Login with your credentials
+```
+https://cookie-bite.com/checkout/paymob-response
+```
 
-2. **Navigate to Webhooks**
-   - Go to Settings → Webhooks
-   - Click "Add Webhook"
+## Credentials
 
-3. **Configure Webhook**
-   - **URL**: `https://cookie-bite.com/api/webhooks/paymob`
-   - **Type**: Transaction Processed
-   - **HMAC Secret**: The same value as `PAYMOB_HMAC_SECRET` in your .env
+| Dashboard | Env var |
+|-----------|---------|
+| Secret Key | `PAYMOB_SECRET_KEY` |
+| Public Key | `PAYMOB_PUBLIC_KEY` |
+| API Key (legacy / refunds) | `PAYMOB_API_KEY` |
+| HMAC Secret | `PAYMOB_HMAC_SECRET` |
+| Card integration | `PAYMOB_INTEGRATION_ID_CARD` |
+| Wallet integration | `PAYMOB_INTEGRATION_ID_WALLET` |
 
-4. **Test Webhook**
-   - Use Paymob's webhook testing tool
-   - Verify that your endpoint returns HTTP 200
+## Flow
 
-## Integration IDs Configured
+1. Checkout → `POST /api/checkout/paymob/intention`
+2. App creates DB order, then Paymob Intention (`POST /v1/intention/`)
+3. Customer redirects to Unified Checkout
+4. Paymob POSTs Transaction Processed → `/api/webhooks/paymob` (HMAC verified)
+5. Customer returns to `/checkout/paymob-response`
 
-- **Card Payments**: 5765742 (MIGS-online11)
-- **Mobile Wallet**: 5765741 (UIG-online_new)
-- **Instapay**: 5670208 (UIG-in_store)
-- **Tap on Phone**: 5670207 (MIGS-tap_on_phone)
+## Integration IDs (reference)
 
-## Webhook Handler
-
-The webhook is handled by: `app/api/webhooks/paymob/route.ts`
-
-It performs:
-- HMAC signature verification
-- Payment status updates
-- Order status synchronization
-- Loyalty points awarding
-- Payment notifications
+- Card: 5765742
+- Wallet: 5765741
+- InstaPay / Tap on Phone: configured in env but web checkout treats InstaPay/Fawry/COD as offline
 
 ## Testing
 
-After configuration, test the payment flow:
-1. Add items to cart
-2. Proceed to checkout
-3. Select payment method (Card/Wallet)
-4. Complete payment on Paymob iframe
-5. Verify webhook callback is received
-6. Check order status in admin panel
+1. Cart → Checkout → Card/Wallet
+2. Pay on Paymob hosted page
+3. Confirm webhook HTTP 200 and `payment_status=paid` in Supabase

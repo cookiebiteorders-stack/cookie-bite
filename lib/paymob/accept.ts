@@ -1,6 +1,7 @@
 /**
- * Paymob Accept API — خطوات: auth token → تسجيل طلب → payment key → iframe.
- * الوثائق: https://developers.paymob.com/paymob-docs
+ * Paymob Accept API (legacy) — used for refunds and optional fallback.
+ * New checkouts use Intention API (`lib/paymob/intention.ts`) + Unified Checkout.
+ * Docs: https://developers.paymob.com/paymob-docs
  */
 
 const DEFAULT_API = "https://accept.paymob.com/api";

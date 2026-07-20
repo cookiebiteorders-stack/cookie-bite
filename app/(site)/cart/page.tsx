@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Trash2, Lock, Loader2 } from "lucide-react";
 import { useCart } from "@/components/providers/cart-provider";
 import { QuantitySelector } from "@/src/components/cart/QuantitySelector";
 import { buttonClassName } from "@/components/ui/button";
@@ -12,6 +13,12 @@ import { useFreeShippingThreshold } from "@/components/providers/store-commerce-
 import { InlineAlerts } from "@/components/announcements/inline-alerts";
 import { PromoCodeField } from "@/components/checkout/promo-code-field";
 import { CartBundleOffers } from "@/components/cart/cart-bundle-offers";
+import { stashPendingPurchaseEvents } from "@/components/checkout/purchase-events-tracker";
+import {
+  buildSnapshotFromCartLine,
+  type GiftBoxCartBuilderPayload,
+} from "@/lib/gift-box/order-snapshot";
+import { buildBundleOfferSnapshotFromCartLine } from "@/lib/offers/order-snapshot";
 
 export default function CartPage() {
   const { t, formatPrice } = useLanguage();
@@ -32,6 +39,84 @@ export default function CartPage() {
       ? 0
       : siteConfig.standardDeliveryFeeEgp;
   const total = Math.max(0, subtotalEgp - discountEgp + shipping);
+
+  const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  async function handleCheckout() {
+    if (itemCount === 0 || checkoutStatus === "loading") return;
+
+    const giftBoxLine = lines.find((l) => Boolean(l.giftBox));
+    const bundleOfferLines = lines.filter((l) => Boolean(l.bundleOffer));
+    const regularLines = lines.filter((l) => !l.giftBox && !l.bundleOffer);
+
+    const giftBoxSnapshot = giftBoxLine
+      ? buildSnapshotFromCartLine(
+          giftBoxLine,
+          giftBoxLine.giftBox?.builder as GiftBoxCartBuilderPayload | undefined,
+        )
+      : null;
+
+    if (giftBoxLine && !giftBoxSnapshot) {
+      setCheckoutError(t("pages.checkout.errGiftBox"));
+      setCheckoutStatus("error");
+      return;
+    }
+
+    const bundleOfferSnapshots = bundleOfferLines
+      .map((line) => buildBundleOfferSnapshotFromCartLine(line))
+      .filter(Boolean);
+
+    setCheckoutStatus("loading");
+    setCheckoutError(null);
+
+    try {
+      const res = await fetch("/api/checkout/paymob/intention", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: regularLines.map((l) => ({
+            id: l.productId,
+            quantity: l.quantity,
+            ...(l.variantId ? { variant_id: l.variantId } : {}),
+            addons: l.addons,
+          })),
+          ...(giftBoxSnapshot ? { gift_box: giftBoxSnapshot } : {}),
+          ...(bundleOfferSnapshots.length ? { bundle_offers: bundleOfferSnapshots } : {}),
+          promo_code: promo?.code,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setCheckoutError(
+          (typeof data.error === "string" && data.error) ||
+            t("pages.checkout.errPayment"),
+        );
+        setCheckoutStatus("error");
+        return;
+      }
+
+      if (data.configured && data.paymentUrl) {
+        stashPendingPurchaseEvents(
+          lines
+            .filter((l) => l.productUuid)
+            .map((l) => ({ product_id: l.productUuid!, quantity: l.quantity })),
+        );
+        window.location.href = data.paymentUrl as string;
+        return;
+      }
+
+      setCheckoutError(
+        typeof data.message === "string" ? data.message : t("pages.checkout.errPaymob"),
+      );
+      setCheckoutStatus("error");
+    } catch {
+      setCheckoutError(t("pages.checkout.errNetwork"));
+      setCheckoutStatus("error");
+    }
+  }
 
   return (
     <div className="bg-cb-cream pb-24 pt-10">
@@ -196,12 +281,33 @@ export default function CartPage() {
               className="mt-4"
             />
           ) : null}
-          <Link
-            href="/checkout"
-            className={buttonClassName("primary", "mt-5 w-full rounded-md text-center")}
+          {checkoutError ? (
+            <p className="mt-3 text-xs font-semibold text-red-700" role="alert">
+              {checkoutError}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            id="proceed-to-payment-btn"
+            disabled={itemCount === 0 || checkoutStatus === "loading"}
+            onClick={() => void handleCheckout()}
+            className={buttonClassName("primary", "mt-5 w-full rounded-md text-center flex items-center justify-center gap-2")}
           >
-            {t("pages.cart.checkout")}
-          </Link>
+            {checkoutStatus === "loading" ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                {t("pages.checkout.processing")}
+              </>
+            ) : (
+              <>
+                <Lock className="h-4 w-4" aria-hidden />
+                {t("pages.cart.proceedToPayment")}
+              </>
+            )}
+          </button>
+          <p className="mt-2 text-center text-xs text-cb-text-muted">
+            {t("pages.cart.securePaymentNote")}
+          </p>
         </aside>
       </div>
     </div>
