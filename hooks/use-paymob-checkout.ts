@@ -105,6 +105,7 @@ export function usePaymobCheckout() {
     setError(null);
 
     try {
+      console.log("Sending checkout request:", JSON.stringify(body, null, 2));
       const res = await fetch("/api/checkout/paymob/intention", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -112,13 +113,16 @@ export function usePaymobCheckout() {
       });
 
       const data = (await res.json()) as {
+        ok?: boolean;
         error?: string;
         message?: string;
         configured?: boolean;
         paymentUrl?: string;
       };
 
-      if (!res.ok) {
+      console.log("Checkout response:", JSON.stringify(data, null, 2));
+
+      if (!res.ok || !data.ok) {
         setError(
           (typeof data.error === "string" && data.error) || t("pages.checkout.errPayment"),
         );
