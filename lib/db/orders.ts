@@ -99,7 +99,7 @@ export async function insertCheckoutOrder(
   const { data: orderRow, error: orderErr } = await supabase
     .from("orders")
     .insert(insertRow)
-    .select("id, number, order_code")
+    .select("id, order_number, order_code")
     .single();
 
   if (orderErr || !orderRow) {
@@ -115,7 +115,7 @@ export async function insertCheckoutOrder(
   }
 
   const orderId = orderRow.id as string;
-  const orderNumber = orderRow.order_code || orderRow.number;
+  const orderNumber = orderRow.order_code || String(orderRow.order_number);
 
   const itemRows: {
     order_id: string;
