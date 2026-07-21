@@ -47,13 +47,47 @@ export type CheckoutOrderIdempotencyRow = {
   total_egp: number;
 };
 
-/** حفظ طلب + البنود؛ يعيد null إذا لم يُضبط Supabase أو فشل الإدراج. */
+/** حفظ طلب + البنود؛ يرمي خطأ مفصّل في حال الفشل. */
 export async function insertCheckoutOrder(
   params: InsertCheckoutOrderInput,
-): Promise<{ id: string; orderNumber: string } | null> {
+): Promise<{ id: string; orderNumber: string }> {
+  console.log("[Order Creation] Starting order creation with payload:", JSON.stringify(params, null, 2));
+
+  // Validate required fields before attempting database insert
+  if (!params.lines || params.lines.length === 0) {
+    const error = "Order must contain at least one line item";
+    console.error("[Order Creation] Validation error:", error);
+    throw new Error(error);
+  }
+
+  if (params.totalEgp <= 0) {
+    const error = `Order total must be greater than 0, got: ${params.totalEgp}`;
+    console.error("[Order Creation] Validation error:", error);
+    throw new Error(error);
+  }
+
+  if (params.subtotalEgp < 0) {
+    const error = `Order subtotal cannot be negative, got: ${params.subtotalEgp}`;
+    console.error("[Order Creation] Validation error:", error);
+    throw new Error(error);
+  }
+
+  if (!params.paymentMethod) {
+    const error = "Payment method is required";
+    console.error("[Order Creation] Validation error:", error);
+    throw new Error(error);
+  }
+
+  if (!params.paymentStatus) {
+    const error = "Payment status is required";
+    console.error("[Order Creation] Validation error:", error);
+    throw new Error(error);
+  }
+
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
-    console.warn("insertCheckoutOrder: missing Supabase env");
-    return null;
+    const error = "Missing Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_KEY)";
+    console.error("[Order Creation]", error);
+    throw new Error(error);
   }
 
   const supabase = createSupabaseAdminClient();
@@ -97,6 +131,8 @@ export async function insertCheckoutOrder(
     insertRow.checkout_idempotency_key = params.checkoutIdempotencyKey;
   }
 
+  console.log("[Order Creation] Inserting order row:", JSON.stringify(insertRow, null, 2));
+
   const { data: orderRow, error: orderErr } = await supabase
     .from("orders")
     .insert(insertRow)
@@ -106,14 +142,20 @@ export async function insertCheckoutOrder(
   if (orderErr || !orderRow) {
     const dupCode = (orderErr as { code?: string } | null)?.code;
     if (dupCode === "23505" && params.checkoutIdempotencyKey) {
+      console.log("[Order Creation] Duplicate idempotency key detected, fetching existing order");
       const existing = await getCheckoutOrderByIdempotencyKey(params.checkoutIdempotencyKey);
       if (existing) {
+        console.log("[Order Creation] Returning existing order:", existing.id);
         return { id: existing.id, orderNumber: String(existing.order_code || existing.id) };
       }
     }
-    console.error("insertCheckoutOrder order error", orderErr);
-    return null;
+    console.error("[Order Creation] Order insert error:", JSON.stringify(orderErr, null, 2));
+    throw new Error(
+      `Failed to insert order: ${orderErr?.message || JSON.stringify(orderErr) || "Unknown database error"}`
+    );
   }
+
+  console.log("[Order Creation] Order inserted successfully:", orderRow.id);
 
   const orderId = orderRow.id as string;
   const orderNumber = orderRow.order_code || String(orderRow.order_number);
@@ -165,26 +207,36 @@ export async function insertCheckoutOrder(
     itemRows.push(row as (typeof itemRows)[number]);
   }
 
+  console.log("[Order Creation] Inserting", itemRows.length, "order items");
+
   const { error: itemsErr } = await supabase.from("order_items").insert(itemRows);
   if (itemsErr) {
-    console.error("insertCheckoutOrder items error", itemsErr);
+    console.error("[Order Creation] Order items insert error:", JSON.stringify(itemsErr, null, 2));
+    console.error("[Order Creation] Rolling back order:", orderId);
     await supabase.from("orders").delete().eq("id", orderId);
-    return null;
+    throw new Error(
+      `Failed to insert order items: ${itemsErr?.message || JSON.stringify(itemsErr) || "Unknown database error"}`
+    );
   }
+
+  console.log("[Order Creation] Order items inserted successfully");
 
   if (params.promoId) {
     try {
+      console.log("[Order Creation] Recording promo use:", params.promoId);
       await recordPromoUse({
         supabase,
         promoId: params.promoId,
         orderId,
         userId: params.userId,
       });
+      console.log("[Order Creation] Promo use recorded successfully");
     } catch (promoErr) {
-      console.error("insertCheckoutOrder promo use error (non-fatal)", promoErr);
+      console.error("[Order Creation] Promo use error (non-fatal):", promoErr);
     }
   }
 
+  console.log("[Order Creation] Order creation completed successfully:", { id: orderId, orderNumber });
   return { id: orderId, orderNumber };
 }
 

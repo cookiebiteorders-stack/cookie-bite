@@ -426,6 +426,7 @@ export async function POST(req: Request) {
   }
 
   try {
+    console.log("[Paymob Checkout] Creating order in database");
     const inserted = await insertCheckoutOrder({
       userId: dbUserId,
       lines: orderLines,
@@ -446,14 +447,11 @@ export async function POST(req: Request) {
       checkoutIdempotencyKey: idempotencyKey ?? null,
     });
 
-    if (!inserted) {
-      return Response.json(
-        { ok: false, error: "Failed to save order before payment" },
-        { status: 500 },
-      );
-    }
+    console.log("[Paymob Checkout] Order created successfully:", inserted.id);
 
     const specialReference = String(inserted.orderNumber);
+    console.log("[Paymob Checkout] Creating Paymob payment intention with reference:", specialReference);
+    
     const paymobBilling = buildPaymobIntentionBillingData({
       name: billing.name,
       email: billing.email || "guest@cookiebite.local",
@@ -471,27 +469,34 @@ export async function POST(req: Request) {
       extras: { order_id: inserted.id, guest_ref: guestRef },
     });
 
+    console.log("[Paymob Checkout] Payment intention created successfully:", intention.intentionId);
+
     await updatePaymobAcceptOrderId(inserted.id, intention.intentionOrderId);
+    console.log("[Paymob Checkout] Updated order with Paymob accept order ID:", intention.intentionOrderId);
 
     if (inserted.id) {
+      console.log("[Paymob Checkout] Scheduling order confirmation notification for:", inserted.id);
       scheduleOrderConfirmed(inserted.id);
     }
 
     try {
+      console.log("[Paymob Checkout] Marking abandoned cart as recovered");
       await markAbandonedCartRecovered({
         userId: dbUserId,
         email: billing.rawEmail ?? null,
       });
       if (isRecoveryPromo && appliedPromoCode) {
+        console.log("[Paymob Checkout] Marking recovery discount as used:", appliedPromoCode);
         const supabase = createSupabaseAdminClient();
         await markRecoveryDiscountUsed(supabase, appliedPromoCode);
       }
     } catch (recoveryErr) {
-      console.error("abandoned cart recovery cleanup failed", recoveryErr);
+      console.error("[Paymob Checkout] Abandoned cart recovery cleanup failed (non-fatal):", recoveryErr);
     }
 
     if (billing.rawEmail) {
       try {
+        console.log("[Paymob Checkout] Triggering order created email for:", billing.rawEmail);
         await onOrderCreated({
           email: billing.rawEmail,
           userId: dbUserId,
@@ -503,11 +508,14 @@ export async function POST(req: Request) {
           ].join(", "),
           totalPrice: total.toFixed(2),
         });
+        console.log("[Paymob Checkout] Order created email triggered successfully");
       } catch (eventError) {
-        console.error("order_created email trigger failed", eventError);
+        console.error("[Paymob Checkout] Order created email trigger failed (non-fatal):", eventError);
       }
     }
 
+    console.log("[Paymob Checkout] Checkout flow completed successfully, returning payment URL");
+    
     return Response.json({
       ok: true,
       configured: true,
@@ -527,7 +535,34 @@ export async function POST(req: Request) {
       lines: resolved,
     });
   } catch (err) {
-    console.error("Paymob checkout failed", err);
+    console.error("[Paymob Checkout] Error during checkout process:", err);
+    
+    // Handle order creation errors specifically
+    if (err instanceof Error && err.message.includes("Failed to insert")) {
+      return Response.json(
+        {
+          ok: false,
+          error: err.message,
+          error_ar: "فشل حفظ الطلب — يرجى المحاولة مرة أخرى أو التواصل مع الدعم.",
+          error_type: "order_creation",
+        },
+        { status: 500 },
+      );
+    }
+
+    if (err instanceof Error && err.message.includes("Missing Supabase")) {
+      return Response.json(
+        {
+          ok: false,
+          error: err.message,
+          error_ar: "خطأ في إعدادات النظام — يرجى المحاولة لاحقاً.",
+          error_type: "configuration",
+        },
+        { status: 500 },
+      );
+    }
+
+    // Handle Paymob API errors
     if (err instanceof PaymobApiError) {
       const status =
         err.status === 401 || err.status === 403
@@ -543,16 +578,29 @@ export async function POST(req: Request) {
           error: err.message,
           error_ar: "فشل إنشاء الدفع — يرجى المحاولة مرة أخرى.",
           paymob_status: err.status,
+          error_type: "payment_gateway",
         },
         { status },
       );
     }
+
+    // Generic error with full details
+    const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
+    const errorDetails = err instanceof Error ? {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+    } : err;
+
     return Response.json(
       {
         ok: false,
-        error: err instanceof Error ? err.message : "Paymob request failed",
+        error: errorMessage,
+        error_ar: "حدث خطأ أثناء معالجة الطلب — يرجى المحاولة مرة أخرى.",
+        error_type: "unknown",
+        details: errorDetails,
       },
-      { status: 502 },
+      { status: 500 },
     );
   }
 }
