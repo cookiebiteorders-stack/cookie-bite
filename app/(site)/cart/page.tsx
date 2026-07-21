@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Trash2, Lock, Loader2 } from "lucide-react";
@@ -34,6 +35,17 @@ export default function CartPage() {
       ? 0
       : siteConfig.standardDeliveryFeeEgp;
   const total = Math.max(0, subtotalEgp - discountEgp + shipping);
+
+  // Check if user is coming from checkout details page
+  useEffect(() => {
+    const checkoutDetails = sessionStorage.getItem("checkoutDetails");
+    if (checkoutDetails && lines.length > 0) {
+      // Auto-trigger checkout with the stored details
+      const details = JSON.parse(checkoutDetails) as import("@/hooks/use-paymob-checkout").CheckoutDetails;
+      sessionStorage.removeItem("checkoutDetails");
+      void startCheckout(details);
+    }
+  }, [lines.length, startCheckout]);
 
   return (
     <div className="bg-cb-cream pb-24 pt-10">
@@ -203,25 +215,15 @@ export default function CartPage() {
               {checkoutError}
             </p>
           ) : null}
-          <button
-            type="button"
+          <Link
             id="proceed-to-payment-btn"
-            disabled={itemCount === 0 || isLoading}
-            onClick={() => void startCheckout()}
-            className={buttonClassName("primary", "mt-5 w-full rounded-md text-center flex items-center justify-center gap-2")}
+            href="/checkout/details"
+            className={buttonClassName("primary", "mt-5 w-full rounded-md text-center flex items-center justify-center gap-2 disabled:opacity-50")}
+            aria-disabled={itemCount === 0}
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                {t("pages.checkout.processing")}
-              </>
-            ) : (
-              <>
-                <Lock className="h-4 w-4" aria-hidden />
-                {t("pages.cart.proceedToPayment")}
-              </>
-            )}
-          </button>
+            <Lock className="h-4 w-4" aria-hidden />
+            {t("pages.cart.proceedToPayment")}
+          </Link>
           <p className="mt-2 text-center text-xs text-cb-text-muted">
             {t("pages.cart.securePaymentNote")}
           </p>

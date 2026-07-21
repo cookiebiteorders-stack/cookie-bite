@@ -72,10 +72,17 @@ const BodySchema = z
       .object({
         name: z.string().min(2),
         phone: z.string().regex(/^01[0125][0-9]{8}$/),
+        phone_secondary: z.string().regex(/^01[0125][0-9]{8}$/).optional(),
         address: z.string().min(5),
         city: z.string().min(2),
+        governorate: z.string().optional(),
         notes: z.string().optional(),
         email: z.union([z.string().email(), z.literal("")]).optional(),
+        delivery_date: z.string().optional(),
+        delivery_time: z.string().optional(),
+        latitude: z.number().optional(),
+        longitude: z.number().optional(),
+        place_label: z.string().optional(),
       })
       .optional(),
     promo_code: z.string().min(3).max(20).optional(),
@@ -103,7 +110,21 @@ async function resolveSupabaseUserId(): Promise<string | null> {
  * Paymob will collect real shipping/billing details on their hosted checkout page.
  */
 async function resolveBillingData(
-  shipping: { name: string; phone: string; address: string; city: string; email?: string; notes?: string } | undefined,
+  shipping: { 
+    name: string; 
+    phone: string; 
+    phone_secondary?: string;
+    address: string; 
+    city: string; 
+    governorate?: string;
+    notes?: string; 
+    email?: string;
+    delivery_date?: string;
+    delivery_time?: string;
+    latitude?: number;
+    longitude?: number;
+    place_label?: string;
+  } | undefined,
   dbUserId: string | null,
 ) {
   if (shipping) {
@@ -111,9 +132,16 @@ async function resolveBillingData(
       name: shipping.name,
       email: shipping.email ?? "",
       phone: shipping.phone,
+      phone_secondary: shipping.phone_secondary,
       street: `${shipping.address}, ${shipping.city}`,
       city: shipping.city,
+      governorate: shipping.governorate,
       notes: shipping.notes ?? "",
+      delivery_date: shipping.delivery_date,
+      delivery_time: shipping.delivery_time,
+      latitude: shipping.latitude,
+      longitude: shipping.longitude,
+      place_label: shipping.place_label,
       rawEmail: shipping.email && shipping.email.length > 0 ? shipping.email : undefined,
     };
   }
@@ -132,9 +160,16 @@ async function resolveBillingData(
           name: (user.full_name as string | null) ?? "Customer",
           email: (user.email as string | null) ?? "",
           phone: (user.phone as string | null) ?? "+201000000000",
+          phone_secondary: undefined,
           street: "NA",
           city: "Cairo",
+          governorate: undefined,
           notes: "",
+          delivery_date: undefined,
+          delivery_time: undefined,
+          latitude: undefined,
+          longitude: undefined,
+          place_label: undefined,
           rawEmail: (user.email as string | null) ?? undefined,
         };
       }
@@ -148,9 +183,16 @@ async function resolveBillingData(
     name: "Guest Customer",
     email: "",
     phone: "+201000000000",
+    phone_secondary: undefined,
     street: "NA",
     city: "Cairo",
+    governorate: undefined,
     notes: "",
+    delivery_date: undefined,
+    delivery_time: undefined,
+    latitude: undefined,
+    longitude: undefined,
+    place_label: undefined,
     rawEmail: undefined as string | undefined,
   };
 }
@@ -344,10 +386,17 @@ export async function POST(req: Request) {
   const shippingAddress = {
     name: billing.name,
     phone: billing.phone,
+    phone_secondary: billing.phone_secondary,
     address: billing.street,
     city: billing.city,
+    governorate: billing.governorate,
     notes: billing.notes,
     email: billing.email,
+    delivery_date: billing.delivery_date,
+    delivery_time: billing.delivery_time,
+    latitude: billing.latitude,
+    longitude: billing.longitude,
+    place_label: billing.place_label,
     guestRef,
   };
 

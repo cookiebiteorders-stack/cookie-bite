@@ -13,7 +13,26 @@ import type { CartLine } from "@/lib/cart/types";
 
 export type PaymobCheckoutStatus = "idle" | "loading" | "error";
 
-function buildPaymobIntentionBody(lines: CartLine[], promoCode?: string) {
+export type CheckoutDetails = {
+  name: string;
+  phonePrimary: string;
+  phoneSecondary?: string;
+  address: string;
+  city: string;
+  governorate?: string;
+  notes?: string;
+  deliveryDate: string;
+  deliveryTime?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  placeLabel?: string | null;
+};
+
+function buildPaymobIntentionBody(
+  lines: CartLine[],
+  promoCode?: string,
+  checkoutDetails?: CheckoutDetails,
+) {
   const giftBoxLine = lines.find((l) => Boolean(l.giftBox));
   const bundleOfferLines = lines.filter((l) => Boolean(l.bundleOffer));
   const regularLines = lines.filter((l) => !l.giftBox && !l.bundleOffer);
@@ -42,6 +61,22 @@ function buildPaymobIntentionBody(lines: CartLine[], promoCode?: string) {
       ...(giftBoxSnapshot ? { gift_box: giftBoxSnapshot } : {}),
       ...(bundleOfferSnapshots.length ? { bundle_offers: bundleOfferSnapshots } : {}),
       promo_code: promoCode,
+      ...(checkoutDetails ? {
+        shipping: {
+          name: checkoutDetails.name,
+          phone: checkoutDetails.phonePrimary,
+          phone_secondary: checkoutDetails.phoneSecondary,
+          address: checkoutDetails.address,
+          city: checkoutDetails.city,
+          governorate: checkoutDetails.governorate,
+          notes: checkoutDetails.notes,
+          delivery_date: checkoutDetails.deliveryDate,
+          delivery_time: checkoutDetails.deliveryTime,
+          latitude: checkoutDetails.latitude,
+          longitude: checkoutDetails.longitude,
+          place_label: checkoutDetails.placeLabel,
+        },
+      } : {}),
     },
   };
 }
@@ -55,10 +90,10 @@ export function usePaymobCheckout() {
   const [status, setStatus] = useState<PaymobCheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
 
-  const startCheckout = useCallback(async () => {
+  const startCheckout = useCallback(async (checkoutDetails?: CheckoutDetails) => {
     if (itemCount === 0 || status === "loading") return false;
 
-    const { giftBoxSnapshot, body } = buildPaymobIntentionBody(lines, promo?.code);
+    const { giftBoxSnapshot, body } = buildPaymobIntentionBody(lines, promo?.code, checkoutDetails);
 
     if (lines.some((l) => l.giftBox) && !giftBoxSnapshot) {
       setError(t("pages.checkout.errGiftBox"));

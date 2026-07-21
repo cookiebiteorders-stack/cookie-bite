@@ -106,6 +106,31 @@ export async function insertCheckoutOrder(
     shipping_address: params.shippingAddress,
     order_code: orderCode,
   };
+
+  // Extract delivery details from shippingAddress if present
+  const shipping = params.shippingAddress as Record<string, unknown>;
+  if (shipping.phone_secondary) {
+    insertRow.phone_secondary = shipping.phone_secondary;
+  }
+  if (shipping.governorate) {
+    insertRow.governorate = shipping.governorate;
+  }
+  if (shipping.delivery_date) {
+    insertRow.delivery_date = shipping.delivery_date;
+  }
+  if (shipping.delivery_time) {
+    insertRow.delivery_time = shipping.delivery_time;
+  }
+  if (shipping.latitude != null) {
+    insertRow.latitude = shipping.latitude;
+  }
+  if (shipping.longitude != null) {
+    insertRow.longitude = shipping.longitude;
+  }
+  if (shipping.place_label) {
+    insertRow.place_label = shipping.place_label;
+  }
+
   if (params.guestEmail) {
     insertRow.guest_email = params.guestEmail;
   }
