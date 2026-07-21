@@ -53,6 +53,8 @@
     "supabase:ensure-schema": "node scripts/supabase-ensure-schema.mjs",
     "supabase:check-schema": "node scripts/supabase-schema-snapshot-check.mjs",
     "supabase:healthcheck": "node scripts/supabase-full-healthcheck.mjs",
+    "paymob:normalize-env": "node scripts/normalize-paymob-env.mjs",
+    "paymob:test": "node scripts/test-paymob-integration.mjs",
     "whatsapp:bridge:extract": "node scripts/extract-whatsapp-bridge.mjs",
     "whatsapp:bridge": "npm --prefix services/whatsapp-bridge start",
     "security:audit": "node scripts/security-audit.mjs",

@@ -6,10 +6,20 @@ Production domain: `https://cookie-bite.com`
 
 ```bash
 npm install
+npm run paymob:normalize-env   # once — maps legacy PAYMOB_* names in .env
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3000` (Next.js may use `:3001` if 3000 is busy).
+
+### Paymob checkout (card)
+
+1. Ensure `.env` has server-side Paymob keys (`PAYMOB_SECRET_KEY`, `PAYMOB_PUBLIC_KEY`, `PAYMOB_HMAC_SECRET`, integration IDs). Run `npm run paymob:test` to verify.
+2. Cart → **Proceed to payment** → fill delivery details → redirects to Paymob hosted checkout.
+3. Webhook (production): `https://cookie-bite.com/api/webhooks/paymob`
+4. Return URL: `https://cookie-bite.com/checkout/paymob-response`
+
+See also `docs/paymob-webhook-setup.md`.
 
 ## Production Build
 

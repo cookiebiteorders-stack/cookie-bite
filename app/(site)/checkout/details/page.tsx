@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, MapPin, Phone, User, Calendar, Clock, ArrowRight } from "lucide-react";
 import { AddressMapPicker, type AddressMapHint } from "@/components/account/address-map-picker";
 import { buttonClassName } from "@/components/ui/button";
@@ -35,14 +35,14 @@ export default function CheckoutDetailsPage() {
   const [addressHint, setAddressHint] = useState<AddressMapHint | null>(null);
 
   // Set default delivery date to tomorrow
-  useState(() => {
+  useEffect(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     setFormData((prev) => ({
       ...prev,
-      deliveryDate: tomorrow.toISOString().split('T')[0],
+      deliveryDate: tomorrow.toISOString().split("T")[0],
     }));
-  });
+  }, []);
 
   const handleLocationChange = (lat: number, lng: number) => {
     setLatitude(lat);
@@ -278,7 +278,7 @@ export default function CheckoutDetailsPage() {
                   </label>
                   <input
                     id="governorate"
-                    type="test"
+                    type="text"
                     value={formData.governorate}
                     onChange={(e) => setFormData({ ...formData, governorate: e.target.value })}
                     placeholder="المحافظة"

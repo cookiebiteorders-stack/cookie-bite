@@ -21,42 +21,62 @@ if (fs.existsSync(envPath)) {
 }
 
 const paymobConfig = {
-  apiKey: process.env.PAYMOB_API_KEY,
-  hmacSecret: process.env.PAYMOB_HMAC_SECRET,
-  integrationCard: process.env.PAYMOB_INTEGRATION_ID_CARD,
-  integrationWallet: process.env.PAYMOB_INTEGRATION_ID_WALLET,
+  secretKey:
+    process.env.PAYMOB_SECRET_KEY ||
+    process.env.PAYMOB_API_KEY ||
+    process.env.NEXT_PUBLIC_PAYMOB_SECRET_KEY ||
+    process.env.NEXT_PUBLIC_PAYMOB_API_KEY,
+  publicKey:
+    process.env.PAYMOB_PUBLIC_KEY || process.env.NEXT_PUBLIC_PAYMOB_PUBLIC_KEY,
+  hmacSecret:
+    process.env.PAYMOB_HMAC_SECRET ||
+    process.env.PAYMOB_HMAC ||
+    process.env.NEXT_PUBLIC_PAYMOB_HMAC_SECRET,
+  integrationCard:
+    process.env.PAYMOB_INTEGRATION_ID_CARD ||
+    process.env.PAYMOB_CARD_INTEGRATION_ID,
+  integrationWallet:
+    process.env.PAYMOB_INTEGRATION_ID_WALLET ||
+    process.env.PAYMOB_WALLET_INTEGRATION_ID,
 };
 
 console.log('=== Paymob Integration Test ===\n');
 
 let allConfigured = true;
 
-if (!paymobConfig.apiKey) {
-  console.log('❌ PAYMOB_API_KEY is missing');
+if (!paymobConfig.secretKey) {
+  console.log('❌ PAYMOB_SECRET_KEY (or legacy alias) is missing');
   allConfigured = false;
 } else {
-  console.log('✅ PAYMOB_API_KEY is configured');
+  console.log('✅ Paymob secret key is configured');
+}
+
+if (!paymobConfig.publicKey) {
+  console.log('❌ PAYMOB_PUBLIC_KEY (or legacy alias) is missing');
+  allConfigured = false;
+} else {
+  console.log('✅ Paymob public key is configured');
 }
 
 if (!paymobConfig.hmacSecret) {
-  console.log('❌ PAYMOB_HMAC_SECRET is missing');
+  console.log('❌ PAYMOB_HMAC_SECRET (or legacy alias) is missing');
   allConfigured = false;
 } else {
   console.log('✅ PAYMOB_HMAC_SECRET is configured');
 }
 
 if (!paymobConfig.integrationCard) {
-  console.log('❌ PAYMOB_INTEGRATION_ID_CARD is missing');
+  console.log('❌ PAYMOB_INTEGRATION_ID_CARD (or PAYMOB_CARD_INTEGRATION_ID) is missing');
   allConfigured = false;
 } else {
-  console.log('✅ PAYMOB_INTEGRATION_ID_CARD is configured:', paymobConfig.integrationCard);
+  console.log('✅ Card integration ID is configured:', paymobConfig.integrationCard);
 }
 
 if (!paymobConfig.integrationWallet) {
-  console.log('❌ PAYMOB_INTEGRATION_ID_WALLET is missing');
+  console.log('❌ PAYMOB_INTEGRATION_ID_WALLET (or PAYMOB_WALLET_INTEGRATION_ID) is missing');
   allConfigured = false;
 } else {
-  console.log('✅ PAYMOB_INTEGRATION_ID_WALLET is configured:', paymobConfig.integrationWallet);
+  console.log('✅ Wallet integration ID is configured:', paymobConfig.integrationWallet);
 }
 
 console.log('\n=== Test Result ===');

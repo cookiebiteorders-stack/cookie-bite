@@ -62,20 +62,22 @@ function buildPaymobIntentionBody(
       ...(bundleOfferSnapshots.length ? { bundle_offers: bundleOfferSnapshots } : {}),
       promo_code: promoCode,
       ...(checkoutDetails ? {
-        shipping: {
-          name: checkoutDetails.name,
-          phone: checkoutDetails.phonePrimary,
-          phone_secondary: checkoutDetails.phoneSecondary || undefined,
-          address: checkoutDetails.address,
-          city: checkoutDetails.city,
-          governorate: checkoutDetails.governorate || undefined,
-          notes: checkoutDetails.notes || undefined,
-          delivery_date: checkoutDetails.deliveryDate || undefined,
-          delivery_time: checkoutDetails.deliveryTime || undefined,
-          latitude: checkoutDetails.latitude || undefined,
-          longitude: checkoutDetails.longitude || undefined,
-          place_label: checkoutDetails.placeLabel || undefined,
-        },
+        shipping: Object.fromEntries(
+          Object.entries({
+            name: checkoutDetails.name,
+            phone: checkoutDetails.phonePrimary,
+            phone_secondary: checkoutDetails.phoneSecondary,
+            address: checkoutDetails.address,
+            city: checkoutDetails.city,
+            governorate: checkoutDetails.governorate,
+            notes: checkoutDetails.notes,
+            delivery_date: checkoutDetails.deliveryDate,
+            delivery_time: checkoutDetails.deliveryTime,
+            latitude: checkoutDetails.latitude,
+            longitude: checkoutDetails.longitude,
+            place_label: checkoutDetails.placeLabel,
+          }).filter(([_, value]) => value !== undefined && value !== null)
+        ),
       } : {}),
     },
   };

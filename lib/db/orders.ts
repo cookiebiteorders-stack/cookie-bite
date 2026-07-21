@@ -107,8 +107,31 @@ export async function insertCheckoutOrder(
     order_code: orderCode,
   };
 
-  // Extract delivery details from shippingAddress if present
+  // Extract customer + delivery details from shippingAddress
   const shipping = params.shippingAddress as Record<string, unknown>;
+  const customerName =
+    typeof shipping.name === "string" && shipping.name.trim()
+      ? shipping.name.trim()
+      : "Guest Customer";
+  const customerPhone =
+    typeof shipping.phone === "string" && shipping.phone.trim()
+      ? shipping.phone.trim()
+      : "+201000000000";
+
+  insertRow.full_name = customerName;
+  insertRow.phone = customerPhone;
+  insertRow.email =
+    params.guestEmail ??
+    (typeof shipping.email === "string" ? shipping.email : "") ??
+    "";
+  insertRow.address = params.shippingAddress;
+  insertRow.subtotal = params.subtotalEgp;
+  insertRow.delivery_fee = params.deliveryFeeEgp;
+  insertRow.discount = params.discountAmountEgp ?? 0;
+  insertRow.total = params.totalEgp;
+  insertRow.currency = "EGP";
+  insertRow.number = orderCode;
+
   if (shipping.phone_secondary) {
     insertRow.phone_secondary = shipping.phone_secondary;
   }
@@ -133,6 +156,9 @@ export async function insertCheckoutOrder(
 
   if (params.guestEmail) {
     insertRow.guest_email = params.guestEmail;
+  }
+  if (params.notes) {
+    insertRow.gift_message = params.notes;
   }
   if (params.discountAmountEgp != null && params.discountAmountEgp > 0) {
     insertRow.discount_amount_egp = params.discountAmountEgp;
@@ -185,18 +211,7 @@ export async function insertCheckoutOrder(
   const orderId = orderRow.id as string;
   const orderNumber = orderRow.order_code || String(orderRow.order_number);
 
-  const itemRows: {
-    order_id: string;
-    product_id: string | null;
-    product_name: string;
-    unit_price_egp: number;
-    selected_addons: Record<string, unknown>[];
-    addons_total_egp: number;
-    final_total_egp: number;
-    quantity: number;
-    variant_id?: string | null;
-    variant_snapshot?: Record<string, unknown> | null;
-  }[] = [];
+  const itemRows: Record<string, unknown>[] = [];
 
   for (const line of params.lines) {
     let productUuid: string | null = null;
@@ -210,16 +225,29 @@ export async function insertCheckoutOrder(
         productUuid = (prod as { id: string }).id;
       }
     }
+
+    const quantity = line.quantity;
+    const unitPrice = line.unitPrice;
+    const finalUnitPrice = Number(line.finalUnitPrice ?? line.unitPrice);
+    const addonsTotalEgp = Number(line.addonsTotalUnitPrice ?? 0) * quantity;
+    const lineTotalEgp = finalUnitPrice * quantity;
+
     const row: Record<string, unknown> = {
       order_id: orderId,
-      product_id: productUuid,
-      product_name: line.name,
-      unit_price_egp: line.unitPrice,
+      product_id: productUuid ?? line.slug,
+      slug: line.slug,
+      name: { en: line.name, ar: line.name },
+      unit_price: unitPrice,
+      quantity,
       selected_addons: line.selectedAddons ?? [],
-      addons_total_egp: Number(line.addonsTotalUnitPrice ?? 0) * line.quantity,
-      final_total_egp: Number(line.finalUnitPrice ?? line.unitPrice) * line.quantity,
-      quantity: line.quantity,
+      addons_total_egp: addonsTotalEgp,
+      final_total_egp: lineTotalEgp,
+      total_price_egp: lineTotalEgp,
     };
+
+    if (line.selectedAddons?.length) {
+      row.customization = { addons: line.selectedAddons };
+    }
     if (line.productSnapshot) {
       row.product_snapshot = line.productSnapshot;
     }
@@ -229,7 +257,7 @@ export async function insertCheckoutOrder(
     if (line.variantSnapshot) {
       row.variant_snapshot = line.variantSnapshot;
     }
-    itemRows.push(row as (typeof itemRows)[number]);
+    itemRows.push(row);
   }
 
   console.log("[Order Creation] Inserting", itemRows.length, "order items");

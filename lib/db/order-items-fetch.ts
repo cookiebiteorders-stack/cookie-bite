@@ -27,6 +27,10 @@ function normalizeRow(raw: Record<string, unknown>): NormalizedOrderItem {
     name = raw.product_name;
   } else if (typeof raw.name === "string" && raw.name.trim()) {
     name = raw.name;
+  } else if (raw.name && typeof raw.name === "object") {
+    const localized = raw.name as Record<string, unknown>;
+    if (typeof localized.en === "string" && localized.en.trim()) name = localized.en;
+    else if (typeof localized.ar === "string" && localized.ar.trim()) name = localized.ar;
   } else if (typeof raw.product_title === "string" && raw.product_title.trim()) {
     name = raw.product_title;
   } else if (raw.product_snapshot && typeof raw.product_snapshot === "object") {

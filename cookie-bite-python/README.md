@@ -67,3 +67,4 @@ npm run supabase:migrate
 
 - خدمة `recommendation-engine` على المنفذ 8001
 - تدريب SVD ليلي عبر worker
+s

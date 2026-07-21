@@ -6,6 +6,7 @@ export function resolvePaymobHmacSecret(): string {
   return (
     process.env.PAYMOB_HMAC_SECRET?.trim() ??
     process.env.PAYMOB_HMAC?.trim() ??
+    process.env.NEXT_PUBLIC_PAYMOB_HMAC_SECRET?.trim() ??
     ""
   );
 }

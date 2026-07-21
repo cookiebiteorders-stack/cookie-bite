@@ -19,21 +19,34 @@ export function resolvePaymobSecretKey(): string {
   return (
     process.env.PAYMOB_SECRET_KEY?.trim() ??
     process.env.PAYMOB_API_KEY?.trim() ??
+    // Legacy .env names (prefer migrating to server-only PAYMOB_* vars)
+    process.env.NEXT_PUBLIC_PAYMOB_SECRET_KEY?.trim() ??
+    process.env.NEXT_PUBLIC_PAYMOB_API_KEY?.trim() ??
     ""
   );
 }
 
 /** Public key for Unified Checkout redirect URL (pk_test_* / pk_live_*). */
 export function resolvePaymobPublicKey(): string {
-  return process.env.PAYMOB_PUBLIC_KEY?.trim() ?? "";
+  return (
+    process.env.PAYMOB_PUBLIC_KEY?.trim() ??
+    process.env.NEXT_PUBLIC_PAYMOB_PUBLIC_KEY?.trim() ??
+    ""
+  );
 }
 
 export function resolvePaymobIntegrationIdCard(): number {
-  return Number(process.env.PAYMOB_INTEGRATION_ID_CARD);
+  return Number(
+    process.env.PAYMOB_INTEGRATION_ID_CARD ??
+      process.env.PAYMOB_CARD_INTEGRATION_ID,
+  );
 }
 
 export function resolvePaymobIntegrationIdWallet(): number {
-  return Number(process.env.PAYMOB_INTEGRATION_ID_WALLET);
+  return Number(
+    process.env.PAYMOB_INTEGRATION_ID_WALLET ??
+      process.env.PAYMOB_WALLET_INTEGRATION_ID,
+  );
 }
 
 /** Regional origin — strips trailing /api from PAYMOB_API_URL when set. */
