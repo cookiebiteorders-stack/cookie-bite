@@ -25,7 +25,7 @@ export function buildMrBrownieAgentCapabilities(role: UserRole | "guest") {
         { action: "gift_boxes", path: "/gift-box", when: "Ready-made gift boxes" },
         { action: "mystery_box", path: "/mystery-box", when: "Surprise / fun gift" },
         { action: "view_cart", path: "/cart", when: "Review cart or checkout readiness" },
-        { action: "checkout", path: "/checkout", when: "User ready to pay" },
+        { action: "checkout", path: "/cart", when: "User ready to pay" },
         { action: "track_order", path: "/track", when: "Order status question" },
         { action: "account_orders", path: "/account/orders", when: "Signed-in order history" },
         { action: "help_faq", path: "/help", when: "Delivery, returns, allergens" },

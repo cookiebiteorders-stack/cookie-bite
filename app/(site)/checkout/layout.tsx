@@ -4,7 +4,7 @@ import { buildPageMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildPageMetadata({
   title: "Checkout",
   description:
-    "Secure Cookie Bite checkout for shipping details, payment method, and order confirmation.",
+    "Secure Cookie Bite Paymob payment confirmation and order thank-you pages.",
   path: "/checkout",
   keywords: ["cookie bite checkout", "secure payment cookies", "delivery checkout"],
   noIndex: true,

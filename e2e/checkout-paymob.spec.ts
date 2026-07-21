@@ -21,13 +21,6 @@ test.describe("Checkout & Paymob API smoke", () => {
       headers: { "Content-Type": "application/json" },
       data: JSON.stringify({
         items: [],
-        shipping: {
-          name: "Test User",
-          phone: "01123456789",
-          address: "123 Test Street Cairo",
-          city: "Cairo",
-        },
-        paymentMethod: "cod",
       }),
     });
     expect(res.status()).toBe(400);

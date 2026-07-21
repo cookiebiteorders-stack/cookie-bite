@@ -27,7 +27,6 @@ import {
   validatePromoForCartAsync,
 } from "@/lib/promo/validate-promo";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { resolveDeliveryForCheckout } from "@/lib/checkout/resolve-delivery-persist";
 import { checkGiftBoxSnapshotAvailability } from "@/lib/gift-box/check-availability";
 import { giftBoxOrderSnapshotSchema } from "@/lib/gift-box/order-snapshot";
 import { bundleOfferOrderSnapshotSchema } from "@/lib/offers/order-snapshot";

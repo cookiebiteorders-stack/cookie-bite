@@ -37,14 +37,12 @@ export const TARGET_PAGES: TargetPage[] = [
   "shop",
   "product",
   "cart",
-  "checkout",
   "account",
 ];
 
 export function resolvePageFromPath(pathname: string): TargetPage {
   if (pathname === "/") return "home";
   if (pathname.startsWith("/cart")) return "cart";
-  if (pathname.startsWith("/checkout")) return "checkout";
   if (pathname.startsWith("/account")) return "account";
   if (pathname.startsWith("/shop") || pathname.startsWith("/our-cookies")) return "shop";
   if (pathname.startsWith("/product") || pathname.includes("/products/")) return "product";

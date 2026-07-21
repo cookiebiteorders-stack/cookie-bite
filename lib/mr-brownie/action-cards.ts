@@ -56,7 +56,7 @@ export function buildActionCardsForIntent(
     return [
       {
         id: "checkout",
-        path: "/checkout",
+        path: "/cart",
         label_en: "Checkout with promo",
         label_ar: "الدفع مع الكوبون",
         icon: "cart",
@@ -75,7 +75,7 @@ export function buildActionCardsForIntent(
     return [
       {
         id: "checkout",
-        path: "/checkout",
+        path: "/cart",
         label_en: "Go to checkout",
         label_ar: "إتمام الطلب",
         icon: "cart",

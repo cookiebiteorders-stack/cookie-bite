@@ -44,9 +44,6 @@ export function resolvePageIntent(pathname: string, productSlug?: string | null)
   } else if (path === "/cart") {
     page_intent = "cart";
     focus_hint = "Cart — summarize CONTEXT.cart, free-shipping gap, suggest add-ons from CONTEXT.products.";
-  } else if (path.startsWith("/checkout")) {
-    page_intent = "checkout";
-    focus_hint = "Checkout — delivery/payment FAQ from knowledge_base; no fake order confirmation.";
   } else if (path.startsWith("/account")) {
     page_intent = "account";
     focus_hint = "Account area — orders/loyalty; use CONTEXT.memory.recent_orders when present.";

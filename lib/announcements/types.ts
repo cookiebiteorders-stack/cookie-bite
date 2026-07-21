@@ -10,7 +10,6 @@ export type TargetPage =
   | "cart"
   | "shop"
   | "account"
-  | "checkout"
   | "all";
 
 export type AudienceUserType = "all" | "guest" | "logged_in" | "premium" | "staff";

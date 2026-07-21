@@ -2,9 +2,7 @@ import {
   createSupabaseAdminClient,
   tryCreateSupabaseAdminClient,
 } from "@/lib/supabase/admin";
-import type { DeliverySchedulingPersist } from "@/lib/checkout/delivery-scheduling";
 import type { OrderItemRow, OrderRow } from "@/lib/db/types";
-import { assertSlotAvailable, bookDeliverySlot } from "@/lib/delivery/slots";
 import { recordPromoUse } from "@/lib/promo/validate-promo";
 
 export type InsertCheckoutOrderInput = {
@@ -35,7 +33,6 @@ export type InsertCheckoutOrderInput = {
   paymobAcceptOrderId?: number | null;
   guestEmail?: string | null;
   giftWrappingFeeEgp?: number;
-  deliveryScheduling?: DeliverySchedulingPersist | null;
   orderType?: "standard" | "gift_box";
   giftBoxSnapshot?: Record<string, unknown> | null;
   checkoutIdempotencyKey?: string | null;
@@ -52,13 +49,16 @@ export type CheckoutOrderIdempotencyRow = {
 /** حفظ طلب + البنود؛ يعيد null إذا لم يُضبط Supabase أو فشل الإدراج. */
 export async function insertCheckoutOrder(
   params: InsertCheckoutOrderInput,
-): Promise<{ id: string; orderNumber: number } | null> {
+): Promise<{ id: string; orderNumber: string } | null> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
     console.warn("insertCheckoutOrder: missing Supabase env");
     return null;
   }
 
   const supabase = createSupabaseAdminClient();
+
+  const codePart = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const orderCode = `CB-${codePart}`;
 
   const insertRow: Record<string, unknown> = {
     user_id: params.userId,
@@ -68,8 +68,9 @@ export async function insertCheckoutOrder(
     subtotal_egp: params.subtotalEgp,
     delivery_fee_egp: params.deliveryFeeEgp,
     total_egp: params.totalEgp,
-    notes: params.notes,
     shipping_address: params.shippingAddress,
+    order_code: orderCode,
+    number: orderCode, // Missing required 'number' field which is text and not-null
   };
   if (params.guestEmail) {
     insertRow.guest_email = params.guestEmail;
@@ -96,40 +97,10 @@ export async function insertCheckoutOrder(
     insertRow.checkout_idempotency_key = params.checkoutIdempotencyKey;
   }
 
-  const sched = params.deliveryScheduling;
-  if (sched) {
-    insertRow.scheduled_delivery_date = sched.scheduledDeliveryDate;
-    insertRow.scheduled_delivery_time = sched.scheduledDeliveryTime;
-    insertRow.delivery_slot_id = sched.deliverySlotId.startsWith("fallback-")
-      ? null
-      : sched.deliverySlotId;
-    insertRow.delivery_slot = sched.deliverySlotLabel;
-    insertRow.is_gift = sched.isGift;
-    insertRow.hide_price = sched.hidePrice;
-    insertRow.anonymous_sender = sched.anonymousSender;
-    insertRow.sender_name = sched.senderName;
-    insertRow.gift_message = sched.giftMessage;
-    insertRow.recipient_name = sched.recipientName;
-    insertRow.recipient_phone = sched.recipientPhone;
-    insertRow.recipient_address = sched.recipientAddress;
-  }
-
-  if (sched?.deliverySlotId && !sched.deliverySlotId.startsWith("fallback-")) {
-    try {
-      await assertSlotAvailable(sched.deliverySlotId, sched.scheduledDeliveryDate);
-    } catch (e) {
-      const code = e instanceof Error ? e.message : "";
-      if (code === "SLOT_FULL") {
-        console.error("insertCheckoutOrder: slot full", sched.deliverySlotId);
-        return null;
-      }
-    }
-  }
-
   const { data: orderRow, error: orderErr } = await supabase
     .from("orders")
     .insert(insertRow)
-    .select("id, order_number")
+    .select("id, number, order_code")
     .single();
 
   if (orderErr || !orderRow) {
@@ -137,7 +108,7 @@ export async function insertCheckoutOrder(
     if (dupCode === "23505" && params.checkoutIdempotencyKey) {
       const existing = await getCheckoutOrderByIdempotencyKey(params.checkoutIdempotencyKey);
       if (existing) {
-        return { id: existing.id, orderNumber: existing.order_number };
+        return { id: existing.id, orderNumber: String(existing.order_code || existing.id) };
       }
     }
     console.error("insertCheckoutOrder order error", orderErr);
@@ -145,7 +116,7 @@ export async function insertCheckoutOrder(
   }
 
   const orderId = orderRow.id as string;
-  const orderNumber = Number(orderRow.order_number);
+  const orderNumber = orderRow.order_code || orderRow.number;
 
   const itemRows: {
     order_id: string;
@@ -211,18 +182,6 @@ export async function insertCheckoutOrder(
       });
     } catch (promoErr) {
       console.error("insertCheckoutOrder promo use error (non-fatal)", promoErr);
-    }
-  }
-
-  if (sched?.deliverySlotId && !sched.deliverySlotId.startsWith("fallback-")) {
-    try {
-      await bookDeliverySlot({
-        orderId,
-        slotId: sched.deliverySlotId,
-        deliveryDate: sched.scheduledDeliveryDate,
-      });
-    } catch (bookErr) {
-      console.error("insertCheckoutOrder slot booking failed (non-fatal)", bookErr);
     }
   }
 

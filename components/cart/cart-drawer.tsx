@@ -271,14 +271,14 @@ export function CartDrawer() {
                   {t("pages.cart.shippingNote")}
                 </p>
                 <Link
-                  href="/checkout"
+                  href="/cart#proceed-to-payment-btn"
                   onClick={closeDrawer}
                   className={buttonClassName(
                     "primary",
                     "cb-touch-manipulation mb-2 block min-h-[3rem] w-full rounded-full py-3 text-center text-base font-bold transition hover:-translate-y-px hover:shadow-lg active:translate-y-0",
                   )}
                 >
-                  {t("pages.cart.checkout")}
+                  {t("pages.cart.proceedToPayment")}
                 </Link>
                 <Link
                   href="/cart"
