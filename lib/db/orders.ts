@@ -70,7 +70,6 @@ export async function insertCheckoutOrder(
     total_egp: params.totalEgp,
     shipping_address: params.shippingAddress,
     order_code: orderCode,
-    number: orderCode, // Missing required 'number' field which is text and not-null
   };
   if (params.guestEmail) {
     insertRow.guest_email = params.guestEmail;
