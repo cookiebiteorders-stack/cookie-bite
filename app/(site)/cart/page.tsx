@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Trash2, Lock, Loader2 } from "lucide-react";
@@ -13,7 +12,6 @@ import { useFreeShippingThreshold } from "@/components/providers/store-commerce-
 import { InlineAlerts } from "@/components/announcements/inline-alerts";
 import { PromoCodeField } from "@/components/checkout/promo-code-field";
 import { CartBundleOffers } from "@/components/cart/cart-bundle-offers";
-import { usePaymobCheckout } from "@/hooks/use-paymob-checkout";
 
 export default function CartPage() {
   const { t, formatPrice } = useLanguage();
@@ -28,24 +26,12 @@ export default function CartPage() {
     applyPromo,
     clearPromo,
   } = useCart();
-  const { startCheckout, status, error: checkoutError, isLoading } = usePaymobCheckout();
   const freeShippingThreshold = useFreeShippingThreshold();
   const shipping =
     subtotalEgp >= freeShippingThreshold
       ? 0
       : siteConfig.standardDeliveryFeeEgp;
   const total = Math.max(0, subtotalEgp - discountEgp + shipping);
-
-  // Check if user is coming from checkout details page
-  useEffect(() => {
-    const checkoutDetails = sessionStorage.getItem("checkoutDetails");
-    if (checkoutDetails && lines.length > 0) {
-      // Auto-trigger checkout with the stored details
-      const details = JSON.parse(checkoutDetails) as import("@/hooks/use-paymob-checkout").CheckoutDetails;
-      sessionStorage.removeItem("checkoutDetails");
-      void startCheckout(details);
-    }
-  }, [lines.length, startCheckout]);
 
   return (
     <div className="bg-cb-cream pb-24 pt-10">
@@ -209,11 +195,6 @@ export default function CartPage() {
               onClear={clearPromo}
               className="mt-4"
             />
-          ) : null}
-          {checkoutError ? (
-            <p className="mt-3 text-xs font-semibold text-red-700" role="alert">
-              {checkoutError}
-            </p>
           ) : null}
           <Link
             id="proceed-to-payment-btn"

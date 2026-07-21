@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, MapPin, Phone, User, Calendar, Clock, ArrowRight } from "lucide-react";
 import { AddressMapPicker, type AddressMapHint } from "@/components/account/address-map-picker";
 import { buttonClassName } from "@/components/ui/button";
 import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
+import { usePaymobCheckout, type CheckoutDetails } from "@/hooks/use-paymob-checkout";
 import { cn } from "@/lib/utils";
 
 export default function CheckoutDetailsPage() {
   const { t, formatPrice } = useLanguage();
-  const router = useRouter();
   const { lines, subtotalEgp, itemCount } = useCart();
+  const { startCheckout, isLoading: checkoutLoading, error: checkoutError } = usePaymobCheckout();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -108,20 +108,26 @@ export default function CheckoutDetailsPage() {
 
     setLoading(true);
 
-    // Store checkout data in sessionStorage for the next step
-    const checkoutData = {
-      ...formData,
+    // Create checkout details object - filter out empty strings
+    const checkoutData: CheckoutDetails = {
+      name: formData.name,
+      phonePrimary: formData.phonePrimary,
+      phoneSecondary: formData.phoneSecondary || undefined,
+      address: formData.address,
+      city: formData.city,
+      governorate: formData.governorate || undefined,
+      notes: formData.notes || undefined,
+      deliveryDate: formData.deliveryDate,
+      deliveryTime: formData.deliveryTime || undefined,
       latitude,
       longitude,
-      placeLabel: addressHint?.placeLabel,
+      placeLabel: addressHint?.placeLabel || undefined,
     };
-    sessionStorage.setItem("checkoutDetails", JSON.stringify(checkoutData));
 
-    // Redirect to cart page which will trigger Paymob checkout
-    try {
-      router.push("/cart");
-    } catch (err) {
-      setError("حدث خطأ أثناء الانتقال إلى صفحة الدفع");
+    // Call Paymob checkout directly
+    const success = await startCheckout(checkoutData);
+    if (!success) {
+      setError(checkoutError || "حدث خطأ أثناء معالجة الدفع");
       setLoading(false);
     }
   };
@@ -134,12 +140,12 @@ export default function CheckoutDetailsPage() {
             <h1 className="font-serif text-2xl font-semibold text-cb-text-strong">
               {t("pages.cart.empty")}
             </h1>
-            <button
-              onClick={() => router.push("/shop")}
+            <a
+              href="/shop"
               className={buttonClassName("primary", "mt-6 inline-flex rounded-full px-8")}
             >
               {t("pages.cart.shopCookies")}
-            </button>
+            </a>
           </div>
         </div>
       </div>
