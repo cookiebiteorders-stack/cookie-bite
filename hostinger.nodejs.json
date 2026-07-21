@@ -2,8 +2,8 @@
   "projectType": "nextjs",
   "nodeVersion": "20",
   "buildCommand": "npm run build",
-  "startCommand": "npm run start",
-  "entryFile": "server.mjs",
+  "startCommand": "npm run start:standalone",
+  "entryFile": ".next/standalone/server.js",
   "outputDirectory": ".next/standalone",
   "installCommand": "npm ci --omit=dev"
 }
