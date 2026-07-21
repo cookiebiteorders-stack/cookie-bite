@@ -41,6 +41,7 @@ export type InsertCheckoutOrderInput = {
 export type CheckoutOrderIdempotencyRow = {
   id: string;
   order_number: number;
+  order_code: string | null;
   payment_status: OrderRow["payment_status"];
   paymob_accept_order_id: number | null;
   total_egp: number;
@@ -196,7 +197,7 @@ export async function getCheckoutOrderByIdempotencyKey(
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("orders")
-    .select("id, order_number, payment_status, paymob_accept_order_id, total_egp")
+    .select("id, order_number, order_code, payment_status, paymob_accept_order_id, total_egp")
     .eq("checkout_idempotency_key", idempotencyKey)
     .maybeSingle<CheckoutOrderIdempotencyRow>();
 
