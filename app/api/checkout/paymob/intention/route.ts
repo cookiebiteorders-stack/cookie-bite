@@ -72,19 +72,19 @@ const BodySchema = z
       .object({
         name: z.string().min(2),
         phone: z.string().regex(/^01[0125][0-9]{8}$/),
-        phone_secondary: z.string().regex(/^01[0125][0-9]{8}$/).optional().or(z.literal("")),
+        phone_secondary: z.string().regex(/^01[0125][0-9]{8}$/).nullable(),
         address: z.string().min(5),
         city: z.string().min(2),
-        governorate: z.string().optional().or(z.literal("")),
-        notes: z.string().optional().or(z.literal("")),
-        email: z.union([z.string().email(), z.literal("")]).optional(),
-        delivery_date: z.string().optional().or(z.literal("")),
-        delivery_time: z.string().optional().or(z.literal("")),
-        latitude: z.number().optional(),
-        longitude: z.number().optional(),
-        place_label: z.string().optional().or(z.literal("")),
+        governorate: z.string().nullable(),
+        notes: z.string().nullable(),
+        email: z.union([z.string().email(), z.literal("")]).nullable(),
+        delivery_date: z.string().nullable(),
+        delivery_time: z.string().nullable(),
+        latitude: z.number().nullable(),
+        longitude: z.number().nullable(),
+        place_label: z.string().nullable(),
       })
-      .optional(),
+      .nullable(),
     promo_code: z.string().min(3).max(20).optional(),
     gift_box: giftBoxOrderSnapshotSchema.optional(),
     bundle_offers: z.array(bundleOfferOrderSnapshotSchema).optional(),
@@ -113,18 +113,18 @@ async function resolveBillingData(
   shipping: { 
     name: string; 
     phone: string; 
-    phone_secondary?: string;
+    phone_secondary?: string | null;
     address: string; 
     city: string; 
-    governorate?: string;
-    notes?: string; 
-    email?: string;
-    delivery_date?: string;
-    delivery_time?: string;
-    latitude?: number;
-    longitude?: number;
-    place_label?: string;
-  } | undefined,
+    governorate?: string | null;
+    notes?: string | null; 
+    email?: string | null;
+    delivery_date?: string | null;
+    delivery_time?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    place_label?: string | null;
+  } | null | undefined,
   dbUserId: string | null,
 ) {
   if (shipping) {
@@ -132,16 +132,16 @@ async function resolveBillingData(
       name: shipping.name,
       email: shipping.email ?? "",
       phone: shipping.phone,
-      phone_secondary: shipping.phone_secondary,
+      phone_secondary: shipping.phone_secondary || undefined,
       street: `${shipping.address}, ${shipping.city}`,
       city: shipping.city,
-      governorate: shipping.governorate,
+      governorate: shipping.governorate || undefined,
       notes: shipping.notes ?? "",
-      delivery_date: shipping.delivery_date,
-      delivery_time: shipping.delivery_time,
-      latitude: shipping.latitude,
-      longitude: shipping.longitude,
-      place_label: shipping.place_label,
+      delivery_date: shipping.delivery_date || undefined,
+      delivery_time: shipping.delivery_time || undefined,
+      latitude: shipping.latitude || undefined,
+      longitude: shipping.longitude || undefined,
+      place_label: shipping.place_label || undefined,
       rawEmail: shipping.email && shipping.email.length > 0 ? shipping.email : undefined,
     };
   }
