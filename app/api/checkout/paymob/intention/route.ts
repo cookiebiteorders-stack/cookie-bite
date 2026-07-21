@@ -441,7 +441,6 @@ export async function POST(req: Request) {
       notes: `Paymob checkout · ${guestRef}`,
       guestEmail: billing.rawEmail ?? null,
       giftWrappingFeeEgp: giftWrappingFee,
-      deliveryScheduling: deliveryPersist,
       orderType: giftBox ? "gift_box" : "standard",
       giftBoxSnapshot: giftBox ?? null,
       checkoutIdempotencyKey: idempotencyKey ?? null,
