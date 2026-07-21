@@ -190,15 +190,8 @@ export async function POST(req: Request) {
     idempotency_key: idempotencyKey,
   } = parsed.data;
 
-  // Resolve delivery with empty defaults (scheduling is no longer collected from UI)
-  const deliveryResolved = await resolveDeliveryForCheckout({
-    date: "",
-    slot_id: "",
-    is_gift: false,
-    hide_price: false,
-    anonymous_sender: false,
-  });
-  const deliveryPersist = deliveryResolved.ok ? deliveryResolved.persist : null;
+  // Delivery scheduling is no longer collected from the UI.
+  const deliveryPersist = null;
 
   let resolved: ResolvedCheckoutLine[] = [];
   let subtotal = 0;
