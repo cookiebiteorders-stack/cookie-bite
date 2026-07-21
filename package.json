@@ -124,6 +124,7 @@
     "@types/nodemailer": "^8.0.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.5.4",
     "esbuild": "^0.28.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
