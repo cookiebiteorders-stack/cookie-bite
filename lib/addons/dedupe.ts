@@ -19,8 +19,10 @@ export function dedupeAddonOptions(options: AddonOption[]): AddonOption[] {
   const out: AddonOption[] = [];
   for (const opt of options) {
     const id = opt.id?.trim();
-    if (!id || seen.has(id)) continue;
-    seen.add(id);
+    if (id) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+    }
     out.push(opt);
   }
   return out;

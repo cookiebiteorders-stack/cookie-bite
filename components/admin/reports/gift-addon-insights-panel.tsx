@@ -57,7 +57,7 @@ export function GiftAddonInsightsPanel() {
 
       {loading && !data ? (
         <p className="mt-4 text-sm text-cb-text-muted">جاري التحميل…</p>
-      ) : !data ? (
+      ) : !data || !data.gift_boxes || !data.addons ? (
         <p className="mt-4 text-sm text-red-700">تعذر تحميل التقرير.</p>
       ) : (
         <div className="mt-4 grid gap-6 lg:grid-cols-2">

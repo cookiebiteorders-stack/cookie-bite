@@ -23,7 +23,16 @@ describe("AdminReportsPage", () => {
   });
 
   it("renders error state with retry action", async () => {
-    fetchJsonMock.mockRejectedValueOnce(new Error("analytics down"));
+    fetchJsonMock.mockImplementation((url: unknown) => {
+      if (typeof url === "string" && url.includes("/api/admin/reports/overview")) {
+        return Promise.reject(new Error("analytics down"));
+      }
+      return Promise.resolve({
+        period_days: 30,
+        gift_boxes: { count: 0, revenue_egp: 0, by_size: [] },
+        addons: { top: [] },
+      });
+    });
     renderReportsPage();
 
     await screen.findByText("analytics down");

@@ -24,6 +24,13 @@ jest.mock("@/lib/config/production-lock", () => ({
     whatsapp: true,
     redis_queue: true,
   }),
+  INTEGRATION_ENV_GROUPS: {
+    app_urls: ["NEXT_PUBLIC_APP_URL", "APP_BASE_URL"],
+    supabase_auth: ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_KEY"],
+    paymob: ["PAYMOB_API_KEY"],
+    resend: ["RESEND_API_KEY"],
+    internal_api: ["INTERNAL_API_SECRET"],
+  },
 }));
 
 jest.mock("@/lib/db/schema-health", () => ({

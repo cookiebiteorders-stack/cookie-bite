@@ -65,7 +65,7 @@ const INTENT_SIGNALS: IntentSignal[] = [
     intent: "order_status",
     weight: 3,
     patterns: [
-      /فين\s+(ال)?(أوردر|اوردر|طلب)|أين\s+الطلب|track.*order|order status|حالة\s+الطلب|وين\s+طلبي|follow\s+up\s+order/i,
+      /فين\s+(ال)?(أوردر|اوردر|طلب)|(أين|اين)\s+(ال)?(طلب|طلبي|أوردر|اوردر)|track.*order|order status|حالة\s+الطلب|وين\s+طلبي|follow\s+up\s+order/i,
       /رقم\s+الطلب|order\s+#|tracking/i,
     ],
   },

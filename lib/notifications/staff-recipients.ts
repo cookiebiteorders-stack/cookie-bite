@@ -34,8 +34,10 @@ export async function listOwnerAndAdminEmails(): Promise<string[]> {
   const owner = (process.env.OWNER_BOOTSTRAP_EMAIL || DEFAULT_OWNER_EMAIL)
     .trim()
     .toLowerCase();
-  // تنبيهات الطلبات → صندوق العلامة فقط (لا Gmail الشخصي)
-  if (owner && isBrandDomainEmail(owner)) emails.add(owner);
+  // تنبيهات الطلبات → صندوق العلامة أو البريد المعرّف صراحة في البيئة
+  if (owner && (isBrandDomainEmail(owner) || process.env.OWNER_BOOTSTRAP_EMAIL?.trim())) {
+    emails.add(owner);
+  }
 
   for (const e of parseCsv(process.env.ADMIN_BOOTSTRAP_EMAILS)) {
     emails.add(e);
