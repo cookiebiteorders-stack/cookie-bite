@@ -5,5 +5,5 @@
   "startCommand": "npm run start:standalone",
   "entryFile": ".next/standalone/server.js",
   "outputDirectory": ".next/standalone",
-  "installCommand": "npm ci --include=dev"
+  "installCommand": "NPM_CONFIG_PRODUCTION=false npm ci"
 }
