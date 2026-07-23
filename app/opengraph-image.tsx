@@ -4,6 +4,8 @@ export const alt = "Cookie Bite — Fresh cookies & gift boxes in New Cairo";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+export const dynamic = "force-dynamic";
+
 export default function OpenGraphImage() {
   return new ImageResponse(
     (
