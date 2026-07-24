@@ -123,7 +123,6 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^22",
-    "@types/nodemailer": "^8.0.0",
     "esbuild": "^0.28.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
