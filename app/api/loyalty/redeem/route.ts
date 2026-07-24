@@ -24,46 +24,42 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createSupabaseAdminClient();
-  const { data: account } = await supabase
-    .from("loyalty_accounts")
-    .select("*")
-    .eq("user_id", profile.id)
+
+  // Atomic check-and-deduct (single UPDATE ... WHERE total_points >= points
+  // inside the DB function) — prevents a race where two concurrent requests
+  // both pass a stale balance check and over-redeem.
+  const { data, error: rpcError } = await supabase
+    .rpc("redeem_loyalty_points", {
+      p_user_id: profile.id,
+      p_points: parsed.data.points,
+    })
     .maybeSingle();
-  if (!account) {
-    return NextResponse.json(
-      bilingualError("Loyalty account not found", "حساب الولاء غير موجود"),
-      { status: 404 },
-    );
-  }
-  if (account.total_points < parsed.data.points) {
-    return NextResponse.json(
-      bilingualError("Insufficient points", "النقاط غير كافية"),
-      { status: 400 },
-    );
-  }
 
-  const nextPoints = account.total_points - parsed.data.points;
-  const tier =
-    nextPoints >= 1000
-      ? "cookie_monster"
-      : nextPoints >= 500
-        ? "cruncher"
-        : "cookie_lover";
-  const egpDiscount = Math.floor(parsed.data.points / 500) * 25;
-
-  const { error: updateErr } = await supabase
-    .from("loyalty_accounts")
-    .update({ total_points: nextPoints, tier })
-    .eq("id", account.id);
-  if (updateErr) {
+  if (rpcError) {
+    if (rpcError.message?.includes("insufficient_points")) {
+      return NextResponse.json(
+        bilingualError("Insufficient points", "النقاط غير كافية"),
+        { status: 400 },
+      );
+    }
     return NextResponse.json(
       bilingualError("Failed to redeem points", "فشل استبدال النقاط"),
       { status: 500 },
     );
   }
 
+  const result = data as { account_id: string; remaining_points: number; new_tier: string } | null;
+  if (!result) {
+    return NextResponse.json(
+      bilingualError("Loyalty account not found", "حساب الولاء غير موجود"),
+      { status: 404 },
+    );
+  }
+
+  const egpDiscount = Math.floor(parsed.data.points / 500) * 25;
+
   await supabase.from("loyalty_transactions").insert({
-    account_id: account.id,
+    account_id: result.account_id,
     type: "redeemed",
     points: -parsed.data.points,
     description_en: `Redeemed ${parsed.data.points} points`,
@@ -74,6 +70,6 @@ export async function POST(req: NextRequest) {
     ok: true,
     redeemed_points: parsed.data.points,
     discount_egp: egpDiscount,
-    remaining_points: nextPoints,
+    remaining_points: result.remaining_points,
   });
 }

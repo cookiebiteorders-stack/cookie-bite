@@ -397,9 +397,12 @@ export async function GET(
       })()));
 
     if (!matchesUser) {
+      // 404 (not 403) — avoids letting a caller distinguish "exists but not
+      // yours" from "doesn't exist", which would otherwise let invoice
+      // numbers (some sequential) be enumerated.
       return NextResponse.json(
-        bilingualError("Forbidden", "ممنوع"),
-        { status: 403 },
+        bilingualError("Invoice not found", "الفاتورة غير موجودة"),
+        { status: 404 },
       );
     }
   }

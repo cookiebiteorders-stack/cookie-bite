@@ -13,14 +13,20 @@ export async function POST(
     return NextResponse.json({ error: "Missing review id" }, { status: 400 });
   }
 
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Signed-in visitors are bound to their stable user id (can't reset by
+  // clearing cookies). Anonymous visitors fall back to a persistent cookie.
   const jar = await cookies();
-  let voterKey = jar.get(VOTER_COOKIE)?.value;
-  const setCookie = !voterKey;
+  let voterKey = user ? `user:${user.id}` : jar.get(VOTER_COOKIE)?.value;
+  const setCookie = !user && !voterKey;
   if (!voterKey) {
     voterKey = crypto.randomUUID();
   }
 
-  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("register_review_helpful_vote", {
     p_review_id: reviewId,
     p_voter_key: voterKey,

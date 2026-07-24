@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { parseCsv } from "@/lib/csv/parse-csv";
 import type { ImportFileType, ParsedSheet } from "@/lib/admin/import-export/types";
 import { pythonApiAvailable } from "@/lib/python-api";
@@ -27,20 +27,25 @@ export function detectFileType(fileName: string, mime?: string | null): ImportFi
   return null;
 }
 
-export function parseTabularBuffer(buffer: Buffer, fileType: "csv" | "xlsx"): ParsedSheet {
+export async function parseTabularBuffer(buffer: Buffer, fileType: "csv" | "xlsx"): Promise<ParsedSheet> {
   if (fileType === "csv") {
     const text = buffer.toString("utf-8").replace(/^\uFEFF/, "");
     return gridToSheet(parseCsv(text));
   }
-  const wb = XLSX.read(buffer, { type: "buffer", cellDates: false });
-  const sheetName = wb.SheetNames[0];
-  if (!sheetName) return { headers: [], rows: [] };
-  const sheet = wb.Sheets[sheetName]!;
-  const grid = XLSX.utils.sheet_to_json<string[]>(sheet, {
-    header: 1,
-    defval: "",
-    raw: false,
-  }) as string[][];
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer as any);
+  const worksheet = workbook.worksheets[0];
+  if (!worksheet) return { headers: [], rows: [] };
+  
+  const grid: string[][] = [];
+  worksheet.eachRow((row) => {
+    const values: string[] = [];
+    row.eachCell({ includeEmpty: true }, (cell) => {
+      values.push(cell.value == null ? "" : String(cell.value).trim());
+    });
+    grid.push(values);
+  });
+  
   const normalized = grid.map((row) =>
     row.map((cell) => (cell == null ? "" : String(cell).trim())),
   );

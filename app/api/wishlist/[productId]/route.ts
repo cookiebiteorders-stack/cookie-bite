@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentProfile } from "@/lib/auth/get-profile";
 import { bilingualError } from "@/lib/validations";
+
+const paramsSchema = z.object({ productId: z.string().uuid() });
 
 export async function DELETE(
   _req: NextRequest,
@@ -13,7 +16,13 @@ export async function DELETE(
       status: 401,
     });
   }
-  const { productId } = await ctx.params;
+  const parsedParams = paramsSchema.safeParse(await ctx.params);
+  if (!parsedParams.success) {
+    return NextResponse.json(bilingualError("Invalid product id", "معرّف المنتج غير صالح"), {
+      status: 400,
+    });
+  }
+  const { productId } = parsedParams.data;
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase
     .from("wishlists")

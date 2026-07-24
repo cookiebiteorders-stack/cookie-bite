@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import type { ExportFormat } from "@/lib/admin/import-export/types";
 import { EXPORT_MIME } from "@/lib/admin/import-export/constants";
@@ -24,18 +24,22 @@ export function buildCsvExport(
   };
 }
 
-export function buildXlsxExport(
+export async function buildXlsxExport(
   columns: string[],
   rows: Record<string, unknown>[],
   sheetName = "Data",
-): { buffer: Buffer; mimeType: string; fileName: string } {
-  const data = [columns, ...rows.map((r) => columns.map((c) => r[c] ?? ""))];
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
-  const out = XLSX.write(wb, { type: "buffer", bookType: "xlsx" }) as Buffer;
+): Promise<{ buffer: Buffer; mimeType: string; fileName: string }> {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet(sheetName.slice(0, 31));
+  
+  worksheet.columns = columns.map(col => ({ header: col, key: col }));
+  rows.forEach(row => {
+    worksheet.addRow(row);
+  });
+  
+  const buffer = await workbook.xlsx.writeBuffer();
   return {
-    buffer: out,
+    buffer: Buffer.from(buffer),
     mimeType: EXPORT_MIME.xlsx!,
     fileName: `export-${Date.now()}.xlsx`,
   };

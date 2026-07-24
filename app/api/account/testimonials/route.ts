@@ -62,7 +62,9 @@ export async function POST(req: NextRequest) {
       user_id: profile.id,
       rating: parsed.data.rating,
       comment: parsed.data.comment,
-      status: "approved",
+      // Never auto-publish user-submitted text under the customer's real name
+      // — requires admin approval via /api/admin/testimonials first.
+      status: "pending",
     })
     .select("id, rating, comment, status, created_at")
     .single();

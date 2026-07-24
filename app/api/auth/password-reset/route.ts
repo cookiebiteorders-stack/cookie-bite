@@ -29,15 +29,19 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getUserByEmail(email);
     if (user?.email) {
-      await onPasswordReset({
+      // Fire-and-forget: don't let the extra email-trigger latency create a
+      // timing side-channel that reveals whether this email is registered.
+      void onPasswordReset({
         email: user.email,
         userId: user.id,
         userName: user.full_name ?? undefined,
         resetLink: resolveResetLink(),
+      }).catch((error) => {
+        console.error("password reset trigger failed", error);
       });
     }
   } catch (error) {
-    console.error("password reset trigger failed", error);
+    console.error("password reset lookup failed", error);
   }
 
   return NextResponse.json({

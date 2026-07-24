@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
         Accept: "application/json",
       },
       next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) {
       return NextResponse.json({ error: "Reverse geocoder unavailable" }, { status: 502 });

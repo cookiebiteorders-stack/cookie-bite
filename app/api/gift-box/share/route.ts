@@ -51,10 +51,10 @@ export async function POST(req: NextRequest) {
     };
   });
 
-  const total =
-    parsed.data.total_price != null && parsed.data.total_price > 0
-      ? parsed.data.total_price
-      : computedTotal;
+  // Never trust a client-supplied total — always the server-computed sum of
+  // current, active product prices (`total_price` in the request body, if any,
+  // is accepted for schema compatibility but intentionally ignored).
+  const total = computedTotal;
 
   const created = await createGiftBoxShare({
     box_size: parsed.data.box_size,

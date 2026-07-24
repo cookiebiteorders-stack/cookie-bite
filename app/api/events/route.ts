@@ -3,6 +3,8 @@ import { z } from "zod";
 import { getUserBySupabaseId } from "@/lib/db/users";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
+const MAX_METADATA_BYTES = 4 * 1024;
+
 const EventSchema = z
   .object({
     product_id: z.string().uuid().optional(),
@@ -13,6 +15,9 @@ const EventSchema = z
   })
   .refine((d) => Boolean(d.product_id ?? d.product_slug), {
     message: "product_id or product_slug required",
+  })
+  .refine((d) => !d.metadata || JSON.stringify(d.metadata).length <= MAX_METADATA_BYTES, {
+    message: "metadata too large",
   });
 
 /**

@@ -14,25 +14,27 @@ export type PaymobConfigStatus = {
   appBaseUrl: boolean;
 };
 
-/** Secret key for Intention API — Authorization: Token <secret> */
+/**
+ * Secret key for Intention API — Authorization: Token <secret>
+ * SECURITY: never read a `NEXT_PUBLIC_*` name here. Any `NEXT_PUBLIC_`
+ * prefixed variable is inlined into the browser bundle by Next.js wherever
+ * referenced, so a legacy `NEXT_PUBLIC_PAYMOB_SECRET_KEY` fallback would be a
+ * live secret-leak landmine the moment this module is ever imported (even
+ * transitively) from a Client Component. Use `npm run paymob:normalize-env`
+ * to migrate any legacy `.env` names to the canonical server-only ones below.
+ */
 export function resolvePaymobSecretKey(): string {
-  return (
-    process.env.PAYMOB_SECRET_KEY?.trim() ??
-    process.env.PAYMOB_API_KEY?.trim() ??
-    // Legacy .env names (prefer migrating to server-only PAYMOB_* vars)
-    process.env.NEXT_PUBLIC_PAYMOB_SECRET_KEY?.trim() ??
-    process.env.NEXT_PUBLIC_PAYMOB_API_KEY?.trim() ??
-    ""
-  );
+  return process.env.PAYMOB_SECRET_KEY?.trim() ?? process.env.PAYMOB_API_KEY?.trim() ?? "";
 }
 
-/** Public key for Unified Checkout redirect URL (pk_test_* / pk_live_*). */
+/**
+ * Public key for Unified Checkout redirect URL (pk_test_* / pk_live_*).
+ * This one is genuinely meant to be public (Paymob's own naming), but is
+ * still resolved server-side and only ever handed to the client inside an
+ * API response — never baked into the JS bundle via a `NEXT_PUBLIC_*` name.
+ */
 export function resolvePaymobPublicKey(): string {
-  return (
-    process.env.PAYMOB_PUBLIC_KEY?.trim() ??
-    process.env.NEXT_PUBLIC_PAYMOB_PUBLIC_KEY?.trim() ??
-    ""
-  );
+  return process.env.PAYMOB_PUBLIC_KEY?.trim() ?? "";
 }
 
 export function resolvePaymobIntegrationIdCard(): number {

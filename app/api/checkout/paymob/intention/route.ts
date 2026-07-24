@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth/supabase-auth";
 import { z } from "zod";
+import { logStructuredError } from "@/lib/logger";
 import {
   getCheckoutOrderByIdempotencyKey,
   insertCheckoutOrder,
@@ -236,6 +237,9 @@ export async function POST(req: Request) {
 
   let resolved: ResolvedCheckoutLine[] = [];
   let subtotal = 0;
+  // Never trust `gift_box.totalPrice`/`items[].price` from the client — always
+  // recomputed from the DB by checkGiftBoxSnapshotAvailability().
+  let verifiedGiftBox: typeof giftBox = undefined;
 
   if (giftBox) {
     const availability = await checkGiftBoxSnapshotAvailability(giftBox);
@@ -250,7 +254,8 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    subtotal += giftBox.totalPrice;
+    verifiedGiftBox = availability.verifiedSnapshot;
+    subtotal += verifiedGiftBox.totalPrice;
   }
 
   for (const bundleOffer of bundleOffers) {
@@ -412,16 +417,16 @@ export async function POST(req: Request) {
       variantId: l.variantId ?? null,
       variantSnapshot: l.variantSnapshot ?? null,
     })),
-    ...(giftBox
+    ...(verifiedGiftBox
       ? [
           {
             slug: "gift-box:custom",
             name: "Custom Gift Box",
-            unitPrice: giftBox.totalPrice,
+            unitPrice: verifiedGiftBox.totalPrice,
             quantity: 1,
             skipProductLookup: true,
-            productSnapshot: { type: "gift_box", snapshot: giftBox },
-            finalUnitPrice: giftBox.totalPrice,
+            productSnapshot: { type: "gift_box", snapshot: verifiedGiftBox },
+            finalUnitPrice: verifiedGiftBox.totalPrice,
           },
         ]
       : []),
@@ -443,12 +448,12 @@ export async function POST(req: Request) {
       unitPrice: line.finalUnitPrice,
       quantity: line.quantity,
     })),
-    ...(giftBox
+    ...(verifiedGiftBox
       ? [
           {
             id: "gift-box",
             name: "Custom Gift Box",
-            unitPrice: giftBox.totalPrice,
+            unitPrice: verifiedGiftBox.totalPrice,
             quantity: 1,
           },
         ]
@@ -492,7 +497,7 @@ export async function POST(req: Request) {
       guestEmail: billing.rawEmail ?? null,
       giftWrappingFeeEgp: giftWrappingFee,
       orderType: giftBox ? "gift_box" : "standard",
-      giftBoxSnapshot: giftBox ?? null,
+      giftBoxSnapshot: verifiedGiftBox ?? null,
       checkoutIdempotencyKey: idempotencyKey ?? null,
     });
 
@@ -584,14 +589,15 @@ export async function POST(req: Request) {
       lines: resolved,
     });
   } catch (err) {
-    console.error("[Paymob Checkout] Error during checkout process:", err);
-    
+    // Full details go to server-side structured logs only — never to the client.
+    logStructuredError("checkout.paymob.intention", err);
+
     // Handle order creation errors specifically
     if (err instanceof Error && err.message.includes("Failed to insert")) {
       return Response.json(
         {
           ok: false,
-          error: err.message,
+          error: "We couldn't save your order — please try again or contact support.",
           error_ar: "فشل حفظ الطلب — يرجى المحاولة مرة أخرى أو التواصل مع الدعم.",
           error_type: "order_creation",
         },
@@ -603,7 +609,7 @@ export async function POST(req: Request) {
       return Response.json(
         {
           ok: false,
-          error: err.message,
+          error: "Service temporarily unavailable — please try again later.",
           error_ar: "خطأ في إعدادات النظام — يرجى المحاولة لاحقاً.",
           error_type: "configuration",
         },
@@ -624,7 +630,7 @@ export async function POST(req: Request) {
       return Response.json(
         {
           ok: false,
-          error: err.message,
+          error: "Payment could not be started — please try again.",
           error_ar: "فشل إنشاء الدفع — يرجى المحاولة مرة أخرى.",
           paymob_status: err.status,
           error_type: "payment_gateway",
@@ -633,21 +639,21 @@ export async function POST(req: Request) {
       );
     }
 
-    // Generic error with full details
-    const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
-    const errorDetails = err instanceof Error ? {
-      name: err.name,
-      message: err.message,
-      stack: err.stack,
-    } : err;
-
+    // Generic error — never leak internals (stack traces, DB errors) to the client.
     return Response.json(
       {
         ok: false,
-        error: errorMessage,
+        error: "Something went wrong while processing your order — please try again.",
         error_ar: "حدث خطأ أثناء معالجة الطلب — يرجى المحاولة مرة أخرى.",
         error_type: "unknown",
-        details: errorDetails,
+        ...(process.env.NODE_ENV !== "production"
+          ? {
+              details:
+                err instanceof Error
+                  ? { name: err.name, message: err.message, stack: err.stack }
+                  : err,
+            }
+          : {}),
       },
       { status: 500 },
     );

@@ -1,20 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { auth } from "@/lib/auth/supabase-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getUserBySupabaseId } from "@/lib/db/users";
 import { bilingualError } from "@/lib/validations";
 
+const paramsSchema = z.object({ id: z.string().uuid() });
+
 export async function GET(
   _req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await ctx.params;
-  if (!id) {
+  const rawParams = await ctx.params;
+  const parsedParams = paramsSchema.safeParse(rawParams);
+  if (!parsedParams.success) {
     return NextResponse.json(
-      bilingualError("Missing id", "المعرّف مفقود"),
+      bilingualError("Invalid id", "المعرّف غير صالح"),
       { status: 400 },
     );
   }
+  const { id } = parsedParams.data;
 
   const { userId } = await auth();
   const supabase = createSupabaseAdminClient();

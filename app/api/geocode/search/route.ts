@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
         "Accept-Language": "en,ar",
       },
       next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!res.ok) {

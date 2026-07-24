@@ -106,9 +106,16 @@ export default async function proxy(request: NextRequest) {
       if (!rateOk(`events:${ip}`, 60, 60_000)) return tooMany();
     } else if (
       path.startsWith("/api/contact") ||
-      path.startsWith("/api/newsletter")
+      path.startsWith("/api/newsletter") ||
+      path.startsWith("/api/corporate")
     ) {
       if (!rateOk(`form:${ip}`, 5, 60_000)) return tooMany();
+    } else if (path.startsWith("/api/auth/")) {
+      // Password reset, etc. — tight bucket to prevent email-bombing / account enumeration abuse.
+      if (!rateOk(`auth:${ip}`, 5, 60_000)) return tooMany();
+    } else if (path.startsWith("/api/geocode")) {
+      // Proxies third-party geocoders (Nominatim usage policy is ~1 req/sec globally) — keep our shared IP well under any ban threshold.
+      if (!rateOk(`geo:${ip}`, 20, 60_000)) return tooMany();
     } else if (
       path.startsWith("/api/wishlist") ||
       path.startsWith("/api/loyalty") ||

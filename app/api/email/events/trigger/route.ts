@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { triggerEmailAutomationEvent } from "@/lib/email/automation/event-trigger";
+import { verifyInternalSecret } from "@/lib/auth/verify-internal";
 
 const bodySchema = z.object({
   event_name: z.string().min(2).max(120),
@@ -10,14 +11,10 @@ const bodySchema = z.object({
   user_data: z.record(z.string(), z.unknown()).optional(),
 });
 
-function assertInternalAccess(req: NextRequest): boolean {
-  const secret = process.env.INTERNAL_API_SECRET?.trim();
-  if (!secret) return true;
-  return req.headers.get("x-internal-secret") === secret;
-}
-
 export async function POST(req: NextRequest) {
-  if (!assertInternalAccess(req)) {
+  // Fails CLOSED (constant-time compare) — unlike the previous check, a
+  // missing INTERNAL_API_SECRET no longer grants unauthenticated access.
+  if (!verifyInternalSecret(req)) {
     return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   }
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));

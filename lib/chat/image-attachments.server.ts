@@ -3,6 +3,7 @@ import type { Part } from "@google/generative-ai";
 
 import { uploadToCloudinary } from "@/lib/cloudinary/admin-upload.server";
 import { inferImageMimeType } from "@/lib/chat/image-mime";
+import { sniffImageMimeType } from "@/lib/chat/image-mime.server";
 import {
   CHAT_IMAGE_MAX_BYTES,
   CHAT_IMAGE_MAX_COUNT,
@@ -85,6 +86,14 @@ export async function uploadChatImageFile(
     throw new Error(
       `Image is too large (max ${Math.round(CHAT_IMAGE_MAX_BYTES / (1024 * 1024))}MB)`,
     );
+  }
+
+  // Never trust the client-declared MIME/extension alone — verify the actual
+  // file bytes match a real image format before uploading anywhere.
+  const headerBytes = Buffer.from(await file.slice(0, 16).arrayBuffer());
+  const sniffed = sniffImageMimeType(headerBytes);
+  if (!sniffed || !CHAT_IMAGE_TYPES.has(sniffed)) {
+    throw new Error("File content is not a valid JPG, PNG, WEBP, or GIF image");
   }
 
   const folder =

@@ -44,6 +44,16 @@ const aliases = [
   ["PAYMOB_INTEGRATION_ID_WALLET", ["PAYMOB_INTEGRATION_ID_WALLET", "PAYMOB_WALLET_INTEGRATION_ID"]],
 ];
 
+// Secrets that must NEVER keep a `NEXT_PUBLIC_*` copy afterward — Next.js
+// inlines any `NEXT_PUBLIC_` variable into the browser bundle wherever it's
+// referenced, so leaving these set is a live secret-leak risk even after the
+// canonical server-only name has been populated below.
+const DANGEROUS_PUBLIC_ALIASES = [
+  "NEXT_PUBLIC_PAYMOB_SECRET_KEY",
+  "NEXT_PUBLIC_PAYMOB_API_KEY",
+  "NEXT_PUBLIC_PAYMOB_HMAC_SECRET",
+];
+
 if (!fs.existsSync(envPath)) {
   console.error("❌ .env not found");
   process.exit(1);
@@ -70,5 +80,21 @@ if (changed === 0) {
 } else {
   fs.writeFileSync(envPath, content);
   console.log(`\n✅ Updated ${changed} Paymob variable(s). Restart dev server if running.`);
-  console.log("Tip: remove NEXT_PUBLIC_PAYMOB_* secrets from .env — they belong server-side only.");
+}
+
+const dangerousPresent = DANGEROUS_PUBLIC_ALIASES.filter((k) => {
+  const v = env.get(k);
+  return v && v.length > 0;
+});
+if (dangerousPresent.length > 0) {
+  console.warn(
+    `\n⚠️  SECURITY: ${dangerousPresent.join(", ")} ${dangerousPresent.length > 1 ? "are" : "is"} still set in .env.`,
+  );
+  console.warn(
+    "   Next.js inlines any NEXT_PUBLIC_* variable into the browser bundle wherever it's referenced.",
+  );
+  console.warn(
+    "   The app no longer reads these names (canonical PAYMOB_* vars above are used instead) —",
+  );
+  console.warn("   remove them from .env / your host's environment panel now.");
 }

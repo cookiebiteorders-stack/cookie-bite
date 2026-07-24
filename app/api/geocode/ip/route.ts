@@ -16,6 +16,7 @@ export async function GET() {
     const res = await fetch("https://ipwho.is/", {
       headers: { Accept: "application/json" },
       next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) throw new Error("ipwho unavailable");
     const data = (await res.json()) as IpWhoResponse;
