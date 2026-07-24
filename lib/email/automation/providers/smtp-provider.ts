@@ -37,11 +37,12 @@ export function isSmtpProviderAvailable(config?: SmtpConfigRow | null): boolean 
 }
 
 async function createTransport(config: SmtpConfigRow) {
-  const nodemailer = await import("nodemailer");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const nodemailerMod = await import("nodemailer") as any;
   const password = config.password_encrypted?.startsWith("v1:")
     ? decryptSecret(config.password_encrypted)
     : (config.password_encrypted ?? "");
-  return nodemailer.createTransport({
+  return nodemailerMod.createTransport({
     host: config.host!,
     port: config.port ?? 587,
     secure: config.secure,

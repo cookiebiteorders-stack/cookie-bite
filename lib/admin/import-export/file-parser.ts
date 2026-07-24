@@ -33,6 +33,7 @@ export async function parseTabularBuffer(buffer: Buffer, fileType: "csv" | "xlsx
     return gridToSheet(parseCsv(text));
   }
   const workbook = new ExcelJS.Workbook();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await workbook.xlsx.load(buffer as any);
   const worksheet = workbook.worksheets[0];
   if (!worksheet) return { headers: [], rows: [] };
