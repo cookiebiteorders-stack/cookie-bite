@@ -93,6 +93,57 @@ export async function insertCheckoutOrder(
 
   const supabase = createSupabaseAdminClient();
 
+  // 1. Validate line items and perform product lookups before touching the database
+  const preparedLines: Array<{ line: (typeof params.lines)[number]; productUuid: string | null }> = [];
+
+  for (const line of params.lines) {
+    if (!line.slug || typeof line.slug !== "string" || !line.slug.trim()) {
+      throw new Error(`Invalid order item: missing required product slug for '${line.name || "unknown"}'`);
+    }
+    if (!line.name || typeof line.name !== "string" || !line.name.trim()) {
+      throw new Error(`Invalid order item: missing required product name for slug '${line.slug}'`);
+    }
+    if (!Number.isFinite(line.quantity) || line.quantity <= 0) {
+      throw new Error(`Invalid order item quantity '${line.quantity}' for product '${line.slug}'`);
+    }
+    if (!Number.isFinite(line.unitPrice) || line.unitPrice < 0) {
+      throw new Error(`Invalid order item unit price '${line.unitPrice}' for product '${line.slug}'`);
+    }
+
+    let productUuid: string | null = null;
+    let realSlug = line.slug.trim();
+
+    if (!line.skipProductLookup) {
+      const { data: prod, error: prodErr } = await supabase
+        .from("products")
+        .select("id, slug, name, title_en, price_egp")
+        .eq("slug", realSlug)
+        .maybeSingle();
+
+      if (prodErr) {
+        console.error("[Order Creation] Database error fetching product:", prodErr);
+        throw new Error(`Database error fetching product '${realSlug}': ${prodErr.message}`);
+      }
+
+      if (!prod) {
+        console.error("[Order Creation] Product not found in database for slug:", realSlug);
+        throw new Error(`Product not found or unavailable in database for slug: '${realSlug}'`);
+      }
+
+      if (!prod.slug || typeof prod.slug !== "string" || !prod.slug.trim()) {
+        throw new Error(`Product record in database is missing a valid slug for '${realSlug}'`);
+      }
+
+      productUuid = prod.id;
+      realSlug = prod.slug.trim();
+    }
+
+    preparedLines.push({
+      line: { ...line, slug: realSlug },
+      productUuid,
+    });
+  }
+
   const codePart = Math.random().toString(36).substring(2, 8).toUpperCase();
   const orderCode = `CB-${codePart}`;
 
@@ -213,22 +264,27 @@ export async function insertCheckoutOrder(
 
   const itemRows: Record<string, unknown>[] = [];
 
-  for (const line of params.lines) {
-    let productUuid: string | null = null;
-    if (!line.skipProductLookup) {
-      const { data: prod } = await supabase
-        .from("products")
-        .select("id")
-        .eq("slug", line.slug)
-        .maybeSingle();
-      if (prod && typeof (prod as { id?: string }).id === "string") {
-        productUuid = (prod as { id: string }).id;
-      }
+  for (const prep of preparedLines) {
+    const itemRow = buildOrderItemInsertRow(orderId, prep.line, prep.productUuid);
+
+    // Final safety checks before database insert
+    if (!itemRow.order_id) {
+      throw new Error("Order item insert row missing required 'order_id'");
+    }
+    if (!itemRow.product_name) {
+      throw new Error("Order item insert row missing required 'product_name'");
+    }
+    if (!itemRow.slug || typeof itemRow.slug !== "string" || !itemRow.slug.trim()) {
+      throw new Error(`Order item insert row missing required 'slug' for '${prep.line.name}'`);
+    }
+    if (itemRow.quantity == null || Number(itemRow.quantity) <= 0) {
+      throw new Error(`Order item insert row has invalid quantity '${itemRow.quantity}'`);
+    }
+    if (itemRow.unit_price_egp == null || Number(itemRow.unit_price_egp) < 0) {
+      throw new Error(`Order item insert row has invalid unit price '${itemRow.unit_price_egp}'`);
     }
 
-    itemRows.push(
-      buildOrderItemInsertRow(orderId, line, productUuid),
-    );
+    itemRows.push(itemRow);
   }
 
   console.log("[Order Creation] Inserting", itemRows.length, "order items");

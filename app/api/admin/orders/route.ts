@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
   const ids = [...new Set(parsed.data.items.map((i) => i.product_id))];
   const { data: prodRows, error: prodErr } = await supabase
     .from("products")
-    .select("id,name,title_en,price_egp")
+    .select("id,slug,name,title_en,price_egp")
     .in("id", ids);
 
   if (prodErr || !prodRows?.length) {
@@ -195,9 +195,13 @@ export async function POST(req: NextRequest) {
   }
 
   const priceMap = new Map(
-    (prodRows as Array<{ id: string; name: string; title_en: string | null; price_egp: number }>).map((p) => [
+    (prodRows as Array<{ id: string; slug: string | null; name: string; title_en: string | null; price_egp: number }>).map((p) => [
       p.id,
-      { label: (p.title_en ?? p.name ?? "Product").slice(0, 200), price: Number(p.price_egp) },
+      {
+        slug: p.slug ?? `product-${p.id}`,
+        label: (p.title_en ?? p.name ?? "Product").slice(0, 200),
+        price: Number(p.price_egp),
+      },
     ]),
   );
 
@@ -205,6 +209,7 @@ export async function POST(req: NextRequest) {
   const lineRows: Array<{
     product_id: string;
     product_name: string;
+    slug: string;
     unit_price_egp: number;
     quantity: number;
   }> = [];
@@ -221,6 +226,7 @@ export async function POST(req: NextRequest) {
     lineRows.push({
       product_id: line.product_id,
       product_name: meta.label,
+      slug: meta.slug,
       unit_price_egp: meta.price,
       quantity: line.quantity,
     });
@@ -260,8 +266,12 @@ export async function POST(req: NextRequest) {
     order_id: orderId,
     product_id: r.product_id,
     product_name: r.product_name,
+    slug: r.slug,
     unit_price_egp: r.unit_price_egp,
+    unit_price: r.unit_price_egp,
     quantity: r.quantity,
+    total_price_egp: r.unit_price_egp * r.quantity,
+    total_price: r.unit_price_egp * r.quantity,
   }));
 
   const { error: itemsErr } = await supabase.from("order_items").insert(itemsPayload);

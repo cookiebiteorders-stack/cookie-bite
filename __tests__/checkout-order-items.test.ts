@@ -20,15 +20,15 @@ describe("buildOrderItemInsertRow", () => {
       order_id: "order-uuid",
       product_id: "product-uuid",
       product_name: "Classic Cookie Box (12)",
+      slug: "classic-cookie-box",
       unit_price_egp: 250,
       quantity: 2,
       total_price_egp: 560,
       final_total_egp: 560,
       addons_total_egp: 60,
     });
-    expect(row).not.toHaveProperty("slug");
+    expect(row.slug).toBe("classic-cookie-box");
     expect(row).not.toHaveProperty("name");
-    expect(row).not.toHaveProperty("unit_price");
   });
 
   it("allows null product_id for custom gift box lines", () => {
