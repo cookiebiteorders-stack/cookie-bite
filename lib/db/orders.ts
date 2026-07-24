@@ -2,6 +2,7 @@ import {
   createSupabaseAdminClient,
   tryCreateSupabaseAdminClient,
 } from "@/lib/supabase/admin";
+import { buildOrderItemInsertRow } from "@/lib/db/build-order-item-insert";
 import type { OrderItemRow, OrderRow } from "@/lib/db/types";
 import { recordPromoUse } from "@/lib/promo/validate-promo";
 
@@ -127,7 +128,6 @@ export async function insertCheckoutOrder(
   insertRow.address = params.shippingAddress;
   insertRow.subtotal = params.subtotalEgp;
   insertRow.delivery_fee = params.deliveryFeeEgp;
-  insertRow.discount = params.discountAmountEgp ?? 0;
   insertRow.total = params.totalEgp;
   insertRow.currency = "EGP";
   insertRow.number = orderCode;
@@ -226,38 +226,9 @@ export async function insertCheckoutOrder(
       }
     }
 
-    const quantity = line.quantity;
-    const unitPrice = line.unitPrice;
-    const finalUnitPrice = Number(line.finalUnitPrice ?? line.unitPrice);
-    const addonsTotalEgp = Number(line.addonsTotalUnitPrice ?? 0) * quantity;
-    const lineTotalEgp = finalUnitPrice * quantity;
-
-    const row: Record<string, unknown> = {
-      order_id: orderId,
-      product_id: productUuid ?? line.slug,
-      slug: line.slug,
-      name: { en: line.name, ar: line.name },
-      unit_price: unitPrice,
-      quantity,
-      selected_addons: line.selectedAddons ?? [],
-      addons_total_egp: addonsTotalEgp,
-      final_total_egp: lineTotalEgp,
-      total_price_egp: lineTotalEgp,
-    };
-
-    if (line.selectedAddons?.length) {
-      row.customization = { addons: line.selectedAddons };
-    }
-    if (line.productSnapshot) {
-      row.product_snapshot = line.productSnapshot;
-    }
-    if (line.variantId) {
-      row.variant_id = line.variantId;
-    }
-    if (line.variantSnapshot) {
-      row.variant_snapshot = line.variantSnapshot;
-    }
-    itemRows.push(row);
+    itemRows.push(
+      buildOrderItemInsertRow(orderId, line, productUuid),
+    );
   }
 
   console.log("[Order Creation] Inserting", itemRows.length, "order items");
