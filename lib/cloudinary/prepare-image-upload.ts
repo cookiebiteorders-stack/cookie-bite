@@ -1,5 +1,5 @@
 import "@/lib/server-only";
-import sharp from "sharp";
+import type SharpType from "sharp";
 import {
   CLIENT_IMAGE_TARGET_BYTES,
   IMAGE_UPLOAD_MAX_EDGE,
@@ -15,6 +15,17 @@ export type PreparedImageUpload = {
 
 const SKIP_SHARP_TYPES = new Set(["image/gif", "image/svg+xml"]);
 const FORCE_SHARP_TYPES = new Set(["image/heic", "image/heif"]);
+
+/**
+ * Lazily loads sharp at runtime to avoid native binary resolution during
+ * Next.js build-time page data collection (which runs on the build host,
+ * not necessarily the deployment target OS/arch).
+ */
+async function getSharp(): Promise<typeof SharpType> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mod = await import("sharp") as any;
+  return (mod.default ?? mod) as typeof SharpType;
+}
 
 function extForMime(mime: string): string {
   if (mime === "image/webp") return "webp";
@@ -45,6 +56,8 @@ export async function prepareImageBufferForUpload(
     const ext = mimeType === "image/gif" ? "gif" : "svg";
     return { buffer: input, mimeType, filename: originalName || `upload.${ext}` };
   }
+
+  const sharp = await getSharp();
 
   if (!FORCE_SHARP_TYPES.has(mimeType) && input.byteLength <= CLIENT_IMAGE_TARGET_BYTES) {
     try {
@@ -93,3 +106,4 @@ export async function prepareImageBufferForUpload(
 
   return { buffer, mimeType: "image/webp", filename: `${base}.webp` };
 }
+

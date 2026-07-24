@@ -133,6 +133,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
+  serverExternalPackages: ["sharp"],
   experimental: {
     optimizePackageImports: [
       "lucide-react",
