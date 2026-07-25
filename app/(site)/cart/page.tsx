@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2, Lock, Loader2 } from "lucide-react";
+import { Trash2, Lock, Loader2, CreditCard, Smartphone } from "lucide-react";
 import { useCart } from "@/components/providers/cart-provider";
 import { QuantitySelector } from "@/src/components/cart/QuantitySelector";
 import { buttonClassName } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { useFreeShippingThreshold } from "@/components/providers/store-commerce-
 import { InlineAlerts } from "@/components/announcements/inline-alerts";
 import { PromoCodeField } from "@/components/checkout/promo-code-field";
 import { CartBundleOffers } from "@/components/cart/cart-bundle-offers";
+import { useState } from "react";
 
 export default function CartPage() {
   const { t, formatPrice } = useLanguage();
@@ -32,6 +33,7 @@ export default function CartPage() {
       ? 0
       : siteConfig.standardDeliveryFeeEgp;
   const total = Math.max(0, subtotalEgp - discountEgp + shipping);
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "wallet">("card");
 
   return (
     <div className="bg-cb-cream pb-24 pt-10">
@@ -196,15 +198,55 @@ export default function CartPage() {
               className="mt-4"
             />
           ) : null}
-          <Link
+          
+          {lines.length > 0 ? (
+            <div className="mt-4">
+              <h3 className="text-sm font-semibold text-cb-text-strong mb-2">
+                {t("pages.cart.paymentMethod")}
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("card")}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition ${
+                    paymentMethod === "card"
+                      ? "border-cb-brand-500 bg-cb-brand-50"
+                      : "border-cb-border bg-cb-surface hover:border-cb-brand-300"
+                  }`}
+                >
+                  <CreditCard className="h-6 w-6 text-cb-text-strong" />
+                  <span className="text-sm font-semibold text-cb-text-strong">
+                    {t("pages.cart.cardPayment")}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("wallet")}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition ${
+                    paymentMethod === "wallet"
+                      ? "border-cb-brand-500 bg-cb-brand-50"
+                      : "border-cb-border bg-cb-surface hover:border-cb-brand-300"
+                  }`}
+                >
+                  <Smartphone className="h-6 w-6 text-cb-text-strong" />
+                  <span className="text-sm font-semibold text-cb-text-strong">
+                    {t("pages.cart.walletPayment")}
+                  </span>
+                </button>
+              </div>
+            </div>
+          ) : null}
+          <button
             id="proceed-to-payment-btn"
-            href="/checkout/details"
+            onClick={() => {
+              window.location.href = `/checkout/details?payment_method=${paymentMethod}`;
+            }}
+            disabled={itemCount === 0}
             className={buttonClassName("primary", "mt-5 w-full rounded-md text-center flex items-center justify-center gap-2 disabled:opacity-50")}
-            aria-disabled={itemCount === 0}
           >
             <Lock className="h-4 w-4" aria-hidden />
             {t("pages.cart.proceedToPayment")}
-          </Link>
+          </button>
           <p className="mt-2 text-center text-xs text-cb-text-muted">
             {t("pages.cart.securePaymentNote")}
           </p>

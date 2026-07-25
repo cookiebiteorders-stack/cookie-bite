@@ -32,6 +32,7 @@ function buildPaymobIntentionBody(
   lines: CartLine[],
   promoCode?: string,
   checkoutDetails?: CheckoutDetails,
+  paymentMethod?: "card" | "wallet",
 ) {
   const giftBoxLine = lines.find((l) => Boolean(l.giftBox));
   const bundleOfferLines = lines.filter((l) => Boolean(l.bundleOffer));
@@ -61,6 +62,7 @@ function buildPaymobIntentionBody(
       ...(giftBoxSnapshot ? { gift_box: giftBoxSnapshot } : {}),
       ...(bundleOfferSnapshots.length ? { bundle_offers: bundleOfferSnapshots } : {}),
       promo_code: promoCode,
+      ...(paymentMethod ? { payment_method: paymentMethod } : {}),
       ...(checkoutDetails ? {
         shipping: Object.fromEntries(
           Object.entries({
@@ -92,10 +94,10 @@ export function usePaymobCheckout() {
   const [status, setStatus] = useState<PaymobCheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
 
-  const startCheckout = useCallback(async (checkoutDetails?: CheckoutDetails) => {
+  const startCheckout = useCallback(async (checkoutDetails?: CheckoutDetails, paymentMethod?: "card" | "wallet") => {
     if (itemCount === 0 || status === "loading") return false;
 
-    const { giftBoxSnapshot, body } = buildPaymobIntentionBody(lines, promo?.code, checkoutDetails);
+    const { giftBoxSnapshot, body } = buildPaymobIntentionBody(lines, promo?.code, checkoutDetails, paymentMethod);
 
     if (lines.some((l) => l.giftBox) && !giftBoxSnapshot) {
       setError(t("pages.checkout.errGiftBox"));

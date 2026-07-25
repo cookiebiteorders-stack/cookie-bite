@@ -1181,6 +1181,9 @@ export const translations: Record<Lang, Dictionary> = {
         bundleOfferAdd: "Add bundle — {price}",
         bundleOfferSave: "Save {amount}",
         bundleOfferBadge: "Bundle offer",
+        paymentMethod: "Payment Method",
+        cardPayment: "Card",
+        walletPayment: "Mobile Wallet",
       },
       checkout: {
         title: "Checkout",
@@ -3241,6 +3244,9 @@ export const translations: Record<Lang, Dictionary> = {
         bundleOfferAdd: "أضف العرض — {price}",
         bundleOfferSave: "وفّر {amount}",
         bundleOfferBadge: "عرض باقة",
+        paymentMethod: "طريقة الدفع",
+        cardPayment: "بطاقة",
+        walletPayment: "محفظة إلكترونية",
       },
       checkout: {
         title: "إتمام الطلب",

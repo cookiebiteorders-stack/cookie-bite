@@ -90,6 +90,7 @@ const BodySchema = z
     gift_box: giftBoxOrderSnapshotSchema.optional(),
     bundle_offers: z.array(bundleOfferOrderSnapshotSchema).optional(),
     idempotency_key: z.string().uuid().optional(),
+    payment_method: z.enum(["card", "wallet"]).optional(),
   })
   .refine((d) => d.items.length > 0 || d.gift_box || (d.bundle_offers?.length ?? 0) > 0, {
     message: "Cart must include products, a gift box, or bundle offers",
@@ -230,6 +231,7 @@ export async function POST(req: Request) {
     gift_box: giftBox,
     bundle_offers: bundleOffers = [],
     idempotency_key: idempotencyKey,
+    payment_method: paymentMethodParam,
   } = parsed.data;
 
   // Delivery scheduling is no longer collected from the UI.
@@ -333,7 +335,7 @@ export async function POST(req: Request) {
   const total = Math.max(0, subtotal - discountAmount + deliveryFee + giftWrappingFee);
 
   // Verify Paymob is configured
-  const paymentMethod = "card";
+  const paymentMethod = paymentMethodParam ?? "card";
   const paymobConfig = getPaymobConfigStatus();
   const integrationId = resolvePaymobIntegrationId(paymentMethod);
   const hasPaymobOnline = hasPaymobOnlineCheckout(paymentMethod);
@@ -343,7 +345,8 @@ export async function POST(req: Request) {
     if (!paymobConfig.secretKey) missing.push("PAYMOB_SECRET_KEY or PAYMOB_API_KEY");
     if (!paymobConfig.publicKey) missing.push("PAYMOB_PUBLIC_KEY");
     if (!paymobConfig.hmacSecret) missing.push("PAYMOB_HMAC_SECRET");
-    if (!paymobConfig.integrationCard) missing.push("PAYMOB_INTEGRATION_ID_CARD");
+    if (paymentMethod === "card" && !paymobConfig.integrationCard) missing.push("PAYMOB_INTEGRATION_ID_CARD");
+    if (paymentMethod === "wallet" && !paymobConfig.integrationWallet) missing.push("PAYMOB_INTEGRATION_ID_WALLET");
     return Response.json(
       {
         ok: false,
