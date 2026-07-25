@@ -100,7 +100,7 @@ export function buildPaymobIntentionItems(
 ): PaymobIntentionItem[] {
   const items: PaymobIntentionItem[] = resolved.map((line) => ({
     name: line.name.slice(0, 120),
-    amount: Math.round(line.unitPrice * line.quantity * 100),
+    amount: Math.round(line.unitPrice * 100),
     description: line.id.slice(0, 200),
     quantity: line.quantity,
   }));
@@ -184,6 +184,8 @@ export async function createPaymobIntention(
     redirection_url: input.redirectionUrl ?? paymobRedirectionUrl(),
     ...(input.extras ? { extras: input.extras } : {}),
   };
+
+  console.log("[Paymob Intention] Payload:", JSON.stringify(payload, null, 2));
 
   const res = await fetch(`${paymobOrigin()}/v1/intention/`, {
     method: "POST",

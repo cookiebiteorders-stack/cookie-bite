@@ -473,7 +473,20 @@ export async function POST(req: Request) {
     discountAmount,
     giftWrappingFee,
   );
-  const itemsSum = paymobItems.reduce((s, i) => s + i.amount, 0);
+  const itemsSum = paymobItems.reduce((s, i) => s + i.amount * i.quantity, 0);
+  
+  console.log("[Paymob Debug] Calculation breakdown:", {
+    subtotal,
+    deliveryFee,
+    discountAmount,
+    giftWrappingFee,
+    total,
+    amountCents,
+    itemsSum,
+    paymobProductLines,
+    paymobItems
+  });
+  
   if (itemsSum !== amountCents) {
     console.error("Paymob intention items sum mismatch", { itemsSum, amountCents, paymobItems });
     return Response.json({ ok: false, error: "Amount mismatch" }, { status: 500 });
