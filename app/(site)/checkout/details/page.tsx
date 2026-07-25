@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { Loader2, MapPin, Phone, User, Calendar, Clock, ArrowRight } from "lucide-react";
 import { AddressMapPicker, type AddressMapHint } from "@/components/account/address-map-picker";
 import { buttonClassName } from "@/components/ui/button";
@@ -14,18 +13,8 @@ export default function CheckoutDetailsPage() {
   const { t, formatPrice } = useLanguage();
   const { lines, subtotalEgp, itemCount } = useCart();
   const { startCheckout, isLoading: checkoutLoading, error: checkoutError } = usePaymobCheckout();
-  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "wallet">("card");
-
-  // Read payment method from URL params
-  useEffect(() => {
-    const method = searchParams.get("payment_method");
-    if (method === "card" || method === "wallet") {
-      setPaymentMethod(method);
-    }
-  }, [searchParams]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -136,7 +125,7 @@ export default function CheckoutDetailsPage() {
     };
 
     // Call Paymob checkout directly
-    const success = await startCheckout(checkoutData, paymentMethod);
+    const success = await startCheckout(checkoutData);
     if (!success) {
       console.error("Checkout failed:", checkoutError);
       setError(checkoutError || "حدث خطأ أثناء معالجة الدفع");
