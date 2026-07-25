@@ -176,12 +176,7 @@ export async function insertCheckoutOrder(
     params.guestEmail ??
     (typeof shipping.email === "string" ? shipping.email : "") ??
     "";
-  insertRow.address = params.shippingAddress;
-  insertRow.subtotal = params.subtotalEgp;
-  insertRow.delivery_fee = params.deliveryFeeEgp;
-  insertRow.total = params.totalEgp;
   insertRow.currency = "EGP";
-  insertRow.number = orderCode;
 
   if (shipping.phone_secondary) {
     insertRow.phone_secondary = shipping.phone_secondary;
