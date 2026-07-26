@@ -88,16 +88,16 @@ export function AuthLayout({
               className="absolute inset-0 bg-gradient-to-t from-cb-dark-accent/90 via-cb-scrim-strong/35 to-cb-brand-900/20"
               aria-hidden
             />
-            <div className="absolute bottom-8 left-7 right-7 space-y-3 text-cb-on-dark">
+            <div className="absolute bottom-8 left-7 right-7 space-y-3 text-white">
               <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider backdrop-blur-sm">
-                <Sparkles className="h-3.5 w-3.5 text-cb-brand-200" aria-hidden />
+                <Sparkles className="h-3.5 w-3.5 text-white" aria-hidden />
                 {SITE.name}
               </p>
               <p className="font-serif text-2xl font-semibold leading-snug drop-shadow-md lg:text-[1.65rem]">
                 {tagline}
               </p>
-              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-white/85">
-                <Lock className="h-3.5 w-3.5 shrink-0 text-cb-brand-200" aria-hidden />
+              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-white/90">
+                <Lock className="h-3.5 w-3.5 shrink-0 text-white" aria-hidden />
                 {secureAuthLabel}
               </p>
             </div>
@@ -161,7 +161,7 @@ export function AuthLayout({
                   className="absolute inset-0 bg-gradient-to-r from-cb-dark-accent/65 via-cb-scrim-soft/30 to-transparent"
                   aria-hidden
                 />
-                <p className="absolute bottom-3 left-3 max-w-[70%] text-xs font-semibold text-cb-on-dark drop-shadow-sm">
+                <p className="absolute bottom-3 left-3 max-w-[70%] text-xs font-semibold text-white drop-shadow-sm">
                   {tagline}
                 </p>
               </div>
