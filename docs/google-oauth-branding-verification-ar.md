@@ -18,7 +18,11 @@
    - **Application home page:** `https://cookie-bite.com/` (بشرطة مائلة في النهاية كما يطلب Google)
    - **Application privacy policy:** `https://cookie-bite.com/privacy`
    - **Authorized domains:** `cookie-bite.com` فقط (بدون `https://`)
-3. لا تضع `accounts.dev` أو `clerk.com` كصفحة رئيسية — يجب أن تكون موقعك أنت.
+3. **مهم جداً**: أزل أي نطاقات غير ضرورية من Authorized domains مثل:
+   - `cgjrrpbknhwzppnpkojx.supabase.co` (رابط Supabase - يجب إزالته)
+   - `accounts.dev` (رابط Clerk - يجب إزالته)
+   - `localhost` (للتطوير فقط - أزله في الإنتاج)
+4. لا تضع `accounts.dev` أو `clerk.com` كصفحة رئيسية — يجب أن تكون موقعك أنت.
 
 ---
 
@@ -89,6 +93,37 @@
 | الصفحة الرئيسية لا تعرض محتوى عام | تأكد أن `/` يفتح للزائر بدون تسجيل دخول إجباري |
 | Privacy Policy على نطاق آخر | استخدم `https://cookie-bite.com/privacy` |
 | النطاق مسجّل لدى Google Workspace لمستخدم آخر | Owner النطاق يتحقق أو ينقل الملكية |
+
+---
+
+## إزالة نطاق Supabase من Authorized domains
+
+إذا ظهرت رسالة خطأ عند محاولة حذف `cgjrrpbknhwzppnpkojx.supabase.co`:
+
+> This domain is used by these client URIs: [ 200435063596-9q9h... ]. Client credentials must be updated before deleting.
+
+### الخطوات:
+
+1. **اذهب إلى Credentials**:
+   - Google Cloud Console → **APIs & Services** → **Credentials**
+
+2. **ابحث عن OAuth 2.0 Client ID**:
+   - ابحث عن Client ID الذي يبدأ بـ `200435063596-9q9h...` (كما في رسالة الخطأ)
+   - انقر على القلم (Edit) بجانب هذا Client ID
+
+3. **تحديث Authorized Redirect URIs**:
+   - في قسم **Authorized redirect URIs**
+   - أزل أي URI يحتوي على `cgjrrpbknhwzppnpkojx.supabase.co`
+   - أضف URIs الصحيحة لـ `cookie-bite.com`:
+     - `https://cookie-bite.com/auth/callback`
+     - `https://cookie-bite.com/sign-in`
+     - `https://cookie-bite.com/sign-up`
+     - `https://cookie-bite.com/account`
+   - احفظ التغييرات
+
+4. **احذف النطاق**:
+   - ارجع إلى **OAuth consent screen** → **Branding**
+   - الآن يمكنك حذف `cgjrrpbknhwzppnpkojx.supabase.co` من Authorized domains
 
 ---
 

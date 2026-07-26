@@ -132,6 +132,10 @@ export async function signInWithOAuth(provider: 'google' | 'facebook' | 'twitter
       options: {
         redirectTo: options?.redirectTo || `${window.location.origin}/auth/callback`,
         skipBrowserRedirect: false,
+        queryParams: {
+          // Force the app URL to be used for OAuth consent screen
+          redirect_to: options?.redirectTo || `${window.location.origin}/auth/callback`,
+        },
       },
     });
     
