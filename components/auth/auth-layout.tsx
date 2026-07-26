@@ -55,19 +55,19 @@ export function AuthLayout({
         }}
       />
 
-      <div className="relative mx-auto flex w-full max-w-[1040px] flex-col px-0 py-0 sm:px-4 sm:py-6 lg:py-8">
+      <div className="relative mx-auto flex w-full max-w-[960px] flex-col px-0 py-0 sm:px-4 sm:py-5 lg:py-6">
         <div
           className={cn(
             "auth-page__card relative flex min-h-dvh w-full flex-col overflow-x-hidden overflow-y-auto sm:overflow-hidden",
             "border border-cb-border/70 bg-cb-surface/95 backdrop-blur-md",
             "dark:border-cb-border dark:bg-cb-surface/95",
-            "sm:min-h-[min(100dvh-3rem,720px)] sm:rounded-3xl",
-            "md:min-h-[min(100dvh-4rem,760px)] md:flex-row md:items-stretch",
+            "sm:min-h-[min(100dvh-2.5rem,640px)] sm:rounded-3xl",
+            "md:min-h-[min(100dvh-3rem,680px)] md:flex-row md:items-stretch",
           )}
         >
           <aside
             className={cn(
-              "auth-page__aside relative hidden shrink-0 md:block md:w-[min(42%,22rem)] lg:w-[min(44%,24rem)]",
+              "auth-page__aside relative hidden shrink-0 md:block md:w-[min(38%,20rem)] lg:w-[min(40%,22rem)]",
             )}
           >
             <Link
@@ -106,12 +106,12 @@ export function AuthLayout({
           <section
             className={cn(
               "auth-page__panel flex min-h-0 min-w-0 flex-1 flex-col",
-              "gap-4 overflow-x-hidden overscroll-x-none",
-              "px-4 py-5 sm:gap-5 sm:px-7 sm:py-7",
-              "md:justify-center md:gap-6 md:px-10 md:py-10",
+              "gap-3 overflow-x-hidden overscroll-x-none",
+              "px-4 py-4 sm:gap-4 sm:px-6 sm:py-6",
+              "md:justify-center md:gap-5 md:px-8 md:py-8",
             )}
           >
-            <header className="auth-page__form-zone mx-auto w-full space-y-3 sm:space-y-4">
+            <header className="auth-page__form-zone mx-auto w-full space-y-2 sm:space-y-3">
               <div className="flex items-center justify-between gap-3 md:justify-start">
                 <Link
                   href="/"
@@ -147,7 +147,7 @@ export function AuthLayout({
               <div
                 className={cn(
                   "relative overflow-hidden rounded-2xl ring-1 ring-cb-border/80 md:hidden",
-                  compactMobilePreview ? "h-[5.5rem] sm:h-24" : "h-28 sm:h-32",
+                  compactMobilePreview ? "h-[4.5rem] sm:h-20" : "h-24 sm:h-28",
                 )}
               >
                 <img
