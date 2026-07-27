@@ -36,7 +36,7 @@ async function resolveUserContext(
 
     const role = await resolveStaffRole({
       email: user?.email ?? null,
-      clerkUserId: userId,
+      supabaseUserId: userId,
     });
     if (["owner", "admin", "staff"].includes(role)) {
       userType = "staff";

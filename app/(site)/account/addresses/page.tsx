@@ -32,7 +32,7 @@ export default async function AccountAddressesPage() {
 
   let role: UserRole = "customer";
   try {
-    role = await resolveStaffRole({ email, clerkUserId: userId });
+    role = await resolveStaffRole({ email, supabaseUserId: userId });
   } catch {
     role = "customer";
   }

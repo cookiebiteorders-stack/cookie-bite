@@ -31,7 +31,7 @@ export default async function AccountSettingsPage() {
 
   let role: UserRole = "customer";
   try {
-    role = await resolveStaffRole({ email, clerkUserId: userId });
+    role = await resolveStaffRole({ email, supabaseUserId: userId });
   } catch {
     role = "customer";
   }

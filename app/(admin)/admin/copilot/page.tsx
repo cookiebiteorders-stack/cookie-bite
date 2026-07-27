@@ -19,7 +19,7 @@ export default async function AdminCopilotPage() {
   if (!userId || !user) redirect("/sign-in?redirect_url=%2Fadmin%2Fcopilot");
 
   const email = user.email ?? null;
-  const role = await resolveStaffRole({ email, clerkUserId: userId });
+  const role = await resolveStaffRole({ email, supabaseUserId: userId });
   if (!canAccessMrsCookieCopilot(role)) {
     redirect("/admin");
   }

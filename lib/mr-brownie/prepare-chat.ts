@@ -138,7 +138,7 @@ export async function prepareMrBrownieChat(params: {
 
     resolvedRole = await resolveStaffRole({
       email,
-      clerkUserId: params.userId,
+      supabaseUserId: params.userId,
     });
 
     const supabase = tryCreateSupabaseAdminClient();

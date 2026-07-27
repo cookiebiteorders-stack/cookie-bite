@@ -15,7 +15,7 @@ export default async function AdminLayout({
   }
 
   const email = user.email ?? null;
-  const role = await resolveStaffRole({ email, clerkUserId: userId });
+  const role = await resolveStaffRole({ email, supabaseUserId: userId });
 
   /** لوحة الإدارة لـ owner / admin / staff فقط — الدور يُقرأ من جدول users (أو قوائم البريد الاحتياطية). */
   if (!["owner", "admin", "staff"].includes(role)) {

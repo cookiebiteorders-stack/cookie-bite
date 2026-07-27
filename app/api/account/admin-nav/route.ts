@@ -10,7 +10,7 @@ export async function GET() {
   }
 
   const email = user.email ?? null;
-  const role = await resolveStaffRole({ email, clerkUserId: userId });
+  const role = await resolveStaffRole({ email, supabaseUserId: userId });
   if (!["owner", "admin", "staff"].includes(role)) {
     return Response.json({ items: [] as AdminNavMenuItem[] });
   }

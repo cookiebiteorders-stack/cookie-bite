@@ -58,7 +58,7 @@ function resolveAccountRole(
   ) {
     return Promise.resolve(dbUser.role);
   }
-  return resolveStaffRole({ email, clerkUserId: supabaseUserId });
+  return resolveStaffRole({ email, supabaseUserId: supabaseUserId });
 }
 
 type ProductImageItem = { url?: string | null };
