@@ -34,7 +34,7 @@ export type CopilotToolActor = {
   role: UserRole;
   email: string | null;
   user_id: string | null;
-  clerk_user_id: string;
+  supabase_user_id: string;
 };
 
 type Json = Record<string, unknown> | unknown[] | string | number | boolean | null;
