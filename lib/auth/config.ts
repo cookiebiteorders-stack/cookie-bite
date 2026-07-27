@@ -27,7 +27,7 @@ export const AUTH_CONFIG = {
   
   // OAuth settings
   OAUTH: {
-    PROVIDERS: ['google', 'facebook', 'twitter'] as const,
+    PROVIDERS: ['google'] as const,
     REDIRECT_URL: `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/callback`,
   },
   

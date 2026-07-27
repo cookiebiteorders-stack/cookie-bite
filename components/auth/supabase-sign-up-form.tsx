@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthButton } from "@/components/auth/auth-button";
 import { useLanguage } from "@/components/providers/language-provider";
-import { Mail, Lock, User, Phone, Chrome, Facebook, X as XIcon, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, User, Phone, Chrome, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { signUpWithEmail, signInWithOAuth } from "@/lib/auth/client-helpers";
 import { validateSignUpForm, calculatePasswordStrength, getPasswordStrengthLabel } from "@/lib/auth/validation";
@@ -82,7 +82,7 @@ export function SupabaseSignUpForm({ afterAuth }: SupabaseSignUpFormProps) {
     }
   };
 
-  const handleSocialSignIn = async (provider: 'google' | 'facebook' | 'twitter') => {
+  const handleSocialSignIn = async (provider: 'google') => {
     setError(null);
     setRateLimitError(null);
     setSocialLoading(provider);
@@ -127,47 +127,19 @@ export function SupabaseSignUpForm({ afterAuth }: SupabaseSignUpFormProps) {
   return (
     <div className="flex w-full flex-col gap-5">
       {/* Social Auth Buttons */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="flex justify-center">
         <button
           type="button"
           onClick={() => handleSocialSignIn('google')}
           disabled={socialLoading !== null}
-          className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white p-2.5 text-xs font-medium text-gray-500 transition-all hover:bg-gray-50 hover:border-gray-300 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:hover:text-gray-300"
+          className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-medium text-gray-500 transition-all hover:bg-gray-50 hover:border-gray-300 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:hover:text-gray-300"
         >
           {socialLoading === 'google' ? (
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
           ) : (
             <Chrome className="h-4 w-4 flex-shrink-0" />
           )}
-          <span className="hidden sm:inline leading-tight">Google</span>
-        </button>
-        
-        <button
-          type="button"
-          onClick={() => handleSocialSignIn('facebook')}
-          disabled={socialLoading !== null}
-          className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white p-2.5 text-xs font-medium text-gray-500 transition-all hover:bg-gray-50 hover:border-gray-300 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:hover:text-gray-300"
-        >
-          {socialLoading === 'facebook' ? (
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
-          ) : (
-            <Facebook className="h-4 w-4 flex-shrink-0 text-blue-600" />
-          )}
-          <span className="hidden sm:inline leading-tight">Facebook</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleSocialSignIn('twitter')}
-          disabled={socialLoading !== null}
-          className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white p-2.5 text-xs font-medium text-gray-500 transition-all hover:bg-gray-50 hover:border-gray-300 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:hover:text-gray-300"
-        >
-          {socialLoading === 'twitter' ? (
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
-          ) : (
-            <XIcon className="h-4 w-4 flex-shrink-0" />
-          )}
-          <span className="hidden sm:inline leading-tight">X</span>
+          <span>Sign up with Google</span>
         </button>
       </div>
 

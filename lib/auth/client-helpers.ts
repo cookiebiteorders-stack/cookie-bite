@@ -124,7 +124,7 @@ export async function signOut() {
 /**
  * Sign in with OAuth provider
  */
-export async function signInWithOAuth(provider: 'google' | 'facebook' | 'twitter', options?: { redirectTo?: string }) {
+export async function signInWithOAuth(provider: 'google', options?: { redirectTo?: string }) {
   try {
     const supabase = getBrowserClient();
     const { error } = await supabase.auth.signInWithOAuth({
