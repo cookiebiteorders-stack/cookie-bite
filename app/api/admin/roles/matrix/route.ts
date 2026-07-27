@@ -20,16 +20,17 @@ const updateRoleSchema = z.object({
 export async function GET() {
   await requireAdminAccess("roles");
   const supabase = createSupabaseAdminClient();
+
   const { data: assignments } = await supabase
     .from("users")
-    .select("id, email, role, full_name, avatar_url, clerk_user_id")
+    .select("id, email, role, full_name, avatar_url")
     .in("role", ["owner", "admin", "staff"])
     .order("updated_at", { ascending: false })
     .limit(100);
 
   const { data: users } = await supabase
     .from("users")
-    .select("id, email, full_name, role, avatar_url, clerk_user_id")
+    .select("id, email, full_name, role, avatar_url")
     .order("created_at", { ascending: false })
     .limit(500);
 
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let lookup = supabase.from("users").select("id, email, role, clerk_user_id").limit(1);
+  let lookup = supabase.from("users").select("id, email, role").limit(1);
   if (userId) lookup = lookup.eq("id", userId);
   else lookup = lookup.ilike("email", email!);
   const { data: existing, error: lookupError } = await lookup.maybeSingle();
@@ -88,15 +89,8 @@ export async function POST(req: NextRequest) {
       { status: 404 },
     );
   }
-  if (!existing.clerk_user_id) {
-    return NextResponse.json(
-      bilingualError(
-        "User is not linked with Clerk yet",
-        "المستخدم غير مربوط بـ Clerk حتى الآن",
-      ),
-      { status: 400 },
-    );
-  }
+  // Under Supabase Auth, users.id IS auth.users.id — no Clerk link exists or is required.
+
   if (existing.role === nextRole) {
     return NextResponse.json(
       bilingualError("Role already assigned", "تم تعيين هذا الدور بالفعل"),
@@ -150,7 +144,7 @@ export async function PATCH(req: NextRequest) {
   const supabase = createSupabaseAdminClient();
   const { data: existing, error: findError } = await supabase
     .from("users")
-    .select("id, email, role, clerk_user_id")
+    .select("id, email, role")
     .eq("id", parsed.data.user_id)
     .maybeSingle();
   if (findError) {
@@ -165,12 +159,8 @@ export async function PATCH(req: NextRequest) {
       { status: 404 },
     );
   }
-  if (!existing.clerk_user_id) {
-    return NextResponse.json(
-      bilingualError("User is not linked with Clerk", "المستخدم غير مربوط بـ Clerk"),
-      { status: 400 },
-    );
-  }
+  // Under Supabase Auth, users.id IS auth.users.id — no Clerk link exists or is required.
+
   if (existing.role === parsed.data.role) {
     return NextResponse.json(
       bilingualError("Role already assigned", "تم تعيين هذا الدور بالفعل"),
@@ -181,7 +171,7 @@ export async function PATCH(req: NextRequest) {
     .from("users")
     .update({ role: parsed.data.role })
     .eq("id", existing.id)
-    .select("id, email, role, full_name, avatar_url, clerk_user_id")
+    .select("id, email, role, full_name, avatar_url")
     .single();
   if (updateError) {
     return NextResponse.json(
@@ -246,7 +236,7 @@ export async function DELETE(req: NextRequest) {
     .from("users")
     .update({ role: "customer" })
     .eq("id", userId)
-    .select("id, email, role, full_name, avatar_url, clerk_user_id")
+    .select("id, email, role, full_name, avatar_url")
     .single();
   if (updateError) {
     return NextResponse.json(

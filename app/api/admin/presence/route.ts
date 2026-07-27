@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
   await upsertAdminPresence(
     {
-      clerk_user_id: actor.clerk_user_id,
+      supabase_user_id: actor.supabase_user_id,
       user_id: actor.user_id,
       email: actor.email,
       full_name: fullName,

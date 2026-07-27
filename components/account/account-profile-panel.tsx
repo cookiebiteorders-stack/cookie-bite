@@ -1,11 +1,11 @@
 "use client";
 
-import { ClerkUserProfileEmbed } from "@/components/account/clerk-user-profile-embed";
+import { AccountProfileEmbed } from "@/components/account/account-profile-embed";
 
 export function AccountProfilePanel() {
   return (
     <div className="w-full min-w-0">
-      <ClerkUserProfileEmbed />
+      <AccountProfileEmbed />
     </div>
   );
 }

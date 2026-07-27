@@ -90,7 +90,7 @@ export async function exportModuleData(params: {
       },
       status: "completed",
       created_by: params.actor.user_id,
-      created_by_clerk: params.actor.clerk_user_id,
+      created_by_user: params.actor.supabase_user_id,
     })
     .select("id")
     .single();

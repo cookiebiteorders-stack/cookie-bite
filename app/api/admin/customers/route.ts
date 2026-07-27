@@ -272,7 +272,7 @@ export async function POST(req: NextRequest) {
   const { data: user, error: userErr } = await supabase
     .from("users")
     .insert({
-      clerk_user_id: `crm-manual:${randomUUID()}`,
+      id: randomUUID(),
       email,
       full_name: parsed.data.full_name.trim(),
       phone: parsed.data.phone?.trim() ?? null,

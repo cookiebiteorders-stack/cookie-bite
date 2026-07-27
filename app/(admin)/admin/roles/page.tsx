@@ -22,7 +22,6 @@ type Assignment = {
   role: UserRole;
   full_name?: string | null;
   avatar_url?: string | null;
-  clerk_user_id?: string | null;
 };
 type UserOption = {
   id: string;
@@ -30,7 +29,6 @@ type UserOption = {
   full_name?: string | null;
   role?: UserRole;
   avatar_url?: string | null;
-  clerk_user_id?: string | null;
 };
 
 const modules: ModuleKey[] = [
@@ -453,12 +451,6 @@ export default function AdminRolesPage() {
                   </span>
                 ) : null}
               </div>
-              {!selectedResolved.clerk_user_id ? (
-                <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-amber-700">
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  {adminT("roles.notLinkedClerk")}
-                </p>
-              ) : null}
             </motion.div>
           ) : null}
 

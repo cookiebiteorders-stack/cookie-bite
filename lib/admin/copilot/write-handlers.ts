@@ -212,7 +212,7 @@ export async function create_product(args: Record<string, unknown>, actor: Copil
       module: "products",
       entity_id: data.id as string,
       after: data,
-      metadata: { source: "copilot", clerk_user_id: actor.clerk_user_id },
+      metadata: { source: "copilot", supabase_user_id: actor.supabase_user_id },
     });
 
     await revalidateProductPaths(data.slug as string);
@@ -350,7 +350,7 @@ export async function delete_product(args: Record<string, unknown>, actor: Copil
       module: "products",
       entity_id: resolved.id,
       before,
-      metadata: { source: "copilot", clerk_user_id: actor.clerk_user_id },
+      metadata: { source: "copilot", supabase_user_id: actor.supabase_user_id },
     });
 
     await revalidateProductPaths(before.slug as string);
@@ -467,7 +467,7 @@ export async function create_discount(args: Record<string, unknown>, actor: Copi
       module: "discounts",
       entity_id: data.id as string,
       after: data,
-      metadata: { source: "copilot", clerk_user_id: actor.clerk_user_id },
+      metadata: { source: "copilot", supabase_user_id: actor.supabase_user_id },
     });
 
     return {

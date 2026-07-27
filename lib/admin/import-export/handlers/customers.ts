@@ -60,7 +60,7 @@ export async function commitCustomersImport(
     }
 
     const { error } = await supabase.from("users").insert({
-      clerk_user_id: `crm-import:${randomUUID()}`,
+      id: randomUUID(),
       email,
       full_name,
       phone,

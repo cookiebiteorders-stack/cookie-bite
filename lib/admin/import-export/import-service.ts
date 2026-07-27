@@ -103,7 +103,7 @@ export async function commitModuleImport(params: {
       status: "processing",
       total_rows: preview.rows.length,
       created_by: params.actor.user_id,
-      created_by_clerk: params.actor.clerk_user_id,
+      created_by_user: params.actor.supabase_user_id,
       metadata: { mapping: params.mapping },
     })
     .select("id")

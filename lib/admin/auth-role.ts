@@ -35,11 +35,9 @@ export function resolveStaffRoleFromEmail(email: string | null | undefined): Use
 export async function resolveStaffRole(params: {
   email: string | null | undefined;
   supabaseUserId?: string | null;
-  /** @deprecated — استخدم supabaseUserId */
-  clerkUserId?: string | null;
 }): Promise<UserRole> {
   const normalizedEmail = (params.email ?? "").trim().toLowerCase();
-  const supabaseUserId = (params.supabaseUserId ?? params.clerkUserId ?? "").trim();
+  const supabaseUserId = (params.supabaseUserId ?? "").trim();
 
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) {

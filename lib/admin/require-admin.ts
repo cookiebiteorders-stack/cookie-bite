@@ -5,8 +5,6 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export type AdminActor = {
   supabase_user_id: string;
-  /** نفس supabase_user_id — أعمدة DB القديمة (presence/copilot) */
-  clerk_user_id: string;
   user_id: string | null;
   email: string | null;
   role: UserRole;
@@ -62,7 +60,6 @@ export async function requireAdminAccess(module: ModuleKey): Promise<AdminActor>
 
   return {
     supabase_user_id: userId,
-    clerk_user_id: userId,
     user_id: dbUserId,
     email,
     role,

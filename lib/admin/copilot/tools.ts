@@ -509,7 +509,7 @@ async function cancel_order(args: Record<string, unknown>, actor: CopilotToolAct
       entity_id: order_id,
       before,
       after,
-      metadata: { source: "copilot", clerk_user_id: actor.clerk_user_id },
+      metadata: { source: "copilot", supabase_user_id: actor.supabase_user_id },
     });
     return { ok: true, order_id, status: after.status };
   } catch (e) {
@@ -552,7 +552,7 @@ async function update_product_stock(args: Record<string, unknown>, actor: Copilo
       entity_id: product_id,
       before,
       after,
-      metadata: { source: "copilot", clerk_user_id: actor.clerk_user_id },
+      metadata: { source: "copilot", supabase_user_id: actor.supabase_user_id },
     });
     return { ok: true, product_id, stock: after.stock };
   } catch (e) {

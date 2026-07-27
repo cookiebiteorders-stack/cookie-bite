@@ -12,7 +12,7 @@ export async function GET() {
     throw resp;
   }
 
-  const memory = await loadOperatorMemory(actor.clerk_user_id);
+  const memory = await loadOperatorMemory(actor.supabase_user_id);
   return NextResponse.json({ ok: true, memory });
 }
 
@@ -30,6 +30,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json(bilingualError("Invalid payload", "بيانات غير صالحة"), { status: 400 });
   }
 
-  const memory = await saveOperatorMemory(actor.clerk_user_id, body as Parameters<typeof saveOperatorMemory>[1]);
+  const memory = await saveOperatorMemory(actor.supabase_user_id, body as Parameters<typeof saveOperatorMemory>[1]);
   return NextResponse.json({ ok: true, memory });
 }

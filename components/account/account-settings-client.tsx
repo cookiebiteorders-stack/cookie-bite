@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AccountSectionLink } from "@/components/account/account-section-link";
-import { ClerkUserProfileEmbed } from "@/components/account/clerk-user-profile-embed";
+import { AccountProfileEmbed } from "@/components/account/account-profile-embed";
 import { PasswordRulesCallout } from "@/components/auth/password-rules-callout";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -246,7 +246,7 @@ export function AccountSettingsClient({
           >
             <div className="w-full min-w-0 space-y-4">
               <PasswordRulesCallout variant="settings" />
-              <ClerkUserProfileEmbed />
+              <AccountProfileEmbed />
             </div>
           </SettingsSection>
 

@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
   const adminFirstName = (actor.email?.split("@")[0] ?? actor.role).split(/[._-]/)[0];
 
   const [operatorMemory, promptOverlay] = await Promise.all([
-    loadOperatorMemory(actor.clerk_user_id),
+    loadOperatorMemory(actor.supabase_user_id),
     loadCopilotPromptOverlay(),
   ]);
 
@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
       role: actor.role,
       email: actor.email,
       user_id: actor.user_id,
-      clerk_user_id: actor.clerk_user_id,
+      supabase_user_id: actor.supabase_user_id,
     };
     const result = await runCopilot({
       systemInstruction,
@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
         pageIntent: "admin",
         pathname: currentPath,
         locale: language,
-        clerkUserId: actor.clerk_user_id,
+        clerkUserId: actor.supabase_user_id,
       },
     });
     reply = finalized.text;

@@ -181,7 +181,7 @@ export async function generate_product_content(
 
   const tone = typeof args.tone === "string" ? args.tone : "playful luxury";
   const generated = generateProductFieldsFromName(prompt);
-  const memory = await loadOperatorMemory(_actor.clerk_user_id);
+  const memory = await loadOperatorMemory(_actor.supabase_user_id);
 
   return {
     ok: true,
@@ -256,7 +256,7 @@ export async function analyze_website(
   actor: CopilotToolActor,
 ): Promise<Json> {
   const focus = typeof args.focus === "string" ? args.focus : "all";
-  const memory = await loadOperatorMemory(actor.clerk_user_id);
+  const memory = await loadOperatorMemory(actor.supabase_user_id);
 
   const findings: Array<{ area: string; score: number; notes: string[] }> = [
     {
@@ -324,7 +324,7 @@ export async function apply_theme(
     );
   }
 
-  await saveOperatorMemory(actor.clerk_user_id, {
+  await saveOperatorMemory(actor.supabase_user_id, {
     brand: {
       tone: `${theme_name} (${mode})`,
       language: "bilingual",
@@ -377,7 +377,7 @@ async function cmsDraft(
 ): Promise<Json> {
   const meta = MASTER_TOOL_META[tool];
   const key = pageDraftKey(page);
-  const memory = await loadOperatorMemory(actor.clerk_user_id);
+  const memory = await loadOperatorMemory(actor.supabase_user_id);
   const current = memory.page_drafts[key] ?? { updated_at: new Date().toISOString() };
 
   const planned = { page, ...patch };
@@ -391,7 +391,7 @@ async function cmsDraft(
     ...patch,
     updated_at: new Date().toISOString(),
   };
-  await saveOperatorMemory(actor.clerk_user_id, {
+  await saveOperatorMemory(actor.supabase_user_id, {
     page_drafts: { [key]: nextDraft },
   });
 
@@ -414,7 +414,7 @@ export async function update_page_content(
   const content = typeof args.content === "string" ? args.content : "";
   if (!page || !section) return { warning: "page and section are required." };
 
-  const memory = await loadOperatorMemory(actor.clerk_user_id);
+  const memory = await loadOperatorMemory(actor.supabase_user_id);
   const key = pageDraftKey(page);
   const current = memory.page_drafts[key] ?? { updated_at: new Date().toISOString() };
   const contentMap = { ...(current.content ?? {}), [section]: content };
@@ -434,7 +434,7 @@ export async function update_page_style(
       : null;
   if (!page || !section || !styles) return { warning: "page, section, and styles object are required." };
 
-  const memory = await loadOperatorMemory(actor.clerk_user_id);
+  const memory = await loadOperatorMemory(actor.supabase_user_id);
   const key = pageDraftKey(page);
   const current = memory.page_drafts[key] ?? { updated_at: new Date().toISOString() };
   const styleMap = { ...(current.styles ?? {}), [section]: styles };
@@ -451,7 +451,7 @@ export async function add_section(
   if (!page || !type) return { warning: "page and type are required." };
 
   const id = `${type}-${Date.now().toString(36)}`;
-  const memory = await loadOperatorMemory(actor.clerk_user_id);
+  const memory = await loadOperatorMemory(actor.supabase_user_id);
   const key = pageDraftKey(page);
   const current = memory.page_drafts[key] ?? { sections: [], updated_at: new Date().toISOString() };
   const sections = [...(current.sections ?? []), { id, type, content: args.content ?? {} }];
@@ -475,7 +475,7 @@ export async function remove_section(
     );
   }
 
-  const memory = await loadOperatorMemory(actor.clerk_user_id);
+  const memory = await loadOperatorMemory(actor.supabase_user_id);
   const key = pageDraftKey(page);
   const current = memory.page_drafts[key] ?? { sections: [] };
   const sections = (current.sections ?? []).filter((s) => s.id !== section_id);
@@ -583,13 +583,13 @@ export async function remember_brand_preference(
   args: Record<string, unknown>,
   actor: CopilotToolActor,
 ): Promise<Json> {
-  const memory = await loadOperatorMemory(actor.clerk_user_id);
+  const memory = await loadOperatorMemory(actor.supabase_user_id);
   const colors =
     args.colors && typeof args.colors === "object" && !Array.isArray(args.colors)
       ? { ...memory.brand.colors, ...(args.colors as Record<string, string>) }
       : memory.brand.colors;
 
-  const next = await saveOperatorMemory(actor.clerk_user_id, {
+  const next = await saveOperatorMemory(actor.supabase_user_id, {
     brand: {
       tone: typeof args.tone === "string" ? args.tone : memory.brand.tone,
       language:

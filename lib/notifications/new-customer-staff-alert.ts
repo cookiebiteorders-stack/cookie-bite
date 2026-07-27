@@ -63,7 +63,7 @@ function buildRows(
     { label: "Name (EN)", value: user.full_name_en ?? user.full_name ?? "—" },
     { label: "Name (AR)", value: user.full_name_ar ?? "—" },
     { label: "User ID", value: user.id },
-    { label: "Clerk ID", value: user.clerk_user_id ?? "—" },
+    { label: "Supabase User ID", value: user.id },
     { label: "Role", value: user.role },
     { label: "Signed up", value: new Date(user.created_at).toLocaleString("en-GB", { timeZone: "Africa/Cairo" }) },
   ];

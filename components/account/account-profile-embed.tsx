@@ -3,8 +3,7 @@
 /**
  * Inline password-change panel.
  *
- * Originally this component was a Clerk <UserProfile> embed.
- * The project now uses Supabase Auth, so this is a native replacement
+ * This is a native Supabase Auth password change component
  * that calls supabase.auth.updateUser() directly — the same approach used
  * by the standalone reset-password page.
  */
@@ -20,7 +19,7 @@ import { getAuthError, AuthErrorCode } from "@/lib/auth/errors";
 
 type Status = "idle" | "loading" | "success" | "error";
 
-export function ClerkUserProfileEmbed() {
+export function AccountProfileEmbed() {
   const formRef = useRef<HTMLFormElement>(null);
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
