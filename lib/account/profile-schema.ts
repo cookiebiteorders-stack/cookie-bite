@@ -84,7 +84,7 @@ const skipProfileSchema = z.object({
 });
 
 /** تخطي صريح أو إرسال حقول اختيارية — متوافق مع Zod 4 */
-export const completeProfileSchema = z.union([
+export const completeProfileSchema = z.discriminatedUnion("skip_profile", [
   skipProfileSchema,
   profileFieldsSchema.extend({
     skip_profile: z.literal(false).nullish(),
