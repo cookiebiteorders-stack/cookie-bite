@@ -12,7 +12,7 @@ export type MrBrownieConversationRow = {
   quality_score: number | null;
   pathname: string | null;
   locale: string | null;
-  clerk_user_id: string | null;
+  supabase_user_id: string | null;
 };
 
 export async function fetchMrBrownieConversations(params: {
@@ -33,7 +33,7 @@ export async function fetchMrBrownieConversations(params: {
   let query = supabase
     .from("mr_brownie_turn_logs")
     .select(
-      "id, created_at, user_message, assistant_message, intent, active_persona, sentiment_score, confidence_pct, quality_score, pathname, locale, clerk_user_id",
+      "id, created_at, user_message, assistant_message, intent, active_persona, sentiment_score, confidence_pct, quality_score, pathname, locale, supabase_user_id",
       { count: "exact" },
     )
     .gte("created_at", since)
@@ -80,7 +80,7 @@ export async function deleteMrBrownieConversation(
 
 export function conversationsToCsv(rows: MrBrownieConversationRow[]): string {
   const header =
-    "created_at,intent,persona,sentiment,confidence,quality,user_message,assistant_message,pathname,locale,clerk_user_id";
+    "created_at,intent,persona,sentiment,confidence,quality,user_message,assistant_message,pathname,locale,supabase_user_id";
   const lines = rows.map((r) => {
     const esc = (s: string) => `"${s.replace(/"/g, '""')}"`;
     return [
@@ -94,7 +94,7 @@ export function conversationsToCsv(rows: MrBrownieConversationRow[]): string {
       esc(r.assistant_message.slice(0, 500)),
       r.pathname ?? "",
       r.locale ?? "",
-      r.clerk_user_id ?? "",
+      r.supabase_user_id ?? "",
     ].join(",");
   });
   return [header, ...lines].join("\n");

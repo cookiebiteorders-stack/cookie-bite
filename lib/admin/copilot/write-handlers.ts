@@ -295,7 +295,7 @@ export async function update_product(args: Record<string, unknown>, actor: Copil
       entity_id: resolved.id,
       before,
       after,
-      metadata: { source: "copilot", patch, clerk_user_id: actor.clerk_user_id },
+      metadata: { source: "copilot", patch, supabase_user_id: actor.supabase_user_id },
     });
 
     await revalidateProductPaths(after.slug as string);
@@ -405,7 +405,7 @@ export async function update_order_status(args: Record<string, unknown>, actor: 
       entity_id: resolved.id,
       before,
       after,
-      metadata: { source: "copilot", status, clerk_user_id: actor.clerk_user_id },
+      metadata: { source: "copilot", status, supabase_user_id: actor.supabase_user_id },
     });
 
     return {

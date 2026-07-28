@@ -4,7 +4,7 @@ export type VisitorPresenceType = "guest" | "customer" | "staff" | "admin" | "ow
 
 export type UserIdentityRow = {
   id: string;
-  clerk_user_id: string;
+  supabase_user_id: string;
   email: string;
   full_name: string | null;
   role: string;
@@ -15,7 +15,7 @@ export type ResolvedVisitorIdentity = {
   display_name: string | null;
   email: string | null;
   user_db_id: string | null;
-  clerk_user_id: string | null;
+  supabase_user_id: string | null;
   session_label: string;
 };
 
@@ -65,7 +65,7 @@ export function resolveIdentityFromUser(
       display_name: null,
       email: null,
       user_db_id: null,
-      clerk_user_id: null,
+      supabase_user_id: null,
       session_label: guestFallback,
     };
   }
@@ -75,7 +75,7 @@ export function resolveIdentityFromUser(
     display_name: user.full_name?.trim() || null,
     email: user.email?.trim() || null,
     user_db_id: user.id,
-    clerk_user_id: user.clerk_user_id,
+    supabase_user_id: user.supabase_user_id,
   };
 
   return {
@@ -101,7 +101,7 @@ export async function resolveDbUserId(
   const { data: byLegacyClerk } = await supabase
     .from("users")
     .select("id")
-    .eq("clerk_user_id", id)
+    .eq("supabase_user_id", id)
     .maybeSingle();
   return byLegacyClerk?.id ? String(byLegacyClerk.id) : null;
 }
@@ -116,7 +116,7 @@ export async function loadUsersByDbIds(
 
   const { data } = await supabase
     .from("users")
-    .select("id, clerk_user_id, email, full_name, role")
+    .select("id, supabase_user_id, email, full_name, role")
     .in("id", ids);
 
   for (const row of data ?? []) {
@@ -125,21 +125,21 @@ export async function loadUsersByDbIds(
   return map;
 }
 
-export async function loadUsersByClerkIds(
+export async function loadUsersBySupabaseIds(
   supabase: SupabaseClient,
-  clerkIds: string[],
+  supabaseIds: string[],
 ): Promise<Map<string, UserIdentityRow>> {
-  const ids = [...new Set(clerkIds.map((id) => id.trim()).filter(Boolean))];
+  const ids = [...new Set(supabaseIds.map((id) => id.trim()).filter(Boolean))];
   const map = new Map<string, UserIdentityRow>();
   if (ids.length === 0) return map;
 
   const { data } = await supabase
     .from("users")
-    .select("id, clerk_user_id, email, full_name, role")
-    .in("clerk_user_id", ids);
+    .select("id, supabase_user_id, email, full_name, role")
+    .in("supabase_user_id", ids);
 
   for (const row of data ?? []) {
-    map.set(String(row.clerk_user_id), row as UserIdentityRow);
+    map.set(String(row.supabase_user_id), row as UserIdentityRow);
   }
   return map;
 }

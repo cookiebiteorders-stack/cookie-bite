@@ -203,7 +203,7 @@ export async function prepareMrBrownieChat(params: {
     })),
     personaPreference: params.persona ?? "auto",
     answerStylePreference: params.answerStyle ?? "auto",
-    clerkUserId: params.userId,
+    supabaseUserId: params.userId,
   });
 
   const contextJson = JSON.stringify(contextPayload);

@@ -35,16 +35,16 @@ export function toneVectorInstruction(v: ToneVector): string {
 }
 
 export async function loadToneVectorForUser(
-  clerkUserId: string | null,
+  supabaseUserId: string | null,
 ): Promise<ToneVector | null> {
-  if (!clerkUserId) return null;
+  if (!supabaseUserId) return null;
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return null;
 
   const { data } = await supabase
     .from("mr_brownie_user_tone")
     .select("formal_casual, serious_playful, concise_detailed, interaction_count")
-    .eq("clerk_user_id", clerkUserId)
+    .eq("supabase_user_id", supabaseUserId)
     .maybeSingle();
 
   if (!data) return { ...DEFAULT_TONE };
@@ -107,7 +107,7 @@ export function shiftToneFromFeedback(
 }
 
 export async function persistToneVector(
-  clerkUserId: string,
+  supabaseUserId: string,
   vector: ToneVector,
 ): Promise<void> {
   const supabase = tryCreateSupabaseAdminClient();
@@ -115,13 +115,13 @@ export async function persistToneVector(
 
   await supabase.from("mr_brownie_user_tone").upsert(
     {
-      clerk_user_id: clerkUserId,
+      supabase_user_id: supabaseUserId,
       formal_casual: vector.formal_casual,
       serious_playful: vector.serious_playful,
       concise_detailed: vector.concise_detailed,
       interaction_count: vector.interaction_count,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: "clerk_user_id" },
+    { onConflict: "supabase_user_id" },
   );
 }

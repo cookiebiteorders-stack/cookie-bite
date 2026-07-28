@@ -9,7 +9,7 @@ const PRESENCE_KEY = "admin:presence:staff";
 const PRESENCE_TTL_SECONDS = 5 * 60;
 
 export type AdminPresenceHeartbeat = {
-  clerk_user_id: string;
+  supabase_user_id: string;
   user_id: string | null;
   email: string | null;
   full_name: string | null;
@@ -33,7 +33,7 @@ export type AdminPresenceRecentAction = {
 };
 
 export type AdminPresenceRow = {
-  clerk_user_id: string;
+  supabase_user_id: string;
   user_id: string | null;
   email: string | null;
   full_name: string | null;
@@ -76,7 +76,7 @@ export async function upsertAdminPresence(
   const userAgent = input.user_agent ?? req?.headers.get("user-agent") ?? null;
 
   const payload = {
-    clerk_user_id: input.clerk_user_id,
+    supabase_user_id: input.supabase_user_id,
     user_id: input.user_id,
     email: input.email,
     full_name: input.full_name,
@@ -92,7 +92,7 @@ export async function upsertAdminPresence(
   const redis = await getTrackingRedis();
   if (redis) {
     try {
-      const existingMeta = await redis.get(`admin:presence:meta:${input.clerk_user_id}`);
+      const existingMeta = await redis.get(`admin:presence:meta:${input.supabase_user_id}`);
       const timing = resolveAdminPresenceTiming(
         existingMeta,
         input.current_path,
@@ -105,10 +105,10 @@ export async function upsertAdminPresence(
         ...timing,
       });
       const pipeline = redis.multi();
-      pipeline.zadd(PRESENCE_KEY, now, input.clerk_user_id);
+      pipeline.zadd(PRESENCE_KEY, now, input.supabase_user_id);
       pipeline.zremrangebyscore(PRESENCE_KEY, 0, now - PRESENCE_TTL_SECONDS * 1000);
       pipeline.set(
-        `admin:presence:meta:${input.clerk_user_id}`,
+        `admin:presence:meta:${input.supabase_user_id}`,
         metaWithSession,
         "EX",
         PRESENCE_TTL_SECONDS,
@@ -125,7 +125,7 @@ export async function upsertAdminPresence(
   const { data: existing } = await supabase
     .from("admin_presence_sessions")
     .select("session_started_at")
-    .eq("clerk_user_id", input.clerk_user_id)
+    .eq("supabase_user_id", input.supabase_user_id)
     .maybeSingle();
 
   await supabase.from("admin_presence_sessions").upsert(
@@ -133,7 +133,7 @@ export async function upsertAdminPresence(
       ...payload,
       session_started_at: existing?.session_started_at ?? new Date(now).toISOString(),
     },
-    { onConflict: "clerk_user_id", ignoreDuplicates: false },
+    { onConflict: "supabase_user_id", ignoreDuplicates: false },
   );
 }
 
@@ -237,7 +237,7 @@ async function loadFirstInteractions(
 }
 
 function rowFromMeta(
-  clerkUserId: string,
+  supabaseUserId: string,
   meta: Record<string, unknown>,
   recentActions: AdminPresenceRecentAction[],
   firstInteractionOverride?: string | null,
@@ -258,7 +258,7 @@ function rowFromMeta(
     firstInteractionOverride ?? firstFromMeta ?? firstFromAudit ?? sessionStarted;
 
   return {
-    clerk_user_id: clerkUserId,
+    supabase_user_id: supabaseUserId,
     user_id: (meta.user_id as string | null) ?? null,
     email: (meta.email as string | null) ?? null,
     full_name: (meta.full_name as string | null) ?? null,
@@ -293,16 +293,16 @@ export async function readOnlineAdminStaff(windowSeconds = 300): Promise<{
       if (members.length === 0) return { count: 0, staff: [] };
       const metas = await redis.mget(...members.map((m) => `admin:presence:meta:${m}`));
       const userIds: string[] = [];
-      const parsedRows: Array<{ clerkUserId: string; meta: Record<string, unknown> }> = [];
+      const parsedRows: Array<{ supabaseUserId: string; meta: Record<string, unknown> }> = [];
 
-      members.forEach((clerkUserId, idx) => {
+      members.forEach((supabaseUserId, idx) => {
         let meta: Record<string, unknown> = {};
         try {
           meta = metas[idx] ? (JSON.parse(metas[idx] as string) as Record<string, unknown>) : {};
         } catch {
           meta = {};
         }
-        parsedRows.push({ clerkUserId, meta });
+        parsedRows.push({ supabaseUserId, meta });
         const uid = meta.user_id as string | null;
         if (uid) userIds.push(uid);
       });
@@ -318,10 +318,10 @@ export async function readOnlineAdminStaff(windowSeconds = 300): Promise<{
           )
         : new Map<string, string>();
       const staff = parsedRows
-        .map(({ clerkUserId, meta }) => {
+        .map(({ supabaseUserId, meta }) => {
           const uid = (meta.user_id as string) ?? "";
           return rowFromMeta(
-            clerkUserId,
+            supabaseUserId,
             meta,
             recentMap.get(uid) ?? [],
             uid ? firstInteractionMap.get(uid) ?? null : null,
@@ -378,7 +378,7 @@ export async function readOnlineAdminStaff(windowSeconds = 300): Promise<{
       ?? sessionStarted;
 
     return {
-      clerk_user_id: String(row.clerk_user_id),
+      supabase_user_id: String(row.supabase_user_id),
       user_id: userId,
       email: (row.email as string | null) ?? null,
       full_name: (row.full_name as string | null) ?? null,

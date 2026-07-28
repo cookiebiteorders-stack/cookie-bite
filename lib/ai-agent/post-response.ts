@@ -18,7 +18,7 @@ export type AgentTurnLogMeta = {
   pathname?: string;
   locale?: string;
   catalogTotal?: number;
-  clerkUserId?: string | null;
+  supabaseUserId?: string | null;
   guestSessionId?: string | null;
   sessionId?: string;
 };
@@ -83,7 +83,7 @@ export async function finalizeAgentResponse(params: {
           : result.quality.issues,
         grade: result.quality.grade,
       },
-      clerkUserId: params.turnLog.clerkUserId,
+      supabaseUserId: params.turnLog.supabaseUserId,
       guestSessionId: params.turnLog.guestSessionId,
       sessionId: params.turnLog.sessionId,
       catalogTotal: params.turnLog.catalogTotal,

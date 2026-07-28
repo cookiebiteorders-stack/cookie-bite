@@ -1,7 +1,7 @@
 import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { RealtimeEventEntry, RealtimeVisitorSnapshot } from "@/lib/tracking-server/ingest";
 import {
-  loadUsersByClerkIds,
+  loadUsersBySupabaseIds,
   resolveIdentityFromUser,
   type VisitorPresenceType,
 } from "@/lib/tracking-server/visitor-identity";
@@ -143,20 +143,20 @@ function pickFirstInteraction(
 export async function enrichRealtimeVisitors(
   visitors: RealtimeVisitorRaw[],
 ): Promise<EnrichedRealtimeVisitor[]> {
-  const clerkIds = [
+  const supabaseIds = [
     ...new Set(
-      visitors.map((v) => v.clerk_user_id?.trim()).filter((id): id is string => Boolean(id)),
+      visitors.map((v) => v.supabase_user_id?.trim()).filter((id): id is string => Boolean(id)),
     ),
   ];
 
   const supabase = tryCreateSupabaseAdminClient();
-  const userByClerk = supabase ? await loadUsersByClerkIds(supabase, clerkIds) : new Map();
+  const userBySupabase = supabase ? await loadUsersBySupabaseIds(supabase, supabaseIds) : new Map();
 
   const timing = await loadVisitorTimingFromDb(visitors);
 
   return visitors.map((visitor) => {
-    const clerkId = visitor.clerk_user_id?.trim() ?? null;
-    const user = clerkId ? userByClerk.get(clerkId) : undefined;
+    const supabaseId = visitor.supabase_user_id?.trim() ?? null;
+    const user = supabaseId ? userBySupabase.get(supabaseId) : undefined;
     const sessionId = visitor.session_id?.trim() ?? null;
     const sessionRow = sessionId ? timing.sessionById.get(sessionId) : undefined;
 

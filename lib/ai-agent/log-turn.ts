@@ -20,7 +20,7 @@ export async function logAgentTurn(input: {
   locale?: string;
   quality?: ResponseQualityReport;
   sessionId?: string;
-  clerkUserId?: string | null;
+  supabaseUserId?: string | null;
   guestSessionId?: string | null;
   catalogTotal?: number;
 }): Promise<void> {
@@ -70,7 +70,7 @@ export async function logAgentTurn(input: {
     quality_score: input.quality?.score ?? null,
     quality_issues,
     session_id: input.sessionId ?? input.agentId,
-    clerk_user_id: input.clerkUserId ?? null,
+    supabase_user_id: input.supabaseUserId ?? null,
     guest_session_id: input.guestSessionId ?? null,
     catalog_total: input.catalogTotal ?? null,
   });

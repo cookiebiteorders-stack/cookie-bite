@@ -384,7 +384,7 @@ function buildRealtimeMetaPayload(
 
   return {
     session_id: sessionId,
-    clerk_user_id: clerkUserId,
+    supabase_user_id: clerkUserId,
     user_id: clerkUserId,
     path,
     country: ctx.geo.country,
@@ -463,7 +463,7 @@ export type RealtimeEventEntry = {
 export type RealtimeVisitorSnapshot = {
   visitor_id: string;
   session_id?: string | null;
-  clerk_user_id?: string | null;
+  supabase_user_id?: string | null;
   path?: string | null;
   device_type?: string | null;
   country?: string | null;
@@ -500,7 +500,7 @@ export async function readRealtimeUsers(windowSeconds = 300): Promise<{
         return {
           visitor_id,
           session_id: asString(meta.session_id),
-          clerk_user_id: asString(meta.clerk_user_id) ?? asString(meta.user_id),
+          supabase_user_id: asString(meta.supabase_user_id) ?? asString(meta.user_id),
           path: asString(meta.path),
           device_type: asString(meta.device_type),
           country: asString(meta.country),
@@ -538,14 +538,14 @@ export async function readRealtimeUsers(windowSeconds = 300): Promise<{
         .filter((id): id is string => Boolean(id)),
     ),
   ];
-  const clerkByDbId = new Map<string, string>();
+  const supabaseByDbId = new Map<string, string>();
   if (dbUserIds.length > 0) {
     const { data: users } = await supabase
       .from("users")
-      .select("id, clerk_user_id")
+      .select("id, supabase_user_id")
       .in("id", dbUserIds);
     for (const user of users ?? []) {
-      clerkByDbId.set(String(user.id), String(user.clerk_user_id));
+      supabaseByDbId.set(String(user.id), String(user.supabase_user_id));
     }
   }
 
@@ -554,7 +554,7 @@ export async function readRealtimeUsers(windowSeconds = 300): Promise<{
     return {
       visitor_id: String(row.visitor_id),
       session_id: row.session_id as string | null,
-      clerk_user_id: dbUserId ? (clerkByDbId.get(dbUserId) ?? null) : null,
+      supabase_user_id: dbUserId ? (supabaseByDbId.get(dbUserId) ?? null) : null,
       path: row.path as string | null,
       device_type: row.device_type as string | null,
       country: row.country as string | null,

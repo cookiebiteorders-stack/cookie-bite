@@ -47,7 +47,7 @@ export async function buildMrBrownieContext(params: {
   conversationMessages?: Array<{ role: "user" | "assistant"; content: string }>;
   personaPreference?: PersonaPreference;
   answerStylePreference?: AnswerStylePreference;
-  clerkUserId?: string | null;
+  supabaseUserId?: string | null;
   promptVariant?: PromptVariant;
 }): Promise<MrBrownieContextPayload> {
   const locale =
@@ -75,7 +75,7 @@ export async function buildMrBrownieContext(params: {
       loyaltyTier: params.loyaltyTier,
     }),
     loadPublishedPersonaPrompts(),
-    loadToneVectorForUser(params.clerkUserId ?? null),
+    loadToneVectorForUser(params.supabaseUserId ?? null),
   ]);
 
   const knowledgeRaw = buildStoreKnowledgeBase(website.delivery.free_threshold_egp);
@@ -182,7 +182,7 @@ export async function buildMrBrownieContext(params: {
     promptVariant:
       params.promptVariant ??
       assignPromptVariant(
-        params.clerkUserId ?? params.dbUserId ?? params.userId ?? null,
+        params.supabaseUserId ?? params.dbUserId ?? params.userId ?? null,
       ),
     toneVector,
     faqEntries: faqForRetrieval,

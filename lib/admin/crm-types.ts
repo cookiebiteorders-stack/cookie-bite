@@ -72,7 +72,7 @@ export type AddressRow = {
 };
 
 export type CustomerDetailResponse = {
-  customer: AdminCustomerRow & { clerk_user_id?: string };
+  customer: AdminCustomerRow & { supabase_user_id?: string };
   orders: OrderSummaryRow[];
   addresses: AddressRow[];
   /** ملاحظات داخلية محفوظة في customer_admin_notes */

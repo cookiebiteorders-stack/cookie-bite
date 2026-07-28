@@ -15,7 +15,7 @@ export async function storeMrBrownieFeedback(input: {
   sessionId?: string;
   pathname?: string;
   locale?: string;
-  clerkUserId?: string | null;
+  supabaseUserId?: string | null;
   guestSessionId?: string | null;
   activePersona?: ChatPersona;
 }): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
@@ -37,7 +37,7 @@ export async function storeMrBrownieFeedback(input: {
       session_id: input.sessionId ?? null,
       pathname: input.pathname?.slice(0, 500) ?? null,
       locale: input.locale ?? null,
-      clerk_user_id: input.clerkUserId ?? null,
+      supabase_user_id: input.supabaseUserId ?? null,
       guest_session_id: input.guestSessionId ?? null,
     })
     .select("id")
@@ -48,8 +48,8 @@ export async function storeMrBrownieFeedback(input: {
     return { ok: false, error: error?.message ?? "Insert failed" };
   }
 
-  if (input.clerkUserId) {
-    const current = (await loadToneVectorForUser(input.clerkUserId)) ?? {
+  if (input.supabaseUserId) {
+    const current = (await loadToneVectorForUser(input.supabaseUserId)) ?? {
       formal_casual: 0,
       serious_playful: 0,
       concise_detailed: 0,
@@ -59,7 +59,7 @@ export async function storeMrBrownieFeedback(input: {
       rating: input.rating,
       activePersona: input.activePersona,
     });
-    void persistToneVector(input.clerkUserId, next);
+    void persistToneVector(input.supabaseUserId, next);
   }
 
   return { ok: true, id: String(data.id) };

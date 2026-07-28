@@ -136,7 +136,7 @@ export class Tracker {
     this.userId = userId;
     this.visitor.user_id = userId;
     if (userId && this.started) {
-      this.track("identify", { clerk_user_id: userId });
+      this.track("identify", { supabase_user_id: userId });
     }
   }
 

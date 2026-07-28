@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     const { data, error } = await supabase
       .from("mr_brownie_chat_messages")
       .select("sender_role, message_content, created_at")
-      .eq("clerk_user_id", userId)
+      .eq("supabase_user_id", userId)
       .order("created_at", { ascending: false })
       .limit(limit);
 
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     const rows = parsed.data.messages.map((m) => ({
       sender_role: m.sender_role,
       message_content: m.message_content,
-      clerk_user_id: userId,
+      supabase_user_id: userId,
       guest_session_id: null,
     }));
     const { error } = await supabase.from("mr_brownie_chat_messages").insert(rows);

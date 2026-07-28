@@ -47,7 +47,7 @@ function mergeMemory(base: OperatorMemory, patch: Partial<OperatorMemory>): Oper
   };
 }
 
-export async function loadOperatorMemory(clerkUserId: string): Promise<OperatorMemory> {
+export async function loadOperatorMemory(supabaseUserId: string): Promise<OperatorMemory> {
   const sb = tryCreateSupabaseAdminClient();
   if (!sb) return DEFAULT_OPERATOR_MEMORY;
 
@@ -55,7 +55,7 @@ export async function loadOperatorMemory(clerkUserId: string): Promise<OperatorM
     .from("copilot_operator_memory")
     .select("payload")
     .eq("scope", "operator")
-    .eq("clerk_user_id", clerkUserId)
+    .eq("supabase_user_id", supabaseUserId)
     .maybeSingle();
 
   if (error || !data?.payload || typeof data.payload !== "object") {
@@ -67,10 +67,10 @@ export async function loadOperatorMemory(clerkUserId: string): Promise<OperatorM
 }
 
 export async function saveOperatorMemory(
-  clerkUserId: string,
+  supabaseUserId: string,
   patch: Partial<OperatorMemory>,
 ): Promise<OperatorMemory> {
-  const current = await loadOperatorMemory(clerkUserId);
+  const current = await loadOperatorMemory(supabaseUserId);
   const next = mergeMemory(current, patch);
   const sb = tryCreateSupabaseAdminClient();
   if (!sb) return next;
@@ -78,11 +78,11 @@ export async function saveOperatorMemory(
   const { error } = await sb.from("copilot_operator_memory").upsert(
     {
       scope: "operator",
-      clerk_user_id: clerkUserId,
+      supabase_user_id: supabaseUserId,
       payload: next,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: "scope,clerk_user_id" },
+    { onConflict: "scope,supabase_user_id" },
   );
 
   if (error) console.error("saveOperatorMemory", error);
