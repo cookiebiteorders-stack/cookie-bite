@@ -279,6 +279,10 @@ const nextConfig: NextConfig = {
             key: "Cache-Control",
             value: "private, no-store, max-age=0",
           },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
         ],
       },
       {
