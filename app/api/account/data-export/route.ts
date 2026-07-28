@@ -14,7 +14,7 @@ export async function GET() {
 
   try {
     const supabase = createSupabaseAdminClient();
-    const { data: profile } = await supabase.from("users").select("*").eq("id", userId).maybeSingle();
+    const { data: profile } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
     const uid = typeof profile?.id === "string" ? profile.id : null;
 
     let orders: unknown[] = [];

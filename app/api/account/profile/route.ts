@@ -1,6 +1,9 @@
 import { auth } from "@/lib/auth/supabase-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { isProfileComplete } from "@/lib/account/profile-complete";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import {
   completeProfileSchema,
   firstProfileSchemaError,
@@ -243,15 +246,19 @@ export async function POST(req: NextRequest) {
   }
 
   const completed = await markProfileCompleted(dbUser.id);
-  if (!completed) {
-    return profileError(
-      "Could not mark profile complete — database unavailable",
-      "تعذّر إكمال الملف — تحقق من اتصال قاعدة البيانات",
-      503,
-      "MARK_PROFILE_COMPLETE_FAILED",
-    );
+  if (!completed.ok) {
+    const [en, ar, code, status] =
+      completed.reason === "no_admin"
+        ? ["Database not configured", "قاعدة البيانات غير مضبوطة", "SUPABASE_ADMIN_UNAVAILABLE", 503] as const
+        : completed.reason === "not_found"
+          ? ["Profile row not found", "لم يُعثر على صف الملف", "PROFILE_ROW_MISSING", 404] as const
+          : completed.reason === "read_error"
+            ? ["Profile read failed (RLS?)", "فشل قراءة الملف (RLS؟)", "PROFILE_READ_FAILED", 500] as const
+            : ["Profile update failed", "فشل تحديث الملف", "PROFILE_UPDATE_FAILED", 500] as const;
+    const hint = "detail" in completed ? completed.detail : undefined;
+    return profileError(en, ar, status, code, hint);
   }
-  const profileUser = completed;
+  const profileUser = completed.row;
 
   try {
     const staffResult = await tryNotifyStaffNewCustomer({

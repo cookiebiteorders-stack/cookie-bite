@@ -52,7 +52,7 @@ function resolveModule(pathname: string) {
   return matched ? adminRouteModuleMap[matched] : "dashboard";
 }
 
-export default async function proxy(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   if (process.env.NODE_ENV === "production") {
@@ -73,6 +73,10 @@ export default async function proxy(request: NextRequest) {
   if (isWebhook(path)) {
     return NextResponse.next();
   }
+
+  // Route Handlers must never be redirected — clients expect JSON.
+  // Session refresh still runs below, but no redirect / 403 rewrite.
+  const isRouteHandler = path.startsWith("/api/");
 
   if (!isMaintenanceBypass(path)) {
     try {
@@ -138,12 +142,19 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
-  const needsAuth = isAccountRoute(path) || isAdminRoute(path);
+  // Always refresh the Supabase session cookie for API routes so Route Handlers
+  // called from an authenticated client see a fresh access token.
+  const needsAuth =
+    isAccountRoute(path) ||
+    isAdminRoute(path) ||
+    path.startsWith("/api/account/") ||
+    path.startsWith("/api/admin/");
   const { response, user } = needsAuth
     ? await updateSupabaseSession(request)
     : { response: NextResponse.next({ request }), user: null as null };
+  response.headers.set("x-mw", needsAuth ? "auth" : "pass");
 
-  if (isAccountRoute(path)) {
+  if (isAccountRoute(path) && !isRouteHandler) {
     if (!user) {
       const origin = process.env.NODE_ENV === "development" ? request.nextUrl.origin.replace("0.0.0.0", "localhost").replace("https://localhost", "http://localhost") : getBaseUrl();
       const signIn = new URL("/sign-in", origin);

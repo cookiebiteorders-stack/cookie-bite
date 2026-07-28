@@ -99,7 +99,14 @@ export async function fetchJson<TResult>(
   try {
     parsed = text ? JSON.parse(text) : null;
   } catch {
-    throw new Error(`Expected JSON from ${url}, got invalid body (status ${res.status})`);
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(
+        `انتهت جلسة الدخول — سجّل الدخول مجدداً (status ${res.status}) [SESSION_EXPIRED]`,
+      );
+    }
+    throw new Error(
+      `Expected JSON from ${url}, got invalid body (status ${res.status})`,
+    );
   }
 
   if (!res.ok) {

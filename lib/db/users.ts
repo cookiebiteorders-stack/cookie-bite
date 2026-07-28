@@ -135,11 +135,19 @@ export async function deleteUserBySupabaseId(supabaseUserId: string) {
   if (error) console.error("deleteUserBySupabaseId error", error);
 }
 
-export async function markProfileCompleted(userId: string): Promise<UserRow | null> {
+export async function markProfileCompleted(
+  userId: string,
+): Promise<
+  | { ok: true; row: UserRow }
+  | { ok: false; reason: "no_admin" }
+  | { ok: false; reason: "not_found" }
+  | { ok: false; reason: "read_error"; detail: string }
+  | { ok: false; reason: "update_error"; detail: string }
+> {
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) {
     console.error("markProfileCompleted: Supabase admin client unavailable");
-    return null;
+    return { ok: false, reason: "no_admin" };
   }
 
   const { data: existing, error: readError } = await supabase
@@ -149,11 +157,11 @@ export async function markProfileCompleted(userId: string): Promise<UserRow | nu
     .maybeSingle();
   if (readError) {
     console.error("markProfileCompleted read error", readError.message, readError.code);
-    return null;
+    return { ok: false, reason: "read_error", detail: readError.message };
   }
-  if (!existing) return null;
+  if (!existing) return { ok: false, reason: "not_found" };
   if ((existing as UserRow).profile_completed_at) {
-    return existing as UserRow;
+    return { ok: true, row: existing as UserRow };
   }
 
   const completedAt = new Date().toISOString();
@@ -166,9 +174,9 @@ export async function markProfileCompleted(userId: string): Promise<UserRow | nu
 
   if (error) {
     console.error("markProfileCompleted error", error.message, error.code, error.details);
-    return null;
+    return { ok: false, reason: "update_error", detail: error.message };
   }
-  return (data as UserRow) ?? null;
+  return data ? { ok: true, row: data as UserRow } : { ok: false, reason: "not_found" };
 }
 
 export async function updateUserProfile(
