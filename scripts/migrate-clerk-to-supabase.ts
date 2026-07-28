@@ -53,7 +53,7 @@ interface ClerkUser {
   emailAddresses: Array<{ emailAddress: string; verification: { status: string } | null }>;
   firstName: string | null;
   lastName: string | null;
-  createdAt: string;
+  createdAt: number | string;
   publicMetadata: {
     role?: 'owner' | 'admin' | 'staff' | 'customer';
     [key: string]: any;
@@ -145,12 +145,16 @@ async function migrateUser(clerkUser: ClerkUser): Promise<{ success: boolean; er
     }
 
     // Create public.users row
+    const createdAtIso = typeof clerkUser.createdAt === 'number'
+      ? new Date(clerkUser.createdAt).toISOString()
+      : clerkUser.createdAt;
+    
     const { error: dbError } = await supabase.from('users').insert({
       id: authUser.user.id,
       email,
       full_name: fullName,
       role,
-      created_at: clerkUser.createdAt,
+      created_at: createdAtIso,
       updated_at: new Date().toISOString(),
     });
 
