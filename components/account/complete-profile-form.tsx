@@ -131,8 +131,10 @@ export function CompleteProfileForm() {
           latitude: a?.latitude ?? f.latitude,
           longitude: a?.longitude ?? f.longitude,
         }));
-      } catch {
-        /* first visit */
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Failed to load profile");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }

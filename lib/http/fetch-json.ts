@@ -99,13 +99,10 @@ export async function fetchJson<TResult>(
   try {
     parsed = text ? JSON.parse(text) : null;
   } catch {
-    if (res.status === 401 || res.status === 403) {
-      throw new Error(
-        `انتهت جلسة الدخول — سجّل الدخول مجدداً (status ${res.status}) [SESSION_EXPIRED]`,
-      );
-    }
+    const contentType = res.headers.get("content-type") || "unknown";
+    const snippet = text.slice(0, 200);
     throw new Error(
-      `Expected JSON from ${url}, got invalid body (status ${res.status})`,
+      `Non-JSON response from ${url} (status ${res.status}, content-type ${contentType}): ${snippet}`,
     );
   }
 
