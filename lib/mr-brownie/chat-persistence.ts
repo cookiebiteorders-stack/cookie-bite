@@ -1,8 +1,8 @@
 const MR_BROWNIE_LS_PREFIX = "mr-brownie-chat-v1";
 
-/** مفتاح localStorage: عميل مسجّل حسب Clerk user id، أو `guest` للزائر */
-export function mrBrownieChatLsKey(clerkUserId: string | null | undefined): string {
-  return clerkUserId ? `${MR_BROWNIE_LS_PREFIX}:u:${clerkUserId}` : `${MR_BROWNIE_LS_PREFIX}:guest`;
+/** مفتاح localStorage: عميل مسجّل حسب Supabase user id، أو `guest` للزائر */
+export function mrBrownieChatLsKey(supabaseUserId: string | null | undefined): string {
+  return supabaseUserId ? `${MR_BROWNIE_LS_PREFIX}:u:${supabaseUserId}` : `${MR_BROWNIE_LS_PREFIX}:guest`;
 }
 
 import type { ChatActionCard } from "@/lib/mr-brownie/action-cards";

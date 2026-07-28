@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     sessionId,
     pathname: parsed.data.pathname,
     locale: parsed.data.locale,
-    clerkUserId: userId,
+    supabaseUserId: userId,
     guestSessionId,
     activePersona: parsed.data.activePersona,
   });

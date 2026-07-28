@@ -370,10 +370,10 @@ export function MrBrownieChat({
   const openedAtRef = useRef(0);
   const linesRef = useRef(lines);
   const isSignedInRef = useRef(Boolean(isSignedIn));
-  const clerkUserIdRef = useRef<string | undefined>(undefined);
+  const supabaseUserIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    clerkUserIdRef.current = user?.id;
+    supabaseUserIdRef.current = user?.id;
   }, [user?.id]);
 
   const shopAssistant = isShopAssistantRole(sessionRole);
@@ -494,7 +494,7 @@ export function MrBrownieChat({
   }, [lines]);
 
   const postMrBrownieAmbient = useCallback(async () => {
-    const uidAtStart = clerkUserIdRef.current;
+    const uidAtStart = supabaseUserIdRef.current;
     try {
       const L = linesRef.current;
       const productSlug =
@@ -526,7 +526,7 @@ export function MrBrownieChat({
       const rawRole = data.meta?.role;
       const role =
         typeof rawRole === "string" && rawRole.trim().length > 0 ? rawRole.trim() : null;
-      if (role && isSignedInRef.current && clerkUserIdRef.current === uidAtStart) {
+      if (role && isSignedInRef.current && supabaseUserIdRef.current === uidAtStart) {
         setSessionRole(role);
       }
       const message =

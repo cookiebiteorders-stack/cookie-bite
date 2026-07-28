@@ -14,7 +14,7 @@ export async function logMrBrownieTurn(input: {
   locale?: string;
   quality?: ResponseQualityReport;
   sessionId?: string;
-  clerkUserId?: string | null;
+  supabaseUserId?: string | null;
   guestSessionId?: string | null;
   catalogTotal?: number;
 }): Promise<void> {

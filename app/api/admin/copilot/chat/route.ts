@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
         pageIntent: "admin",
         pathname: currentPath,
         locale: language,
-        clerkUserId: actor.supabase_user_id,
+        supabaseUserId: actor.supabase_user_id,
       },
     });
     reply = finalized.text;

@@ -88,7 +88,7 @@ export async function POST(req: Request) {
             pathname: prepared.turnLogMeta.pathname,
             locale: prepared.turnLogMeta.locale,
             catalogTotal: prepared.turnLogMeta.catalogTotal,
-            clerkUserId: userId ?? null,
+            supabaseUserId: userId ?? null,
             guestSessionId,
           },
         });
