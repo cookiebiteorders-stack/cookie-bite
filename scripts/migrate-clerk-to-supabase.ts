@@ -50,7 +50,7 @@ const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
 
 interface ClerkUser {
   id: string;
-  emailAddresses: Array<{ emailAddress: string; verification: { status: string } }>;
+  emailAddresses: Array<{ emailAddress: string; verification: { status: string } | null }>;
   firstName: string | null;
   lastName: string | null;
   createdAt: string;
@@ -101,7 +101,7 @@ async function migrateUser(clerkUser: ClerkUser): Promise<{ success: boolean; er
   try {
     // Extract email
     const primaryEmail = clerkUser.emailAddresses.find(
-      (e) => e.verification.status === 'verified'
+      (e) => e.verification?.status === 'verified'
     ) || clerkUser.emailAddresses[0];
     
     if (!primaryEmail) {
