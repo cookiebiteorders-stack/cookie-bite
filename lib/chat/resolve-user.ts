@@ -6,7 +6,7 @@ export async function resolveDbUserId(
   supabaseUserId: string,
 ): Promise<string | null> {
   const { data } = await supabase
-    .from("users")
+    .from("profiles")
     .select("id")
     .eq("id", supabaseUserId)
     .maybeSingle();

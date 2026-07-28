@@ -49,7 +49,7 @@ export async function requireAdminAccess(module: ModuleKey): Promise<AdminActor>
   try {
     const supabase = createSupabaseAdminClient();
     const { data } = await supabase
-      .from("users")
+      .from("profiles")
       .select("id")
       .eq("id", userId)
       .maybeSingle();

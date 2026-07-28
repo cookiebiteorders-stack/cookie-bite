@@ -91,7 +91,7 @@ export async function resolveRecipientTemplateVars(
     try {
       const supabase = createSupabaseAdminClient();
       const { data: user } = await supabase
-        .from("users")
+        .from("profiles")
         .select("id, full_name, phone, points")
         .ilike("email", normalized)
         .limit(1)

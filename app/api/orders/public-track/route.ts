@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   let email = (order.guest_email as string | null)?.toLowerCase() ?? "";
   if (order.user_id) {
     const { data: user } = await supabase
-      .from("users")
+      .from("profiles")
       .select("email")
       .eq("id", order.user_id)
       .maybeSingle();

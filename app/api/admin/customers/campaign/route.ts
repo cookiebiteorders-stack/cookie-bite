@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
   if (recipients.length === 0 && parsed.data.scope === "all") {
     const supabase = createSupabaseAdminClient();
     const { data } = await supabase
-      .from("users")
+      .from("profiles")
       .select("email")
       .eq("role", "customer")
       .order("created_at", { ascending: false })

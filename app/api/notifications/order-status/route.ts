@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   let toEmail = order.guest_email ?? "";
   if (order.user_id) {
     const { data: user } = await supabase
-      .from("users")
+      .from("profiles")
       .select("email")
       .eq("id", order.user_id)
       .maybeSingle();

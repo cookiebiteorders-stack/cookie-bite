@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     try {
       const supabase = createSupabaseAdminClient();
       const { data } = await supabase
-        .from("users")
+        .from("profiles")
         .select("full_name")
         .eq("id", targetUserId)
         .maybeSingle();

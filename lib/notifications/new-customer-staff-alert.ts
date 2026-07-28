@@ -120,7 +120,7 @@ async function claimStaffAlert(
 
   const column = CLAIM_COLUMN[kind];
   const { data, error } = await supabase
-    .from("users")
+    .from("profiles")
     .update({ [column]: new Date().toISOString() })
     .eq("id", userId)
     .is(column, null)
@@ -138,7 +138,7 @@ async function rollbackClaim(userId: string, kind: AlertKind): Promise<void> {
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return;
   const column = CLAIM_COLUMN[kind];
-  await supabase.from("users").update({ [column]: null }).eq("id", userId);
+  await supabase.from("profiles").update({ [column]: null }).eq("id", userId);
 }
 
 /**

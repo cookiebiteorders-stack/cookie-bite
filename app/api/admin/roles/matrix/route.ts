@@ -22,14 +22,14 @@ export async function GET() {
   const supabase = createSupabaseAdminClient();
 
   const { data: assignments } = await supabase
-    .from("users")
+    .from("profiles")
     .select("id, email, role, full_name, avatar_url")
     .in("role", ["owner", "admin", "staff"])
     .order("updated_at", { ascending: false })
     .limit(100);
 
   const { data: users } = await supabase
-    .from("users")
+    .from("profiles")
     .select("id, email, full_name, role, avatar_url")
     .order("created_at", { ascending: false })
     .limit(500);
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let lookup = supabase.from("users").select("id, email, role").limit(1);
+  let lookup = supabase.from("profiles").select("id, email, role").limit(1);
   if (userId) lookup = lookup.eq("id", userId);
   else lookup = lookup.ilike("email", email!);
   const { data: existing, error: lookupError } = await lookup.maybeSingle();
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { data: updated, error } = await supabase
-    .from("users")
+    .from("profiles")
     .update({ role: nextRole })
     .eq("id", existing.id)
     .select("id, email, role, full_name")
@@ -143,7 +143,7 @@ export async function PATCH(req: NextRequest) {
   }
   const supabase = createSupabaseAdminClient();
   const { data: existing, error: findError } = await supabase
-    .from("users")
+    .from("profiles")
     .select("id, email, role")
     .eq("id", parsed.data.user_id)
     .maybeSingle();
@@ -168,7 +168,7 @@ export async function PATCH(req: NextRequest) {
     );
   }
   const { data: updated, error: updateError } = await supabase
-    .from("users")
+    .from("profiles")
     .update({ role: parsed.data.role })
     .eq("id", existing.id)
     .select("id, email, role, full_name, avatar_url")
@@ -210,7 +210,7 @@ export async function DELETE(req: NextRequest) {
   }
   const supabase = createSupabaseAdminClient();
   const { data: existing, error: findError } = await supabase
-    .from("users")
+    .from("profiles")
     .select("id, email, role")
     .eq("id", userId)
     .maybeSingle();
@@ -233,7 +233,7 @@ export async function DELETE(req: NextRequest) {
     );
   }
   const { data: updated, error: updateError } = await supabase
-    .from("users")
+    .from("profiles")
     .update({ role: "customer" })
     .eq("id", userId)
     .select("id, email, role, full_name, avatar_url")

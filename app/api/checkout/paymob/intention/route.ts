@@ -153,7 +153,7 @@ async function resolveBillingData(
     try {
       const supabase = createSupabaseAdminClient();
       const { data: user } = await supabase
-        .from("users")
+        .from("profiles")
         .select("full_name, email, phone")
         .eq("id", dbUserId)
         .single();

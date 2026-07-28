@@ -561,7 +561,7 @@ export async function manage_users(
     const query = typeof args.query === "string" ? args.query.trim() : "";
     const userId = typeof args.user_id === "string" ? args.user_id.trim() : "";
     let q = sb
-      .from("users")
+      .from("profiles")
       .select("id,email,full_name,phone,points,created_at")
       .eq("role", "customer")
       .limit(20)

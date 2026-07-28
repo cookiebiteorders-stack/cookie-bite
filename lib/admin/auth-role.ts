@@ -45,7 +45,7 @@ export async function resolveStaffRole(params: {
   }
 
   try {
-    let query = supabase.from("users").select("role").limit(1);
+    let query = supabase.from("profiles").select("role").limit(1);
 
     if (supabaseUserId) {
       query = query.eq("id", supabaseUserId);

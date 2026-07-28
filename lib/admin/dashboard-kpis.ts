@@ -37,7 +37,7 @@ export async function loadAdminDashboardKpis(): Promise<AdminDashboardKpis> {
       .select("id", { count: "exact", head: true })
       .in("status", ["pending", "processing", "shipped"]),
     supabase
-      .from("users")
+      .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("role", "customer"),
     supabase

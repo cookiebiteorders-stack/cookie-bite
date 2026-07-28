@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     try {
       const supabase = createSupabaseAdminClient();
       const { data } = await supabase
-        .from("users")
+        .from("profiles")
         .select("id")
         .eq("id", userId)
         .maybeSingle();

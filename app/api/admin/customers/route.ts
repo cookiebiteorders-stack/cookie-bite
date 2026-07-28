@@ -58,12 +58,12 @@ async function loadCrmStats(
     { count: at_risk_proxy },
     { data: orderRows },
   ] = await Promise.all([
-    supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "customer"),
-    supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "customer").gte("created_at", d30),
-    supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "customer").gt("points", 0),
-    supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "customer").gte("points", 1500),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "customer"),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "customer").gte("created_at", d30),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "customer").gt("points", 0),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "customer").gte("points", 1500),
     supabase
-      .from("users")
+      .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("role", "customer")
       .lte("points", 100)
@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
   const d60 = new Date(now.getTime() - 60 * 86400000).toISOString();
 
   let usersQuery = supabase
-    .from("users")
+    .from("profiles")
     .select("id,email,full_name,avatar_url,points,created_at,updated_at", { count: "exact" })
     .eq("role", "customer")
     .order("created_at", { ascending: false });
@@ -261,7 +261,7 @@ export async function POST(req: NextRequest) {
   const supabase = createSupabaseAdminClient();
   const email = parsed.data.email.trim().toLowerCase();
 
-  const { data: existing } = await supabase.from("users").select("id,role").eq("email", email).maybeSingle();
+  const { data: existing } = await supabase.from("profiles").select("id,role").eq("email", email).maybeSingle();
   if (existing) {
     return NextResponse.json(
       bilingualError("Email already registered", "البريد مسجّل مسبقاً"),
@@ -270,7 +270,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { data: user, error: userErr } = await supabase
-    .from("users")
+    .from("profiles")
     .insert({
       id: randomUUID(),
       email,

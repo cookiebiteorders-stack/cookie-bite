@@ -92,14 +92,14 @@ export async function resolveDbUserId(
   if (!id) return null;
 
   const { data: byId } = await supabase
-    .from("users")
+    .from("profiles")
     .select("id")
     .eq("id", id)
     .maybeSingle();
   if (byId?.id) return String(byId.id);
 
   const { data: byLegacyClerk } = await supabase
-    .from("users")
+    .from("profiles")
     .select("id")
     .eq("supabase_user_id", id)
     .maybeSingle();
@@ -115,7 +115,7 @@ export async function loadUsersByDbIds(
   if (ids.length === 0) return map;
 
   const { data } = await supabase
-    .from("users")
+    .from("profiles")
     .select("id, supabase_user_id, email, full_name, role")
     .in("id", ids);
 
@@ -134,7 +134,7 @@ export async function loadUsersBySupabaseIds(
   if (ids.length === 0) return map;
 
   const { data } = await supabase
-    .from("users")
+    .from("profiles")
     .select("id, supabase_user_id, email, full_name, role")
     .in("supabase_user_id", ids);
 

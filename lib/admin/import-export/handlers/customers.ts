@@ -30,7 +30,7 @@ export async function commitCustomersImport(
         : 0;
 
     const { data: existing } = await supabase
-      .from("users")
+      .from("profiles")
       .select("id,role")
       .eq("email", email)
       .maybeSingle();
@@ -49,7 +49,7 @@ export async function commitCustomersImport(
         successRows += 1;
         continue;
       }
-      const { error } = await supabase.from("users").update(patch).eq("id", existing.id);
+      const { error } = await supabase.from("profiles").update(patch).eq("id", existing.id);
       if (error) {
         failedRows += 1;
         failures.push({ row: i + 2, message: error.message });
@@ -59,7 +59,7 @@ export async function commitCustomersImport(
       continue;
     }
 
-    const { error } = await supabase.from("users").insert({
+    const { error } = await supabase.from("profiles").insert({
       id: randomUUID(),
       email,
       full_name,

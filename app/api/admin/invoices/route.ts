@@ -57,7 +57,7 @@ async function fetchUserLookupByIds(
   if (unique.length === 0) return map;
 
   const { data, error } = await supabase
-    .from("users")
+    .from("profiles")
     .select("id, full_name, email")
     .in("id", unique);
 

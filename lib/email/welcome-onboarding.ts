@@ -30,7 +30,7 @@ export async function trySendWelcomeEmailOnce(
   if (!supabase) return { sent: false, reason: "no_supabase" };
 
   const { data: claimed, error: claimError } = await supabase
-    .from("users")
+    .from("profiles")
     .update({ welcome_email_sent_at: new Date().toISOString() })
     .eq("id", opts.userId)
     .is("welcome_email_sent_at", null)
@@ -55,7 +55,7 @@ export async function trySendWelcomeEmailOnce(
     return { sent: true };
   } catch (err) {
     await supabase
-      .from("users")
+      .from("profiles")
       .update({ welcome_email_sent_at: null })
       .eq("id", opts.userId);
     throw err;

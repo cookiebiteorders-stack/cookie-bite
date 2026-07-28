@@ -144,7 +144,7 @@ export async function prepareMrBrownieChat(params: {
     const supabase = tryCreateSupabaseAdminClient();
     if (supabase) {
       const { data: row } = await supabase
-        .from("users")
+        .from("profiles")
         .select("id")
         .eq("id", params.userId)
         .maybeSingle();

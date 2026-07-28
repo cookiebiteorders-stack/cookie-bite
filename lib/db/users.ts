@@ -26,7 +26,7 @@ async function relinkSupabaseToExistingUser(
   if (!supabase) return null;
 
   const { data, error } = await supabase
-    .from("users")
+    .from("profiles")
     .update({
       id: input.supabaseUserId,
       full_name: input.fullName ?? existing.full_name,
@@ -48,7 +48,7 @@ export async function getUserByEmail(email: string): Promise<UserRow | null> {
   if (!supabase) return null;
   const normalized = email.trim().toLowerCase();
   const { data, error } = await supabase
-    .from("users")
+    .from("profiles")
     .select("*")
     .eq("email", normalized)
     .maybeSingle();
@@ -77,7 +77,7 @@ export async function upsertUserFromSupabase(input: UpsertInput): Promise<UserRo
     // User already has correct ID, just update metadata if provided
     if (input.fullName || input.avatarUrl) {
       const { data, error } = await supabase
-        .from("users")
+        .from("profiles")
         .update({
           full_name: input.fullName ?? existingByEmail.full_name,
           avatar_url: input.avatarUrl ?? existingByEmail.avatar_url,
@@ -96,7 +96,7 @@ export async function upsertUserFromSupabase(input: UpsertInput): Promise<UserRo
 
   // No existing user by email, proceed with upsert
   const { data, error } = await supabase
-    .from("users")
+    .from("profiles")
     .upsert(
       {
         id: input.supabaseUserId,
@@ -129,7 +129,7 @@ export async function deleteUserBySupabaseId(supabaseUserId: string) {
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return;
   const { error } = await supabase
-    .from("users")
+    .from("profiles")
     .delete()
     .eq("id", supabaseUserId);
   if (error) console.error("deleteUserBySupabaseId error", error);
@@ -143,7 +143,7 @@ export async function markProfileCompleted(userId: string): Promise<UserRow | nu
   }
 
   const { data: existing, error: readError } = await supabase
-    .from("users")
+    .from("profiles")
     .select("*")
     .eq("id", userId)
     .maybeSingle();
@@ -158,7 +158,7 @@ export async function markProfileCompleted(userId: string): Promise<UserRow | nu
 
   const completedAt = new Date().toISOString();
   const { data, error } = await supabase
-    .from("users")
+    .from("profiles")
     .update({ profile_completed_at: completedAt })
     .eq("id", userId)
     .select("*")
@@ -193,12 +193,12 @@ export async function updateUserProfile(
   }
 
   if (Object.keys(patch).length === 0) {
-    const { data } = await supabase.from("users").select("*").eq("id", userId).maybeSingle();
+    const { data } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
     return (data as UserRow) ?? null;
   }
 
   const runUpdate = async (p: Record<string, string | null>) => {
-    return supabase.from("users").update(p).eq("id", userId).select("*").maybeSingle();
+    return supabase.from("profiles").update(p).eq("id", userId).select("*").maybeSingle();
   };
 
   let { data, error } = await runUpdate(patch);
@@ -240,7 +240,7 @@ export async function getUserBySupabaseId(supabaseUserId: string): Promise<UserR
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return null;
   const { data, error } = await supabase
-    .from("users")
+    .from("profiles")
     .select("*")
     .eq("id", supabaseUserId)
     .maybeSingle();

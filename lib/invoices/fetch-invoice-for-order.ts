@@ -75,7 +75,7 @@ export async function fetchRawInvoiceForOrder(
   let customerEmail = order.guest_email as string | null;
   if (order.user_id) {
     const { data: user } = await supabase
-      .from("users")
+      .from("profiles")
       .select("full_name, email")
       .eq("id", order.user_id)
       .maybeSingle();

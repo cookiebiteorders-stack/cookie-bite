@@ -62,7 +62,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   }
 
   const supabase = createSupabaseAdminClient();
-  const { data: before } = await supabase.from("users").select("*").eq("id", id).maybeSingle();
+  const { data: before } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
 
   const result = await blockAndDeleteCustomerAccount({
     target,

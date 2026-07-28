@@ -128,7 +128,7 @@ export async function PATCH(
   let to = order.guest_email ?? "";
   if (order.user_id) {
     const { data: user } = await supabase
-      .from("users")
+      .from("profiles")
       .select("email")
       .eq("id", order.user_id)
       .maybeSingle();
