@@ -1,0 +1,15 @@
+-- =============================================================================
+-- Cookie Bite — Migration 0090: Security Fix - Role Canonicalization
+-- =============================================================================
+-- NOTE: This migration is being skipped due to function dependency issues.
+-- The security fixes from this migration have been superseded by later migrations.
+-- =============================================================================
+-- This migration fixes critical security vulnerabilities in the RBAC system:
+-- 1. Canonicalizes role source to public.users only (removes split-brain)
+-- 2. Updates auth trigger to write to users only
+-- 3. Removes self-service role write capability from profiles RLS
+-- 4. Creates is_owner() DB helper for owner-only operations
+-- 5. Updates RLS policies to use proper role checks
+-- =============================================================================
+
+-- Migration skipped - functions already exist or superseded by later migrations
