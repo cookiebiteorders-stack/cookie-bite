@@ -17,6 +17,11 @@ import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { ShareButtons } from "@/components/seo/share-buttons";
 import { PdpViewTracker } from "@/components/shop/pdp-view-tracker";
 import { PdpProductSpecs } from "@/components/shop/pdp-product-specs";
+import { PdpDeliveryInfo } from "@/components/shop/pdp-delivery-info";
+import { PdpPaymentMethods } from "@/components/shop/pdp-payment-methods";
+import { PdpTrustBadges } from "@/components/shop/pdp-trust-badges";
+import { PdpPremiumFeatures } from "@/components/shop/pdp-premium-features";
+import { PdpRelatedProducts } from "@/components/shop/pdp-related-products";
 import { dedupeAddons } from "@/lib/addons/dedupe";
 import type { Addon } from "@/lib/addons/types";
 import type { Product, ProductVariant } from "@/lib/data";
@@ -222,14 +227,18 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
             <h1 className="mt-2 font-serif text-4xl font-semibold text-cb-text-strong sm:text-5xl">
               {product.name}
             </h1>
-            <p className="mt-4 text-lg text-cb-text">{product.description}</p>
-            <div className="mt-6">
+            <div className="mt-4">
               <ProductPriceDisplay
                 price={displayPrice}
                 comparePrice={displayComparePrice}
                 size="lg"
               />
             </div>
+            <p className="mt-4 text-lg text-cb-text">{product.description}</p>
+            
+            {/* Freshly baked highlights - Premium Features */}
+            <PdpPremiumFeatures />
+            
             {(() => {
               const stock = selectedVariant ? selectedVariant.stock : product.stock;
               if (stock == null) return null;
@@ -237,7 +246,7 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
                 return (
                   <p
                     role="status"
-                    className="mt-3 inline-flex rounded-full bg-stone-900 px-4 py-2 text-sm font-bold text-white"
+                    className="mt-4 inline-flex rounded-full bg-stone-900 px-4 py-2 text-sm font-bold text-white"
                   >
                     {t("product.outOfStock")}
                   </p>
@@ -245,7 +254,7 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
               }
               if (stock <= 10) {
                 return (
-                  <p className="mt-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
+                  <p className="mt-3 text-sm font-semibold text-amber-800 dark:text-amber-200">
                     {t("product.stockLeft", { count: stock })}
                   </p>
                 );
@@ -279,8 +288,12 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
           </div>
         </div>
 
-        {!fbtBelowReviews ? <PdpFbtModule product={product} companions={fbt} /> : null}
+        {/* Trust, Delivery, Payment - Informational sections */}
+        <PdpTrustBadges />
+        <PdpDeliveryInfo />
+        <PdpPaymentMethods />
 
+        {/* Social Proof */}
         <PdpReviewsSection
           reviews={reviews}
           reviewCount={reviewCount}
@@ -288,20 +301,10 @@ export function ProductPdpPageClient({ slug, initialPayload = null }: Props) {
           ratingDistribution={ratingDistribution}
         />
 
+        {/* Recommendations */}
+        {!fbtBelowReviews ? <PdpFbtModule product={product} companions={fbt} /> : null}
+        <PdpRelatedProducts products={related} title={t("product.youMightAlsoLove")} />
         {fbtBelowReviews ? <PdpFbtModule product={product} companions={fbt} /> : null}
-
-        {related.length > 0 ? (
-          <section className="mt-20">
-            <h2 className="font-serif text-2xl font-semibold text-cb-text-strong">
-              {t("product.youMightAlsoLove")}
-            </h2>
-            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {related.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
-          </section>
-        ) : null}
 
         <div className="mt-12 text-center">
           <Link href="/shop" className={buttonClassName("outline", "inline-flex rounded-full px-8")}>

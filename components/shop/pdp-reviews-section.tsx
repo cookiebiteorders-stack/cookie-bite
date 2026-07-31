@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { BadgeCheck, Star, ThumbsUp } from "lucide-react";
+import { BadgeCheck, Star, ThumbsUp, MessageSquare } from "lucide-react";
 import type { PdpReview } from "@/lib/storefront/pdp-api";
 import type { RatingDistribution } from "@/lib/storefront/review-stats";
 import { totalFromDistribution } from "@/lib/storefront/review-stats";
 import { useLanguage } from "@/components/providers/language-provider";
+import { buttonClassName } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type ReviewFilter = "all" | "photos" | "verified" | "helpful";
@@ -155,7 +156,37 @@ export function PdpReviewsSection({
     [reviews, filter],
   );
 
-  if (reviewCount === 0 && reviews.length === 0) return null;
+  // Empty state - show CTA instead of hiding section
+  if (reviewCount === 0 && reviews.length === 0) {
+    return (
+      <section className="mt-16" aria-labelledby="pdp-reviews-heading">
+        <h2
+          id="pdp-reviews-heading"
+          className="font-serif text-2xl font-semibold text-cb-text-strong"
+        >
+          {t("product.reviewsTitle")}
+        </h2>
+        <div className="mt-6 rounded-2xl border border-cb-border bg-cb-surface p-8 text-center">
+          <div className="mb-4 inline-flex rounded-full bg-cb-peach/30 p-4">
+            <MessageSquare className="h-8 w-8 text-cb-terracotta-dark" aria-hidden />
+          </div>
+          <h3 className="font-serif text-xl font-semibold text-cb-text-strong">
+            {t("product.reviewsEmptyTitle")}
+          </h3>
+          <p className="mt-2 text-cb-text-muted">
+            {t("product.reviewsEmptyDescription")}
+          </p>
+          <button
+            type="button"
+            className={buttonClassName("primary", "mt-6 inline-flex items-center gap-2 rounded-full px-6 py-3")}
+          >
+            <MessageSquare className="h-4 w-4" aria-hidden />
+            {t("product.reviewsWriteFirst")}
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   const formatter = new Intl.DateTimeFormat(lang === "ar" ? "ar-EG" : "en-GB", {
     year: "numeric",

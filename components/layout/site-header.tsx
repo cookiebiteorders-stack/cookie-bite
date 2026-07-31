@@ -126,9 +126,7 @@ export function SiteHeader() {
   );
   const helpLinks = useMemo(
     () => [
-      { href: "/help", label: t("nav.helpCenter") },
       { href: "/help/faq", label: t("nav.faq") },
-      { href: "/help/returns", label: t("nav.returns") },
       { href: "/contact", label: t("nav.contact") },
     ],
     [t],
