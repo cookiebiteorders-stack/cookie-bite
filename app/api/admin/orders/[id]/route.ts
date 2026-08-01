@@ -128,7 +128,7 @@ export async function PATCH(
   let to = order.guest_email ?? "";
   if (order.user_id) {
     const { data: user } = await supabase
-      .from("profiles")
+      .from("users")
       .select("email")
       .eq("id", order.user_id)
       .maybeSingle();
@@ -267,8 +267,8 @@ export async function DELETE(
       order_code: before.order_code ?? before.number ?? null,
       loyalty_reversed_points: result.loyalty.reversedPoints,
       loyalty_transactions_removed: result.loyalty.transactionCount,
-      invoices_removed: result.financialsRemoved.invoices,
-      payments_removed: result.financialsRemoved.payments,
+      archived: result.archived,
+      financial_records_preserved: true,
       lifecycle_retention_days: 30,
     },
     request: req,
@@ -288,6 +288,6 @@ export async function DELETE(
   return NextResponse.json({
     ok: true,
     loyalty: result.loyalty,
-    financials_removed: result.financialsRemoved,
+    archived: result.archived,
   });
 }

@@ -17,6 +17,7 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    "forceConsistentCasingInFileNames": true,
     "plugins": [
       {
         "name": "next"
@@ -40,6 +41,7 @@
     "node_modules",
     "supabase/functions/**",
     ".next/types/validator.ts",
-    ".next/dev/types/**"
+    ".next/dev/types/**",
+    "scripts/migrate-clerk-to-supabase.ts"
   ]
 }

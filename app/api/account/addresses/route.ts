@@ -15,6 +15,7 @@ import {
 import { ensureDbUserForSupabase, isSupabaseAdminConfigured } from "@/lib/db/ensure-db-user";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { bilingualError } from "@/lib/validations";
+import { requireCsrfProtection } from "@/lib/security/csrf";
 
 export async function GET() {
   const { userId, user } = await auth();
@@ -45,6 +46,16 @@ export async function POST(req: NextRequest) {
   if (!userId) {
     return NextResponse.json(bilingualError("Unauthorized", "غير مصرح"), { status: 401 });
   }
+
+  // Validate CSRF token for state-changing operation
+  const csrfCheck = await requireCsrfProtection(req);
+  if (!csrfCheck.valid) {
+    return NextResponse.json(
+      bilingualError(csrfCheck.error || "CSRF validation failed", "فشل التحقق من CSRF"),
+      { status: 403 }
+    );
+  }
+
   if (!isSupabaseAdminConfigured()) {
     return NextResponse.json(
       bilingualError("Database unavailable", "قاعدة البيانات غير متاحة"),

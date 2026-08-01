@@ -25,12 +25,14 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
             error ? "border-red-500 focus:border-red-500 focus:ring-red-200" : "",
             className,
           )}
+          aria-invalid={error ? "true" : undefined}
+          aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
           {...props}
         />
         {error ? (
-          <span className="text-xs font-medium text-red-700">{error}</span>
+          <span id={`${inputId}-error`} className="text-xs font-medium text-red-700" role="alert">{error}</span>
         ) : hint ? (
-          <span className="text-xs text-cb-text-muted">{hint}</span>
+          <span id={`${inputId}-hint`} className="text-xs text-cb-text-muted">{hint}</span>
         ) : null}
       </label>
     );

@@ -10,6 +10,16 @@ type ProductRow = {
   image_url: string | null;
   images: unknown;
   video_url: string | null;
+  cloudinary_public_id: string | null;
+};
+
+type ProductMediaRow = {
+  id: string;
+  product_id: string;
+  public_id: string;
+  url: string;
+  role: "primary" | "gallery" | "video";
+  sort_order: number;
 };
 
 function stripUrlFromProduct(row: ProductRow, targetUrl: string): Partial<ProductRow> | null {
@@ -70,43 +80,77 @@ function swapUrlInProduct(row: ProductRow, oldUrl: string, newUrl: string): Part
   };
 }
 
-/** Remove a media URL from every product that references it. */
+/** Remove a media URL from every product that references it via product_media join table. */
 export async function removeMediaUrlFromProducts(targetUrl: string): Promise<number> {
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("products")
-    .select("id, image_url, images, video_url")
-    .limit(500);
+  
+  // FK-driven: only affect products that have this URL in product_media
+  const { data: mediaLinks, error: mediaError } = await supabase
+    .from("product_media")
+    .select("product_id, url")
+    .eq("url", targetUrl);
 
-  if (error) throw new Error(error.message);
+  if (mediaError) throw new Error(mediaError.message);
+
+  if (!mediaLinks || mediaLinks.length === 0) return 0;
 
   let updated = 0;
-  for (const row of data ?? []) {
-    const patch = stripUrlFromProduct(row as ProductRow, targetUrl);
+  for (const link of mediaLinks) {
+    const { data: product, error: productError } = await supabase
+      .from("products")
+      .select("id, image_url, images, video_url")
+      .eq("id", link.product_id)
+      .single();
+
+    if (productError) continue;
+
+    const patch = stripUrlFromProduct(product as ProductRow, targetUrl);
     if (!patch) continue;
-    const { error: upErr } = await supabase.from("products").update(patch).eq("id", row.id);
+    
+    const { error: upErr } = await supabase.from("products").update(patch).eq("id", link.product_id);
     if (upErr) throw new Error(upErr.message);
+    
+    // Also delete the product_media link
+    await supabase.from("product_media").delete().eq("url", targetUrl).eq("product_id", link.product_id);
+    
     updated += 1;
   }
   return updated;
 }
 
-/** Swap old URL for new URL on all products (after replace/rename). */
+/** Swap old URL for new URL on products via product_media join table (FK-driven). */
 export async function replaceMediaUrlInProducts(oldUrl: string, newUrl: string): Promise<number> {
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("products")
-    .select("id, image_url, images, video_url")
-    .limit(500);
+  
+  // FK-driven: only affect products that have this URL in product_media
+  const { data: mediaLinks, error: mediaError } = await supabase
+    .from("product_media")
+    .select("product_id, url")
+    .eq("url", oldUrl);
 
-  if (error) throw new Error(error.message);
+  if (mediaError) throw new Error(mediaError.message);
+
+  if (!mediaLinks || mediaLinks.length === 0) return 0;
 
   let updated = 0;
-  for (const row of data ?? []) {
-    const patch = swapUrlInProduct(row as ProductRow, oldUrl, newUrl);
+  for (const link of mediaLinks) {
+    const { data: product, error: productError } = await supabase
+      .from("products")
+      .select("id, image_url, images, video_url")
+      .eq("id", link.product_id)
+      .single();
+
+    if (productError) continue;
+
+    const patch = swapUrlInProduct(product as ProductRow, oldUrl, newUrl);
     if (!patch) continue;
-    const { error: upErr } = await supabase.from("products").update(patch).eq("id", row.id);
+    
+    const { error: upErr } = await supabase.from("products").update(patch).eq("id", link.product_id);
     if (upErr) throw new Error(upErr.message);
+    
+    // Update the product_media link URL
+    await supabase.from("product_media").update({ url: newUrl }).eq("url", oldUrl).eq("product_id", link.product_id);
+    
     updated += 1;
   }
   return updated;

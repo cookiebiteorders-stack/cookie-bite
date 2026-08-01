@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
   const supabase = createSupabaseAdminClient();
   const { data: rows, error } = await supabase
-    .from("profiles")
+    .from("users")
     .select("email,full_name")
     .eq("role", "customer")
     .order("updated_at", { ascending: false })

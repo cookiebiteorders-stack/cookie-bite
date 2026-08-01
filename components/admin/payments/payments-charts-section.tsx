@@ -106,8 +106,8 @@ export function PaymentsChartsSection({ summary }: Props) {
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="paid" name="Paid" stroke="#16a34a" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="failed" name="Failed" stroke="#dc2626" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="paid" name="Paid" stroke="#16a34a" strokeWidth={2} dot={false} isAnimationActive={false} />
+                <Line type="monotone" dataKey="failed" name="Failed" stroke="#dc2626" strokeWidth={2} dot={false} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -161,8 +161,8 @@ export function PaymentsChartsSection({ summary }: Props) {
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="paid" name="Paid" stackId="a" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="failed" name="Failed" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="paid" name="Paid" stackId="a" fill="#22c55e" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="failed" name="Failed" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>

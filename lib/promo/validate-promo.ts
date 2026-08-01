@@ -113,7 +113,7 @@ async function checkAsyncRules(
         continue;
       }
       const { data: user } = await ctx.supabase!
-        .from("profiles")
+        .from("users")
         .select("points")
         .eq("id", ctx.userId)
         .maybeSingle();

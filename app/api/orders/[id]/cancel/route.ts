@@ -4,11 +4,12 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getUserBySupabaseId } from "@/lib/db/users";
 import { notifyStoreOrderEvent } from "@/lib/notifications/store-order-events";
 import { bilingualError } from "@/lib/validations";
+import { requireCsrfProtection } from "@/lib/security/csrf";
 
 const CANCELLABLE = new Set(["pending", "processing"]);
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
   const { id } = await ctx.params;
@@ -17,6 +18,15 @@ export async function POST(
     return NextResponse.json(
       bilingualError("Unauthorized", "غير مصرح"),
       { status: 401 },
+    );
+  }
+
+  // Validate CSRF token for state-changing operation
+  const csrfCheck = await requireCsrfProtection(req);
+  if (!csrfCheck.valid) {
+    return NextResponse.json(
+      bilingualError(csrfCheck.error || "CSRF validation failed", "فشل التحقق من CSRF"),
+      { status: 403 }
     );
   }
 

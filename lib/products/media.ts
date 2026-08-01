@@ -24,6 +24,7 @@ export function resolveProductImageUrl(
 export function normalizeProductImages(
   raw: unknown,
   fallbackUrl?: string | null,
+  opts?: { includeLegacyFallback?: boolean },
 ): ProductImage[] {
   const list = Array.isArray(raw) ? raw : [];
   const parsed: ProductImage[] = [];
@@ -39,7 +40,7 @@ export function normalizeProductImages(
       order: parsed.length,
     });
   }
-  if (parsed.length === 0 && fallbackUrl?.trim()) {
+  if (opts?.includeLegacyFallback && parsed.length === 0 && fallbackUrl?.trim()) {
     return [{ url: fallbackUrl.trim(), order: 0 }];
   }
   return parsed;
@@ -48,9 +49,9 @@ export function normalizeProductImages(
 export function primaryImageFromProduct(
   images: ProductImage[],
   imageUrl?: string | null,
-): string | null {
+): string {
   const first = images.find((img) => img.url?.trim())?.url?.trim();
-  return first ?? imageUrl?.trim() ?? null;
+  return first ?? imageUrl?.trim() ?? PRODUCT_PLACEHOLDER_IMAGE;
 }
 
 export function galleryUrlsFromProduct(
@@ -62,5 +63,5 @@ export function galleryUrlsFromProduct(
     .filter((u): u is string => Boolean(u));
   if (urls.length > 0) return urls.slice(0, MAX_PRODUCT_IMAGES);
   const single = imageUrl?.trim();
-  return single ? [single] : [];
+  return single ? [single] : [PRODUCT_PLACEHOLDER_IMAGE];
 }

@@ -52,13 +52,13 @@ export const roleMatrix: Record<UserRole, Record<ModuleKey, PermissionLevel>> = 
     cms: "full",
     templates: "full",
     analytics: "full",
-    financial: "full",
+    financial: "view", // Reduced from full to view
     invoices: "full",
     shipping: "full",
-    payments: "full",
-    roles: "full",
-    settings: "full",
-    audit: "full",
+    payments: "limited", // Reduced from full to limited
+    roles: "none", // Removed - owner only
+    settings: "limited", // Reduced from full to limited
+    audit: "view", // Reduced from full to view
   },
   staff: {
     dashboard: "limited",

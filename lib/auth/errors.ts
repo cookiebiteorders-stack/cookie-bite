@@ -35,6 +35,11 @@ export enum AuthErrorCode {
   // Session errors
   SESSION_EXPIRED = 'SESSION_EXPIRED',
   SESSION_INVALID = 'SESSION_INVALID',
+  
+  // Authorization errors
+  AUTHENTICATION_REQUIRED = 'AUTHENTICATION_REQUIRED',
+  ADMIN_ACCESS_REQUIRED = 'ADMIN_ACCESS_REQUIRED',
+  STAFF_ACCESS_REQUIRED = 'STAFF_ACCESS_REQUIRED',
 }
 
 export type AuthError = {
@@ -43,6 +48,26 @@ export type AuthError = {
   messageAr: string;
   details?: unknown;
 };
+
+export class AuthenticationError extends Error {
+  code: AuthErrorCode;
+  
+  constructor(message: string, code: AuthErrorCode = AuthErrorCode.AUTHENTICATION_REQUIRED) {
+    super(message);
+    this.name = 'AuthenticationError';
+    this.code = code;
+  }
+}
+
+export class AuthorizationError extends Error {
+  code: AuthErrorCode;
+  
+  constructor(message: string, code: AuthErrorCode = AuthErrorCode.ADMIN_ACCESS_REQUIRED) {
+    super(message);
+    this.name = 'AuthorizationError';
+    this.code = code;
+  }
+}
 
 const errorMessages: Record<AuthErrorCode, { en: string; ar: string }> = {
   [AuthErrorCode.UNKNOWN_ERROR]: {
@@ -124,6 +149,18 @@ const errorMessages: Record<AuthErrorCode, { en: string; ar: string }> = {
   [AuthErrorCode.SESSION_INVALID]: {
     en: 'Your session is invalid. Please sign in again.',
     ar: 'جلستك غير صالحة. yرجى تسجيل الدخول مرة أخرى.',
+  },
+  [AuthErrorCode.AUTHENTICATION_REQUIRED]: {
+    en: 'Authentication required. Please sign in.',
+    ar: 'مطلوب تسجيل الدخول. يرجى تسجيل الدخول.',
+  },
+  [AuthErrorCode.ADMIN_ACCESS_REQUIRED]: {
+    en: 'Admin access required.',
+    ar: 'مطلوب صلاحيات المسؤول.',
+  },
+  [AuthErrorCode.STAFF_ACCESS_REQUIRED]: {
+    en: 'Staff access required.',
+    ar: 'مطلوب صلاحيات الموظفين.',
   },
 };
 

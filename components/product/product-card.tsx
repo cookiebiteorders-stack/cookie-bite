@@ -135,7 +135,7 @@ export function ProductCard({
           disabled={busy || !uuid}
           onClick={toggleWishlist}
           className={cn(
-            "absolute end-3 top-3 z-10 rounded-full border border-cb-peach-deep/60 p-2 shadow-sm transition-colors duration-150 disabled:opacity-40",
+            "absolute end-3 top-3 z-10 rounded-full border border-cb-peach-deep/60 p-2.5 shadow-sm transition-colors duration-150 disabled:opacity-40 sm:p-2",
             wishlisted
               ? "bg-cb-terracotta-dark text-white"
               : "bg-cb-cream/95 text-cb-terracotta-dark",
@@ -143,7 +143,7 @@ export function ProductCard({
           aria-label={t("product.favoritesAria")}
           aria-pressed={saved}
         >
-          <Heart className={cn("h-4 w-4", saved && "fill-current")} />
+          <Heart className={cn("h-5 w-5 sm:h-4 sm:w-4", saved && "fill-current")} />
         </button>
         {outOfStock ? (
           <span
@@ -173,10 +173,10 @@ export function ProductCard({
           </div>
         ) : null}
       </div>
-      <div className="flex flex-1 flex-col gap-3 p-5">
+      <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
         <div>
           <Link href={`/shop/${product.id}`} prefetch={false}>
-            <h3 className="font-serif text-lg font-semibold text-cb-text-strong hover:text-cb-terracotta-dark">
+            <h3 className="font-serif text-base font-semibold text-cb-text-strong hover:text-cb-terracotta-dark sm:text-lg">
               {product.name}
             </h3>
           </Link>

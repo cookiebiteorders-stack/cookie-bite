@@ -11,6 +11,8 @@ import {
 import { buildBundleOfferSnapshotFromCartLine } from "@/lib/offers/order-snapshot";
 import type { CartLine } from "@/lib/cart/types";
 
+import { trackBeginCheckout } from "@/lib/analytics/ga4";
+
 export type PaymobCheckoutStatus = "idle" | "loading" | "error";
 
 export type CheckoutDetails = {
@@ -90,7 +92,7 @@ function buildPaymobIntentionBody(
  */
 export function usePaymobCheckout() {
   const { t } = useLanguage();
-  const { lines, itemCount, promo } = useCart();
+  const { lines, itemCount, promo, subtotalEgp, discountEgp } = useCart();
   const [status, setStatus] = useState<PaymobCheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -104,6 +106,16 @@ export function usePaymobCheckout() {
       setStatus("error");
       return false;
     }
+
+    trackBeginCheckout(
+      lines.map(l => ({
+        item_id: l.productId,
+        item_name: l.name,
+        price: l.finalUnitPriceEgp,
+        quantity: l.quantity,
+      })),
+      subtotalEgp - discountEgp
+    );
 
     setStatus("loading");
     setError(null);

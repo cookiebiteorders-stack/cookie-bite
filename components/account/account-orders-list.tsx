@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileText, Search } from "lucide-react";
+import { FileText, Search, Package } from "lucide-react";
 import { ReorderGiftBoxButton } from "@/components/account/reorder-gift-box-button";
 import { GiftRevealLinkButton } from "@/components/account/gift-reveal-link-button";
 import { useLanguage } from "@/components/providers/language-provider";
@@ -135,12 +135,28 @@ export function AccountOrdersList({ orders, showDate = false, detailed = false }
           })}
         </ul>
       ) : (
-        <div className="rounded-2xl bg-cb-cream p-6 text-center">
-          <p className="text-sm font-semibold text-cb-text-strong">{t("accountOrders.emptyTitle")}</p>
-          <p className="mt-1 text-xs text-cb-text-muted">{t("accountOrders.emptyBody")}</p>
-          <Link href="/shop" className={buttonClassName("primary", "mt-4 inline-flex")}>
-            {t("accountOrders.startShopping")}
-          </Link>
+        <div className="rounded-2xl bg-cb-cream p-12 text-center">
+          <div className="mb-6 inline-flex rounded-full bg-cb-peach/30 p-4">
+            <Package className="h-12 w-12 text-cb-terracotta-dark" />
+          </div>
+          <h3 className="font-serif text-2xl font-semibold text-cb-text-strong">
+            {t("accountOrders.emptyTitle")}
+          </h3>
+          <p className="mt-3 text-sm text-cb-text-muted">{t("accountOrders.emptyBody")}</p>
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
+            <Link
+              href="/shop"
+              className={buttonClassName("primary", "inline-flex items-center justify-center gap-2 rounded-full px-8 py-3")}
+            >
+              {t("accountOrders.startShopping")}
+            </Link>
+            <Link
+              href="/gift-box"
+              className={buttonClassName("outline", "inline-flex items-center justify-center gap-2 rounded-full px-8 py-3")}
+            >
+              Shop Gift Boxes
+            </Link>
+          </div>
         </div>
       )}
     </>

@@ -44,7 +44,7 @@ async function resolveUserContext(
 
     const supabase = createSupabaseAdminClient();
     const { data } = await supabase
-      .from("profiles")
+      .from("users")
       .select("id, loyalty_tier")
       .eq("id", userId)
       .maybeSingle();

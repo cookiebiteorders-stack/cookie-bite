@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth/supabase-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { isProfileComplete } from "@/lib/account/profile-complete";
+import { requireCsrfProtection } from "@/lib/security/csrf";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -108,6 +109,15 @@ export async function POST(req: NextRequest) {
   const { userId, user: authUser } = await auth();
   if (!userId || !authUser) {
     return NextResponse.json(bilingualError("Unauthorized", "غير مصرح"), { status: 401 });
+  }
+
+  // Validate CSRF token for state-changing operation
+  const csrfCheck = await requireCsrfProtection(req);
+  if (!csrfCheck.valid) {
+    return NextResponse.json(
+      bilingualError(csrfCheck.error || "CSRF validation failed", "فشل التحقق من CSRF"),
+      { status: 403 }
+    );
   }
 
   if (!isSupabaseAdminConfigured()) {

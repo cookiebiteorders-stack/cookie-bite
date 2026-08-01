@@ -5,6 +5,21 @@ import { PRODUCTION_HOST } from "@/lib/config/production-lock";
 import { getOwnerFlags } from "@/lib/store/owner-flags-server";
 import { updateSupabaseSession } from "@/lib/supabase/middleware";
 import { getBaseUrl } from "@/lib/auth/safe-redirect";
+import { rateOk as redisRateOk } from "@/lib/rate-limit/redis-rate-limiter";
+import { getRequestId, getRequestIdHeader } from "@/lib/observability/request-id";
+
+// Trusted proxy CIDR ranges - only these proxies can set X-Forwarded-* headers
+const TRUSTED_PROXY_CIDRS = process.env.TRUSTED_PROXY_CIDRS
+  ? process.env.TRUSTED_PROXY_CIDRS.split(",").map((s) => s.trim())
+  : ["127.0.0.1", "::1"]; // Default to localhost only
+
+function isTrustedProxy(ip: string): boolean {
+  if (!ip) return false;
+  // Exact match for IPv4/IPv6 addresses
+  if (TRUSTED_PROXY_CIDRS.includes(ip)) return true;
+  // CIDR matching could be added here for more complex ranges
+  return false;
+}
 
 const isAdminRoute = (pathname: string) =>
   pathname === "/admin" || pathname.startsWith("/admin/");
@@ -26,20 +41,6 @@ const isMaintenanceBypass = (pathname: string) =>
   pathname === "/icon.svg" ||
   pathname === "/manifest.webmanifest";
 
-const rateBuckets = new Map<string, { count: number; reset: number }>();
-
-function rateOk(key: string, max: number, windowMs: number) {
-  const now = Date.now();
-  const entry = rateBuckets.get(key);
-  if (!entry || now > entry.reset) {
-    rateBuckets.set(key, { count: 1, reset: now + windowMs });
-    return true;
-  }
-  if (entry.count >= max) return false;
-  entry.count += 1;
-  return true;
-}
-
 const tooMany = () =>
   NextResponse.json(
     { ok: false, error: { en: "Too many requests", ar: "طلبات كثيرة جداً" } },
@@ -48,17 +49,31 @@ const tooMany = () =>
 
 function resolveModule(pathname: string) {
   const known = Object.keys(adminRouteModuleMap).sort((a, b) => b.length - a.length);
-  const matched = known.find((route) => pathname === route || pathname.startsWith(`${route}/`));
-  return matched ? adminRouteModuleMap[matched] : "dashboard";
+  // Exact match or prefix with trailing slash only - prevents path collision attacks
+  const match = known.find((route) => pathname === route || pathname.startsWith(`${route}/`));
+  return match ? adminRouteModuleMap[match] : "dashboard";
 }
 
 export default async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
+  // Generate or extract request ID for distributed tracing
+  const requestId = getRequestId(request.headers);
+  const requestIdHeader = getRequestIdHeader();
+
   if (process.env.NODE_ENV === "production") {
     const url = request.nextUrl;
+    const remoteAddr = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+                      request.headers.get("x-real-ip") || 
+                      "unknown";
+    
+    // Only trust X-Forwarded-* headers from trusted proxies
+    const trusted = isTrustedProxy(remoteAddr);
     const host = (request.headers.get("host") ?? url.host).toLowerCase();
-    const proto = (request.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "")).toLowerCase();
+    const proto = trusted 
+      ? (request.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "")).toLowerCase()
+      : url.protocol.replace(":", "").toLowerCase();
+    
     const wrongHost =
       host !== PRODUCTION_HOST && host !== `www.${PRODUCTION_HOST}`;
     const wrongProto = proto !== "https";
@@ -66,12 +81,16 @@ export default async function middleware(request: NextRequest) {
       const target = new URL(url.toString());
       target.protocol = "https:";
       target.host = PRODUCTION_HOST;
-      return NextResponse.redirect(target, 308);
+      const response = NextResponse.redirect(target, 308);
+      response.headers.set(requestIdHeader, requestId);
+      return response;
     }
   }
 
   if (isWebhook(path)) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    response.headers.set(requestIdHeader, requestId);
+    return response;
   }
 
   // Route Handlers must never be redirected — clients expect JSON.
@@ -83,7 +102,9 @@ export default async function middleware(request: NextRequest) {
       const flags = await getOwnerFlags();
       if (flags.maintenance_mode && path !== "/maintenance") {
         const origin = process.env.NODE_ENV === "development" ? request.nextUrl.origin.replace("0.0.0.0", "localhost").replace("https://localhost", "http://localhost") : getBaseUrl();
-        return NextResponse.redirect(new URL("/maintenance", origin));
+        const response = NextResponse.redirect(new URL("/maintenance", origin));
+        response.headers.set(requestIdHeader, requestId);
+        return response;
       }
     } catch {
       /* fail open */
@@ -96,52 +117,93 @@ export default async function middleware(request: NextRequest) {
       request.headers.get("x-real-ip") ||
       "unknown";
 
-    if (!rateOk(`all:${ip}`, 240, 60_000)) return tooMany();
+    if (!(await redisRateOk(`all:${ip}`, 240, 60_000))) {
+      const response = tooMany();
+      response.headers.set(requestIdHeader, requestId);
+      return response;
+    }
 
     if (
       path.startsWith("/api/checkout") ||
       path.startsWith("/api/payments") ||
       path.startsWith("/api/orders")
     ) {
-      if (!rateOk(`pay:${ip}`, 8, 60_000)) return tooMany();
+      if (!(await redisRateOk(`pay:${ip}`, 8, 60_000))) {
+        const response = tooMany();
+        response.headers.set(requestIdHeader, requestId);
+        return response;
+      }
     } else if (path.startsWith("/api/promo")) {
-      if (!rateOk(`promo:${ip}`, 12, 60_000)) return tooMany();
+      if (!(await redisRateOk(`promo:${ip}`, 12, 60_000))) {
+        const response = tooMany();
+        response.headers.set(requestIdHeader, requestId);
+        return response;
+      }
     } else if (path.startsWith("/api/events")) {
-      if (!rateOk(`events:${ip}`, 60, 60_000)) return tooMany();
+      if (!(await redisRateOk(`events:${ip}`, 60, 60_000))) {
+        const response = tooMany();
+        response.headers.set(requestIdHeader, requestId);
+        return response;
+      }
     } else if (
       path.startsWith("/api/contact") ||
       path.startsWith("/api/newsletter") ||
       path.startsWith("/api/corporate")
     ) {
-      if (!rateOk(`form:${ip}`, 5, 60_000)) return tooMany();
+      if (!(await redisRateOk(`form:${ip}`, 5, 60_000))) {
+        const response = tooMany();
+        response.headers.set(requestIdHeader, requestId);
+        return response;
+      }
     } else if (path.startsWith("/api/auth/")) {
       // Password reset, etc. — tight bucket to prevent email-bombing / account enumeration abuse.
-      if (!rateOk(`auth:${ip}`, 5, 60_000)) return tooMany();
+      if (!(await redisRateOk(`auth:${ip}`, 5, 60_000))) {
+        const response = tooMany();
+        response.headers.set(requestIdHeader, requestId);
+        return response;
+      }
     } else if (path.startsWith("/api/account/")) {
       // Profile completion - allow generous rate for legitimate form submissions
-      if (!rateOk(`account:${ip}`, 20, 60_000)) return tooMany();
+      if (!(await redisRateOk(`account:${ip}`, 20, 60_000))) {
+        const response = tooMany();
+        response.headers.set(requestIdHeader, requestId);
+        return response;
+      }
     } else if (path.startsWith("/api/geocode")) {
       // Proxies third-party geocoders (Nominatim usage policy is ~1 req/sec globally) — keep our shared IP well under any ban threshold.
-      if (!rateOk(`geo:${ip}`, 20, 60_000)) return tooMany();
+      if (!(await redisRateOk(`geo:${ip}`, 20, 60_000))) {
+        const response = tooMany();
+        response.headers.set(requestIdHeader, requestId);
+        return response;
+      }
     } else if (
       path.startsWith("/api/wishlist") ||
       path.startsWith("/api/loyalty") ||
       path.startsWith("/api/push")
     ) {
-      if (!rateOk(`user:${ip}`, 30, 60_000)) return tooMany();
+      if (!(await redisRateOk(`user:${ip}`, 30, 60_000))) {
+        const response = tooMany();
+        response.headers.set(requestIdHeader, requestId);
+        return response;
+      }
     } else if (path.startsWith("/api/mr-brownie") || path.startsWith("/api/chat")) {
-      if (!rateOk(`chat:${ip}`, 24, 60_000)) return tooMany();
+      if (!(await redisRateOk(`chat:${ip}`, 24, 60_000))) {
+        const response = tooMany();
+        response.headers.set(requestIdHeader, requestId);
+        return response;
+      }
     } else if (path.startsWith("/api/admin/")) {
-      if (!rateOk(`admin:${ip}`, 60, 60_000)) return tooMany();
+      if (!(await redisRateOk(`admin:${ip}`, 60, 60_000))) {
+        const response = tooMany();
+        response.headers.set(requestIdHeader, requestId);
+        return response;
+      }
     } else if (path.startsWith("/api/revalidate")) {
-      if (!rateOk(`reval:${ip}`, 10, 60_000)) return tooMany();
-    }
-  }
-
-  if (Math.random() < 0.001) {
-    const now = Date.now();
-    for (const [k, v] of rateBuckets) {
-      if (v.reset < now) rateBuckets.delete(k);
+      if (!(await redisRateOk(`reval:${ip}`, 10, 60_000))) {
+        const response = tooMany();
+        response.headers.set(requestIdHeader, requestId);
+        return response;
+      }
     }
   }
 
@@ -156,6 +218,7 @@ export default async function middleware(request: NextRequest) {
     ? await updateSupabaseSession(request)
     : { response: NextResponse.next({ request }), user: null as null };
   response.headers.set("x-mw", needsAuth ? "auth" : "pass");
+  response.headers.set(requestIdHeader, requestId);
 
   if (isAccountRoute(path) && !isRouteHandler) {
     if (!user) {
@@ -165,7 +228,9 @@ export default async function middleware(request: NextRequest) {
         "redirect_url",
         `${request.nextUrl.pathname}${request.nextUrl.search}`,
       );
-      return NextResponse.redirect(signIn);
+      const redirectResponse = NextResponse.redirect(signIn);
+      redirectResponse.headers.set(requestIdHeader, requestId);
+      return redirectResponse;
     }
     return response;
   }
@@ -181,20 +246,26 @@ export default async function middleware(request: NextRequest) {
       "redirect_url",
       `${request.nextUrl.pathname}${request.nextUrl.search}`,
     );
-    return NextResponse.redirect(signIn);
+    const redirectResponse = NextResponse.redirect(signIn);
+    redirectResponse.headers.set(requestIdHeader, requestId);
+    return redirectResponse;
   }
 
   const email = user.email ?? null;
   const role = await resolveStaffRole({ email, supabaseUserId: user.id });
   if (!["owner", "admin", "staff"].includes(role)) {
     const origin = process.env.NODE_ENV === "development" ? request.nextUrl.origin.replace("0.0.0.0", "localhost").replace("https://localhost", "http://localhost") : getBaseUrl();
-    return NextResponse.redirect(new URL("/403", origin));
+    const redirectResponse = NextResponse.redirect(new URL("/403", origin));
+    redirectResponse.headers.set(requestIdHeader, requestId);
+    return redirectResponse;
   }
 
   const adminModule = resolveModule(request.nextUrl.pathname);
   if (!canAccess(role, adminModule)) {
     const origin = process.env.NODE_ENV === "development" ? request.nextUrl.origin.replace("0.0.0.0", "localhost").replace("https://localhost", "http://localhost") : getBaseUrl();
-    return NextResponse.redirect(new URL("/403", origin));
+    const redirectResponse = NextResponse.redirect(new URL("/403", origin));
+    redirectResponse.headers.set(requestIdHeader, requestId);
+    return redirectResponse;
   }
 
   return response;

@@ -1,91 +1,9 @@
-import { createRequire } from "node:module";
+import { withSentryConfig } from "@sentry/nextjs";
 import path from "node:path";
 import type { NextConfig } from "next";
 import { assertProductionEnvOrWarn } from "./lib/config/production-lock";
 
 assertProductionEnvOrWarn();
-
-/** next-pwa is CJS — createRequire avoids broken ESM default interop on some hosts (Next 16). */
-const require = createRequire(path.resolve(process.cwd(), "package.json"));
-type PwaWrap = (config: NextConfig) => NextConfig;
-
-const withPWA = (require("next-pwa") as (options: Record<string, unknown>) => PwaWrap)({
-  dest: "public",
-  register: true,
-  skipWaiting: true,
-  clientsClaim: true,
-  cleanupOutdatedCaches: true,
-  /** App Router: never cache client navigations — stale HTML + new CSS = unstyled page. */
-  cacheOnFrontEndNav: false,
-  cacheStartUrl: false,
-  dynamicStartUrl: false,
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development",
-  runtimeCaching: [
-    // HTML/RSC: always prefer network so deploys pick up new CSS hashes immediately.
-    {
-      urlPattern: ({ request }: { request: Request }) => request.mode === "navigate",
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "html-navigate",
-        networkTimeoutSeconds: 8,
-        expiration: { maxEntries: 16, maxAgeSeconds: 60 * 60 },
-        cacheableResponse: { statuses: [200] },
-      },
-    },
-    // Hashed static assets are immutable — CacheFirst is safe when filenames change each build.
-    {
-      urlPattern: /\/_next\/static\/.*/i,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "next-static-immutable",
-        expiration: { maxEntries: 256, maxAgeSeconds: 365 * 24 * 60 * 60 },
-        cacheableResponse: { statuses: [200] },
-      },
-    },
-    {
-      urlPattern: /^\/_next\/image\?url=.*/i,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "next-image-optimizer",
-        expiration: { maxEntries: 240, maxAgeSeconds: 30 * 24 * 60 * 60 },
-      },
-    },
-    {
-      urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/i,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "cloudinary-images",
-        expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 },
-      },
-    },
-    {
-      urlPattern: /^https:\/\/images\.unsplash\.com\/.*/i,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "unsplash-images",
-        expiration: { maxEntries: 120, maxAgeSeconds: 14 * 24 * 60 * 60 },
-      },
-    },
-    {
-      urlPattern: /^https:\/\/cdn\.sanity\.io\/.*/i,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "sanity-images",
-        expiration: { maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 },
-      },
-    },
-    {
-      urlPattern: /\/api\/products.*/i,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "api-products",
-        networkTimeoutSeconds: 3,
-        expiration: { maxEntries: 32, maxAgeSeconds: 60 },
-      },
-    },
-  ],
-});
 
 /** إنتاج: CSP صارمة. التطوير: بدون CSP وبدون HSTS حتى لا يمنع Turbopack/React استخدام eval() في المتصفح. */
 const PRODUCTION_SECURITY_HEADERS = [
@@ -96,11 +14,11 @@ const PRODUCTION_SECURITY_HEADERS = [
   },
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "Referrer-Policy", value: "origin-when-cross-origin" },
+  { key: "Referrer-Policy", value: "same-origin" },
   {
     key: "Content-Security-Policy",
     value:
-      "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net cdnjs.cloudflare.com https://*.googletagmanager.com; style-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: blob: https://res.cloudinary.com https://cdn.sanity.io https://images.unsplash.com https://*.cdninstagram.com https://*.fbcdn.net https://*.tile.openstreetmap.org https://tile.openstreetmap.org; connect-src 'self' https://api.cloudinary.com https://*.supabase.co wss://*.supabase.co; font-src 'self' https://fonts.gstatic.com cdn.jsdelivr.net; frame-src 'self' https://accept.paymob.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self';",
+      "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net https://*.googletagmanager.com; style-src 'self' 'unsafe-inline' cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://res.cloudinary.com https://cdn.sanity.io https://images.unsplash.com https://*.cdninstagram.com https://*.fbcdn.net https://*.tile.openstreetmap.org https://tile.openstreetmap.org; connect-src 'self' https://api.cloudinary.com https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net; font-src 'self' https://fonts.gstatic.com cdn.jsdelivr.net; frame-src 'self' https://accept.paymob.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self';",
   },
   {
     key: "Permissions-Policy",
@@ -142,6 +60,9 @@ const nextConfig: NextConfig = {
       "@tanstack/react-table",
       "recharts",
       "@supabase/supabase-js",
+      "react-markdown",
+      "rehype-highlight",
+      "remark-gfm",
     ],
     staleTimes: {
       dynamic: 30,
@@ -181,8 +102,8 @@ const nextConfig: NextConfig = {
   },
   images: {
     formats: ["image/avif", "image/webp"],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
-    imageSizes: [32, 48, 64, 96, 128, 256, 384, 512],
+    deviceSizes: [640, 750, 828, 1080, 1200], // Removed 1920 for better performance on mobile
+    imageSizes: [32, 48, 64, 96, 128, 256, 384], // Removed 512 for smaller image variants
     minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       {
@@ -193,16 +114,6 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "**.cdninstagram.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "scontent.cdninstagram.com",
         pathname: "/**",
       },
       {
@@ -313,10 +224,46 @@ function wrapConfig(config: NextConfig): NextConfig {
     const withBundleAnalyzer = require("@next/bundle-analyzer")({
       enabled: true,
       openAnalyzer: true,
-    }) as PwaWrap;
+    });
     return withBundleAnalyzer(config);
   }
   return config;
 }
 
-export default withPWA(wrapConfig(nextConfig));
+export default withSentryConfig(wrapConfig(nextConfig), {
+  // For all available options, see:
+  // https://www.npmjs.com/package/@sentry/webpack-plugin#options
+
+  org: "cookie-bite",
+
+  project: "javascript-nextjs",
+
+  // Only print logs for uploading source maps in CI
+  silent: !process.env.CI,
+
+  // For all available options, see:
+  // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
+
+  // Upload a larger set of source maps for prettier stack traces (increases build time)
+  widenClientFileUpload: true,
+
+  // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
+  // This can increase your server load as well as your hosting bill.
+  // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
+  // side errors will fail.
+  tunnelRoute: "/monitoring",
+
+  webpack: {
+    // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
+    // See the following for more information:
+    // https://docs.sentry.io/product/crons/
+    // https://vercel.com/docs/cron-jobs
+    automaticVercelMonitors: true,
+
+    // Tree-shaking options for reducing bundle size
+    treeshake: {
+      // Automatically tree-shake Sentry logger statements to reduce bundle size
+      removeDebugLogging: true,
+    },
+  },
+});

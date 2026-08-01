@@ -86,6 +86,7 @@ export function ProductCardImageCarousel({
         className="absolute inset-0 block w-full cursor-zoom-in text-start"
         onClick={onImageClick}
         aria-label={onImageClick ? t("search.quickView") : productName}
+        role="img"
       >
         {activeIndex === 0 ? (
           <ProductSharedImage
@@ -134,7 +135,7 @@ export function ProductCardImageCarousel({
                   current: String(i + 1),
                   total: String(slides.length),
                 })}
-                aria-current={i === activeIndex}
+                aria-current={i === activeIndex ? "true" : "false"}
               />
             ))}
           </div>

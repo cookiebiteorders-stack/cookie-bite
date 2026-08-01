@@ -65,3 +65,24 @@ export const CORPORATE_GIFTING_FAQ = [
     a: "Yes — we can issue documentation suitable for corporate procurement. Mention your requirements in the contact form.",
   },
 ] as const;
+
+export function getDistrictFaq(districtName: string) {
+  return [
+    {
+      q: `Do you deliver cookies to ${districtName}?`,
+      a: `Yes! We deliver our freshly baked cookies directly to ${districtName}. Order online and we'll bring them to your door.`,
+    },
+    {
+      q: `What is the delivery fee for ${districtName}?`,
+      a: `Delivery fees for ${districtName} are calculated at checkout based on your exact address. Enjoy free delivery on qualifying orders above ${ENV_FREE_SHIPPING_THRESHOLD_EGP} EGP.`,
+    },
+    {
+      q: "Are the cookies baked fresh?",
+      a: "Always. Our cookies are baked from scratch using premium ingredients like Belgian chocolate and New Zealand butter.",
+    },
+    {
+      q: "Can I order a custom gift box?",
+      a: "Yes, you can build your own custom cookie box by selecting your favorite flavors. Perfect for gifting in " + districtName + ".",
+    },
+  ];
+}

@@ -29,7 +29,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   const supabase = createSupabaseAdminClient();
 
   const { data: user, error: userErr } = await supabase
-    .from("profiles")
+    .from("users")
     .select("id,email,full_name,avatar_url,points,created_at,updated_at,supabase_user_id,role")
     .eq("id", id)
     .eq("role", "customer")
@@ -128,15 +128,15 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
   const supabase = createSupabaseAdminClient();
 
-  const { data: exists } = await supabase.from("profiles").select("id").eq("id", id).eq("role", "customer").maybeSingle();
+  const { data: exists } = await supabase.from("users").select("id").eq("id", id).eq("role", "customer").maybeSingle();
   if (!exists) {
     return NextResponse.json(bilingualError("Customer not found", "العميل غير موجود"), { status: 404 });
   }
 
-  const { data: before } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
+  const { data: before } = await supabase.from("users").select("*").eq("id", id).maybeSingle();
 
   if (Object.keys(patch).length > 0) {
-    const { data: updated, error } = await supabase.from("profiles").update(patch).eq("id", id).select("*").single();
+    const { data: updated, error } = await supabase.from("users").update(patch).eq("id", id).select("*").single();
     if (error || !updated) {
       return NextResponse.json(bilingualError("Failed to update customer", "فشل تحديث العميل"), { status: 500 });
     }
@@ -157,7 +157,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     }
   }
 
-  const { data: finalRow } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
+  const { data: finalRow } = await supabase.from("users").select("*").eq("id", id).maybeSingle();
 
   await writeAuditLog({
     actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
@@ -216,7 +216,7 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
   }
 
   const supabase = createSupabaseAdminClient();
-  const { data: before } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
+  const { data: before } = await supabase.from("users").select("*").eq("id", id).maybeSingle();
 
   const result = await deleteCustomerAccount({ target });
 

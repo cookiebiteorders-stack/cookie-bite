@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { SlidersHorizontal } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useDebounce } from "@/src/hooks/useDebounce";
@@ -18,6 +19,7 @@ import {
   SearchProductRow,
 } from "@/src/components/search/ProductCard";
 import { Badge } from "@/src/components/ui/Badge";
+import { buttonClassName } from "@/components/ui/button";
 import { scheduleEffectTask } from "@/lib/react/schedule-effect-task";
 import { fetchJson } from "@/lib/http/fetch-json";
 import { useLanguage } from "@/components/providers/language-provider";
@@ -663,11 +665,29 @@ export function SearchPageClient() {
                 ))}
               </div>
             ) : pageItems.length === 0 ? (
-              <div className="rounded-xl border border-cb-border bg-cb-surface p-10 text-center">
-                <p className="text-lg font-semibold text-cb-text-strong">
+              <div className="rounded-xl border border-cb-border bg-cb-surface p-12 text-center">
+                <div className="mb-6 inline-flex rounded-full bg-cb-peach/30 p-4">
+                  <SlidersHorizontal className="h-12 w-12 text-cb-terracotta-dark" />
+                </div>
+                <h3 className="font-serif text-2xl font-semibold text-cb-text-strong">
                   {t("search.noResults")}
-                </p>
-                <p className="mt-2 text-sm text-cb-text-muted">{t("search.noResultsHint")}</p>
+                </h3>
+                <p className="mt-3 text-cb-text-muted">{t("search.noResultsHint")}</p>
+                <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className={buttonClassName("outline", "inline-flex items-center justify-center gap-2 rounded-full px-8 py-3")}
+                  >
+                    {t("search.clearAllFilters")}
+                  </button>
+                  <Link
+                    href="/shop"
+                    className={buttonClassName("primary", "inline-flex items-center justify-center gap-2 rounded-full px-8 py-3")}
+                  >
+                    Browse All Cookies
+                  </Link>
+                </div>
               </div>
             ) : filters.view === "grid" ? (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

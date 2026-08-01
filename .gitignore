@@ -73,3 +73,6 @@ cookie-bite-python/.env
 cookie-bite-python/**/__pycache__/
 cookie-bite-python/**/.pytest_cache/
 cookie-bite-python/.venv/
+
+# Sentry Config File
+.env.sentry-build-plugin

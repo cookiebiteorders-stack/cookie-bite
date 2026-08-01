@@ -3,6 +3,14 @@ import { tryCreateSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const DEFAULT_OWNER_EMAIL = "cookie.bite.orders@gmail.com";
 
+const DEFAULT_OWNER_BOOTSTRAP_EMAILS = [
+  "bitecookie532@gmail.com",
+  "cookie.bite.orders@gmail.com",
+  "fatmaelbeshawy75@gmail.com",
+  "mohamedabbasyounis@gmail.com",
+  "mohamedalwardani1@gmail.com",
+];
+
 function parseCsv(input?: string) {
   if (!input) return [];
   return input
@@ -16,12 +24,17 @@ export function resolveStaffRoleFromEmail(email: string | null | undefined): Use
   const normalized = (email ?? "").trim().toLowerCase();
   if (!normalized) return "customer";
 
-  const ownerEmail =
-    (process.env.OWNER_BOOTSTRAP_EMAIL || DEFAULT_OWNER_EMAIL).trim().toLowerCase();
+  // Check against multiple owner bootstrap emails
+  const ownerBootstrapEmails = parseCsv(process.env.OWNER_BOOTSTRAP_EMAILS);
+  const ownerEmails = ownerBootstrapEmails.length > 0 
+    ? ownerBootstrapEmails 
+    : DEFAULT_OWNER_BOOTSTRAP_EMAILS.map(e => e.toLowerCase());
+  
+  if (ownerEmails.includes(normalized)) return "owner";
+  
   const adminEmails = parseCsv(process.env.ADMIN_BOOTSTRAP_EMAILS);
   const staffEmails = parseCsv(process.env.STAFF_BOOTSTRAP_EMAILS);
 
-  if (normalized === ownerEmail) return "owner";
   if (adminEmails.includes(normalized)) return "admin";
   if (staffEmails.includes(normalized)) return "staff";
 
@@ -29,8 +42,9 @@ export function resolveStaffRoleFromEmail(email: string | null | undefined): Use
 }
 
 /**
- * يحدد الدور من قاعدة البيانات أولاً، ثم fallback لمتغيرات البيئة.
- * يُستخدم في السيرفر فقط لأنّه يعتمد على service-role.
+ * يحدد الدور من قاعدة البيانات أولاً (users table is canonical).
+ * في الإنتاج: يفشل إذا لم يكن السجل موجوداً (fail-closed).
+ * في التطوير: يسمح بـ fallback لمتغيرات البيئة للإعداد الأولي فقط.
  */
 export async function resolveStaffRole(params: {
   email: string | null | undefined;
@@ -41,11 +55,16 @@ export async function resolveStaffRole(params: {
 
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) {
+    // In production, fail closed if we can't access the database
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Database unavailable - cannot resolve role safely");
+    }
     return resolveStaffRoleFromEmail(normalizedEmail || params.email);
   }
 
   try {
-    let query = supabase.from("profiles").select("role").limit(1);
+    // Query canonical users table only (not profiles)
+    let query = supabase.from("users").select("role").limit(1);
 
     if (supabaseUserId) {
       query = query.eq("id", supabaseUserId);
@@ -60,9 +79,18 @@ export async function resolveStaffRole(params: {
     if (role === "owner" || role === "admin" || role === "staff" || role === "customer") {
       return role;
     }
-  } catch {
-    // fallback below
+  } catch (err) {
+    // In production, fail closed on any DB error
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(`Database lookup failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
-  return resolveStaffRoleFromEmail(normalizedEmail);
+  // Only allow env var fallback in development for bootstrap purposes
+  if (process.env.NODE_ENV !== "production") {
+    return resolveStaffRoleFromEmail(normalizedEmail);
+  }
+
+  // In production, fail closed if no role found in database
+  throw new Error("Role record not found in database - authorization denied");
 }

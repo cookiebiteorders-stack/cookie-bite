@@ -28,7 +28,7 @@ async function fetchUser(
 ): Promise<UserLookupRow | null> {
   if (!userId) return null;
   const { data } = await supabase
-    .from("profiles")
+    .from("users")
     .select("full_name, email")
     .eq("id", userId)
     .maybeSingle();

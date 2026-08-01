@@ -75,8 +75,8 @@ export function FinancialChartsSection({ summary }: Props) {
                 <YAxis tick={{ fontSize: 10 }} stroke="var(--cb-text-muted)" />
                 <Tooltip contentStyle={{ borderRadius: 12, fontSize: 12 }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="revenue" name="Revenue" stroke="#16a34a" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="expenses" name="Expenses" stroke="#dc2626" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="revenue" name="Revenue" stroke="#16a34a" strokeWidth={2} dot={false} isAnimationActive={false} />
+                <Line type="monotone" dataKey="expenses" name="Expenses" stroke="#dc2626" strokeWidth={2} dot={false} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -97,7 +97,7 @@ export function FinancialChartsSection({ summary }: Props) {
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="var(--cb-text-muted)" />
                 <YAxis tick={{ fontSize: 10 }} stroke="var(--cb-text-muted)" />
                 <Tooltip contentStyle={{ borderRadius: 12, fontSize: 12 }} />
-                <Area type="monotone" dataKey="profit" name="Net" stroke="#4f46e5" fill="url(#profitFill)" strokeWidth={2} />
+                <Area type="monotone" dataKey="profit" name="Net" stroke="#4f46e5" fill="url(#profitFill)" strokeWidth={2} isAnimationActive={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

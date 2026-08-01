@@ -47,7 +47,7 @@ async function loadLiveSnapshot(): Promise<CopilotPromptContext["snapshot"]> {
     const [todayOrders, newCustomers, pending, lowStock, failed] = await Promise.all([
       sb.from("orders").select("total_egp").gte("created_at", todayIso),
       sb
-        .from("profiles")
+        .from("users")
         .select("id", { count: "exact", head: true })
         .eq("role", "customer")
         .gte("created_at", todayIso),

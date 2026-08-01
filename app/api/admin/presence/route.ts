@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     try {
       const supabase = createSupabaseAdminClient();
       const { data } = await supabase
-        .from("profiles")
+        .from("users")
         .select("full_name")
         .eq("id", targetUserId)
         .maybeSingle();
@@ -83,3 +83,4 @@ export async function GET(req: NextRequest) {
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const revalidate = 5; // Presence data changes frequently, cache for 5 seconds

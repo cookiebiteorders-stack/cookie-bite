@@ -42,7 +42,7 @@ export function AnalyticsCharts({ charts }: Props) {
                 <XAxis dataKey="date" tickFormatter={shortDateLabel} tick={{ fontSize: 10 }} stroke="var(--cb-text)" />
                 <YAxis tick={{ fontSize: 10 }} stroke="var(--cb-text)" />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Line type="monotone" dataKey="revenue" stroke="#22c55e" strokeWidth={2.4} dot={false} isAnimationActive />
+                <Line type="monotone" dataKey="revenue" stroke="#22c55e" strokeWidth={2.4} dot={false} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -57,7 +57,7 @@ export function AnalyticsCharts({ charts }: Props) {
                 <XAxis dataKey="date" tickFormatter={shortDateLabel} tick={{ fontSize: 10 }} stroke="var(--cb-text)" />
                 <YAxis tick={{ fontSize: 10 }} stroke="var(--cb-text)" />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="orders" fill="#e8782a" radius={[7, 7, 0, 0]} isAnimationActive />
+                <Bar dataKey="orders" fill="#e8782a" radius={[7, 7, 0, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -72,7 +72,7 @@ export function AnalyticsCharts({ charts }: Props) {
                 <XAxis type="number" tick={{ fontSize: 10 }} stroke="var(--cb-text)" />
                 <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 10 }} stroke="var(--cb-text)" />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="sales" fill="#8b5cf6" radius={[0, 8, 8, 0]} isAnimationActive />
+                <Bar dataKey="sales" fill="#8b5cf6" radius={[0, 8, 8, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -87,7 +87,7 @@ export function AnalyticsCharts({ charts }: Props) {
                 <XAxis dataKey="date" tickFormatter={shortDateLabel} tick={{ fontSize: 10 }} stroke="var(--cb-text)" />
                 <YAxis tick={{ fontSize: 10 }} stroke="var(--cb-text)" />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Line type="monotone" dataKey="customers" stroke="#38bdf8" strokeWidth={2.2} dot={false} isAnimationActive />
+                <Line type="monotone" dataKey="customers" stroke="#38bdf8" strokeWidth={2.2} dot={false} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>

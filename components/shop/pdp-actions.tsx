@@ -126,19 +126,37 @@ export function PdpActions({
               </button>
             </div>
           ) : null}
-          <ProductCartActions
-            ref={addBtnRef}
-            product={product}
-            addons={addons}
-            selected={selected}
-            selectedAddons={selectedAddons}
-            addonsTotal={addonsTotal}
-            selectedVariant={selectedVariant}
-            requireVariantSelection={hasVariants}
-            variant="pdp"
-            addQuantity={qty}
-            onAddonError={setError}
-          />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <ProductCartActions
+              ref={addBtnRef}
+              product={product}
+              addons={addons}
+              selected={selected}
+              selectedAddons={selectedAddons}
+              addonsTotal={addonsTotal}
+              selectedVariant={selectedVariant}
+              requireVariantSelection={hasVariants}
+              variant="pdp"
+              addQuantity={qty}
+              onAddonError={setError}
+              buyNow={false}
+            />
+            {!inCart && !outOfStock ? (
+              <ProductCartActions
+                product={product}
+                addons={addons}
+                selected={selected}
+                selectedAddons={selectedAddons}
+                addonsTotal={addonsTotal}
+                selectedVariant={selectedVariant}
+                requireVariantSelection={hasVariants}
+                variant="pdp"
+                addQuantity={qty}
+                onAddonError={setError}
+                buyNow={true}
+              />
+            ) : null}
+          </div>
         </div>
         {outOfStock ? (
           <p className="text-sm font-semibold text-cb-text-muted">{t("product.outOfStock")}</p>
@@ -157,6 +175,14 @@ export function PdpActions({
               document.getElementById("pdp-addons")?.scrollIntoView({ behavior: "smooth" });
             }
             addBtnRef.current?.click();
+          }}
+          onBuyNowClick={() => {
+            if (addons.length > 0) {
+              document.getElementById("pdp-addons")?.scrollIntoView({ behavior: "smooth" });
+            }
+            // Trigger buy now by simulating click on a buy now variant
+            const buyNowBtn = document.querySelector('[data-buy-now="true"]') as HTMLButtonElement;
+            if (buyNowBtn) buyNowBtn.click();
           }}
         />
       ) : null}

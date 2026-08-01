@@ -1,16 +1,21 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Users, Cookie, Truck, Heart } from "lucide-react";
 import { STORY_SECTIONS, INSTAGRAM_GRID } from "@/lib/data";
+import { useLanguage } from "@/components/providers/language-provider";
 
 const stats = [
-  { icon: Users, num: "10K+", label: "Happy Customers" },
-  { icon: Cookie, num: "Fresh", label: "Baked Daily" },
-  { icon: Heart, num: "100%", label: "Premium Ingredients" },
-  { icon: Truck, num: "Fast", label: "Reliable Delivery" },
+  { icon: Users, numKey: "mobileStory.customersNum", labelKey: "mobileStory.customersLabel" },
+  { icon: Cookie, numKey: "mobileStory.freshNum", labelKey: "mobileStory.freshLabel" },
+  { icon: Heart, numKey: "mobileStory.ingredientsNum", labelKey: "mobileStory.ingredientsLabel" },
+  { icon: Truck, numKey: "mobileStory.deliveryNum", labelKey: "mobileStory.deliveryLabel" },
 ];
 
 export function MobileStoryView() {
+  const { t } = useLanguage();
+
   return (
     <div className="md:hidden bg-cb-cream min-h-screen">
       {/* Cinematic Hero */}
@@ -27,17 +32,17 @@ export function MobileStoryView() {
         <div className="mobile-story-hero__overlay" />
         <div className="mobile-story-hero__content">
           <h1 className="text-3xl font-extrabold leading-tight">
-            <span className="text-white">A bite of </span>
-            <span className="text-[#F0A070]">happiness</span>
+            <span className="text-white">{t("mobileStory.heroTitlePrefix")}</span>
+            <span className="text-[#F0A070]">{t("mobileStory.heroTitleAccent")}</span>
           </h1>
           <p className="text-sm text-white/70 mt-2 leading-relaxed">
-            We started with a mixer, a dream, and an obsession with the perfect chew. Today, we&apos;re still a small team — just with more ovens.
+            {t("mobileStory.heroBody")}
           </p>
           <Link
             href="/our-cookies"
             className="mobile-btn-outline mobile-btn-pill border-white text-white mt-4 w-fit"
           >
-            Explore Our Cookies →
+            {t("mobileStory.heroCta")}
           </Link>
         </div>
       </section>
@@ -66,15 +71,15 @@ export function MobileStoryView() {
 
       {/* Stats Grid */}
       <div className="mobile-section">
-        <h2 className="mobile-section__h2">Why people love us</h2>
+        <h2 className="mobile-section__h2">{t("mobileStory.statsTitle")}</h2>
       </div>
       <div className="mobile-spacer-sm" />
       <div className="mobile-stats-grid">
         {stats.map(s => (
-          <div key={s.label} className="mobile-stat-cell">
+          <div key={s.labelKey} className="mobile-stat-cell">
             <s.icon className="mobile-stat-cell__icon" />
-            <p className="mobile-stat-cell__num">{s.num}</p>
-            <p className="mobile-stat-cell__label">{s.label}</p>
+            <p className="mobile-stat-cell__num">{t(s.numKey)}</p>
+            <p className="mobile-stat-cell__label">{t(s.labelKey)}</p>
           </div>
         ))}
       </div>
@@ -83,7 +88,7 @@ export function MobileStoryView() {
 
       {/* Photo Moments */}
       <div className="mobile-section">
-        <h2 className="mobile-section__h2">Moments we create</h2>
+        <h2 className="mobile-section__h2">{t("mobileStory.momentsTitle")}</h2>
       </div>
       <div className="mobile-spacer-sm" />
       <div className="mobile-moments-grid">
@@ -100,14 +105,14 @@ export function MobileStoryView() {
       {/* CTA */}
       <div className="text-center px-4">
         <h2 className="text-[22px] font-bold text-cb-text-strong mb-2">
-          Ready to taste our story?
+          {t("mobileStory.ctaTitle")}
         </h2>
         <p className="text-sm text-cb-text-muted mb-4">
-          Discover the cookies everyone&apos;s talking about.
+          {t("mobileStory.ctaBody")}
         </p>
         <div className="flex gap-2.5 justify-center">
-          <Link href="/shop" className="mobile-btn-primary mobile-btn-pill">Shop now</Link>
-          <Link href="/gift-box/build" className="mobile-btn-outline mobile-btn-pill">Build your gift box</Link>
+          <Link href="/shop" className="mobile-btn-primary mobile-btn-pill">{t("mobileStory.ctaShop")}</Link>
+          <Link href="/gift-box/build" className="mobile-btn-outline mobile-btn-pill">{t("mobileStory.ctaGiftBox")}</Link>
         </div>
       </div>
 

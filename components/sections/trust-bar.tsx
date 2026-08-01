@@ -1,6 +1,6 @@
 "use client";
 
-import { Leaf, ShieldCheck, Sparkles, Truck } from "lucide-react";
+import { Leaf, ShieldCheck, Sparkles, Truck, Gift, Heart } from "lucide-react";
 import { ViewReveal } from "@/components/motion/view-reveal";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,20 @@ const itemDefs = [
     icon: ShieldCheck,
     accent: "from-cb-mint/25 to-transparent dark:from-cb-mint/20",
     reveal: "tilt-up" as const,
+  },
+  {
+    titleKey: "trustBar.packagingTitle",
+    bodyKey: "trustBar.packagingBody",
+    icon: Gift,
+    accent: "from-cb-terracotta/30 to-transparent dark:from-cb-terracotta/20",
+    reveal: "fade-up" as const,
+  },
+  {
+    titleKey: "trustBar.careTitle",
+    bodyKey: "trustBar.careBody",
+    icon: Heart,
+    accent: "from-cb-pink/35 to-transparent dark:from-cb-pink/20",
+    reveal: "slide-right" as const,
   },
 ];
 

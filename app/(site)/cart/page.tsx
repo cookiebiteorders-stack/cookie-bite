@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2, Lock, Loader2 } from "lucide-react";
+import { Trash2, Lock, Loader2, ShoppingBag } from "lucide-react";
 import { useCart } from "@/components/providers/cart-provider";
 import { QuantitySelector } from "@/src/components/cart/QuantitySelector";
 import { buttonClassName } from "@/components/ui/button";
@@ -44,15 +44,32 @@ export default function CartPage() {
           <p className="mt-2 text-cb-text-muted">{t("pages.cart.subtitle")}</p>
 
           {lines.length === 0 ? (
-            <div className="mt-12 rounded-3xl border border-cb-border bg-cb-surface p-10 text-center">
-              <p className="text-cb-text">{t("pages.cart.empty")}</p>
-              <Link
-                href="/shop"
-                className={buttonClassName("primary", "mt-6 inline-flex rounded-full px-8")}
-              >
-                {t("pages.cart.shopCookies")}
-              </Link>
-              <CartBundleOffers variant="page" className="mt-8 text-start" />
+            <div className="mt-12 rounded-3xl border border-cb-border bg-cb-surface p-12 text-center">
+              <div className="mb-6 inline-flex rounded-full bg-cb-peach/30 p-4">
+                <ShoppingBag className="h-12 w-12 text-cb-terracotta-dark" />
+              </div>
+              <h2 className="font-serif text-2xl font-semibold text-cb-text-strong">
+                Your cart is empty
+              </h2>
+              <p className="mt-3 text-cb-text-muted">
+                Start adding delicious cookies to your cart!
+              </p>
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
+                <Link
+                  href="/shop"
+                  className={buttonClassName("primary", "inline-flex items-center justify-center gap-2 rounded-full px-8 py-3")}
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                  Shop Cookies
+                </Link>
+                <Link
+                  href="/gift-box"
+                  className={buttonClassName("outline", "inline-flex items-center justify-center gap-2 rounded-full px-8 py-3")}
+                >
+                  Shop Gift Boxes
+                </Link>
+              </div>
+              <CartBundleOffers variant="page" className="mt-10 text-start" />
             </div>
           ) : (
             <>

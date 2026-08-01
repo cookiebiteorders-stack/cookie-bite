@@ -1,10 +1,14 @@
 import Link from "next/link";
+import { Search, Cookie } from "lucide-react";
 import { buttonClassName } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
     <div className="bg-cb-cream py-20">
       <div className="mx-auto max-w-3xl cb-gutter text-center">
+        <div className="mb-8 inline-flex rounded-full bg-cb-peach/30 p-6">
+          <Cookie className="h-16 w-16 text-cb-terracotta-dark" />
+        </div>
         <p className="text-xs font-bold uppercase tracking-[0.25em] text-cb-terracotta-dark">
           404
         </p>
@@ -17,21 +21,37 @@ export default function NotFound() {
         </p>
 
         <form action="/search" className="mx-auto mt-8 flex max-w-xl gap-2">
-          <input
-            type="search"
-            name="q"
-            placeholder="Search cookies, gift boxes, or topics..."
-            className="min-h-[48px] flex-1 rounded-2xl border border-cb-border bg-cb-surface px-4 text-base outline-none focus:ring-2 focus:ring-cb-focus"
-          />
-          <button type="submit" className={buttonClassName("primary", "min-h-[48px] px-5")}>
+          <div className="relative flex-1">
+            <Search className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-cb-text-muted" />
+            <input
+              type="search"
+              name="q"
+              placeholder="Search cookies, gift boxes, or topics..."
+              className="min-h-[48px] w-full rounded-2xl border border-cb-border bg-cb-surface px-4 pr-10 text-base outline-none focus:ring-2 focus:ring-cb-focus"
+            />
+          </div>
+          <button type="submit" className={buttonClassName("primary", "min-h-[48px] px-6")}>
             Search
           </button>
         </form>
 
-        <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
+          <Link
+            href="/shop"
+            className={buttonClassName("primary", "inline-flex items-center justify-center gap-2 rounded-full px-8 py-3")}
+          >
+            Shop Cookies
+          </Link>
+          <Link
+            href="/gift-box"
+            className={buttonClassName("outline", "inline-flex items-center justify-center gap-2 rounded-full px-8 py-3")}
+          >
+            Build Gift Box
+          </Link>
+        </div>
+
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            { href: "/shop", label: "Shop cookies" },
-            { href: "/gift-box", label: "Build a gift box" },
             { href: "/our-cookies", label: "Explore flavors" },
             { href: "/help/faq", label: "Read FAQ" },
             { href: "/our-story", label: "Our story" },

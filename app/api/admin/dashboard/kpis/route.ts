@@ -4,6 +4,7 @@ import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { bilingualError } from "@/lib/validations";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 60; // Cache KPIs for 60 seconds
 
 export async function GET() {
   try {

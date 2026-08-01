@@ -11,6 +11,7 @@ export type GiftRevealPublic = {
   gift_box_snapshot: GiftBoxOrderSnapshot | null;
   reveal_viewed_at: string | null;
   reveal_reaction: string | null;
+  reveal_expires_at: string | null;
 };
 
 export { giftRevealPath, giftRevealUrl } from "@/lib/gift-box/public-urls";
@@ -22,7 +23,7 @@ export async function getOrderByRevealToken(
   const { data, error } = await supabase
     .from("orders")
     .select(
-      "id, reveal_token, gift_message, sender_name, anonymous_sender, recipient_name, gift_box_snapshot, reveal_viewed_at, reveal_reaction, payment_status",
+      "id, reveal_token, gift_message, sender_name, anonymous_sender, recipient_name, gift_box_snapshot, reveal_viewed_at, reveal_reaction, reveal_expires_at, payment_status",
     )
     .eq("reveal_token", token)
     .maybeSingle();
@@ -42,6 +43,7 @@ export async function getOrderByRevealToken(
     gift_box_snapshot: snapshot,
     reveal_viewed_at: (data.reveal_viewed_at as string | null) ?? null,
     reveal_reaction: (data.reveal_reaction as string | null) ?? null,
+    reveal_expires_at: (data.reveal_expires_at as string | null) ?? null,
   };
 }
 

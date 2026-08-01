@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { bilingualError } from "@/lib/validations";
+import { checkRateLimit } from "@/lib/rate-limit/redis-limiter";
 
 const QuerySchema = z.object({
   order: z.string().min(1),
@@ -10,14 +11,29 @@ const QuerySchema = z.object({
 
 /**
  * Public order tracking — requires matching guest email (no auth).
+ * Rate limited and logged for security.
  */
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+  
+  // Use Redis-backed rate limiter (falls back to in-memory if Redis not configured)
+  const rateLimitResult = await checkRateLimit(`public-track:${ip}`, 10, 60 * 1000);
+  
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      bilingualError("Too many requests. Please try again later.", "طلبات كثيرة. يرجى المحاولة لاحقاً"),
+      { status: 429 },
+    );
+  }
+
   const parsed = QuerySchema.safeParse({
     order: req.nextUrl.searchParams.get("order")?.trim(),
     email: req.nextUrl.searchParams.get("email")?.trim().toLowerCase(),
   });
 
   if (!parsed.success) {
+    // Log failed validation attempts
+    console.warn("[public-track] Invalid query attempt", { ip, query: req.nextUrl.searchParams.toString() });
     return NextResponse.json(bilingualError("Invalid query", "استعلام غير صالح"), {
       status: 400,
     });
@@ -44,7 +60,10 @@ export async function GET(req: NextRequest) {
   }
 
   const { data: order, error } = await query.maybeSingle();
+  
   if (error || !order) {
+    // Log failed lookup attempts (don't log whether email matched for security)
+    console.warn("[public-track] Order lookup failed", { ip, orderKey });
     return NextResponse.json(bilingualError("Order not found", "الطلب غير موجود"), {
       status: 404,
     });
@@ -53,7 +72,7 @@ export async function GET(req: NextRequest) {
   let email = (order.guest_email as string | null)?.toLowerCase() ?? "";
   if (order.user_id) {
     const { data: user } = await supabase
-      .from("profiles")
+      .from("users")
       .select("email")
       .eq("id", order.user_id)
       .maybeSingle();
@@ -61,10 +80,15 @@ export async function GET(req: NextRequest) {
   }
 
   if (email !== parsed.data.email) {
+    // Log email mismatch attempts
+    console.warn("[public-track] Email mismatch attempt", { ip, orderKey });
     return NextResponse.json(bilingualError("Order not found", "الطلب غير موجود"), {
       status: 404,
     });
   }
+
+  // Log successful access
+  console.info("[public-track] Order accessed successfully", { ip, orderId: order.id });
 
   const ship = (order.shipping_address ?? {}) as Record<string, unknown>;
   const tracking =

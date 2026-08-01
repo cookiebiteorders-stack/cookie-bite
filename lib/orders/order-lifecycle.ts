@@ -123,11 +123,12 @@ export async function recordOrderCreatedLifecycle(
 
 export type DeleteOrderWithLifecycleResult = {
   loyalty: { reversedPoints: number; transactionCount: number };
-  financialsRemoved: { invoices: number; payments: number };
+  archived: boolean;
 };
 
 /**
- * يسجّل الحذف في السجل، يعكس الولاء، يحذف المالية، ثم يحذف الطلب.
+ * يسجّل الحذف في السجل، يعكس الولاء، ثم يُرشّف الطلب بدلاً من حذفه فعلياً.
+ * في الإنتاج: لا يُحذف الطلب أو سجلاته المالية أبداً - يُستخدم النموذج الأرشيفي فقط.
  */
 export async function deleteOrderWithLifecycle(
   supabase: SupabaseClient,
@@ -138,35 +139,44 @@ export async function deleteOrderWithLifecycle(
   if (!order) return null;
 
   const orderRow = order as Record<string, unknown>;
-  const financials = await captureOrderFinancialSnapshot(supabase, orderId);
   const loyalty = await reverseLoyaltyPointsForOrder(orderId);
 
   await notifyStoreOrderEvent({
     orderId,
     event: "deleted",
     actorEmail: actor.email,
-    note: "Order removed from admin; invoices and payments deleted",
+    note: "Order archived from admin; financial records preserved",
   });
 
+  // Archive the order instead of deleting it
+  const { error: updateError } = await supabase
+    .from("orders")
+    .update({
+      status: "cancelled",
+      deleted_at: new Date().toISOString(),
+      deleted_by: actor.user_id,
+    })
+    .eq("id", orderId);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+
+  // Record lifecycle event for audit trail
   await recordOrderLifecycleEvent(supabase, {
     eventType: "deleted",
     order: orderRow,
-    financials,
+    financials: { items: [], invoices: [], payments: [] }, // Financials preserved, not deleted
     actor,
     extra: {
       loyalty_reversed_points: loyalty.reversedPoints,
       loyalty_transactions_removed: loyalty.transactionCount,
+      archived: true,
+      financial_records_preserved: true,
     },
   });
 
-  const financialsRemoved = await deleteOrderFinancialRecords(supabase, orderId);
-
-  const { error } = await supabase.from("orders").delete().eq("id", orderId);
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return { loyalty, financialsRemoved };
+  return { loyalty, archived: true };
 }
 
 /** يحذف أحداث السجل منتهية الصلاحية (يُستدعى من cron — service role يتجاوز RLS). */

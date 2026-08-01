@@ -149,6 +149,18 @@ export async function POST(req: NextRequest) {
     }
   } else {
     let dbPatch: Record<string, unknown> = { ...(patch ?? {}) };
+    
+    // Refuse bulk image_url/images when updating multiple products
+    if (ids.length > 1 && (Object.keys(dbPatch).some(k => k === "image_url" || k === "images"))) {
+      return NextResponse.json(
+        bilingualError(
+          "image_url/images cannot be bulk-patched; update one product at a time",
+          "لا يمكن تحديث image_url/images دفعةً واحدة — حدّث منتجًا واحدًا"
+        ),
+        { status: 400 }
+      );
+    }
+    
     if (smart_rule) {
       dbPatch = {
         ...dbPatch,

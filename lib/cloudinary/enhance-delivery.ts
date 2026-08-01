@@ -13,11 +13,19 @@ const OP_CHAIN: Record<EnhanceOperation, string> = {
 };
 
 export function parseCloudinaryPublicId(url: string): { cloudName: string; publicId: string } | null {
-  const m = url.match(
-    /^https?:\/\/res\.cloudinary\.com\/([^/]+)\/(?:image|video)\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-z0-9]+)?$/i,
-  );
-  if (!m) return null;
-  return { cloudName: m[1], publicId: decodeURIComponent(m[2].replace(/\.[a-z0-9]+$/i, "")) };
+  try {
+    const u = new URL(url);
+    if (u.hostname !== "res.cloudinary.com") return null;
+    const parts = u.pathname.split("/").filter(Boolean); // ["<cloud>", "image"|"video", "upload", "v123", ...rest]
+    if (parts.length < 4) return null;
+    const rest = parts.slice(3);
+    let start = 0;
+    if (/^v\d+$/.test(rest[0] ?? "")) start = 1;
+    const publicId = rest.slice(start).map(decodeURIComponent).join("/");
+    return { cloudName: u.host, publicId };
+  } catch {
+    return null;
+  }
 }
 
 /** Build enhanced delivery URL (no re-upload). */

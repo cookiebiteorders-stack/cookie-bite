@@ -45,11 +45,10 @@ export function HeroSection5Copy({
     title ??
     (
       <h1 className="cb-pl-hero-title cb-hero-title mt-5 max-w-[min(100%,22rem)] text-balance font-serif text-[length:var(--fluid-display)] font-semibold leading-[1.06] sm:mt-6 sm:max-w-3xl lg:mt-7">
-        {t("hero.titleBefore")}
-        <span className="cb-hero-title-accent italic">{t("hero.titleAccent")}</span>
-        {t("hero.titleComma")}
+        Premium American-Style Cookies
+        <span className="cb-hero-title-accent italic"> Freshly Baked</span>
         <br className="hidden sm:block" />
-        <span className="mt-1 block sm:mt-0 sm:inline">{t("hero.titleLine2")}</span>
+        <span className="mt-1 block sm:mt-0 sm:inline">with Belgian Chocolate</span>
       </h1>
     );
 
@@ -57,7 +56,7 @@ export function HeroSection5Copy({
     body ??
     (
       <p className="cb-pl-hero-sub mt-6 max-w-xl text-pretty text-[length:var(--fluid-body)] font-medium leading-relaxed sm:mt-7 sm:text-lg lg:max-w-lg">
-        {t("hero.body")}
+        Handcrafted cookies using premium Belgian chocolate, freshly baked for every order. Available across New Cairo and selected Cairo areas.
       </p>
     );
 
@@ -72,19 +71,19 @@ export function HeroSection5Copy({
             "cb-hero-cta-primary cb-touch-manipulation min-h-[3rem] w-full justify-center rounded-full px-7 py-3 text-base sm:w-auto",
           )}
         >
-          <span className="text-center sm:text-nowrap">{t("hero.ctaShop")}</span>
+          <span className="text-center sm:text-nowrap">SHOP COOKIES</span>
           <ChevronRight
             className="cb-pl-chevron ms-0.5 h-5 w-5 shrink-0 rtl:rotate-180"
             aria-hidden
           />
         </Link>
         <Link
-          href="/our-cookies"
+          href="/gift-box"
           className={cn(
             "cb-pl-btn-ghost cb-hero-cta-ghost cb-touch-manipulation min-h-[3rem] w-full justify-center sm:w-auto",
           )}
         >
-          <span className="text-center sm:text-nowrap">{t("hero.ctaDiscover")}</span>
+          <span className="text-center sm:text-nowrap">SHOP GIFT BOXES</span>
         </Link>
       </div>
     );

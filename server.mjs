@@ -4,6 +4,30 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Assert that critical secrets are loaded before starting the server.
+ * This prevents silent insecure deployments.
+ */
+function assertCriticalSecrets() {
+  const criticalSecrets = [
+    "INTERNAL_API_SECRET",
+    "REVALIDATE_SECRET",
+    "PAYMOB_HMAC_SECRET",
+    "REDIS_URL",
+  ];
+  
+  const missing = criticalSecrets.filter((key) => {
+    const value = process.env[key];
+    return !value || !String(value).trim() || String(value).includes("REPLACE_ME");
+  });
+  
+  if (missing.length > 0) {
+    console.error(`[cookie-bite] CRITICAL: Missing required secrets: ${missing.join(", ")}`);
+    console.error("Server cannot start without these secrets. Set them in your environment variables.");
+    process.exit(1);
+  }
+}
+
 /** Hostinger may set cwd to repo root or `.next/standalone` after deploy. */
 function resolveStandaloneServer() {
   const cwd = process.cwd();
@@ -51,6 +75,7 @@ function warnProductionEnv() {
     "RESEND_FROM_EMAIL",
     "INTERNAL_API_SECRET",
     "REVALIDATE_SECRET",
+    "REDIS_URL",
   ];
   const missing = required.filter((k) => {
     const v = process.env[k];
@@ -62,16 +87,15 @@ function warnProductionEnv() {
   if (missing.length === 0) return;
 
   const message = `Cookie Bite production env missing: ${missing.join(", ")}`;
-  if (process.env.COOKIE_BITE_FAIL_ON_MISSING_ENV === "true") {
-    console.error(message);
-    console.error(
-      "Set variables in hPanel → Environment variables, then Redeploy. " +
-        "Or run `npm run hostinger:env-audit` locally to generate hostinger-production.env.",
-    );
-    process.exit(1);
-  }
-  console.error(`${message} (boot continues — set COOKIE_BITE_FAIL_ON_MISSING_ENV=true to hard-fail)`);
+  console.error(message);
+  console.error(
+    "Set variables in hPanel → Environment variables, then Redeploy. " +
+      "Or run `npm run hostinger:env-audit` locally to generate hostinger-production.env.",
+  );
+  process.exit(1);
 }
+
+assertCriticalSecrets();
 
 const standaloneEntry = resolveStandaloneServer();
 
@@ -99,11 +123,6 @@ console.info(
 
 await import(pathToFileURL(standaloneEntry).href);
 
-try {
-  const { startBackgroundWorkersLoopback } = await import(
-    pathToFileURL(path.join(__dirname, "scripts", "background-workers-loopback.mjs")).href
-  );
-  startBackgroundWorkersLoopback();
-} catch (err) {
-  console.warn("[cookie-bite] background loopback workers not started:", err?.message ?? err);
-}
+// Background workers now run in separate supervised process (worker.mjs)
+// This prevents blocking the web server and allows independent scaling
+console.info("[cookie-bite] Background workers disabled in web process - use worker.mjs for supervision");

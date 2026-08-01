@@ -35,5 +35,10 @@ export function computeFingerprint(): string {
     new Date().getTimezoneOffset(),
   ];
 
-  return djb2(signals.filter((v) => v !== undefined).join("|"));
+  // Convert all values to strings and filter out undefined/null
+  const stringSignals = signals
+    .filter((v) => v !== undefined && v !== null)
+    .map((v) => String(v));
+
+  return djb2(stringSignals.join("|"));
 }

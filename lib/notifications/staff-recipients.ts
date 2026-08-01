@@ -46,7 +46,7 @@ export async function listOwnerAndAdminEmails(): Promise<string[]> {
   const supabase = tryCreateSupabaseAdminClient();
   if (supabase) {
     const { data, error } = await supabase
-      .from("profiles")
+      .from("users")
       .select("email")
       .in("role", ["owner", "admin"]);
     if (error) {

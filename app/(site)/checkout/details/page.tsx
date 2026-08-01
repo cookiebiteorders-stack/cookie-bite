@@ -16,17 +16,13 @@ export default function CheckoutDetailsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state
+  // Form state - simplified for faster checkout
   const [formData, setFormData] = useState({
     name: "",
-    phonePrimary: "",
-    phoneSecondary: "",
+    phone: "",
     address: "",
-    city: "",
-    governorate: "",
-    notes: "",
+    area: "",
     deliveryDate: "",
-    deliveryTime: "",
   });
 
   // Location state
@@ -54,8 +50,7 @@ export default function CheckoutDetailsPage() {
     setFormData((prev) => ({
       ...prev,
       address: hint.street || prev.address,
-      city: hint.city || prev.city,
-      governorate: hint.governorate || prev.governorate,
+      area: hint.city || prev.area,
     }));
   };
 
@@ -63,21 +58,21 @@ export default function CheckoutDetailsPage() {
     e.preventDefault();
     setError(null);
 
-    // Validation
+    // Validation - simplified
     if (!formData.name.trim()) {
       setError("الاسم مطلوب");
       return;
     }
-    if (!formData.phonePrimary.trim()) {
-      setError("رقم الهاتف الرئيسي مطلوب");
+    if (!formData.phone.trim()) {
+      setError("رقم الهاتف مطلوب");
       return;
     }
     if (!formData.address.trim()) {
       setError("العنوان مطلوب");
       return;
     }
-    if (!formData.city.trim()) {
-      setError("المدينة مطلوبة");
+    if (!formData.area.trim()) {
+      setError("المنطقة مطلوبة");
       return;
     }
     if (!formData.deliveryDate) {
@@ -87,12 +82,8 @@ export default function CheckoutDetailsPage() {
 
     // Validate phone format (Egyptian format)
     const phoneRegex = /^01[0125][0-9]{8}$/;
-    if (!phoneRegex.test(formData.phonePrimary)) {
-      setError("رقم الهاتف الرئيسي غير صحيح (يجب أن يبدأ بـ 01 ويتكون من 11 رقم)");
-      return;
-    }
-    if (formData.phoneSecondary && !phoneRegex.test(formData.phoneSecondary)) {
-      setError("رقم الهاتف الثانوي غير صحيح (يجب أن يبدأ بـ 01 ويتكون من 11 رقم)");
+    if (!phoneRegex.test(formData.phone)) {
+      setError("رقم الهاتف غير صحيح (يجب أن يبدأ بـ 01 ويتكون من 11 رقم)");
       return;
     }
 
@@ -108,17 +99,17 @@ export default function CheckoutDetailsPage() {
 
     setLoading(true);
 
-    // Create checkout details object - filter out empty strings
+    // Create checkout details object - simplified
     const checkoutData: CheckoutDetails = {
       name: formData.name,
-      phonePrimary: formData.phonePrimary,
-      phoneSecondary: formData.phoneSecondary || undefined,
+      phonePrimary: formData.phone,
+      phoneSecondary: undefined,
       address: formData.address,
-      city: formData.city,
-      governorate: formData.governorate || undefined,
-      notes: formData.notes || undefined,
+      city: formData.area,
+      governorate: undefined,
+      notes: undefined,
       deliveryDate: formData.deliveryDate,
-      deliveryTime: formData.deliveryTime || undefined,
+      deliveryTime: undefined,
       latitude,
       longitude,
       placeLabel: addressHint?.placeLabel || undefined,
@@ -187,40 +178,21 @@ export default function CheckoutDetailsPage() {
                 />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="phonePrimary" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
-                    رقم الهاتف الرئيسي <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cb-text-muted" />
-                    <input
-                      id="phonePrimary"
-                      type="tel"
-                      value={formData.phonePrimary}
-                      onChange={(e) => setFormData({ ...formData, phonePrimary: e.target.value })}
-                      placeholder="01xxxxxxxxx"
-                      className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 pr-10 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="phoneSecondary" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
-                    رقم هاتف إضافي (اختياري)
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cb-text-muted" />
-                    <input
-                      id="phoneSecondary"
-                      type="tel"
-                      value={formData.phoneSecondary}
-                      onChange={(e) => setFormData({ ...formData, phoneSecondary: e.target.value })}
-                      placeholder="01xxxxxxxxx"
-                      className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 pr-10 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
-                    />
-                  </div>
+              <div>
+                <label htmlFor="phone" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
+                  رقم الهاتف <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Phone className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cb-text-muted" />
+                  <input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="01xxxxxxxxx"
+                    className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 pr-10 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
+                    required
+                  />
                 </div>
               </div>
             </div>
@@ -256,98 +228,46 @@ export default function CheckoutDetailsPage() {
                 />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="city" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
-                    المدينة <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="city"
-                    type="text"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="المدينة"
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="governorate" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
-                    المحافظة
-                  </label>
-                  <input
-                    id="governorate"
-                    type="text"
-                    value={formData.governorate}
-                    onChange={(e) => setFormData({ ...formData, governorate: e.target.value })}
-                    placeholder="المحافظة"
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
-                  />
-                </div>
-              </div>
-
               <div>
-                <label htmlFor="notes" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
-                  ملاحظات إضافية (اختياري)
+                <label htmlFor="area" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
+                  المنطقة <span className="text-red-500">*</span>
                 </label>
-                <textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="أي معلومات إضافية قد تساعد في التوصيل..."
-                  rows={2}
-                  className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 resize-none"
+                <input
+                  id="area"
+                  type="text"
+                  value={formData.area}
+                  onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                  placeholder="المنطقة (مثال: التجمع الخامس، مدينة نصر)"
+                  className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
+                  required
                 />
               </div>
             </div>
           </section>
 
-          {/* Delivery Date & Time */}
+          {/* Delivery Date */}
           <section className="rounded-3xl border border-cb-border bg-cb-surface p-6">
             <h2 className="mb-4 flex items-center gap-2 font-semibold text-cb-text-strong">
               <Calendar className="h-5 w-5" />
               موعد التوصيل
             </h2>
 
-            <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="deliveryDate" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
-                    تاريخ التوصيل <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="deliveryDate"
-                    type="date"
-                    value={formData.deliveryDate}
-                    onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
-                    min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
-                    required
-                  />
-                  <p className="mt-1 text-xs text-cb-text-muted">
-                    التوصيل متاح من الغد
-                  </p>
-                </div>
-
-                <div>
-                  <label htmlFor="deliveryTime" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
-                    وقت التوصيل المفضل
-                  </label>
-                  <select
-                    id="deliveryTime"
-                    value={formData.deliveryTime}
-                    onChange={(e) => setFormData({ ...formData, deliveryTime: e.target.value })}
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
-                  >
-                    <option value="">اختر الوقت</option>
-                    <option value="morning">صباحاً (9:00 - 12:00)</option>
-                    <option value="midday">ظهراً (12:00 - 3:00)</option>
-                    <option value="afternoon">عصراً (3:00 - 6:00)</option>
-                    <option value="evening">مساءً (6:00 - 9:00)</option>
-                  </select>
-                </div>
-              </div>
+            <div>
+              <label htmlFor="deliveryDate" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
+                تاريخ التوصيل <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="deliveryDate"
+                type="date"
+                value={formData.deliveryDate}
+                onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
+                min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
+                required
+              />
+              <p className="mt-2 text-xs text-cb-text-muted">
+                التوصيل متاح من الغد - التوصيل في نفس اليوم متاح للطلبات قبل 2 ظهراً
+              </p>
             </div>
           </section>
 

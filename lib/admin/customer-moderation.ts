@@ -23,7 +23,7 @@ export async function loadCustomerModerationTarget(
 ): Promise<CustomerModerationTarget | null> {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
-    .from("profiles")
+    .from("users")
     .select("id,email,supabase_user_id:id,role,full_name")
     .eq("id", userId)
     .maybeSingle();
@@ -137,7 +137,7 @@ export async function deleteCustomerAccount(input: {
   }
 
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.from("profiles").delete().eq("id", input.target.id);
+  const { error } = await supabase.from("users").delete().eq("id", input.target.id);
   if (error) {
     console.error("deleteCustomerAccount db error", error);
     return {
@@ -195,7 +195,7 @@ export async function blockAndDeleteCustomerAccount(input: {
   }
 
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.from("profiles").delete().eq("id", input.target.id);
+  const { error } = await supabase.from("users").delete().eq("id", input.target.id);
   if (error) {
     console.error("blockAndDeleteCustomerAccount db error", error);
     return {

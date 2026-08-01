@@ -41,6 +41,19 @@ export function SiteJsonLd() {
 
   const localBusiness = buildLocalBusinessJsonLd();
 
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: APP_URL,
+      },
+    ],
+  };
+
   return (
     <>
       <Script
@@ -63,6 +76,13 @@ export function SiteJsonLd() {
         strategy="afterInteractive"
       >
         {localBusiness}
+      </Script>
+      <Script
+        id="cookie-bite-breadcrumb-jsonld"
+        type="application/ld+json"
+        strategy="afterInteractive"
+      >
+        {JSON.stringify(breadcrumb)}
       </Script>
     </>
   );

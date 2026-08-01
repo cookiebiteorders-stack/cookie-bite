@@ -45,7 +45,7 @@ async function resolveRecipient(order: OrderRow): Promise<{
   if (order.user_id) {
     const supabase = createSupabaseAdminClient();
     const { data: user } = await supabase
-      .from("profiles")
+      .from("users")
       .select("email, full_name")
       .eq("id", order.user_id)
       .maybeSingle();

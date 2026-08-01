@@ -20,8 +20,19 @@ export async function createSupabaseServerClient() {
           cookiesToSet.forEach(({ name, value, options }) => {
             cookieStore.set(name, value, options);
           });
-        } catch {
-          /* set من Server Component فقط — تجاهل إن لم يُسمح */
+        } catch (err) {
+          // In production, fail loudly on cookie write failures
+          if (process.env.NODE_ENV === "production") {
+            console.error("[Supabase Server Client] Cookie write failed", {
+              error: err instanceof Error ? err.message : String(err),
+              cookies: cookiesToSet.map(c => c.name),
+            });
+            throw new Error(`Failed to set auth cookies: ${err instanceof Error ? err.message : String(err)}`);
+          }
+          // In development, log but don't fail for debugging convenience
+          console.warn("[Supabase Server Client] Cookie write failed in development (swallowed)", {
+            error: err instanceof Error ? err.message : String(err),
+          });
         }
       },
     },

@@ -541,7 +541,7 @@ export async function readRealtimeUsers(windowSeconds = 300): Promise<{
   const supabaseByDbId = new Map<string, string>();
   if (dbUserIds.length > 0) {
     const { data: users } = await supabase
-      .from("profiles")
+      .from("users")
       .select("id, supabase_user_id")
       .in("id", dbUserIds);
     for (const user of users ?? []) {

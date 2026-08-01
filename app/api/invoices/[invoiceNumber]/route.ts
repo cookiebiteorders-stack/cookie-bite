@@ -57,7 +57,7 @@ function parseInvoiceNumber(input: string): {
 async function fetchUser(supabase: ReturnType<typeof createSupabaseAdminClient>, userId: string | null) {
   if (!userId) return null;
   const { data } = await supabase
-    .from("profiles")
+    .from("users")
     .select("id, full_name, email")
     .eq("id", userId)
     .maybeSingle();
@@ -104,7 +104,7 @@ export async function GET(
   const supabase = createSupabaseAdminClient();
 
   const { data: dbUserRow } = await supabase
-    .from("profiles")
+    .from("users")
     .select("id, email")
     .eq("id", userId)
     .maybeSingle();

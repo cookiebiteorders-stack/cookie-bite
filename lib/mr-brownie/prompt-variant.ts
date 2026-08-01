@@ -5,7 +5,7 @@ export type PromptVariant = "a" | "b";
  * فيظل نفس الزائر دائماً على نفس الـ variant طوال المحادثة.
  */
 export function assignPromptVariant(seed: string | null | undefined): PromptVariant {
-  const key = (seed ?? "").trim();
+  const key = String(seed ?? "").trim();
   if (!key) return "a";
 
   let hash = 0x811c9dc5;

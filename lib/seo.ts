@@ -177,9 +177,12 @@ export function buildShopCategoryMetadata(category: string): Metadata {
 }
 
 export function buildProductMetadata(product: Product, slug: string): Metadata {
-  const title = `${product.name} Cookies in New Cairo`;
-  const description = `${product.description} Order ${product.name} online from Cookie Bite with premium ingredients and fast support in New Cairo.`;
+  const title = `${product.name} | Premium Cookies in New Cairo`;
+  const description = `${product.description} Order ${product.name} online from Cookie Bite - handcrafted with premium Belgian chocolate and fresh ingredients. Fast delivery in New Cairo.`;
   const image = product.images?.[0] ?? product.image;
+  const price = product.price;
+  const inStock = (product.stock ?? 0) > 0;
+  
   return {
     title,
     description,
@@ -188,19 +191,21 @@ export function buildProductMetadata(product: Product, slug: string): Metadata {
       "new cairo cookies",
       "cookie delivery egypt",
       "cookie bite product",
+      "premium cookies cairo",
+      "belgian chocolate cookies",
     ],
     alternates: { canonical: `/shop/${slug}` },
     robots: defaultRobots(false),
     openGraph: sharedOpenGraph(
       product.name,
-      `${product.description} Shop this Cookie Bite favorite in New Cairo.`,
+      description,
       `${APP_URL}/shop/${slug}`,
       image,
       "en",
     ),
     twitter: sharedTwitter(
       product.name,
-      `${product.description} Order now from Cookie Bite.`,
+      description,
       image,
       "en",
     ),
@@ -349,7 +354,11 @@ export function buildLocalBusinessJsonLd(): string {
   return JSON.stringify(payload);
 }
 
-export function buildProductJsonLd(product: Product, slug: string): string {
+export function buildProductJsonLd(
+  product: Product,
+  slug: string,
+  reviewsData?: { reviewCount?: number; avgRating?: number | null; reviews?: Array<{ rating: number; name: string; body: string; date: string }> }
+): string {
   const images = (product.images?.length ? product.images : [product.image]).map(absoluteImageUrl);
   const inStock =
     product.stock == null || product.stock > 0
@@ -400,6 +409,32 @@ export function buildProductJsonLd(product: Product, slug: string): string {
         url: `${APP_URL}/help/returns`,
       },
     },
+    ...(reviewsData?.reviewCount && reviewsData.avgRating
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: String(reviewsData.avgRating.toFixed(1)),
+            reviewCount: String(reviewsData.reviewCount),
+            bestRating: "5",
+            worstRating: "1",
+          },
+        }
+      : {}),
+    ...(reviewsData?.reviews?.length
+      ? {
+          review: reviewsData.reviews.slice(0, 5).map((r) => ({
+            "@type": "Review",
+            reviewRating: {
+              "@type": "Rating",
+              ratingValue: String(r.rating),
+              bestRating: "5",
+            },
+            author: { "@type": "Person", name: r.name },
+            reviewBody: r.body,
+            datePublished: r.date,
+          })),
+        }
+      : {}),
   };
   return JSON.stringify(payload);
 }
@@ -438,6 +473,67 @@ export function buildBlogPostingJsonLd(input: {
       "@id": `${APP_URL}/blog/${input.slug}`,
     },
     ...(input.wordCount ? { wordCount: input.wordCount } : {}),
+  };
+  return JSON.stringify(payload);
+}
+
+export function buildCollectionPageJsonLd(input: {
+  name: string;
+  description: string;
+  path: string;
+  products: Product[];
+}): string {
+  const payload = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: input.name,
+    description: input.description,
+    url: `${APP_URL}${input.path.startsWith("/") ? input.path : `/${input.path}`}`,
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: input.products.map((p, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: `${APP_URL}/shop/${p.id}`,
+      })),
+    },
+  };
+  return JSON.stringify(payload);
+}
+
+export function buildItemListJsonLd(products: Product[]): string {
+  const payload = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: products.map((p, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: `${APP_URL}/shop/${p.id}`,
+    })),
+  };
+  return JSON.stringify(payload);
+}
+
+export function buildDiscoverLandingJsonLd(input: {
+  name: string;
+  description: string;
+  path: string;
+  products: Product[];
+}): string {
+  const payload = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: input.name,
+    description: input.description,
+    url: `${APP_URL}${input.path.startsWith("/") ? input.path : `/${input.path}`}`,
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: input.products.map((p, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: `${APP_URL}/shop/${p.id}`,
+      })),
+    },
   };
   return JSON.stringify(payload);
 }

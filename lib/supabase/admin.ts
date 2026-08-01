@@ -2,6 +2,14 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const adminOptions = {
   auth: { persistSession: false, autoRefreshToken: false },
+  db: {
+    schema: "public",
+  },
+  global: {
+    headers: {
+      "x-client-info": "cookie-bite-admin",
+    },
+  },
 } as const;
 
 function createServiceRoleClient(): SupabaseClient | null {

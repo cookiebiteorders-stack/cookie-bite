@@ -32,6 +32,7 @@ import {
   replaceProductTagLinks,
   resolveCategoryIdByName,
 } from "@/lib/db/product-catalog";
+import { requireCsrfProtection } from "@/lib/security/csrf";
 
 const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -294,6 +295,15 @@ export async function POST(req: NextRequest) {
   const actor = await requireAdminAccess("products");
   requireWritePermission(actor);
 
+  // Validate CSRF token for state-changing operation
+  const csrfCheck = await requireCsrfProtection(req);
+  if (!csrfCheck.valid) {
+    return NextResponse.json(
+      bilingualError(csrfCheck.error || "CSRF validation failed", "فشل التحقق من CSRF"),
+      { status: 403 }
+    );
+  }
+
   const parsed = createProductSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json(zodPayloadError(parsed.error), { status: 400 });
@@ -406,6 +416,18 @@ export async function PATCH(req: NextRequest) {
   }
 
   const { ids, patch } = parsed.data;
+  
+  // Refuse bulk image_url/images when ids.length > 1
+  if (ids.length > 1 && (Object.keys(patch).some(k => k === "image_url" || k === "images"))) {
+    return NextResponse.json(
+      bilingualError(
+        "image_url/images cannot be bulk-patched; update one product at a time",
+        "لا يمكن تحديث image_url/images دفعةً واحدة — حدّث منتجًا واحدًا"
+      ),
+      { status: 400 }
+    );
+  }
+  
   const linkedAddonIds = patch.linked_addon_ids;
   const tagIds = patch.tag_ids;
   if ("linked_addon_ids" in patch) {

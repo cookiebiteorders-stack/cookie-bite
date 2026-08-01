@@ -9,10 +9,41 @@
 -- Drop the temporary generated clerk_user_id columns that were added in 0085
 -- for backward compatibility during the transition period.
 
-alter table public.copilot_operator_memory drop column clerk_user_id;
-alter table public.admin_presence drop column clerk_user_id;
-alter table public.mr_brownie_chat_messages drop column clerk_user_id;
-alter table public.mr_brownie_turn_logs drop column clerk_user_id;
+DO $$
+BEGIN
+  -- copilot_operator_memory
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'copilot_operator_memory' 
+    AND column_name = 'clerk_user_id'
+    AND table_schema = 'public'
+  ) THEN
+    ALTER TABLE public.copilot_operator_memory DROP COLUMN clerk_user_id;
+  END IF;
+  
+  -- mr_brownie_chat_messages
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'mr_brownie_chat_messages' 
+    AND column_name = 'clerk_user_id'
+    AND table_schema = 'public'
+  ) THEN
+    ALTER TABLE public.mr_brownie_chat_messages DROP COLUMN clerk_user_id;
+  END IF;
+  
+  -- mr_brownie_turn_logs
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'mr_brownie_turn_logs' 
+    AND column_name = 'clerk_user_id'
+    AND table_schema = 'public'
+  ) THEN
+    ALTER TABLE public.mr_brownie_turn_logs DROP COLUMN clerk_user_id;
+  END IF;
+  
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Error dropping clerk_user_id columns: %', SQLERRM;
+END $$;
 
 -- Add additional tables as needed based on your actual schema:
 -- alter table public.mr_brownie_conversations drop column clerk_user_id;
@@ -22,4 +53,16 @@ alter table public.mr_brownie_turn_logs drop column clerk_user_id;
 -- etc.
 
 -- Validate the foreign key constraint added in 0085
-alter table public.users validate constraint users_id_fk_auth_users;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'users_id_fk_auth_users' 
+    AND table_name = 'users'
+    AND table_schema = 'public'
+  ) THEN
+    ALTER TABLE public.users VALIDATE CONSTRAINT users_id_fk_auth_users;
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Error validating FK constraint: %', SQLERRM;
+END $$;

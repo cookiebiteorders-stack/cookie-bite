@@ -26,7 +26,7 @@ async function relinkSupabaseToExistingUser(
   if (!supabase) return null;
 
   const { data, error } = await supabase
-    .from("profiles")
+    .from("users")
     .update({
       id: input.supabaseUserId,
       full_name: input.fullName ?? existing.full_name,
@@ -48,7 +48,7 @@ export async function getUserByEmail(email: string): Promise<UserRow | null> {
   if (!supabase) return null;
   const normalized = email.trim().toLowerCase();
   const { data, error } = await supabase
-    .from("profiles")
+    .from("users")
     .select("*")
     .eq("email", normalized)
     .maybeSingle();
@@ -63,24 +63,25 @@ export async function upsertUserFromSupabase(input: UpsertInput): Promise<UserRo
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return null;
   const email = input.email.trim().toLowerCase();
-  const role = resolveStaffRoleFromEmail(email);
 
-  // First, check if user exists by email to preserve existing data
+  // First, check if user exists by email to preserve existing data AND role
   const existingByEmail = await getUserByEmail(email);
   if (existingByEmail) {
-    console.log(`[upsertUserFromSupabase] Found existing user by email: ${email}, preserving data`);
+    console.log(`[upsertUserFromSupabase] Found existing user by email: ${email}, preserving data and role`);
     // Update existing user with new Supabase ID if different
     if (existingByEmail.id !== input.supabaseUserId) {
       console.log(`[upsertUserFromSupabase] Relinking user from ${existingByEmail.id} to ${input.supabaseUserId}`);
       return relinkSupabaseToExistingUser(input, existingByEmail);
     }
     // User already has correct ID, just update metadata if provided
+    // NEVER update role - preserve existing role from database
     if (input.fullName || input.avatarUrl) {
       const { data, error } = await supabase
-        .from("profiles")
+        .from("users")
         .update({
           full_name: input.fullName ?? existingByEmail.full_name,
           avatar_url: input.avatarUrl ?? existingByEmail.avatar_url,
+          // Do NOT update role - preserve existing role
         })
         .eq("id", existingByEmail.id)
         .select("*")
@@ -95,8 +96,10 @@ export async function upsertUserFromSupabase(input: UpsertInput): Promise<UserRo
   }
 
   // No existing user by email, proceed with upsert
+  // Only use email fallback for NEW users, never for existing ones
+  const role = resolveStaffRoleFromEmail(email);
   const { data, error } = await supabase
-    .from("profiles")
+    .from("users")
     .upsert(
       {
         id: input.supabaseUserId,
@@ -129,7 +132,7 @@ export async function deleteUserBySupabaseId(supabaseUserId: string) {
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return;
   const { error } = await supabase
-    .from("profiles")
+    .from("users")
     .delete()
     .eq("id", supabaseUserId);
   if (error) console.error("deleteUserBySupabaseId error", error);
@@ -151,7 +154,7 @@ export async function markProfileCompleted(
   }
 
   const { data: existing, error: readError } = await supabase
-    .from("profiles")
+    .from("users")
     .select("*")
     .eq("id", userId)
     .maybeSingle();
@@ -166,7 +169,7 @@ export async function markProfileCompleted(
 
   const completedAt = new Date().toISOString();
   const { data, error } = await supabase
-    .from("profiles")
+    .from("users")
     .update({ profile_completed_at: completedAt })
     .eq("id", userId)
     .select("*")
@@ -201,12 +204,12 @@ export async function updateUserProfile(
   }
 
   if (Object.keys(patch).length === 0) {
-    const { data } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+    const { data } = await supabase.from("users").select("*").eq("id", userId).maybeSingle();
     return (data as UserRow) ?? null;
   }
 
   const runUpdate = async (p: Record<string, string | null>) => {
-    return supabase.from("profiles").update(p).eq("id", userId).select("*").maybeSingle();
+    return supabase.from("users").update(p).eq("id", userId).select("*").maybeSingle();
   };
 
   let { data, error } = await runUpdate(patch);
@@ -248,7 +251,7 @@ export async function getUserBySupabaseId(supabaseUserId: string): Promise<UserR
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) return null;
   const { data, error } = await supabase
-    .from("profiles")
+    .from("users")
     .select("*")
     .eq("id", supabaseUserId)
     .maybeSingle();

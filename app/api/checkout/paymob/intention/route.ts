@@ -4,6 +4,7 @@ import { logStructuredError } from "@/lib/logger";
 import {
   getCheckoutOrderByIdempotencyKey,
   insertCheckoutOrder,
+  insertCheckoutOrderTransactional,
   updatePaymobAcceptOrderId,
 } from "@/lib/db/orders";
 import { getUserBySupabaseId } from "@/lib/db/users";
@@ -38,6 +39,7 @@ import {
   markRecoveryDiscountUsed,
   validateRecoveryDiscountForCart,
 } from "@/lib/cart/recovery-discount";
+import { requireCsrfProtection } from "@/lib/security/csrf";
 
 const GIFT_WRAP_FEE_EGP = 30;
 
@@ -153,7 +155,7 @@ async function resolveBillingData(
     try {
       const supabase = createSupabaseAdminClient();
       const { data: user } = await supabase
-        .from("profiles")
+        .from("users")
         .select("full_name, email, phone")
         .eq("id", dbUserId)
         .single();
@@ -209,6 +211,15 @@ async function resolveBillingData(
  * Shipping/billing info is optional — Paymob collects it on their hosted page.
  */
 export async function POST(req: Request) {
+  // Validate CSRF token for state-changing operation (payment initiation)
+  const csrfCheck = await requireCsrfProtection(req);
+  if (!csrfCheck.valid) {
+    return Response.json(
+      { ok: false, error: csrfCheck.error || "CSRF validation failed", error_ar: "فشل التحقق من CSRF" },
+      { status: 403 }
+    );
+  }
+
   let json: unknown;
   try {
     json = await req.json();
@@ -496,8 +507,8 @@ export async function POST(req: Request) {
   }
 
   try {
-    console.log("[Paymob Checkout] Creating order in database");
-    const inserted = await insertCheckoutOrder({
+    console.log("[Paymob Checkout] Creating order in database (transactional)");
+    const inserted = await insertCheckoutOrderTransactional({
       userId: dbUserId,
       lines: orderLines,
       subtotalEgp: subtotal,

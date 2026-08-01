@@ -43,25 +43,25 @@ export function MobileHeaderNavDrawer({
           rtl ? "end-0 border-e-0 border-s" : "start-0",
         )}
       >
-        <div className="mb-3 flex items-center justify-between border-b border-cb-border pb-3">
+        <div className="mb-4 flex items-center justify-between border-b border-cb-border pb-4">
           <span className="text-xs font-bold uppercase tracking-[0.2em] text-cb-text-muted">
             {menuLabel}
           </span>
           <button
             type="button"
-            className="mobile-header__icon-btn"
+            className="rounded-full p-2 hover:bg-cb-peach/45 transition-colors"
             aria-label={closeLabel}
             onClick={onClose}
           >
-            <X className="h-5 w-5" aria-hidden />
+            <X className="h-5 w-5 text-cb-text-strong" aria-hidden />
           </button>
         </div>
-        <div className="flex flex-1 flex-col gap-1 overflow-y-auto">
+        <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
           {links.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-xl px-3 py-3 text-sm font-semibold text-cb-text-strong hover:bg-cb-peach/45"
+              className="rounded-xl px-4 py-3.5 text-base font-semibold text-cb-text-strong hover:bg-cb-peach/45 transition-colors active:bg-cb-peach/60"
               onClick={onClose}
             >
               {item.label}

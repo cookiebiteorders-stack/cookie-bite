@@ -52,6 +52,7 @@ function mapPythonProducts(rows: PythonProduct[]): Product[] {
       image_url: p.image_url,
       images: p.image_url ? [{ url: p.image_url }] : [],
       video_url: null,
+      cloudinary_public_id: null,
       badges: [],
       dietary: [],
       seasons: [],

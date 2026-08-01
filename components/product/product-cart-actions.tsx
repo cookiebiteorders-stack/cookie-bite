@@ -1,7 +1,8 @@
 "use client";
 
 import { forwardRef, useEffect, useMemo, useState } from "react";
-import { Check, Minus, Plus, ShoppingBag } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Check, Minus, Plus, ShoppingBag, Zap } from "lucide-react";
 import type { Addon, CartSelectedAddon } from "@/lib/addons/types";
 import type { AddonSelectedMap } from "@/lib/addons/selection";
 import { validateAddonSelection } from "@/lib/addons/selection";
@@ -29,6 +30,8 @@ export type ProductCartActionsProps = {
   /** كمية الإضافة الأولى (صفحة المنتج فقط) */
   addQuantity?: number;
   onAddonError?: (message: string | null) => void;
+  /** BUY NOW mode - skip cart and go to checkout */
+  buyNow?: boolean;
 };
 
 function useCartLine(
@@ -77,11 +80,13 @@ export const ProductCartActions = forwardRef<HTMLButtonElement, ProductCartActio
   variant = "card",
   addQuantity = 1,
   onAddonError,
+  buyNow = false,
 },
     ref,
   ) {
   const { addItem, setQuantity } = useCart();
   const { t, formatPrice } = useLanguage();
+  const router = useRouter();
   const { lineId, cartLine } = useCartLine(product, selectedAddons, selectedVariant?.id);
   const [justAdded, setJustAdded] = useState(false);
 
@@ -186,9 +191,10 @@ export const ProductCartActions = forwardRef<HTMLButtonElement, ProductCartActio
       ref={ref}
       type="button"
       className={cn(
-        buttonClassName("primary"),
+        buttonClassName(buyNow ? "primary" : "primary"),
         "inline-flex w-full items-center justify-center gap-2 rounded-full",
         variant === "pdp" ? "min-h-12 flex-1 gap-2 sm:max-w-xs" : "py-3 text-sm",
+        buyNow && "bg-cb-terracotta-dark hover:bg-cb-terracotta-dark/90",
       )}
       onClick={() => {
         if (requireVariantSelection && !selectedVariant) {
@@ -206,24 +212,39 @@ export const ProductCartActions = forwardRef<HTMLButtonElement, ProductCartActio
         trackGa4Event("add_to_cart", {
           currency: "EGP",
           value: unitPrice * qty,
-          items: 1,
-          item_id: product.id,
-          item_name: product.name,
+          items: [
+            {
+              item_id: product.id,
+              item_name: product.name,
+              price: unitPrice,
+              quantity: qty,
+            },
+          ],
         });
-        setJustAdded(true);
+        if (buyNow) {
+          router.push("/checkout/details");
+        } else {
+          setJustAdded(true);
+        }
       }}
     >
-      <ShoppingBag
-        className={cn("shrink-0", variant === "pdp" ? "h-5 w-5" : "h-4 w-4")}
-        aria-hidden
-      />
-      {variant === "pdp"
-        ? t("product.addToCartWithPrice", {
-            price: formatPrice(unitPrice * qty),
-          })
-        : addons.length > 0
-          ? t("product.addToCartWithPrice", { price: formatPrice(unitPrice) })
-          : t("product.addToCart")}
+      {buyNow ? (
+        <Zap className={cn("shrink-0", variant === "pdp" ? "h-5 w-5" : "h-4 w-4")} aria-hidden />
+      ) : (
+        <ShoppingBag
+          className={cn("shrink-0", variant === "pdp" ? "h-5 w-5" : "h-4 w-4")}
+          aria-hidden
+        />
+      )}
+      {buyNow
+        ? "BUY NOW"
+        : variant === "pdp"
+          ? t("product.addToCartWithPrice", {
+              price: formatPrice(unitPrice * qty),
+            })
+          : addons.length > 0
+            ? t("product.addToCartWithPrice", { price: formatPrice(unitPrice) })
+            : t("product.addToCart")}
     </button>
   );
 },

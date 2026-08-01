@@ -10,7 +10,7 @@ export async function resolveLoyaltyAccountUserId(
   guestEmail?: string | null,
 ): Promise<string | null> {
   const { data: direct } = await supabase
-    .from("profiles")
+    .from("users")
     .select("id")
     .eq("id", authUserId)
     .maybeSingle();
@@ -24,7 +24,7 @@ export async function resolveLoyaltyAccountUserId(
   if (!email) return null;
 
   const { data: byEmail } = await supabase
-    .from("profiles")
+    .from("users")
     .select("id")
     .eq("email", email)
     .maybeSingle();

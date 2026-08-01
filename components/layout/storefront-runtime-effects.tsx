@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { DeferredTrackerBootstrap } from "@/components/tracking/deferred-tracker-bootstrap";
 import { DeferredGA4Tracker } from "@/components/analytics/deferred-ga4-tracker";
+import { GtmManager } from "@/components/analytics/gtm-manager";
 
 const WebVitalsReporter = dynamic(
   () =>
@@ -28,6 +29,7 @@ export function StorefrontRuntimeEffects() {
 
   return (
     <>
+      <GtmManager />
       <DeferredTrackerBootstrap />
       <DeferredGA4Tracker />
       {vitalsReady ? <WebVitalsReporter /> : null}

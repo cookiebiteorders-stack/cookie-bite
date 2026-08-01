@@ -491,3 +491,88 @@ export async function getOrderItems(orderId: string) {
   }
   return (data as OrderItemRow[]) ?? [];
 }
+
+/**
+ * Transactional checkout order creation using PostgreSQL RPC function.
+ * This ensures atomic stock reservation, order creation, and order item insertion
+ * in a single database transaction with proper idempotency handling.
+ */
+export async function insertCheckoutOrderTransactional(
+  params: InsertCheckoutOrderInput,
+): Promise<{ id: string; orderNumber: string }> {
+  console.log("[Transactional Order Creation] Starting with payload:", JSON.stringify(params, null, 2));
+
+  const supabase = createSupabaseAdminClient();
+
+  // Build items JSONB array for RPC function
+  const itemsJson = JSON.stringify(
+    params.lines.map((line) => ({
+      slug: line.slug,
+      name: line.name,
+      unit_price: line.unitPrice,
+      quantity: line.quantity,
+      product_snapshot: line.productSnapshot,
+      variant_id: line.variantId,
+      variant_snapshot: line.variantSnapshot,
+      selected_addons: line.selectedAddons,
+      addons_total_unit_price: line.addonsTotalUnitPrice,
+      final_unit_price: line.finalUnitPrice,
+      skip_product_lookup: line.skipProductLookup,
+    }))
+  );
+
+  // Build shipping address JSONB
+  const shippingAddressJson = JSON.stringify(params.shippingAddress);
+
+  // Build gift box snapshot JSONB if present
+  const giftBoxSnapshotJson = params.giftBoxSnapshot ? JSON.stringify(params.giftBoxSnapshot) : null;
+
+  console.log("[Transactional Order Creation] Calling RPC function");
+
+  const { data, error } = await supabase.rpc("create_checkout_order_transactional", {
+    p_user_id: params.userId,
+    p_guest_email: params.guestEmail ?? null,
+    p_payment_method: params.paymentMethod,
+    p_payment_status: params.paymentStatus,
+    p_subtotal_egp: params.subtotalEgp,
+    p_delivery_fee_egp: params.deliveryFeeEgp,
+    p_total_egp: params.totalEgp,
+    p_shipping_address: shippingAddressJson,
+    p_notes: params.notes,
+    p_promo_code: params.promoCode ?? null,
+    p_promo_id: params.promoId ?? null,
+    p_discount_amount_egp: params.discountAmountEgp ?? null,
+    p_gift_wrapping_fee_egp: params.giftWrappingFeeEgp ?? null,
+    p_order_type: params.orderType ?? null,
+    p_gift_box_snapshot: giftBoxSnapshotJson,
+    p_checkout_idempotency_key: params.checkoutIdempotencyKey ?? null,
+    p_items: itemsJson,
+  });
+
+  if (error) {
+    console.error("[Transactional Order Creation] RPC error:", JSON.stringify(error, null, 2));
+    throw new Error(`Failed to create order transactionally: ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
+    console.error("[Transactional Order Creation] No data returned from RPC");
+    throw new Error("No data returned from transactional order creation");
+  }
+
+  const result = data[0] as {
+    order_id: string;
+    order_number: string;
+    order_code: string;
+    success: boolean;
+    error_message: string | null;
+  };
+
+  if (!result.success) {
+    console.error("[Transactional Order Creation] Transaction failed:", result.error_message);
+    throw new Error(`Order creation failed: ${result.error_message}`);
+  }
+
+  console.log("[Transactional Order Creation] Order created successfully:", result.order_id);
+  return { id: result.order_id, orderNumber: result.order_code || result.order_number };
+}
+

@@ -3,7 +3,7 @@ import {
   requireAdminAccess,
   requireWritePermission,
 } from "@/lib/admin/require-admin";
-import { fetchMediaLibrary } from "@/lib/admin/media-library";
+import { fetchMediaLibrary, loadProductUrlUsage } from "@/lib/admin/media-library";
 import {
   removeMediaUrlFromProducts,
   replaceMediaUrlInProducts,
@@ -160,7 +160,7 @@ export async function PATCH(req: NextRequest) {
       const oldUrl = String(form.get("url") ?? "").trim();
       const kindRaw = String(form.get("kind") ?? "image").toLowerCase();
       const kind: CloudinaryUploadKind = kindRaw === "video" ? "video" : "image";
-      const updateProducts = form.get("updateProducts") !== "false";
+      const updateProducts = form.get("updateProducts") === "true"; // explicit opt-in only
 
       if (!(fileValue instanceof File)) {
         return NextResponse.json(bilingualError("File is required", "الملف مطلوب"), {
@@ -177,9 +177,25 @@ export async function PATCH(req: NextRequest) {
         }
         const uploaded = await replaceCloudinaryAsset(fileValue, publicId, kind);
         let productsUpdated = 0;
+        
+        // Check if URL is used by multiple products
         if (updateProducts && oldUrl && uploaded.url !== oldUrl) {
+          const usedByCount = await loadProductUrlUsage();
+          const usageCount = usedByCount.get(oldUrl)?.length ?? 0;
+          
+          if (usageCount > 1) {
+            return NextResponse.json(
+              bilingualError(
+                `This asset is used by ${usageCount} products — confirm scope explicitly`,
+                `هذا الملف مستخدم في ${usageCount} منتجات — يجب توضيح النطاق صراحةً`
+              ),
+              { status: 409 }
+            );
+          }
+          
           productsUpdated = await replaceMediaUrlInProducts(oldUrl, uploaded.url);
         }
+        
         return NextResponse.json({
           ok: true,
           action: "replace",
@@ -192,9 +208,24 @@ export async function PATCH(req: NextRequest) {
         folder: kind === "image" ? "cookie-bite/media" : "cookie-bite/media/videos",
       });
       let productsUpdated = 0;
+      
       if (updateProducts && oldUrl) {
+        const usedByCount = await loadProductUrlUsage();
+        const usageCount = usedByCount.get(oldUrl)?.length ?? 0;
+        
+        if (usageCount > 1) {
+          return NextResponse.json(
+            bilingualError(
+              `This asset is used by ${usageCount} products — confirm scope explicitly`,
+              `هذا الملف مستخدم في ${usageCount} منتجات — يجب توضيح النطاق صراحةً`
+            ),
+            { status: 409 }
+          );
+        }
+        
         productsUpdated = await replaceMediaUrlInProducts(oldUrl, uploaded.url);
       }
+      
       return NextResponse.json({
         ok: true,
         action: "replace",
@@ -223,7 +254,7 @@ export async function PATCH(req: NextRequest) {
     const toPublicId = String(body?.toPublicId ?? "").trim();
     const oldUrl = String(body?.oldUrl ?? "").trim();
     const kind: CloudinaryUploadKind = body?.kind === "video" ? "video" : "image";
-    const updateProducts = body?.updateProducts !== false;
+    const updateProducts = body?.updateProducts === true; // explicit opt-in only
 
     if (!fromPublicId || !toPublicId) {
       return NextResponse.json(

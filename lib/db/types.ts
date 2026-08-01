@@ -46,6 +46,8 @@ export type ProductRow = {
   images: ProductImage[];
   /** فيديو عرض المنتج (Cloudinary URL) */
   video_url: string | null;
+  /** Canonical Cloudinary public_id for the primary image */
+  cloudinary_public_id: string | null;
   badges: string[] | null;
   dietary: string[];
   seasons: string[];
@@ -56,6 +58,18 @@ export type ProductRow = {
   sanity_id: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type ProductMediaLink = {
+  id: string;
+  product_id: string;
+  public_id: string;
+  url: string;
+  role: "primary" | "gallery" | "video";
+  sort_order: number;
+  alt_en: string | null;
+  alt_ar: string | null;
+  created_at: string;
 };
 
 export type OrderStatus =

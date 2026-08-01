@@ -17,7 +17,7 @@ const variantClasses: Record<ButtonVariant, string> = {
 };
 
 const baseClasses =
-  "cb-touch-manipulation inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition-[background-color,transform,border-color,color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px active:translate-y-0 disabled:pointer-events-none disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cb-luxury-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  "cb-touch-manipulation inline-flex min-h-[3rem] sm:min-h-[2.75rem] items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition-[background-color,transform,border-color,color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px active:translate-y-0 disabled:pointer-events-none disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cb-luxury-gold focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 export function buttonClassName(
   variant: ButtonVariant = "primary",

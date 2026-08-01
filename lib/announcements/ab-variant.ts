@@ -7,8 +7,12 @@ export function resolveAbVariantKey(
 ): string | undefined {
   if (!record.ab_test?.enabled || !record.ab_test.variants.length) return undefined;
   const variants = record.ab_test.variants;
+  
+  // Ensure record.id is a valid string before constructing seed
+  if (!record.id) return undefined;
+  
   let hash = 0;
-  const seed = `${sessionId}:${record.id}`;
+  const seed = `${String(sessionId)}:${String(record.id)}`;
   for (let i = 0; i < seed.length; i++) {
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   }
