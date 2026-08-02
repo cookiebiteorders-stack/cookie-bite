@@ -10,16 +10,26 @@
  * - Monitor performance across distributed systems
  */
 
-import { randomBytes } from 'crypto';
-
 const REQUEST_ID_HEADER = 'x-request-id';
 const REQUEST_ID_LENGTH = 16;
 
 /**
  * Generate a unique request ID
+ * Uses Web Crypto API for Edge Runtime compatibility
  */
 export function generateRequestId(): string {
-  return randomBytes(REQUEST_ID_LENGTH).toString('hex');
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const array = new Uint8Array(REQUEST_ID_LENGTH);
+    crypto.getRandomValues(array);
+    return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+  // Fallback for Node.js environments
+  const chars = '0123456789abcdef';
+  let result = '';
+  for (let i = 0; i < REQUEST_ID_LENGTH * 2; i++) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
 }
 
 /**
