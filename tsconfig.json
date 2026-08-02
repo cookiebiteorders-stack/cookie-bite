@@ -34,14 +34,12 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "**/*.mts",
-    ".next/dev/types/**/*.ts"
+    "**/*.mts"
   ],
   "exclude": [
     "node_modules",
+    ".next",
     "supabase/functions/**",
-    ".next/types/validator.ts",
-    ".next/dev/types/**",
     "scripts/migrate-clerk-to-supabase.ts"
   ]
 }

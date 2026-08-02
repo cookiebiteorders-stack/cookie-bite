@@ -1,6 +1,6 @@
 {
   "projectType": "nextjs",
-  "nodeVersion": "20",
+  "nodeVersion": "24",
   "buildCommand": "npm run build",
   "startCommand": "npm run start:standalone",
   "entryFile": ".next/standalone/server.js",
