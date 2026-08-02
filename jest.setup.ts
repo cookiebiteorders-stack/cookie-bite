@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import "@testing-library/jest-dom";
 
 if (typeof globalThis.fetch === "undefined") {
