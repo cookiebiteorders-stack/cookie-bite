@@ -1,10 +1,10 @@
-import Redis from "ioredis";
+import type Redis from "ioredis";
 
 let redisClient: Redis | null = null;
 
-function getRedisClient(): Redis | null {
+async function getRedisClient(): Promise<Redis | null> {
   if (redisClient) return redisClient;
-  
+
   const redisUrl = process.env.REDIS_URL;
   if (!redisUrl) {
     console.warn("[rate-limit] REDIS_URL is not set, falling back to in-memory rate limiting");
@@ -12,19 +12,25 @@ function getRedisClient(): Redis | null {
   }
 
   try {
-    redisClient = new Redis(redisUrl, {
+    // dynamic import prevents bundling Node-only libs into Edge/worker runtimes
+    const mod = await import("ioredis");
+    const RedisImpl = (mod && (mod.default ?? mod)) as typeof Redis;
+
+    // Initialize client
+    // @ts-ignore - RedisImpl typing varies per runtime/import
+    redisClient = new RedisImpl(redisUrl, {
       maxRetriesPerRequest: 3,
-      retryStrategy: (times) => Math.min(times * 50, 2000),
+      retryStrategy: (times: number) => Math.min(times * 50, 2000),
       enableReadyCheck: true,
     });
 
-    redisClient.on("error", (err) => {
-      console.error("[rate-limit] Redis error:", err.message);
+    redisClient.on("error", (err: any) => {
+      console.error("[rate-limit] Redis error:", err?.message ?? err);
     });
 
     return redisClient;
   } catch (err) {
-    console.error("[rate-limit] Failed to initialize Redis:", err);
+    console.error("[rate-limit] Failed to dynamic-import or initialize Redis:", err);
     return null;
   }
 }
@@ -54,9 +60,14 @@ function cleanupInMemory() {
   }
 }
 
+/**
+ * rateOk
+ * - Async by design because Redis client may be dynamically imported/initialized.
+ * - Falls back to in-memory limiter when Redis is unavailable or dynamic import fails.
+ */
 export async function rateOk(key: string, max: number, windowMs: number): Promise<boolean> {
-  const redis = getRedisClient();
-  
+  const redis = await getRedisClient();
+
   if (!redis) {
     cleanupInMemory();
     return inMemoryRateOk(key, max, windowMs);
@@ -66,10 +77,10 @@ export async function rateOk(key: string, max: number, windowMs: number): Promis
     const pipeline = redis.pipeline();
     pipeline.incr(key);
     pipeline.pexpire(key, windowMs);
-    
+
     const results = await pipeline.exec();
     if (!results) return false;
-    
+
     const count = results[0][1] as number;
     return count <= max;
   } catch (err) {
@@ -81,7 +92,13 @@ export async function rateOk(key: string, max: number, windowMs: number): Promis
 
 export function closeRedis(): void {
   if (redisClient) {
-    redisClient.quit();
+    try {
+      // quit may return a promise; ignore it to keep the signature simple
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      redisClient.quit?.();
+    } catch (e) {
+      console.error("[rate-limit] error while quitting redis:", e);
+    }
     redisClient = null;
   }
 }

@@ -5,7 +5,6 @@ import { PRODUCTION_HOST } from "@/lib/config/production-lock";
 import { getOwnerFlags } from "@/lib/store/owner-flags-server";
 import { updateSupabaseSession } from "@/lib/supabase/middleware";
 import { getBaseUrl } from "@/lib/auth/safe-redirect";
-import { rateOk as redisRateOk } from "@/lib/rate-limit/redis-rate-limiter";
 import { getRequestId, getRequestIdHeader } from "@/lib/observability/request-id";
 
 // Trusted proxy CIDR ranges - only these proxies can set X-Forwarded-* headers
@@ -106,7 +105,8 @@ export default async function middleware(request: NextRequest) {
         response.headers.set(requestIdHeader, requestId);
         return response;
       }
-    } catch {
+    } catch (err) {
+      console.warn("[middleware] getOwnerFlags failed, failing open:", err);
       /* fail open */
     }
   }
@@ -117,92 +117,107 @@ export default async function middleware(request: NextRequest) {
       request.headers.get("x-real-ip") ||
       "unknown";
 
-    if (!(await redisRateOk(`all:${ip}`, 240, 60_000))) {
-      const response = tooMany();
-      response.headers.set(requestIdHeader, requestId);
-      return response;
+    // Try to dynamically load the rate-limiter; if it fails, fail-open and allow requests.
+    let rateOk: ((key: string, max: number, windowMs: number) => Promise<boolean>) | null = null;
+    try {
+      const rl = await import("@/lib/rate-limit/redis-rate-limiter");
+      rateOk = rl.rateOk;
+    } catch (err) {
+      console.error("[middleware] failed to load rate limiter, skipping rate checks:", err);
+      rateOk = null;
     }
 
-    if (
-      path.startsWith("/api/checkout") ||
-      path.startsWith("/api/payments") ||
-      path.startsWith("/api/orders")
-    ) {
-      if (!(await redisRateOk(`pay:${ip}`, 8, 60_000))) {
-        const response = tooMany();
-        response.headers.set(requestIdHeader, requestId);
-        return response;
-      }
-    } else if (path.startsWith("/api/promo")) {
-      if (!(await redisRateOk(`promo:${ip}`, 12, 60_000))) {
-        const response = tooMany();
-        response.headers.set(requestIdHeader, requestId);
-        return response;
-      }
-    } else if (path.startsWith("/api/events")) {
-      if (!(await redisRateOk(`events:${ip}`, 60, 60_000))) {
-        const response = tooMany();
-        response.headers.set(requestIdHeader, requestId);
-        return response;
-      }
-    } else if (
-      path.startsWith("/api/contact") ||
-      path.startsWith("/api/newsletter") ||
-      path.startsWith("/api/corporate")
-    ) {
-      if (!(await redisRateOk(`form:${ip}`, 5, 60_000))) {
-        const response = tooMany();
-        response.headers.set(requestIdHeader, requestId);
-        return response;
-      }
-    } else if (path.startsWith("/api/auth/")) {
-      // Password reset, etc. — tight bucket to prevent email-bombing / account enumeration abuse.
-      if (!(await redisRateOk(`auth:${ip}`, 5, 60_000))) {
-        const response = tooMany();
-        response.headers.set(requestIdHeader, requestId);
-        return response;
-      }
-    } else if (path.startsWith("/api/account/")) {
-      // Profile completion - allow generous rate for legitimate form submissions
-      if (!(await redisRateOk(`account:${ip}`, 20, 60_000))) {
-        const response = tooMany();
-        response.headers.set(requestIdHeader, requestId);
-        return response;
-      }
-    } else if (path.startsWith("/api/geocode")) {
-      // Proxies third-party geocoders (Nominatim usage policy is ~1 req/sec globally) — keep our shared IP well under any ban threshold.
-      if (!(await redisRateOk(`geo:${ip}`, 20, 60_000))) {
-        const response = tooMany();
-        response.headers.set(requestIdHeader, requestId);
-        return response;
-      }
-    } else if (
-      path.startsWith("/api/wishlist") ||
-      path.startsWith("/api/loyalty") ||
-      path.startsWith("/api/push")
-    ) {
-      if (!(await redisRateOk(`user:${ip}`, 30, 60_000))) {
-        const response = tooMany();
-        response.headers.set(requestIdHeader, requestId);
-        return response;
-      }
-    } else if (path.startsWith("/api/mr-brownie") || path.startsWith("/api/chat")) {
-      if (!(await redisRateOk(`chat:${ip}`, 24, 60_000))) {
-        const response = tooMany();
-        response.headers.set(requestIdHeader, requestId);
-        return response;
-      }
-    } else if (path.startsWith("/api/admin/")) {
-      if (!(await redisRateOk(`admin:${ip}`, 60, 60_000))) {
-        const response = tooMany();
-        response.headers.set(requestIdHeader, requestId);
-        return response;
-      }
-    } else if (path.startsWith("/api/revalidate")) {
-      if (!(await redisRateOk(`reval:${ip}`, 10, 60_000))) {
-        const response = tooMany();
-        response.headers.set(requestIdHeader, requestId);
-        return response;
+    if (rateOk) {
+      try {
+        if (!(await rateOk(`all:${ip}`, 240, 60_000))) {
+          const response = tooMany();
+          response.headers.set(requestIdHeader, requestId);
+          return response;
+        }
+
+        if (
+          path.startsWith("/api/checkout") ||
+          path.startsWith("/api/payments") ||
+          path.startsWith("/api/orders")
+        ) {
+          if (!(await rateOk(`pay:${ip}`, 8, 60_000))) {
+            const response = tooMany();
+            response.headers.set(requestIdHeader, requestId);
+            return response;
+          }
+        } else if (path.startsWith("/api/promo")) {
+          if (!(await rateOk(`promo:${ip}`, 12, 60_000))) {
+            const response = tooMany();
+            response.headers.set(requestIdHeader, requestId);
+            return response;
+          }
+        } else if (path.startsWith("/api/events")) {
+          if (!(await rateOk(`events:${ip}`, 60, 60_000))) {
+            const response = tooMany();
+            response.headers.set(requestIdHeader, requestId);
+            return response;
+          }
+        } else if (
+          path.startsWith("/api/contact") ||
+          path.startsWith("/api/newsletter") ||
+          path.startsWith("/api/corporate")
+        ) {
+          if (!(await rateOk(`form:${ip}`, 5, 60_000))) {
+            const response = tooMany();
+            response.headers.set(requestIdHeader, requestId);
+            return response;
+          }
+        } else if (path.startsWith("/api/auth/")) {
+          // Password reset, etc. — tight bucket to prevent email-bombing / account enumeration abuse.
+          if (!(await rateOk(`auth:${ip}`, 5, 60_000))) {
+            const response = tooMany();
+            response.headers.set(requestIdHeader, requestId);
+            return response;
+          }
+        } else if (path.startsWith("/api/account/")) {
+          // Profile completion - allow generous rate for legitimate form submissions
+          if (!(await rateOk(`account:${ip}`, 20, 60_000))) {
+            const response = tooMany();
+            response.headers.set(requestIdHeader, requestId);
+            return response;
+          }
+        } else if (path.startsWith("/api/geocode")) {
+          if (!(await rateOk(`geo:${ip}`, 20, 60_000))) {
+            const response = tooMany();
+            response.headers.set(requestIdHeader, requestId);
+            return response;
+          }
+        } else if (
+          path.startsWith("/api/wishlist") ||
+          path.startsWith("/api/loyalty") ||
+          path.startsWith("/api/push")
+        ) {
+          if (!(await rateOk(`user:${ip}`, 30, 60_000))) {
+            const response = tooMany();
+            response.headers.set(requestIdHeader, requestId);
+            return response;
+          }
+        } else if (path.startsWith("/api/mr-brownie") || path.startsWith("/api/chat")) {
+          if (!(await rateOk(`chat:${ip}`, 24, 60_000))) {
+            const response = tooMany();
+            response.headers.set(requestIdHeader, requestId);
+            return response;
+          }
+        } else if (path.startsWith("/api/admin/")) {
+          if (!(await rateOk(`admin:${ip}`, 60, 60_000))) {
+            const response = tooMany();
+            response.headers.set(requestIdHeader, requestId);
+            return response;
+          }
+        } else if (path.startsWith("/api/revalidate")) {
+          if (!(await rateOk(`reval:${ip}`, 10, 60_000))) {
+            const response = tooMany();
+            response.headers.set(requestIdHeader, requestId);
+            return response;
+          }
+        }
+      } catch (err) {
+        console.error("[middleware] rate limiter operation failed, failing open:", err);
       }
     }
   }
@@ -214,9 +229,25 @@ export default async function middleware(request: NextRequest) {
     isAdminRoute(path) ||
     path.startsWith("/api/account/") ||
     path.startsWith("/api/admin/");
-  const { response, user } = needsAuth
-    ? await updateSupabaseSession(request)
-    : { response: NextResponse.next({ request }), user: null as null };
+
+  // Run session refresh in a safe try/catch to prevent middleware throws.
+  let response: NextResponse;
+  let user: any = null;
+  if (needsAuth) {
+    try {
+      const result = await updateSupabaseSession(request);
+      response = result.response;
+      user = result.user;
+    } catch (err) {
+      console.error("[middleware] updateSupabaseSession failed, failing open:", err);
+      response = NextResponse.next({ request });
+      user = null;
+    }
+  } else {
+    response = NextResponse.next({ request });
+    user = null as null;
+  }
+
   response.headers.set("x-mw", needsAuth ? "auth" : "pass");
   response.headers.set(requestIdHeader, requestId);
 
@@ -274,6 +305,6 @@ export default async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc)(.*)",
+    "(api|trpc)(.*)",
   ],
 };

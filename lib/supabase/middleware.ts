@@ -23,7 +23,9 @@ export async function updateSupabaseSession(request: NextRequest): Promise<Sessi
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        // IMPORTANT: request.cookies is immutable in Next.js middleware/Edge contexts.
+        // Mutating request.cookies (e.g. request.cookies.set) will throw.
+        // Set cookies only on the response object so they are sent to the client.
         response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options),
