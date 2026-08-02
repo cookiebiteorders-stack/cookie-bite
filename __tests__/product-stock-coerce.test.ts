@@ -38,6 +38,7 @@ describe("productRowToStorefrontProduct badges", () => {
     image_url: null,
     images: [],
     video_url: null,
+    cloudinary_public_id: null,
     badges: '["new"]' as unknown as string[],
     dietary: [],
     seasons: [],

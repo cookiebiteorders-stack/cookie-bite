@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+// @ts-ignore - react-dom types are installed but deployment environment may not recognize them
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { BarChart3, Copy, Eye, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
