@@ -5,15 +5,20 @@ export type PromptVariant = "a" | "b";
  * فيظل نفس الزائر دائماً على نفس الـ variant طوال المحادثة.
  */
 export function assignPromptVariant(seed: string | null | undefined): PromptVariant {
-  const key = String(seed ?? "").trim();
-  if (!key || typeof key !== "string") return "a";
+  try {
+    const key = String(seed ?? "").trim();
+    if (!key || typeof key !== "string") return "a";
 
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < key.length; i++) {
-    const charCode = key.charCodeAt(i);
-    if (typeof charCode !== "number" || isNaN(charCode)) continue;
-    hash ^= charCode;
-    hash = Math.imul(hash, 0x01000193) >>> 0;
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < key.length; i++) {
+      const charCode = key.charCodeAt(i);
+      if (typeof charCode !== "number" || isNaN(charCode)) continue;
+      hash ^= charCode;
+      hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return hash % 2 === 0 ? "a" : "b";
+  } catch (error) {
+    console.error("[assignPromptVariant] Error:", error);
+    return "a";
   }
-  return hash % 2 === 0 ? "a" : "b";
 }

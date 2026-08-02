@@ -9,40 +9,50 @@
  */
 
 function djb2(input: string): string {
-  if (typeof input !== "string" || input.length === 0) return "0";
-  let hash = 5381;
-  for (let i = 0; i < input.length; i += 1) {
-    const charCode = input.charCodeAt(i);
-    if (typeof charCode !== "number" || isNaN(charCode)) continue;
-    hash = (hash * 33) ^ charCode;
+  try {
+    if (typeof input !== "string" || input.length === 0) return "0";
+    let hash = 5381;
+    for (let i = 0; i < input.length; i += 1) {
+      const charCode = input.charCodeAt(i);
+      if (typeof charCode !== "number" || isNaN(charCode)) continue;
+      hash = (hash * 33) ^ charCode;
+    }
+    return (hash >>> 0).toString(16);
+  } catch (error) {
+    console.error("[djb2] Error:", error);
+    return "0";
   }
-  return (hash >>> 0).toString(16);
 }
 
 export function computeFingerprint(): string {
-  if (typeof window === "undefined") return "ssr";
+  try {
+    if (typeof window === "undefined") return "ssr";
 
-  const signals: Array<string | number | undefined> = [
-    navigator.userAgent,
-    navigator.language,
-    Array.isArray(navigator.languages) ? navigator.languages.join(",") : undefined,
-    navigator.hardwareConcurrency,
-    (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
-    window.screen?.width,
-    window.screen?.height,
-    window.screen?.colorDepth,
-    window.devicePixelRatio,
-    typeof Intl !== "undefined" && Intl.DateTimeFormat
-      ? Intl.DateTimeFormat().resolvedOptions().timeZone
-      : undefined,
-    new Date().getTimezoneOffset(),
-  ];
+    const signals: Array<string | number | undefined> = [
+      navigator.userAgent,
+      navigator.language,
+      Array.isArray(navigator.languages) ? navigator.languages.join(",") : undefined,
+      navigator.hardwareConcurrency,
+      (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
+      window.screen?.width,
+      window.screen?.height,
+      window.screen?.colorDepth,
+      window.devicePixelRatio,
+      typeof Intl !== "undefined" && Intl.DateTimeFormat
+        ? Intl.DateTimeFormat().resolvedOptions().timeZone
+        : undefined,
+      new Date().getTimezoneOffset(),
+    ];
 
-  // Convert all values to strings and filter out undefined/null
-  const stringSignals = signals
-    .filter((v) => v !== undefined && v !== null)
-    .map((v) => String(v));
+    // Convert all values to strings and filter out undefined/null
+    const stringSignals = signals
+      .filter((v) => v !== undefined && v !== null)
+      .map((v) => String(v));
 
-  const joined = stringSignals.join("|");
-  return djb2(joined);
+    const joined = stringSignals.join("|");
+    return djb2(joined);
+  } catch (error) {
+    console.error("[computeFingerprint] Error:", error);
+    return "ssr";
+  }
 }
