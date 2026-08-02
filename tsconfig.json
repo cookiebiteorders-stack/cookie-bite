@@ -18,7 +18,6 @@
     "jsx": "react-jsx",
     "incremental": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["jest", "@testing-library/jest-dom", "node"],
     "plugins": [
       {
         "name": "next"
@@ -42,6 +41,7 @@
     "node_modules",
     ".next",
     "supabase/functions/**",
-    "scripts/migrate-clerk-to-supabase.ts"
+    "scripts/migrate-clerk-to-supabase.ts",
+    "jest.setup.ts"
   ]
 }
