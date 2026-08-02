@@ -30,6 +30,7 @@ const hasRealDb = Boolean(
 const describeDb = hasRealDb ? describe : describe.skip;
 
 describeDb('Checkout Flow Regression Tests', () => {
+  const adminClient = supabase!;
   let testProductId: string;
   let testUserId: string;
   let dbAvailable = false;
@@ -39,13 +40,13 @@ describeDb('Checkout Flow Regression Tests', () => {
     jest.setTimeout(30000);
     try {
       // Check if DB connection works
-      const { data: ping } = await supabase.from('users').select('id').limit(1);
+      const { data: ping } = await adminClient.from('users').select('id').limit(1);
       if (!ping) return;
 
       dbAvailable = true;
 
       // Check if RPC function exists
-      const { data: rpcCheck } = await supabase.rpc('insert_checkout_order_transactional', {
+      const { data: rpcCheck } = await adminClient.rpc('insert_checkout_order_transactional', {
         p_user_id: '00000000-0000-0000-0000-000000000000',
         p_lines: [],
         p_subtotal_egp: 0,
@@ -66,7 +67,7 @@ describeDb('Checkout Flow Regression Tests', () => {
     if (!dbAvailable || !rpcFunctionExists) return;
 
     // Create test product
-    const { data: product } = await supabase
+    const { data: product } = await adminClient
       .from('products')
       .insert({
         slug: 'test-regression-product',
@@ -83,7 +84,7 @@ describeDb('Checkout Flow Regression Tests', () => {
     testProductId = product?.id;
 
     // Create test user
-    const { data: user } = await supabase
+    const { data: user } = await adminClient
       .from('users')
       .insert({
         email: 'regression-test@example.com',
@@ -99,16 +100,16 @@ describeDb('Checkout Flow Regression Tests', () => {
   afterAll(async () => {
     // Cleanup test data
     if (testProductId) {
-      await supabase.from('products').delete().eq('id', testProductId);
+      await adminClient.from('products').delete().eq('id', testProductId);
     }
     if (testUserId) {
-      await supabase.from('users').delete().eq('id', testUserId);
+      await adminClient.from('users').delete().eq('id', testUserId);
     }
   });
 
   it('should create order with atomic stock reservation', async () => {
     if (!dbAvailable || !rpcFunctionExists) return;
-    const initialStock = await supabase
+    const initialStock = await adminClient
       .from('products')
       .select('stock')
       .eq('id', testProductId)
@@ -142,7 +143,7 @@ describeDb('Checkout Flow Regression Tests', () => {
     expect(orderResult.id).toBeDefined();
 
     // Verify stock was decremented
-    const finalStock = await supabase
+    const finalStock = await adminClient
       .from('products')
       .select('stock')
       .eq('id', testProductId)
@@ -151,7 +152,7 @@ describeDb('Checkout Flow Regression Tests', () => {
     expect(finalStock.data?.stock).toBe(initialStock.data?.stock - 2);
 
     // Cleanup order
-    await supabase.from('orders').delete().eq('id', orderResult.id);
+    await adminClient.from('orders').delete().eq('id', orderResult.id);
   });
 
   it('should handle idempotency for duplicate checkout requests', async () => {
@@ -209,12 +210,13 @@ describeDb('Checkout Flow Regression Tests', () => {
     expect(firstOrder.id).toBe(secondOrder.id);
 
     // Cleanup
-    await supabase.from('orders').delete().eq('id', firstOrder.id);
+    await adminClient.from('orders').delete().eq('id', firstOrder.id);
   });
 
   it('should reject order when insufficient stock', async () => {
+    if (!dbAvailable || !rpcFunctionExists) return;
     // Set stock to 1
-    await supabase.from('products').update({ stock: 1 }).eq('id', testProductId);
+    await adminClient.from('products').update({ stock: 1 }).eq('id', testProductId);
 
     await expect(
       insertCheckoutOrderTransactional({
@@ -243,11 +245,12 @@ describeDb('Checkout Flow Regression Tests', () => {
     ).rejects.toThrow();
 
     // Reset stock
-    await supabase.from('products').update({ stock: 10 }).eq('id', testProductId);
+    await adminClient.from('products').update({ stock: 10 }).eq('id', testProductId);
   });
 });
 
 describeDb('Payment Processing Regression Tests', () => {
+  const adminClient = supabase!;
   let testOrderId: string;
   let testUserId: string;
   let dbAvailable = false;
@@ -256,7 +259,7 @@ describeDb('Payment Processing Regression Tests', () => {
     jest.setTimeout(30000);
     try {
       // Check if DB connection works
-      const { data: ping } = await supabase.from('users').select('id').limit(1);
+      const { data: ping } = await adminClient.from('users').select('id').limit(1);
       if (!ping) return;
 
       dbAvailable = true;
@@ -267,7 +270,7 @@ describeDb('Payment Processing Regression Tests', () => {
     if (!dbAvailable) return;
 
     // Create test user
-    const { data: user } = await supabase
+    const { data: user } = await adminClient
       .from('users')
       .insert({
         email: 'payment-test@example.com',
@@ -280,7 +283,7 @@ describeDb('Payment Processing Regression Tests', () => {
     testUserId = user?.id;
 
     // Create test order
-    const { data: order } = await supabase
+    const { data: order } = await adminClient
       .from('orders')
       .insert({
         user_id: testUserId,
@@ -306,16 +309,16 @@ describeDb('Payment Processing Regression Tests', () => {
   afterAll(async () => {
     // Cleanup
     if (testOrderId) {
-      await supabase.from('orders').delete().eq('id', testOrderId);
+      await adminClient.from('orders').delete().eq('id', testOrderId);
     }
     if (testUserId) {
-      await supabase.from('users').delete().eq('id', testUserId);
+      await adminClient.from('users').delete().eq('id', testUserId);
     }
   });
 
   it('should process payment and update order status', async () => {
     if (!dbAvailable) return;
-    const { data: order } = await supabase
+    const { data: order } = await adminClient
       .from('orders')
       .update({
         payment_status: 'paid',
@@ -334,7 +337,7 @@ describeDb('Payment Processing Regression Tests', () => {
     if (!dbAvailable) return;
     // This test verifies the logic in updateOrderPaymentByPaymobAcceptOrderId
     // that prevents downgrading a paid order
-    const { data: order } = await supabase
+    const { data: order } = await adminClient
       .from('orders')
       .select('payment_status')
       .eq('id', testOrderId)
@@ -345,6 +348,7 @@ describeDb('Payment Processing Regression Tests', () => {
 });
 
 describeDb('Refund Processing Regression Tests', () => {
+  const adminClient = supabase!;
   let testOrderId: string;
   let testUserId: string;
   let adminUserId: string;
@@ -355,13 +359,13 @@ describeDb('Refund Processing Regression Tests', () => {
     jest.setTimeout(30000);
     try {
       // Check if DB connection works
-      const { data: ping } = await supabase.from('users').select('id').limit(1);
+      const { data: ping } = await adminClient.from('users').select('id').limit(1);
       if (!ping) return;
 
       dbAvailable = true;
 
       // Check if RPC function exists
-      const { data: rpcCheck } = await supabase.rpc('process_refund_transactional', {
+      const { data: rpcCheck } = await adminClient.rpc('process_refund_transactional', {
         p_order_id: '00000000-0000-0000-0000-000000000000',
         p_idempotency_key: 'test-check',
         p_amount_cents: 0,
@@ -379,7 +383,7 @@ describeDb('Refund Processing Regression Tests', () => {
     if (!dbAvailable || !rpcFunctionExists) return;
 
     // Create test user
-    const { data: user } = await supabase
+    const { data: user } = await adminClient
       .from('users')
       .insert({
         email: 'refund-test@example.com',
@@ -392,7 +396,7 @@ describeDb('Refund Processing Regression Tests', () => {
     testUserId = user?.id;
 
     // Create admin user
-    const { data: admin } = await supabase
+    const { data: admin } = await adminClient
       .from('users')
       .insert({
         email: 'admin-refund-test@example.com',
@@ -405,7 +409,7 @@ describeDb('Refund Processing Regression Tests', () => {
     adminUserId = admin?.id;
 
     // Create paid order
-    const { data: order } = await supabase
+    const { data: order } = await adminClient
       .from('orders')
       .insert({
         user_id: testUserId,
@@ -432,13 +436,13 @@ describeDb('Refund Processing Regression Tests', () => {
   afterAll(async () => {
     // Cleanup
     if (testOrderId) {
-      await supabase.from('orders').delete().eq('id', testOrderId);
+      await adminClient.from('orders').delete().eq('id', testOrderId);
     }
     if (testUserId) {
-      await supabase.from('users').delete().eq('id', testUserId);
+      await adminClient.from('users').delete().eq('id', testUserId);
     }
     if (adminUserId) {
-      await supabase.from('users').delete().eq('id', adminUserId);
+      await adminClient.from('users').delete().eq('id', adminUserId);
     }
   });
 
@@ -461,7 +465,7 @@ describeDb('Refund Processing Regression Tests', () => {
     expect(firstRefund.refundRequestId).toBeDefined();
 
     // Verify order status changed
-    const { data: order } = await supabase
+    const { data: order } = await adminClient
       .from('orders')
       .select('payment_status, status')
       .eq('id', testOrderId)
@@ -489,7 +493,7 @@ describeDb('Refund Processing Regression Tests', () => {
   it('should reject refund for unpaid orders', async () => {
     if (!dbAvailable || !rpcFunctionExists) return;
     // Create unpaid order
-    const { data: unpaidOrder } = await supabase
+    const { data: unpaidOrder } = await adminClient
       .from('orders')
       .insert({
         user_id: testUserId,
@@ -522,7 +526,7 @@ describeDb('Refund Processing Regression Tests', () => {
     expect(refundResult.errorMessage).toContain('not_paid');
 
     // Cleanup
-    await supabase.from('orders').delete().eq('id', unpaidOrder?.id);
+    await adminClient.from('orders').delete().eq('id', unpaidOrder?.id);
   });
 
   it('should reject refund exceeding order total', async () => {
@@ -542,12 +546,27 @@ describeDb('Refund Processing Regression Tests', () => {
 });
 
 describeDb('Authorization Regression Tests', () => {
+  const adminClient = supabase!;
   let customerUserId: string;
   let adminUserId: string;
+  let dbAvailable = false;
 
   beforeAll(async () => {
+    jest.setTimeout(30000);
+    try {
+      // Check if DB connection works
+      const { data: ping } = await adminClient.from('users').select('id').limit(1);
+      if (!ping) return;
+
+      dbAvailable = true;
+    } catch {
+      dbAvailable = false;
+    }
+
+    if (!dbAvailable) return;
+
     // Create customer user
-    const { data: customer } = await supabase
+    const { data: customer } = await adminClient
       .from('users')
       .insert({
         email: 'auth-customer@example.com',
@@ -560,7 +579,7 @@ describeDb('Authorization Regression Tests', () => {
     customerUserId = customer?.id;
 
     // Create admin user
-    const { data: admin } = await supabase
+    const { data: admin } = await adminClient
       .from('users')
       .insert({
         email: 'auth-admin@example.com',
@@ -571,19 +590,20 @@ describeDb('Authorization Regression Tests', () => {
       .single();
 
     adminUserId = admin?.id;
-  });
+  }, 30000);
 
   afterAll(async () => {
     // Cleanup
     if (customerUserId) {
-      await supabase.from('users').delete().eq('id', customerUserId);
+      await adminClient.from('users').delete().eq('id', customerUserId);
     }
     if (adminUserId) {
-      await supabase.from('users').delete().eq('id', adminUserId);
+      await adminClient.from('users').delete().eq('id', adminUserId);
     }
   });
 
   it('should allow admin access to admin routes', async () => {
+    if (!dbAvailable) return;
     // This test verifies that admin users can access admin routes
     // In a real test, this would mock the auth context and call requireAdminAccess
     const adminUser = {
@@ -596,6 +616,7 @@ describeDb('Authorization Regression Tests', () => {
   });
 
   it('should deny customer access to admin routes', async () => {
+    if (!dbAvailable) return;
     // This test verifies that customer users cannot access admin routes
     const customerUser = {
       user_id: customerUserId,
@@ -608,6 +629,7 @@ describeDb('Authorization Regression Tests', () => {
   });
 
   it('should handle role-based permissions correctly', async () => {
+    if (!dbAvailable) return;
     // Test that role checks work correctly
     const roles = ['owner', 'admin', 'staff', 'customer'];
     
