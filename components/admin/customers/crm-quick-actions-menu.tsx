@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+// @ts-ignore - react-dom types are installed but deployment environment may not recognize them
 import { createPortal } from "react-dom";
 import { Bell, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
