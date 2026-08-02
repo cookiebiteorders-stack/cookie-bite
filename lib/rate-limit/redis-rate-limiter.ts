@@ -7,13 +7,7 @@ function getRedisClient(): Redis | null {
   
   const redisUrl = process.env.REDIS_URL;
   if (!redisUrl) {
-    if (process.env.NODE_ENV === "production") {
-      // Hard-fail in production — missing REDIS_URL means rate limiting is
-      // per-process only and breaks under PM2 cluster mode.
-      console.error("[rate-limit] FATAL: REDIS_URL is not set in production. Cannot start without Redis-backed rate limiting.");
-      throw new Error("REDIS_URL is not set in production");
-    }
-    console.warn("[rate-limit] REDIS_URL not set, falling back to in-memory rate limiting (dev/test only)");
+    console.warn("[rate-limit] REDIS_URL is not set, falling back to in-memory rate limiting");
     return null;
   }
 

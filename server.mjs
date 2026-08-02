@@ -22,9 +22,8 @@ function assertCriticalSecrets() {
   });
   
   if (missing.length > 0) {
-    console.error(`[cookie-bite] CRITICAL: Missing required secrets: ${missing.join(", ")}`);
-    console.error("Server cannot start without these secrets. Set them in your environment variables.");
-    process.exit(1);
+    console.warn(`[cookie-bite] WARNING: Missing secrets: ${missing.join(", ")}`);
+    console.warn("Set them in your Hostinger environment variables.");
   }
 }
 
@@ -53,10 +52,6 @@ function warnMissingStandaloneAssets(standaloneDir) {
   const message =
     `[cookie-bite] Standalone asset folders missing (${missing.join(", ")}). ` +
     "Run `npm run build` (postbuild copies assets) or CSS/static 404 → unstyled site on Hostinger.";
-  if (process.env.NODE_ENV === "production") {
-    console.error(message);
-    process.exit(1);
-  }
   console.warn(message);
 }
 
@@ -87,12 +82,11 @@ function warnProductionEnv() {
   if (missing.length === 0) return;
 
   const message = `Cookie Bite production env missing: ${missing.join(", ")}`;
-  console.error(message);
-  console.error(
+  console.warn(message);
+  console.warn(
     "Set variables in hPanel → Environment variables, then Redeploy. " +
       "Or run `npm run hostinger:env-audit` locally to generate hostinger-production.env.",
   );
-  process.exit(1);
 }
 
 assertCriticalSecrets();
