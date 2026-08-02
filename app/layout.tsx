@@ -59,8 +59,31 @@ export const viewport: Viewport = {
   ],
 };
 
+function getSafeMetadataBase(): URL {
+  const candidates = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.APP_BASE_URL,
+    "https://cookie-bite.com",
+  ];
+
+  for (const candidate of candidates) {
+    const raw = candidate?.trim();
+    if (!raw) continue;
+
+    const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+
+    try {
+      return new URL(normalized);
+    } catch {
+      // try next candidate
+    }
+  }
+
+  return new URL("https://cookie-bite.com");
+}
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://cookie-bite.com"),
+  metadataBase: getSafeMetadataBase(),
   title: {
     default: "Cookie Bite Store",
     template: "%s | Cookie Bite",
