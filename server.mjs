@@ -14,6 +14,9 @@ function assertCriticalSecrets() {
     "REVALIDATE_SECRET",
     "PAYMOB_HMAC_SECRET",
     "REDIS_URL",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_KEY",
   ];
   
   const missing = criticalSecrets.filter((key) => {

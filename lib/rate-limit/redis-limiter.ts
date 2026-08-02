@@ -37,12 +37,13 @@ export async function checkRateLimit(
   }
 
   try {
-    // Import Redis client dynamically to avoid issues if not installed
-    const { createClient } = await import("redis");
-    const client = createClient({ url: redisUrl });
-    
-    // Connect to Redis
-    await client.connect();
+    // Import ioredis client dynamically to avoid issues if not installed
+    const { default: IORedis } = await import("ioredis");
+    const client = new IORedis(redisUrl, {
+      maxRetriesPerRequest: 3,
+      retryStrategy: (times) => Math.min(times * 50, 2000),
+      enableReadyCheck: true,
+    });
     
     try {
       // Use Redis INCR with expiration for atomic rate limiting
@@ -53,7 +54,7 @@ export async function checkRateLimit(
       
       // Set expiration on first request
       if (count === 1) {
-        await client.pExpire(redisKey, windowMs);
+        await client.pexpire(redisKey, windowMs);
       }
       
       const remaining = Math.max(0, maxRequests - count);
