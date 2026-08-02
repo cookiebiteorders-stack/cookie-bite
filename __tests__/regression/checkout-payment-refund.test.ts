@@ -12,12 +12,24 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import { createSupabaseAdminClient } from '@/lib/supabase/admin';
+import { tryCreateSupabaseAdminClient } from '@/lib/supabase/admin';
 import { insertCheckoutOrderTransactional } from '@/lib/db/orders';
 import { processRefundTransactional } from '@/lib/db/payments';
 import { requireAdminAccess } from '@/lib/admin/require-admin';
 
-describe('Checkout Flow Regression Tests', () => {
+const supabase = tryCreateSupabaseAdminClient();
+const hasRealDb = Boolean(
+  supabase &&
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("dummy") &&
+    !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("example") &&
+    process.env.SUPABASE_SERVICE_ROLE_KEY &&
+    !process.env.SUPABASE_SERVICE_ROLE_KEY.includes("dummy")
+);
+
+const describeDb = hasRealDb ? describe : describe.skip;
+
+describeDb('Checkout Flow Regression Tests', () => {
   const supabase = createSupabaseAdminClient();
   let testProductId: string;
   let testUserId: string;
@@ -203,7 +215,7 @@ describe('Checkout Flow Regression Tests', () => {
   });
 });
 
-describe('Payment Processing Regression Tests', () => {
+describeDb('Payment Processing Regression Tests', () => {
   const supabase = createSupabaseAdminClient();
   let testOrderId: string;
   let testUserId: string;
@@ -285,7 +297,7 @@ describe('Payment Processing Regression Tests', () => {
   });
 });
 
-describe('Refund Processing Regression Tests', () => {
+describeDb('Refund Processing Regression Tests', () => {
   const supabase = createSupabaseAdminClient();
   let testOrderId: string;
   let testUserId: string;
@@ -452,7 +464,7 @@ describe('Refund Processing Regression Tests', () => {
   });
 });
 
-describe('Authorization Regression Tests', () => {
+describeDb('Authorization Regression Tests', () => {
   const supabase = createSupabaseAdminClient();
   let customerUserId: string;
   let adminUserId: string;

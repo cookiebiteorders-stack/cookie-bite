@@ -82,13 +82,13 @@ describeDb('Role System Invariant Tests', () => {
   afterAll(async () => {
     // Cleanup test data
     if (testOwnerId) {
-      await supabase.from('users').delete().eq('id', testOwnerId);
+      await adminClient.from('users').delete().eq('id', testOwnerId);
     }
     if (testAdminId) {
-      await supabase.from('users').delete().eq('id', testAdminId);
+      await adminClient.from('users').delete().eq('id', testAdminId);
     }
     if (testCustomerId) {
-      await supabase.from('users').delete().eq('id', testCustomerId);
+      await adminClient.from('users').delete().eq('id', testCustomerId);
     }
   });
 

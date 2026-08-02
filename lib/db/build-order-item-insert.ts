@@ -45,7 +45,6 @@ export function buildOrderItemInsertRow(
     order_id: orderId,
     product_id: productUuid,
     product_name: line.name.slice(0, 500),
-    name: { en: line.name.slice(0, 500), ar: line.name.slice(0, 500) },
     slug: line.slug,
     unit_price_egp: unitPrice,
     unit_price: unitPrice,

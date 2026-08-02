@@ -98,7 +98,7 @@ describe("Paymob intention helpers", () => {
       20,
       30,
     );
-    const sum = items.reduce((s, i) => s + i.amount, 0);
+    const sum = items.reduce((s, i) => s + i.amount * i.quantity, 0);
     expect(sum).toBe(100 * 2 * 100 - 20 * 100 + 45 * 100 + 30 * 100);
   });
 });

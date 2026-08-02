@@ -99,7 +99,7 @@ export async function fetchJson<TResult>(
   try {
     parsed = text ? JSON.parse(text) : null;
   } catch {
-    const contentType = res.headers.get("content-type") || "unknown";
+    const contentType = res.headers?.get?.("content-type") || "unknown";
     const snippet = text.slice(0, 200);
     throw new Error(
       `Non-JSON response from ${url} (status ${res.status}, content-type ${contentType}): ${snippet}`,

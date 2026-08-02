@@ -29,7 +29,7 @@ describe("fetchJson", () => {
       text: async () => "not-json",
     });
 
-    await expect(fetchJson("/bad")).rejects.toThrow("invalid body");
+    await expect(fetchJson("/bad")).rejects.toThrow("Non-JSON response");
   });
 
   it("throws readable message on API error JSON", async () => {
