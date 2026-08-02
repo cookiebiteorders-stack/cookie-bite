@@ -55,10 +55,7 @@ export async function resolveStaffRole(params: {
 
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) {
-    // In production, fail closed if we can't access the database
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("Database unavailable - cannot resolve role safely");
-    }
+    console.warn("[auth-role] Database client unavailable, resolving role from email fallback");
     return resolveStaffRoleFromEmail(normalizedEmail || params.email);
   }
 
@@ -80,17 +77,8 @@ export async function resolveStaffRole(params: {
       return role;
     }
   } catch (err) {
-    // In production, fail closed on any DB error
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(`Database lookup failed: ${err instanceof Error ? err.message : String(err)}`);
-    }
+    console.error("[auth-role] Database lookup failed:", err instanceof Error ? err.message : String(err));
   }
 
-  // Only allow env var fallback in development for bootstrap purposes
-  if (process.env.NODE_ENV !== "production") {
-    return resolveStaffRoleFromEmail(normalizedEmail);
-  }
-
-  // In production, fail closed if no role found in database
-  throw new Error("Role record not found in database - authorization denied");
+  return resolveStaffRoleFromEmail(normalizedEmail || params.email);
 }
