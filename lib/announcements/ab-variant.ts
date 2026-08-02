@@ -22,7 +22,9 @@ export function resolveAbVariantKey(
   if (typeof seed !== "string" || seed.length === 0) return undefined;
   
   for (let i = 0; i < seed.length; i++) {
-    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+    const charCode = seed.charCodeAt(i);
+    if (typeof charCode !== "number" || isNaN(charCode)) continue;
+    hash = (hash * 31 + charCode) >>> 0;
   }
   const index = hash % variants.length;
   return variants[index]?.key;

@@ -10,7 +10,9 @@ export function assignPromptVariant(seed: string | null | undefined): PromptVari
 
   let hash = 0x811c9dc5;
   for (let i = 0; i < key.length; i++) {
-    hash ^= key.charCodeAt(i);
+    const charCode = key.charCodeAt(i);
+    if (typeof charCode !== "number" || isNaN(charCode)) continue;
+    hash ^= charCode;
     hash = Math.imul(hash, 0x01000193) >>> 0;
   }
   return hash % 2 === 0 ? "a" : "b";

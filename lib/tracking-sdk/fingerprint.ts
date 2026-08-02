@@ -12,7 +12,9 @@ function djb2(input: string): string {
   if (typeof input !== "string" || input.length === 0) return "0";
   let hash = 5381;
   for (let i = 0; i < input.length; i += 1) {
-    hash = (hash * 33) ^ input.charCodeAt(i);
+    const charCode = input.charCodeAt(i);
+    if (typeof charCode !== "number" || isNaN(charCode)) continue;
+    hash = (hash * 33) ^ charCode;
   }
   return (hash >>> 0).toString(16);
 }
