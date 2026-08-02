@@ -9,6 +9,7 @@
  */
 
 function djb2(input: string): string {
+  if (typeof input !== "string" || input.length === 0) return "0";
   let hash = 5381;
   for (let i = 0; i < input.length; i += 1) {
     hash = (hash * 33) ^ input.charCodeAt(i);
@@ -40,5 +41,6 @@ export function computeFingerprint(): string {
     .filter((v) => v !== undefined && v !== null)
     .map((v) => String(v));
 
-  return djb2(stringSignals.join("|"));
+  const joined = stringSignals.join("|");
+  return djb2(joined);
 }

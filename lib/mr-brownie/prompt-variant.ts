@@ -6,7 +6,7 @@ export type PromptVariant = "a" | "b";
  */
 export function assignPromptVariant(seed: string | null | undefined): PromptVariant {
   const key = String(seed ?? "").trim();
-  if (!key) return "a";
+  if (!key || typeof key !== "string") return "a";
 
   let hash = 0x811c9dc5;
   for (let i = 0; i < key.length; i++) {

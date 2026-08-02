@@ -7,12 +7,20 @@ export function resolveAbVariantKey(
 ): string | undefined {
   if (!record.ab_test?.enabled || !record.ab_test.variants.length) return undefined;
   const variants = record.ab_test.variants;
-  
+
   // Ensure record.id is a valid string before constructing seed
   if (!record.id) return undefined;
-  
+
+  // Ensure sessionId is a valid string
+  const safeSessionId = String(sessionId ?? "anonymous");
+  const safeRecordId = String(record.id);
+
   let hash = 0;
-  const seed = `${String(sessionId)}:${String(record.id)}`;
+  const seed = `${safeSessionId}:${safeRecordId}`;
+  
+  // Ensure seed is a string before iterating
+  if (typeof seed !== "string" || seed.length === 0) return undefined;
+  
   for (let i = 0; i < seed.length; i++) {
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   }
