@@ -13,7 +13,7 @@ function assertCriticalSecrets() {
     "INTERNAL_API_SECRET",
     "REVALIDATE_SECRET",
     "PAYMOB_HMAC_SECRET",
-    "REDIS_URL",
+    // "REDIS_URL", // Made optional for now - system can work without Redis
     "NEXT_PUBLIC_SUPABASE_URL",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY",
     "SUPABASE_SERVICE_KEY",
@@ -73,7 +73,7 @@ function warnProductionEnv() {
     "RESEND_FROM_EMAIL",
     "INTERNAL_API_SECRET",
     "REVALIDATE_SECRET",
-    "REDIS_URL",
+    // "REDIS_URL", // Made optional for now - system can work without Redis
   ];
   const missing = required.filter((k) => {
     const v = process.env[k];
