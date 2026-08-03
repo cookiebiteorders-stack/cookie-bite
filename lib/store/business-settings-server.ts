@@ -47,7 +47,9 @@ export function invalidateBusinessSettingsCache() {
   } catch (error) {
     console.error("===== BUSINESS SETTINGS CACHE INVALIDATION ERROR =====");
     console.error(error);
-    console.error(error?.stack);
+    if (error instanceof Error) {
+      console.error(error.stack);
+    }
     // edge without cache - continue
   }
 }
@@ -70,7 +72,9 @@ async function loadBusinessSettingsFromDb(): Promise<StoreBusinessSettings> {
     if (missing) return { ...DEFAULT_BUSINESS_SETTINGS };
     console.error("===== BUSINESS SETTINGS DB READ ERROR =====");
     console.error(error);
-    console.error(error?.stack);
+    if (error instanceof Error) {
+      console.error(error.stack);
+    }
     return { ...DEFAULT_BUSINESS_SETTINGS };
   }
 

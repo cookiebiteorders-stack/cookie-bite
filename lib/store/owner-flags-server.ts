@@ -38,7 +38,9 @@ export function invalidateOwnerFlagsCache() {
   } catch (error) {
     console.error("===== OWNER FLAGS CACHE INVALIDATION ERROR =====");
     console.error(error);
-    console.error(error?.stack);
+    if (error instanceof Error) {
+      console.error(error.stack);
+    }
     // edge without cache - continue
   }
 }
@@ -61,7 +63,9 @@ async function loadOwnerFlagsFromDb(): Promise<OwnerFlags> {
     if (missing) return DEFAULT_OWNER_FLAGS;
     console.error("===== OWNER FLAGS DB READ ERROR =====");
     console.error(error);
-    console.error(error?.stack);
+    if (error instanceof Error) {
+      console.error(error.stack);
+    }
     return DEFAULT_OWNER_FLAGS;
   }
 

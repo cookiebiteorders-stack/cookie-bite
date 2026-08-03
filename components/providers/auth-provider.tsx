@@ -51,7 +51,9 @@ export function SupabaseAuthProvider({
     } catch (err) {
       console.error("===== AUTH PROVIDER REFRESH ERROR =====");
       console.error(err);
-      console.error(err?.stack);
+      if (err instanceof Error) {
+        console.error(err.stack);
+      }
       setError(AuthErrorCode.NETWORK_ERROR);
     } finally {
       setIsLoaded(true);
@@ -96,7 +98,9 @@ export function SupabaseAuthProvider({
     } catch (err) {
       console.error("===== AUTH PROVIDER INITIALIZATION ERROR =====");
       console.error(err);
-      console.error(err?.stack);
+      if (err instanceof Error) {
+        console.error(err.stack);
+      }
       setError(AuthErrorCode.CONFIGURATION_ERROR);
       setIsLoaded(true);
       // Don't crash the app if auth is not configured

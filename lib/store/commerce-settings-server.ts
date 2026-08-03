@@ -42,7 +42,9 @@ export function invalidateCommerceSettingsCache() {
   } catch (error) {
     console.error("===== COMMERCE SETTINGS CACHE INVALIDATION ERROR =====");
     console.error(error);
-    console.error(error?.stack);
+    if (error instanceof Error) {
+      console.error(error.stack);
+    }
     // edge without cache - continue
   }
   invalidateAiWebsiteKnowledgeCache();
@@ -66,7 +68,9 @@ async function loadCommerceSettingsFromDb(): Promise<StoreCommerceSettings> {
     if (missing) return { ...DEFAULT_COMMERCE_SETTINGS };
     console.error("===== COMMERCE SETTINGS DB READ ERROR =====");
     console.error(error);
-    console.error(error?.stack);
+    if (error instanceof Error) {
+      console.error(error.stack);
+    }
     return { ...DEFAULT_COMMERCE_SETTINGS };
   }
 

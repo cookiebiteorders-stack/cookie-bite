@@ -34,7 +34,9 @@ export function invalidatePublicShippingZonesCache() {
   } catch (error) {
     console.error("===== SHIPPING ZONES CACHE INVALIDATION ERROR =====");
     console.error(error);
-    console.error(error?.stack);
+    if (error instanceof Error) {
+      console.error(error.stack);
+    }
     // edge without cache - continue
   }
 }
@@ -58,7 +60,9 @@ async function loadPublicShippingZonesFromDb(): Promise<PublicShippingZone[]> {
     if (missing) return [];
     console.error("===== SHIPPING ZONES DB READ ERROR =====");
     console.error(error);
-    console.error(error?.stack);
+    if (error instanceof Error) {
+      console.error(error.stack);
+    }
     return [];
   }
 

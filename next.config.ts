@@ -69,6 +69,17 @@ const nextConfig: NextConfig = {
     },
   },
   allowedDevOrigins: ["127.0.0.1", "localhost"],
+  turbopack: {},
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve ??= {};
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        ...polyfillModuleAliases,
+      };
+    }
+    return config;
+  },
   async redirects() {
     return [
       { source: "/gift-ideas", destination: "/gift-box", permanent: true },

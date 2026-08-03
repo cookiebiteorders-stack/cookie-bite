@@ -110,7 +110,9 @@ export default async function middleware(request: NextRequest) {
       } catch (error) {
         console.error("===== MIDDLEWARE MAINTENANCE CHECK ERROR =====");
         console.error(error);
-        console.error(error?.stack);
+        if (error instanceof Error) {
+          console.error(error.stack);
+        }
         console.error({ url: request.url, method: request.method, env: process.env.NODE_ENV });
         // fail open but log the error
       }
