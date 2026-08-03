@@ -1,8 +1,6 @@
-import Redis from "ioredis";
+let redisClient: any = null;
 
-let redisClient: Redis | null = null;
-
-function getRedisClient(): Redis | null {
+async function getRedisClient(): Promise<any> {
   if (redisClient) return redisClient;
   
   const redisUrl = process.env.REDIS_URL;
@@ -12,6 +10,8 @@ function getRedisClient(): Redis | null {
   }
 
   try {
+    // Dynamic import to avoid edge runtime issues
+    const { default: Redis } = await import("ioredis");
     redisClient = new Redis(redisUrl, {
       maxRetriesPerRequest: 3,
       retryStrategy: (times) => Math.min(times * 50, 2000),
@@ -55,7 +55,7 @@ function cleanupInMemory() {
 }
 
 export async function rateOk(key: string, max: number, windowMs: number): Promise<boolean> {
-  const redis = getRedisClient();
+  const redis = await getRedisClient();
   
   if (!redis) {
     cleanupInMemory();
@@ -79,9 +79,9 @@ export async function rateOk(key: string, max: number, windowMs: number): Promis
   }
 }
 
-export function closeRedis(): void {
+export async function closeRedis(): Promise<void> {
   if (redisClient) {
-    redisClient.quit();
+    await redisClient.quit();
     redisClient = null;
   }
 }
