@@ -55,61 +55,62 @@ function resolveModule(pathname: string) {
 }
 
 export default async function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname;
+  try {
+    const path = request.nextUrl.pathname;
 
-  // Generate or extract request ID for distributed tracing
-  const requestId = getRequestId(request.headers);
-  const requestIdHeader = getRequestIdHeader();
+    // Generate or extract request ID for distributed tracing
+    const requestId = getRequestId(request.headers);
+    const requestIdHeader = getRequestIdHeader();
 
-  if (process.env.NODE_ENV === "production") {
-    const url = request.nextUrl;
-    const remoteAddr = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
-                      request.headers.get("x-real-ip") || 
+    if (process.env.NODE_ENV === "production") {
+      const url = request.nextUrl;
+      const remoteAddr = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+                        request.headers.get("x-real-ip") || 
                       "unknown";
-    
-    // Only trust X-Forwarded-* headers from trusted proxies
-    const trusted = isTrustedProxy(remoteAddr);
-    const host = (request.headers.get("host") ?? url.host).toLowerCase();
-    const proto = trusted 
-      ? (request.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "")).toLowerCase()
-      : url.protocol.replace(":", "").toLowerCase();
-    
-    const wrongHost =
-      host !== PRODUCTION_HOST && host !== `www.${PRODUCTION_HOST}`;
-    const wrongProto = proto !== "https";
-    if (wrongHost || wrongProto || host.startsWith("www.")) {
-      const target = new URL(url.toString());
-      target.protocol = "https:";
-      target.host = PRODUCTION_HOST;
-      const response = NextResponse.redirect(target, 308);
-      response.headers.set(requestIdHeader, requestId);
-      return response;
-    }
-  }
-
-  if (isWebhook(path)) {
-    const response = NextResponse.next();
-    response.headers.set(requestIdHeader, requestId);
-    return response;
-  }
-
-  // Route Handlers must never be redirected — clients expect JSON.
-  // Session refresh still runs below, but no redirect / 403 rewrite.
-  const isRouteHandler = path.startsWith("/api/");
-
-  if (!isMaintenanceBypass(path)) {
-    try {
-      const flags = await getOwnerFlags();
-      if (flags.maintenance_mode && path !== "/maintenance") {
-        const origin = process.env.NODE_ENV === "development" ? request.nextUrl.origin.replace("0.0.0.0", "localhost").replace("https://localhost", "http://localhost") : getBaseUrl();
-        const response = NextResponse.redirect(new URL("/maintenance", origin));
+      
+      // Only trust X-Forwarded-* headers from trusted proxies
+      const trusted = isTrustedProxy(remoteAddr);
+      const host = (request.headers.get("host") ?? url.host).toLowerCase();
+      const proto = trusted 
+        ? (request.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "")).toLowerCase()
+        : url.protocol.replace(":", "").toLowerCase();
+      
+      const wrongHost =
+        host !== PRODUCTION_HOST && host !== `www.${PRODUCTION_HOST}`;
+      const wrongProto = proto !== "https";
+      if (wrongHost || wrongProto || host.startsWith("www.")) {
+        const target = new URL(url.toString());
+        target.protocol = "https:";
+        target.host = PRODUCTION_HOST;
+        const response = NextResponse.redirect(target, 308);
         response.headers.set(requestIdHeader, requestId);
         return response;
       }
-    } catch {
-      /* fail open */
     }
-  }
+
+    if (isWebhook(path)) {
+      const response = NextResponse.next();
+      response.headers.set(requestIdHeader, requestId);
+      return response;
+    }
+
+    // Route Handlers must never be redirected — clients expect JSON.
+    // Session refresh still runs below, but no redirect / 403 rewrite.
+    const isRouteHandler = path.startsWith("/api/");
+
+    if (!isMaintenanceBypass(path)) {
+      try {
+        const flags = await getOwnerFlags();
+        if (flags.maintenance_mode && path !== "/maintenance") {
+          const origin = process.env.NODE_ENV === "development" ? request.nextUrl.origin.replace("0.0.0.0", "localhost").replace("https://localhost", "http://localhost") : getBaseUrl();
+          const response = NextResponse.redirect(new URL("/maintenance", origin));
+          response.headers.set(requestIdHeader, requestId);
+          return response;
+        }
+      } catch {
+        /* fail open */
+      }
+    }
 
   if (path.startsWith("/api/")) {
     const ip =
@@ -269,6 +270,15 @@ export default async function middleware(request: NextRequest) {
   }
 
   return response;
+  } catch (error) {
+    console.error("[middleware] Unexpected error:", error);
+    // Allow request to proceed even if middleware fails
+    const response = NextResponse.next();
+    const requestId = getRequestId(request.headers);
+    const requestIdHeader = getRequestIdHeader();
+    response.headers.set(requestIdHeader, requestId);
+    return response;
+  }
 }
 
 export const config = {

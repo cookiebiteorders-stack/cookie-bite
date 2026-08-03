@@ -2,8 +2,8 @@
   "projectType": "nextjs",
   "nodeVersion": "24",
   "buildCommand": "npm run build",
-  "startCommand": "npm run start:standalone",
-  "entryFile": ".next/standalone/server.js",
-  "outputDirectory": ".next/standalone",
+  "startCommand": "node server.js",
+  "entryFile": "server.js",
+  "outputDirectory": ".",
   "installCommand": "NPM_CONFIG_PRODUCTION=false npm ci"
 }

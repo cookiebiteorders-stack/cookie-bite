@@ -2,7 +2,8 @@
   "name": "cookie-bite",
   "version": "0.1.0",
   "private": true,
-  "main": "server.mjs",
+  "type": "module",
+  "main": "server.js",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -17,7 +18,7 @@
     "build": "next build",
     "postbuild": "node scripts/stub-legacy-polyfills.mjs && node scripts/copy-standalone-assets.mjs && node scripts/verify-standalone-assets.mjs",
     "verify:standalone-css": "node scripts/verify-standalone-css-serving.mjs",
-    "start": "node server.mjs",
+    "start": "node server.js",
     "start:standalone": "node .next/standalone/server.js",
     "lint": "eslint",
     "type-check": "tsc --noEmit",

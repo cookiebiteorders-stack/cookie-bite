@@ -41,13 +41,19 @@ export function SupabaseAuthProvider({
 
   const refresh = async () => {
     setIsLoaded(false);
-    const { user: currentUser, error: userError } = await getCurrentUser();
-    const { session: currentSession, error: sessionError } = await getCurrentSession();
-    
-    setUser(currentUser);
-    setSession(currentSession);
-    setError(userError || sessionError);
-    setIsLoaded(true);
+    try {
+      const { user: currentUser, error: userError } = await getCurrentUser();
+      const { session: currentSession, error: sessionError } = await getCurrentSession();
+      
+      setUser(currentUser);
+      setSession(currentSession);
+      setError(userError || sessionError);
+    } catch (err) {
+      console.error("Auth refresh error:", err);
+      setError(AuthErrorCode.NETWORK_ERROR);
+    } finally {
+      setIsLoaded(true);
+    }
   };
 
   useEffect(() => {
@@ -89,6 +95,10 @@ export function SupabaseAuthProvider({
       console.error("Auth provider error:", err);
       setError(AuthErrorCode.CONFIGURATION_ERROR);
       setIsLoaded(true);
+      // Don't crash the app if auth is not configured
+      return () => {
+        mounted = false;
+      };
     }
   }, [router]);
 

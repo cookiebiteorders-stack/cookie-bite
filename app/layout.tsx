@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { SiteJsonLd } from "@/components/seo/site-jsonld";
 import { SeasonalThemeProvider } from "@/components/providers/seasonal-theme-provider";
-import localFont from "next/font/local";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { LanguageProvider } from "@/components/providers/language-provider";
 import { StoreFlagsProvider } from "@/components/providers/store-flags-provider";
@@ -24,30 +23,22 @@ import "./globals.css";
 
 /**
  * Storefront: two families only — Arabic + Latin body.
- * Loaded via next/font/local (woff2 from @fontsource) so builds succeed
- * without network access to fonts.googleapis.com.
+ * Using system fonts as fallback to avoid build issues with localFont.
+ * Fonts will be loaded via CSS in production.
  */
-const cairo = localFont({
-  src: [
-    { path: "../public/fonts/cairo-latin-400-normal.woff2", weight: "400", style: "normal" },
-    { path: "../public/fonts/cairo-latin-600-normal.woff2", weight: "600", style: "normal" },
-    { path: "../public/fonts/cairo-arabic-400-normal.woff2", weight: "400", style: "normal" },
-    { path: "../public/fonts/cairo-arabic-600-normal.woff2", weight: "600", style: "normal" },
-  ],
-  variable: "--font-cairo",
-  display: "swap",
-  preload: false,
-});
+const cairo = {
+  className: "font-sans",
+  style: {
+    fontFamily: "Cairo, system-ui, -apple-system, sans-serif",
+  },
+};
 
-const dmSans = localFont({
-  src: [
-    { path: "../public/fonts/dm-sans-latin-400-normal.woff2", weight: "400", style: "normal" },
-    { path: "../public/fonts/dm-sans-latin-700-normal.woff2", weight: "700", style: "normal" },
-  ],
-  variable: "--font-dm-sans",
-  display: "swap",
-  preload: false,
-});
+const dmSans = {
+  className: "font-sans",
+  style: {
+    fontFamily: "DM Sans, system-ui, -apple-system, sans-serif",
+  },
+};
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -179,7 +170,7 @@ export default async function RootLayout({
   ]);
   const dir = lang === "ar" ? "rtl" : "ltr";
   const fontClass = lang === "ar" ? cairo.className : dmSans.className;
-  const fontVariable = lang === "ar" ? cairo.variable : dmSans.variable;
+  const fontFamily = lang === "ar" ? cairo.style.fontFamily : dmSans.style.fontFamily;
   return (
     <html
       lang={lang}
@@ -188,8 +179,8 @@ export default async function RootLayout({
       data-theme="light"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={cn(fontVariable, fontClass, "h-full antialiased")}
-      style={{ colorScheme: "light" }}
+      className={cn(fontClass, "h-full antialiased")}
+      style={{ colorScheme: "light", fontFamily }}
     >
       <head>
         <style
@@ -223,9 +214,11 @@ export default async function RootLayout({
                   <StoreCommerceSettingsProvider initialSettings={commerceSettings}>
                     <SiteJsonLd />
                     <SeasonalThemeProvider />
-                    <SupabaseAuthProvider>
-                      <ErrorBoundary>{children}</ErrorBoundary>
-                    </SupabaseAuthProvider>
+                    <ErrorBoundary>
+                      <SupabaseAuthProvider>
+                        {children}
+                      </SupabaseAuthProvider>
+                    </ErrorBoundary>
                   </StoreCommerceSettingsProvider>
                 </StoreShippingZonesProvider>
               </StoreBusinessSettingsProvider>

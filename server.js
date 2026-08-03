@@ -118,8 +118,10 @@ console.info(
   `[cookie-bite] Starting standalone (${path.relative(process.cwd(), standaloneEntry) || standaloneEntry}) on port ${port}`,
 );
 
-await import(pathToFileURL(standaloneEntry).href);
+(async () => {
+  await import(pathToFileURL(standaloneEntry).href);
 
-// Background workers now run in separate supervised process (worker.mjs)
-// This prevents blocking the web server and allows independent scaling
-console.info("[cookie-bite] Background workers disabled in web process - use worker.mjs for supervision");
+  // Background workers now run in separate supervised process (worker.mjs)
+  // This prevents blocking the web server and allows independent scaling
+  console.info("[cookie-bite] Background workers disabled in web process - use worker.mjs for supervision");
+})();

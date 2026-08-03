@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "type": "chrome",
+            "name": "https://cookie-bite.com/",
+            "request": "launch",
+            "url": "https://cookie-bite.com/"
+        }
+    ]
+}
