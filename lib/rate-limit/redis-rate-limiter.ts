@@ -18,12 +18,12 @@ async function getRedisClient(): Promise<any> {
       enableReadyCheck: true,
     });
 
-    redisClient.on("error", (err) => {
+    redisClient.on("error", (err: any) => {
       console.error("[rate-limit] Redis error:", err.message);
     });
 
     return redisClient;
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("[rate-limit] Failed to initialize Redis:", err);
     return null;
   }
@@ -72,7 +72,7 @@ export async function rateOk(key: string, max: number, windowMs: number): Promis
     
     const count = results[0][1] as number;
     return count <= max;
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("[rate-limit] Redis operation failed, falling back to in-memory:", err);
     cleanupInMemory();
     return inMemoryRateOk(key, max, windowMs);
