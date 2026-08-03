@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { logStructuredError } from "@/lib/logger";
-import * as Sentry from "@sentry/nextjs";
 
 /**
  * خطأ الجذر — يجب أن يتضمن html و body كاملين (Next.js App Router).
@@ -16,7 +15,6 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     logStructuredError("global-error", error, { digest: error.digest });
-    Sentry.captureException(error);
   }, [error]);
 
   return (

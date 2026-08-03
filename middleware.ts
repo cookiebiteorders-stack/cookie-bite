@@ -107,8 +107,12 @@ export default async function middleware(request: NextRequest) {
           response.headers.set(requestIdHeader, requestId);
           return response;
         }
-      } catch {
-        /* fail open */
+      } catch (error) {
+        console.error("===== MIDDLEWARE MAINTENANCE CHECK ERROR =====");
+        console.error(error);
+        console.error(error?.stack);
+        console.error({ url: request.url, method: request.method, env: process.env.NODE_ENV });
+        // fail open but log the error
       }
     }
 

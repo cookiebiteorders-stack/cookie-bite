@@ -31,8 +31,11 @@ export function invalidatePublicShippingZonesCache() {
   cacheExpiresAt = 0;
   try {
     revalidateTag(SHIPPING_ZONES_CACHE_TAG, "max");
-  } catch {
-    /* edge without cache */
+  } catch (error) {
+    console.error("===== SHIPPING ZONES CACHE INVALIDATION ERROR =====");
+    console.error(error);
+    console.error(error?.stack);
+    // edge without cache - continue
   }
 }
 
@@ -53,7 +56,9 @@ async function loadPublicShippingZonesFromDb(): Promise<PublicShippingZone[]> {
       error.message.includes("shipping_zones") ||
       error.message.includes("does not exist");
     if (missing) return [];
-    console.error("[shipping-zones] public read failed", error.message);
+    console.error("===== SHIPPING ZONES DB READ ERROR =====");
+    console.error(error);
+    console.error(error?.stack);
     return [];
   }
 

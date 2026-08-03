@@ -162,12 +162,55 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const lang = await getLangFromCookies();
-  const [storeFlags, businessSettings, shippingZones, commerceSettings] = await Promise.all([
-    getPublicStoreFlags(),
-    getPublicBusinessSettings(),
-    getPublicShippingZones(),
-    getPublicCommerceSettings(),
-  ]);
+  console.log("===== LAYOUT START =====");
+  console.log("Lang:", lang);
+  
+  let storeFlags, businessSettings, shippingZones, commerceSettings;
+  
+  try {
+    console.log("Fetching store flags...");
+    storeFlags = await getPublicStoreFlags();
+    console.log("Store flags fetched:", storeFlags);
+  } catch (error) {
+    console.error("===== STORE FLAGS FETCH ERROR =====");
+    console.error(error);
+    console.error(error?.stack);
+    throw error;
+  }
+  
+  try {
+    console.log("Fetching business settings...");
+    businessSettings = await getPublicBusinessSettings();
+    console.log("Business settings fetched:", businessSettings);
+  } catch (error) {
+    console.error("===== BUSINESS SETTINGS FETCH ERROR =====");
+    console.error(error);
+    console.error(error?.stack);
+    throw error;
+  }
+  
+  try {
+    console.log("Fetching shipping zones...");
+    shippingZones = await getPublicShippingZones();
+    console.log("Shipping zones fetched:", shippingZones);
+  } catch (error) {
+    console.error("===== SHIPPING ZONES FETCH ERROR =====");
+    console.error(error);
+    console.error(error?.stack);
+    throw error;
+  }
+  
+  try {
+    console.log("Fetching commerce settings...");
+    commerceSettings = await getPublicCommerceSettings();
+    console.log("Commerce settings fetched:", commerceSettings);
+  } catch (error) {
+    console.error("===== COMMERCE SETTINGS FETCH ERROR =====");
+    console.error(error);
+    console.error(error?.stack);
+    throw error;
+  }
+  
   const dir = lang === "ar" ? "rtl" : "ltr";
   const fontClass = lang === "ar" ? cairo.className : dmSans.className;
   const fontFamily = lang === "ar" ? cairo.style.fontFamily : dmSans.style.fontFamily;

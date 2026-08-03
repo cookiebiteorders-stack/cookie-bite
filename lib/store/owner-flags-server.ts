@@ -35,8 +35,11 @@ export function invalidateOwnerFlagsCache() {
   cacheExpiresAt = 0;
   try {
     revalidateTag(OWNER_FLAGS_CACHE_TAG, "max");
-  } catch {
-    /* edge without cache */
+  } catch (error) {
+    console.error("===== OWNER FLAGS CACHE INVALIDATION ERROR =====");
+    console.error(error);
+    console.error(error?.stack);
+    // edge without cache - continue
   }
 }
 
@@ -56,7 +59,9 @@ async function loadOwnerFlagsFromDb(): Promise<OwnerFlags> {
       error.message.includes("store_owner_flags") ||
       error.message.includes("does not exist");
     if (missing) return DEFAULT_OWNER_FLAGS;
-    console.error("[owner-flags] read failed", error.message);
+    console.error("===== OWNER FLAGS DB READ ERROR =====");
+    console.error(error);
+    console.error(error?.stack);
     return DEFAULT_OWNER_FLAGS;
   }
 

@@ -39,8 +39,11 @@ export function invalidateCommerceSettingsCache() {
   cacheExpiresAt = 0;
   try {
     revalidateTag(COMMERCE_SETTINGS_CACHE_TAG, "max");
-  } catch {
-    /* edge without cache */
+  } catch (error) {
+    console.error("===== COMMERCE SETTINGS CACHE INVALIDATION ERROR =====");
+    console.error(error);
+    console.error(error?.stack);
+    // edge without cache - continue
   }
   invalidateAiWebsiteKnowledgeCache();
 }
@@ -61,7 +64,9 @@ async function loadCommerceSettingsFromDb(): Promise<StoreCommerceSettings> {
       error.message.includes("store_commerce_settings") ||
       error.message.includes("does not exist");
     if (missing) return { ...DEFAULT_COMMERCE_SETTINGS };
-    console.error("[commerce-settings] read failed", error.message);
+    console.error("===== COMMERCE SETTINGS DB READ ERROR =====");
+    console.error(error);
+    console.error(error?.stack);
     return { ...DEFAULT_COMMERCE_SETTINGS };
   }
 

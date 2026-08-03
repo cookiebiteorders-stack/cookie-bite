@@ -44,8 +44,11 @@ export function invalidateBusinessSettingsCache() {
   cacheExpiresAt = 0;
   try {
     revalidateTag(BUSINESS_SETTINGS_CACHE_TAG, "max");
-  } catch {
-    /* edge without cache */
+  } catch (error) {
+    console.error("===== BUSINESS SETTINGS CACHE INVALIDATION ERROR =====");
+    console.error(error);
+    console.error(error?.stack);
+    // edge without cache - continue
   }
 }
 
@@ -65,7 +68,9 @@ async function loadBusinessSettingsFromDb(): Promise<StoreBusinessSettings> {
       error.message.includes("store_business_settings") ||
       error.message.includes("does not exist");
     if (missing) return { ...DEFAULT_BUSINESS_SETTINGS };
-    console.error("[business-settings] read failed", error.message);
+    console.error("===== BUSINESS SETTINGS DB READ ERROR =====");
+    console.error(error);
+    console.error(error?.stack);
     return { ...DEFAULT_BUSINESS_SETTINGS };
   }
 

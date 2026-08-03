@@ -26,6 +26,8 @@ const publicSrc = path.join(root, "public");
 const publicDest = path.join(standaloneDir, "public");
 const staticSrc = path.join(root, ".next", "static");
 const staticDest = path.join(standaloneDir, ".next", "static");
+const serverSrc = path.join(root, ".next", "server");
+const serverDest = path.join(standaloneDir, ".next", "server");
 
 if (!copyDir(staticSrc, staticDest)) {
   console.error("[copy-standalone-assets] Failed — .next/static missing after build");
@@ -33,6 +35,10 @@ if (!copyDir(staticSrc, staticDest)) {
 }
 if (!copyDir(publicSrc, publicDest)) {
   console.error("[copy-standalone-assets] Failed — public/ missing");
+  process.exit(1);
+}
+if (!copyDir(serverSrc, serverDest)) {
+  console.error("[copy-standalone-assets] Failed — .next/server missing after build");
   process.exit(1);
 }
 
