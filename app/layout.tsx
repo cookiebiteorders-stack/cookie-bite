@@ -174,7 +174,7 @@ export default async function RootLayout({
   } catch (error) {
     console.error("===== STORE FLAGS FETCH ERROR =====");
     console.error(error);
-    console.error(error?.stack);
+    console.error((error as Error)?.stack);
     throw error;
   }
   
@@ -185,7 +185,7 @@ export default async function RootLayout({
   } catch (error) {
     console.error("===== BUSINESS SETTINGS FETCH ERROR =====");
     console.error(error);
-    console.error(error?.stack);
+    console.error((error as Error)?.stack);
     throw error;
   }
   
@@ -196,7 +196,7 @@ export default async function RootLayout({
   } catch (error) {
     console.error("===== SHIPPING ZONES FETCH ERROR =====");
     console.error(error);
-    console.error(error?.stack);
+    console.error((error as Error)?.stack);
     throw error;
   }
   
@@ -207,7 +207,7 @@ export default async function RootLayout({
   } catch (error) {
     console.error("===== COMMERCE SETTINGS FETCH ERROR =====");
     console.error(error);
-    console.error(error?.stack);
+    console.error((error as Error)?.stack);
     throw error;
   }
   
