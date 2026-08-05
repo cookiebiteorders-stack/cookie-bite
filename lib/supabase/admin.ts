@@ -10,6 +10,8 @@ const adminOptions = {
       "x-client-info": "cookie-bite-admin",
     },
   },
+  // Connection timeout to prevent hanging connections under load
+  connectTimeout: 10000, // 10 seconds
 } as const;
 
 function createServiceRoleClient(): SupabaseClient | null {
@@ -17,7 +19,16 @@ function createServiceRoleClient(): SupabaseClient | null {
   const serviceKey =
     process.env.SUPABASE_SERVICE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) return null;
-  return createClient(url, serviceKey, adminOptions);
+  
+  // Configure connection settings for better scalability
+  // These settings help manage database connections more efficiently under load
+  const options = { 
+    ...adminOptions,
+    // Add connection timeout to prevent hanging connections
+    connectTimeout: 10000, // 10 seconds
+  };
+  
+  return createClient(url, serviceKey, options);
 }
 
 /**

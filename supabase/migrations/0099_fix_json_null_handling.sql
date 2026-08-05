@@ -1,18 +1,12 @@
 -- =============================================================================
--- Cookie Bite — Migration 0087: Transactional checkout order placement
--- =============================================================================
--- This migration creates a PostgreSQL function to handle the entire checkout
--- process as a single atomic transaction. This ensures:
--- 1. Stock is reserved/decremented atomically (no race conditions)
--- 2. Order and order items are inserted together (all-or-nothing)
--- 3. Idempotency is handled at the database level
--- 4. No partial states where order exists but items fail, or vice versa
+-- Cookie Bite — Migration 0099: Fix JSON null handling in RPC
+-- Fixes "invalid input syntax for type json" error by properly handling null values
 -- =============================================================================
 
--- Drop existing function if it exists (for idempotent migration)
+-- Drop and recreate the function with correct JSON null handling
 DROP FUNCTION IF EXISTS public.create_checkout_order_transactional CASCADE;
 
--- Create the transactional checkout function
+-- Create the transactional checkout function with corrected JSON handling
 CREATE OR REPLACE FUNCTION public.create_checkout_order_transactional(
   p_user_id uuid,
   p_guest_email text,
@@ -111,7 +105,7 @@ BEGIN
   -- Generate order code
   v_order_code := 'CB-' || upper(substr(md5(random()::text), 1, 6));
 
-  -- Insert order
+  -- Insert order with qualified column name
   INSERT INTO public.orders (
     user_id,
     guest_email,
@@ -164,7 +158,7 @@ BEGIN
     now(),
     now()
   )
-  RETURNING id, order_number
+  RETURNING id, orders.order_number
   INTO v_order_id, v_order_number;
 
   -- Insert order items and decrement stock atomically
@@ -184,7 +178,7 @@ BEGIN
       v_product_id := NULL;
     END IF;
 
-    -- Insert order item
+    -- Insert order item with correct column names, type conversion, and JSON null handling
     INSERT INTO public.order_items (
       order_id,
       product_id,
@@ -209,10 +203,10 @@ BEGIN
       v_unit_price,
       (v_item->>'addons_total_unit_price')::numeric,
       COALESCE((v_item->>'final_unit_price')::numeric, v_unit_price),
-      v_item->'product_snapshot',
-      v_item->>'variant_id',
-      v_item->'variant_snapshot',
-      v_item->'selected_addons',
+      COALESCE(v_item->'product_snapshot', '{}'::jsonb),
+      CASE WHEN (v_item->>'variant_id') IS NOT NULL AND (v_item->>'variant_id') != '' THEN (v_item->>'variant_id')::uuid ELSE NULL END,
+      COALESCE(v_item->'variant_snapshot', '{}'::jsonb),
+      COALESCE(v_item->'selected_addons', '[]'::jsonb),
       now()
     );
 

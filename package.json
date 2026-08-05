@@ -21,6 +21,7 @@
     "verify:standalone-css": "node scripts/verify-standalone-css-serving.mjs",
     "start": "node server.js",
     "start:standalone": "node .next/standalone/server.js",
+    "start:worker": "node worker.mjs",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
     "analyze": "node scripts/analyze-build.mjs",

@@ -124,7 +124,8 @@ export default async function middleware(request: NextRequest) {
       request.headers.get("x-real-ip") ||
       "unknown";
 
-    if (!(await redisRateOk(`all:${ip}`, 240, 60_000))) {
+    // Increased general API rate limit for better capacity
+    if (!(await redisRateOk(`all:${ip}`, 480, 60_000))) {
       const response = tooMany();
       response.headers.set(requestIdHeader, requestId);
       return response;
@@ -135,13 +136,15 @@ export default async function middleware(request: NextRequest) {
       path.startsWith("/api/payments") ||
       path.startsWith("/api/orders")
     ) {
-      if (!(await redisRateOk(`pay:${ip}`, 8, 60_000))) {
+      // Increased payment-related rate limit for legitimate checkout traffic
+      if (!(await redisRateOk(`pay:${ip}`, 15, 60_000))) {
         const response = tooMany();
         response.headers.set(requestIdHeader, requestId);
         return response;
       }
     } else if (path.startsWith("/api/promo")) {
-      if (!(await redisRateOk(`promo:${ip}`, 12, 60_000))) {
+      // Increased promo code validation limit
+      if (!(await redisRateOk(`promo:${ip}`, 20, 60_000))) {
         const response = tooMany();
         response.headers.set(requestIdHeader, requestId);
         return response;
@@ -171,7 +174,7 @@ export default async function middleware(request: NextRequest) {
       }
     } else if (path.startsWith("/api/account/")) {
       // Profile completion - allow generous rate for legitimate form submissions
-      if (!(await redisRateOk(`account:${ip}`, 20, 60_000))) {
+      if (!(await redisRateOk(`account:${ip}`, 30, 60_000))) {
         const response = tooMany();
         response.headers.set(requestIdHeader, requestId);
         return response;
@@ -188,19 +191,22 @@ export default async function middleware(request: NextRequest) {
       path.startsWith("/api/loyalty") ||
       path.startsWith("/api/push")
     ) {
-      if (!(await redisRateOk(`user:${ip}`, 30, 60_000))) {
+      // Increased user feature rate limit for better UX
+      if (!(await redisRateOk(`user:${ip}`, 50, 60_000))) {
         const response = tooMany();
         response.headers.set(requestIdHeader, requestId);
         return response;
       }
     } else if (path.startsWith("/api/mr-brownie") || path.startsWith("/api/chat")) {
-      if (!(await redisRateOk(`chat:${ip}`, 24, 60_000))) {
+      // Moderately increased chat rate limit for AI features
+      if (!(await redisRateOk(`chat:${ip}`, 30, 60_000))) {
         const response = tooMany();
         response.headers.set(requestIdHeader, requestId);
         return response;
       }
     } else if (path.startsWith("/api/admin/")) {
-      if (!(await redisRateOk(`admin:${ip}`, 60, 60_000))) {
+      // Increased admin rate limit for dashboard operations
+      if (!(await redisRateOk(`admin:${ip}`, 90, 60_000))) {
         const response = tooMany();
         response.headers.set(requestIdHeader, requestId);
         return response;

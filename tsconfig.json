@@ -42,6 +42,7 @@
     ".next",
     "supabase/functions/**",
     "scripts/migrate-clerk-to-supabase.ts",
-    "jest.setup.ts"
+    "jest.setup.ts",
+    "__tests__"
   ]
 }

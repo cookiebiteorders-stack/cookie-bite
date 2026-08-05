@@ -5,7 +5,10 @@
  */
 import { registerBackgroundWorkers } from "./lib/background/worker-scheduler.js";
 
-console.info("[cookie-bite-worker] Starting background workers...");
+// Set standalone mode when running as separate process
+process.env.BACKGROUND_WORKER_STANDALONE = "true";
+
+console.info("[cookie-bite-worker] Starting background workers in standalone mode...");
 
 try {
   registerBackgroundWorkers();

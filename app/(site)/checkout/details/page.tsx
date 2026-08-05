@@ -117,10 +117,12 @@ export default function CheckoutDetailsPage() {
 
     // Call Paymob checkout directly
     const success = await startCheckout(checkoutData);
+    setLoading(false);
     if (!success) {
       console.error("Checkout failed:", checkoutError);
-      setError(checkoutError || "حدث خطأ أثناء معالجة الدفع");
-      setLoading(false);
+      setError(checkoutError || "حدث خطأ أثناء معالجة الدفع. يرجى المحاولة مرة أخرى.");
+    } else {
+      // Success - redirect happens automatically in startCheckout
     }
   };
 

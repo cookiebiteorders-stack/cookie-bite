@@ -8,6 +8,8 @@ import {
   writeProductsListCache,
 } from "@/lib/storefront/products-list-cache";
 import { productsQuerySchema } from "@/lib/validations";
+import { getPublicCacheHeaders } from "@/lib/cache-headers";
+import { deduplicateRequest, generateDedupKey } from "@/lib/request-deduplication";
 
 const SORT_MAP = {
   newest: { column: "created_at", ascending: false },
@@ -16,18 +18,18 @@ const SORT_MAP = {
   popular: { column: "created_at", ascending: false },
 } as const;
 
-const LIST_CACHE_HEADERS = {
-  "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
-} as const;
+const LIST_CACHE_HEADERS = getPublicCacheHeaders('medium');
 
 export async function GET(req: NextRequest) {
   try {
     const cached = await readProductsListCache(req.nextUrl.searchParams);
     if (cached) {
-      return new NextResponse(cached, {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...LIST_CACHE_HEADERS },
+      const response = new NextResponse(cached, { status: 200 });
+      response.headers.set("Content-Type", "application/json");
+      Object.entries(LIST_CACHE_HEADERS).forEach(([key, value]) => {
+        response.headers.set(key, value);
       });
+      return response;
     }
 
     const params = Object.fromEntries(req.nextUrl.searchParams);
@@ -52,7 +54,25 @@ export async function GET(req: NextRequest) {
     const offset = (query.page - 1) * query.limit;
     q = q.range(offset, offset + query.limit - 1);
 
-    const { data, error, count } = await q;
+    // Deduplicate identical requests
+    const dedupKey = generateDedupKey('products-list', {
+      category: query.category,
+      season: query.season,
+      min_price: query.min_price,
+      max_price: query.max_price,
+      sort: query.sort,
+      page: query.page,
+      limit: query.limit,
+    });
+
+    const { data, error, count } = await deduplicateRequest(
+      dedupKey,
+      async () => {
+        const result = await q;
+        return result;
+      },
+      5000
+    );
     if (error) {
       console.error("/api/products error", error);
       return NextResponse.json(
@@ -84,10 +104,12 @@ export async function GET(req: NextRequest) {
     const body = JSON.stringify(payload);
     void writeProductsListCache(req.nextUrl.searchParams, body);
 
-    return new NextResponse(body, {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...LIST_CACHE_HEADERS },
-    });  } catch (err) {
+    const response = new NextResponse(body, { status: 200 });
+    response.headers.set("Content-Type", "application/json");
+    Object.entries(LIST_CACHE_HEADERS).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    return response;  } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json(
         {

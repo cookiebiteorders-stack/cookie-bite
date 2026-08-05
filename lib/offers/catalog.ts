@@ -11,8 +11,10 @@ import type {
 
 export async function loadOfferCatalog() {
   const supabase = createSupabaseAdminClient();
+  // Optimized: Select only required fields instead of *
+  const PRODUCT_SELECT = "id, slug, title_en, title_ar, name, description_en, description_ar, price_egp, compare_price_egp, sku, category, stock, is_active, images, badges, dietary";
   const [{ data: products, error: productsError }, categories] = await Promise.all([
-    supabase.from("products").select("*").order("title_en", { ascending: true }),
+    supabase.from("products").select(PRODUCT_SELECT).order("title_en", { ascending: true }),
     listAddonCategoriesWithItems(),
   ]);
 

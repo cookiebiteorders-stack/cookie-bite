@@ -94,8 +94,10 @@ export async function insertCheckoutOrder(
   const supabase = createSupabaseAdminClient();
 
   // 1. Validate line items and perform product lookups before touching the database
+  // Optimized: Batch fetch all products to avoid N+1 queries
   const preparedLines: Array<{ line: (typeof params.lines)[number]; productUuid: string | null }> = [];
-
+  
+  // First validate all line items
   for (const line of params.lines) {
     if (!line.slug || typeof line.slug !== "string" || !line.slug.trim()) {
       throw new Error(`Invalid order item: missing required product slug for '${line.name || "unknown"}'`);
@@ -109,22 +111,42 @@ export async function insertCheckoutOrder(
     if (!Number.isFinite(line.unitPrice) || line.unitPrice < 0) {
       throw new Error(`Invalid order item unit price '${line.unitPrice}' for product '${line.slug}'`);
     }
+  }
 
+  // Batch fetch all products that need lookup (avoid N+1 queries)
+  const slugsToLookup = params.lines
+    .filter(line => !line.skipProductLookup)
+    .map(line => line.slug.trim());
+  
+  const productsMap = new Map<string, { id: string; slug: string; name: string; title_en: string; price_egp: number }>();
+  
+  if (slugsToLookup.length > 0) {
+    const { data: products, error: productsError } = await supabase
+      .from("products")
+      .select("id, slug, name, title_en, price_egp")
+      .in("slug", slugsToLookup);
+    
+    if (productsError) {
+      console.error("[Order Creation] Database error fetching products:", productsError);
+      throw new Error(`Database error fetching products: ${productsError.message}`);
+    }
+    
+    // Build map for quick lookup
+    for (const prod of (products ?? [])) {
+      if (prod.slug) {
+        productsMap.set(prod.slug, prod as any);
+      }
+    }
+  }
+
+  // Now process each line with the batch-fetched products
+  for (const line of params.lines) {
     let productUuid: string | null = null;
     let realSlug = line.slug.trim();
 
     if (!line.skipProductLookup) {
-      const { data: prod, error: prodErr } = await supabase
-        .from("products")
-        .select("id, slug, name, title_en, price_egp")
-        .eq("slug", realSlug)
-        .maybeSingle();
-
-      if (prodErr) {
-        console.error("[Order Creation] Database error fetching product:", prodErr);
-        throw new Error(`Database error fetching product '${realSlug}': ${prodErr.message}`);
-      }
-
+      const prod = productsMap.get(realSlug);
+      
       if (!prod) {
         console.error("[Order Creation] Product not found in database for slug:", realSlug);
         throw new Error(`Product not found or unavailable in database for slug: '${realSlug}'`);
@@ -143,7 +165,6 @@ export async function insertCheckoutOrder(
       productUuid,
     });
   }
-
   const codePart = Math.random().toString(36).substring(2, 8).toUpperCase();
   const orderCode = `CB-${codePart}`;
 
@@ -504,29 +525,29 @@ export async function insertCheckoutOrderTransactional(
 
   const supabase = createSupabaseAdminClient();
 
-  // Build items JSONB array for RPC function
-  const itemsJson = JSON.stringify(
-    params.lines.map((line) => ({
-      slug: line.slug,
-      name: line.name,
-      unit_price: line.unitPrice,
-      quantity: line.quantity,
-      product_snapshot: line.productSnapshot,
-      variant_id: line.variantId,
-      variant_snapshot: line.variantSnapshot,
-      selected_addons: line.selectedAddons,
-      addons_total_unit_price: line.addonsTotalUnitPrice,
-      final_unit_price: line.finalUnitPrice,
-      skip_product_lookup: line.skipProductLookup,
-    }))
-  );
+  // Build items JSONB array for RPC function (pass as object, not stringified)
+  const itemsJson = params.lines.map((line) => ({
+    slug: line.slug,
+    name: line.name,
+    unit_price: line.unitPrice,
+    quantity: line.quantity,
+    product_snapshot: line.productSnapshot,
+    variant_id: line.variantId,
+    variant_snapshot: line.variantSnapshot,
+    selected_addons: line.selectedAddons,
+    addons_total_unit_price: line.addonsTotalUnitPrice,
+    final_unit_price: line.finalUnitPrice,
+    skip_product_lookup: line.skipProductLookup,
+  }));
 
-  // Build shipping address JSONB
-  const shippingAddressJson = JSON.stringify(params.shippingAddress);
+  // Build shipping address JSONB (pass as object, not stringified)
+  const shippingAddressJson = params.shippingAddress;
 
-  // Build gift box snapshot JSONB if present
-  const giftBoxSnapshotJson = params.giftBoxSnapshot ? JSON.stringify(params.giftBoxSnapshot) : null;
+  // Build gift box snapshot JSONB if present (pass as object, not stringified)
+  const giftBoxSnapshotJson = params.giftBoxSnapshot ?? null;
 
+  console.log("[Transactional Order Creation] Shipping address JSON:", JSON.stringify(shippingAddressJson, null, 2));
+  console.log("[Transactional Order Creation] Items JSON:", JSON.stringify(itemsJson, null, 2));
   console.log("[Transactional Order Creation] Calling RPC function");
 
   const { data, error } = await supabase.rpc("create_checkout_order_transactional", {

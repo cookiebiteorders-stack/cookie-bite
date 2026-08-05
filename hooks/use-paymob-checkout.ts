@@ -124,9 +124,18 @@ export function usePaymobCheckout() {
       if (process.env.NODE_ENV !== "production") {
         console.log("Sending checkout request:", JSON.stringify(body, null, 2));
       }
+      // Get CSRF token from cookie
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrf_token='))
+        ?.split('=')[1];
+
       const res = await fetch("/api/checkout/paymob/intention", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...(csrfToken ? { "x-csrf-token": csrfToken } : {})
+        },
         body: JSON.stringify(body),
       });
 
@@ -163,8 +172,10 @@ export function usePaymobCheckout() {
       setError(typeof data.message === "string" ? data.message : t("pages.checkout.errPaymob"));
       setStatus("error");
       return false;
-    } catch {
-      setError(t("pages.checkout.errNetwork"));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : t("pages.checkout.errNetwork");
+      console.error("Checkout error:", err);
+      setError(errorMessage);
       setStatus("error");
       return false;
     }

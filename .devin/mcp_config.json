@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "paymob": {
+      "url": "https://mcp.paymob.com/mcp",
+      "transport": "http"
+    }
+  }
+}

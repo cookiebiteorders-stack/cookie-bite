@@ -15,7 +15,15 @@ type Props = {
 };
 
 export function TestimonialSlider({ items }: Props) {
-  const { t } = useLanguage();
+  let t: (key: string) => string;
+  try {
+    const { t: tFn } = useLanguage();
+    t = tFn;
+  } catch {
+    // Fallback if LanguageProvider is not available
+    t = (key: string) => key;
+  }
+
   const [i, setI] = useState(0);
   const hasItems = items.length > 0;
   const slide = hasItems ? items[i % items.length] : null;

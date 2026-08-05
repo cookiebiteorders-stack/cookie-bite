@@ -65,6 +65,10 @@ export const INTEGRATION_ENV_GROUPS = {
   ],
   resend: ["RESEND_API_KEY", "RESEND_FROM_EMAIL"],
   internal_api: ["INTERNAL_API_SECRET", "REVALIDATE_SECRET"],
+  /** Optional database pool settings for better scalability */
+  db_pool: ["SUPABASE_DB_POOL_SIZE", "SUPABASE_DB_POOL_TIMEOUT"],
+  /** Background worker configuration for independent scaling */
+  background_worker: ["BACKGROUND_WORKERS_ENABLED", "BACKGROUND_WORKER_STANDALONE"],
 } as const;
 
 export type IntegrationEnvStatus = {
@@ -100,6 +104,8 @@ export function getIntegrationEnvStatus(check: ProductionEnvCheck): IntegrationE
       paymob: true,
       resend: true,
       internal_api: true,
+      db_pool: true,
+      background_worker: true,
       ai_gemini: true,
       cms_sanity: true,
       whatsapp: true,
@@ -122,6 +128,8 @@ export function getIntegrationEnvStatus(check: ProductionEnvCheck): IntegrationE
     paymob: paymobReady,
     resend: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.resend),
     internal_api: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.internal_api),
+    db_pool: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.db_pool),
+    background_worker: integrationGroupReady(m, INTEGRATION_ENV_GROUPS.background_worker),
     ai_gemini: Boolean(process.env.GEMINI_API_KEY?.trim()),
     cms_sanity: Boolean(process.env.NEXT_PUBLIC_SANITY_PROJECT_ID?.trim()),
     whatsapp: Boolean(

@@ -51,6 +51,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
   serverExternalPackages: ["sharp"],
+  compress: true, // Enable gzip compression for better performance
   experimental: {
     optimizePackageImports: [
       "lucide-react",

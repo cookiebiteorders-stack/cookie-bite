@@ -70,6 +70,10 @@ export function isBackgroundWorkersEnabled(): boolean {
   return process.env.NODE_ENV === "production";
 }
 
+export function isStandaloneWorker(): boolean {
+  return process.env.BACKGROUND_WORKER_STANDALONE === "true";
+}
+
 export function getBackgroundWorkerStatus() {
   return {
     enabled: isBackgroundWorkersEnabled(),
@@ -111,12 +115,17 @@ async function runJobSafe(schedule: JobSchedule): Promise<void> {
 /**
  * In-process scheduler — runs automation jobs without Hostinger cron or admin clicks.
  * Starts once per Node process (instrumentation hook / server boot).
+ * Can run in standalone mode when BACKGROUND_WORKER_STANDALONE=true.
  */
 export function registerBackgroundWorkers(): void {
   if (started) return;
   if (typeof window !== "undefined") return;
   if (process.env.NEXT_RUNTIME === "edge") return;
-  if (!isBackgroundWorkersEnabled()) return;
+  
+  // Allow standalone worker mode for independent scaling
+  const standalone = isStandaloneWorker();
+  if (!standalone && !isBackgroundWorkersEnabled()) return;
+  
   if (!process.env.SUPABASE_SERVICE_KEY?.trim()) {
     console.warn("[background-workers] skipped — SUPABASE_SERVICE_KEY missing");
     return;
@@ -127,8 +136,9 @@ export function registerBackgroundWorkers(): void {
   const schedules = resolveSchedules();
   const bootstrapDelayMs = parsePositiveInt(process.env.BACKGROUND_WORKER_BOOTSTRAP_MS, 15_000);
 
+  const mode = standalone ? "standalone" : "in-process";
   console.info(
-    "[background-workers] scheduler active:",
+    `[background-workers] scheduler active (${mode}):`,
     schedules.map((s) => `${s.id}@${Math.round(s.intervalMs / 1000)}s`).join(", "),
   );
 

@@ -3,5 +3,10 @@
     "supabase": {
       "enabled": true
     }
+  },
+  "mcpServers": {
+    "paymob": {
+      "url": "https://mcp.paymob.com/mcp"
+    }
   }
 }
