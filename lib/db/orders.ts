@@ -431,24 +431,126 @@ export async function updateOrderPaymentByPaymobAcceptOrderId(
     };
   }
 
-  const { error } = await supabase
+  // Make the paid transition atomic to prevent duplicate side effects (WH-01)
+  // Only the first concurrent webhook that transitions to paid will affect a row
+  const updateQuery = supabase
     .from("orders")
     .update({
       payment_status: patch.payment_status,
       ...(patch.status ? { status: patch.status } : {}),
       ...(txId ? { paymob_transaction_id: txId } : {}),
     })
+    .eq("id", current.id)
     .eq("paymob_accept_order_id", paymobAcceptOrderId);
+
+  // Add conditional guard: only update if not already paid (prevents duplicate side effects)
+  if (willBePaid) {
+    updateQuery.neq("payment_status", "paid");
+  }
+
+  const { data, error } = await updateQuery.select("id");
+
   if (error) {
     console.error("updateOrderPaymentByPaymobAcceptOrderId", error);
     return { ok: false };
   }
+
+  // becamePaid is true only if this update actually changed the row (first concurrent writer)
+  const becamePaid = willBePaid && !wasPaid && (data?.length ?? 0) > 0;
+
   return {
     ok: true,
     orderId: current.id,
-    becamePaid: willBePaid && !wasPaid,
+    becamePaid,
     orderNumber: Number(current.order_number),
   };
+}
+
+/**
+ * Release stock for an unpaid/failed order (DB-01).
+ * This function calls the RPC to restore inventory and cancel the order.
+ */
+export async function releaseStockForOrder(orderId: string): Promise<boolean> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    return false;
+  }
+  const supabase = createSupabaseAdminClient();
+  
+  const { error } = await supabase.rpc("release_stock_for_order", {
+    p_order_id: orderId,
+  });
+  
+  if (error) {
+    console.error("releaseStockForOrder", error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Record a payment in the payments ledger (PAY-02).
+ * This creates a payment record and payment event for successful charges.
+ */
+export async function recordPayment(
+  orderId: string,
+  providerTransactionId: string,
+  amountCents: number,
+  currency: string,
+  paymentMethod: string,
+  metadata?: Record<string, unknown>,
+): Promise<boolean> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    return false;
+  }
+  const supabase = createSupabaseAdminClient();
+
+  try {
+    // Upsert payment record with unique provider_transaction_id
+    const { error: paymentError } = await supabase
+      .from("payments")
+      .upsert({
+        order_id: orderId,
+        provider_transaction_id: providerTransactionId,
+        amount: amountCents / 100, // Convert cents to EGP
+        currency,
+        payment_method: paymentMethod,
+        status: "completed",
+        metadata: metadata || {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: "provider_transaction_id",
+        ignoreDuplicates: false,
+      });
+
+    if (paymentError) {
+      console.error("recordPayment: payment upsert error", paymentError);
+      return false;
+    }
+
+    // Record payment event
+    const { error: eventError } = await supabase
+      .from("payment_events")
+      .insert({
+        payment_id: providerTransactionId, // Use provider_transaction_id as reference
+        event_type: "charge",
+        status: "success",
+        amount: amountCents / 100,
+        currency,
+        metadata: metadata || {},
+        created_at: new Date().toISOString(),
+      });
+
+    if (eventError) {
+      console.error("recordPayment: payment event insert error", eventError);
+      // Don't fail the whole operation if event insert fails
+    }
+
+    return true;
+  } catch (err) {
+    console.error("recordPayment: unexpected error", err);
+    return false;
+  }
 }
 
 export async function listRecentOrdersForUser(userId: string, limit = 5) {

@@ -92,7 +92,7 @@ function buildPaymobIntentionBody(
  */
 export function usePaymobCheckout() {
   const { t } = useLanguage();
-  const { lines, itemCount, promo, subtotalEgp, discountEgp } = useCart();
+  const { lines, itemCount, promo, subtotalEgp, discountEgp, checkoutIdempotencyKey } = useCart();
   const [status, setStatus] = useState<PaymobCheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -136,7 +136,10 @@ export function usePaymobCheckout() {
           "Content-Type": "application/json",
           ...(csrfToken ? { "x-csrf-token": csrfToken } : {})
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          ...body,
+          idempotency_key: checkoutIdempotencyKey,
+        }),
       });
 
       const data = (await res.json()) as {
@@ -179,7 +182,7 @@ export function usePaymobCheckout() {
       setStatus("error");
       return false;
     }
-  }, [itemCount, lines, promo?.code, status, t]);
+  }, [itemCount, lines, promo?.code, status, t, checkoutIdempotencyKey]);
 
   return { startCheckout, status, error, isLoading: status === "loading" };
 }

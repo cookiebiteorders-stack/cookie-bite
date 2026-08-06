@@ -21,6 +21,7 @@ import {
   getPaymobConfigStatus,
   hasPaymobOnlineCheckout,
   resolvePaymobIntegrationId,
+  validatePaymobEnvConsistency,
 } from "@/lib/paymob/config";
 import { siteConfig } from "@/lib/site-config";
 import { getFreeShippingThresholdEgp } from "@/lib/store/commerce-settings-server";
@@ -344,7 +345,36 @@ export async function POST(req: Request) {
     }
   }
 
-  let deliveryFee = subtotal >= threshold ? 0 : siteConfig.standardDeliveryFeeEgp;
+  // CHECKOUT-01: Resolve delivery fee from shipping_zones based on governorate
+  let zoneDeliveryFee = siteConfig.standardDeliveryFeeEgp;
+  let zoneFreeThreshold = threshold;
+  
+  // Extract governorate from shipping data if available
+  const governorate = shipping?.governorate || shipping?.city;
+  
+  if (governorate) {
+    try {
+      const supabase = createSupabaseAdminClient();
+      const { data: zone } = await supabase
+        .from("shipping_zones")
+        .select("base_fee_egp, free_shipping_threshold_egp")
+        .eq("is_active", true)
+        .contains("cities", [governorate])
+        .maybeSingle();
+      
+      if (zone) {
+        zoneDeliveryFee = Number(zone.base_fee_egp) || siteConfig.standardDeliveryFeeEgp;
+        if (zone.free_shipping_threshold_egp !== null) {
+          zoneFreeThreshold = Number(zone.free_shipping_threshold_egp);
+        }
+      }
+    } catch (err) {
+      console.error("[Paymob Intention] Failed to resolve shipping zone:", err);
+      // Fall back to default values
+    }
+  }
+
+  let deliveryFee = subtotal >= zoneFreeThreshold ? 0 : zoneDeliveryFee;
   if (promoFreeShipping) deliveryFee = 0;
 
   const giftWrappingFee = giftBox ? GIFT_WRAP_FEE_EGP : 0;
@@ -356,6 +386,20 @@ export async function POST(req: Request) {
   const paymobConfig = getPaymobConfigStatus();
   const integrationId = resolvePaymobIntegrationId(paymentMethod);
   const hasPaymobOnline = hasPaymobOnlineCheckout(paymentMethod);
+
+  // PAY-05: Validate environment consistency
+  const envError = validatePaymobEnvConsistency();
+  if (envError) {
+    console.error("[Paymob Intention] Environment inconsistency:", envError);
+    return Response.json(
+      {
+        ok: false,
+        error: `Paymob configuration error: ${envError}`,
+        error_ar: `خطأ في إعدادات Paymob: ${envError}`,
+      },
+      { status: 500 },
+    );
+  }
 
   if (!hasPaymobOnline) {
     const missing: string[] = [];
@@ -499,17 +543,7 @@ export async function POST(req: Request) {
   );
   const itemsSum = paymobItems.reduce((s, i) => s + i.amount * i.quantity, 0);
   
-  console.log("[Paymob Debug] Calculation breakdown:", {
-    subtotal,
-    deliveryFee,
-    discountAmount,
-    giftWrappingFee,
-    total,
-    amountCents,
-    itemsSum,
-    paymobProductLines,
-    paymobItems
-  });
+  // SEC-06: Removed debug console.log with PII/payload details
   
   if (itemsSum !== amountCents) {
     console.error("Paymob intention items sum mismatch", { itemsSum, amountCents, paymobItems });
@@ -517,8 +551,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    console.log("[Paymob Checkout] Creating order in database (transactional)");
-    // TEMPORARY: Try old method to debug
+    // SEC-06: Removed debug console.log
     const inserted = await insertCheckoutOrder({
       userId: dbUserId,
       lines: orderLines,
@@ -539,10 +572,10 @@ export async function POST(req: Request) {
       checkoutIdempotencyKey: idempotencyKey ?? null,
     });
 
-    console.log("[Paymob Checkout] Order created successfully:", inserted.id);
+    // SEC-06: Removed debug console.log with order ID
 
     const specialReference = String(inserted.orderNumber);
-    console.log("[Paymob Checkout] Creating Paymob payment intention with reference:", specialReference);
+    // SEC-06: Removed debug console.log with reference
     
     const paymobBilling = buildPaymobIntentionBillingData({
       name: billing.name,
@@ -561,24 +594,22 @@ export async function POST(req: Request) {
       extras: { order_id: inserted.id },
     });
 
-    console.log("[Paymob Checkout] Payment intention created successfully:", intention.intentionId);
+    // SEC-06: Removed debug console.log with intention ID
 
     await updatePaymobAcceptOrderId(inserted.id, intention.intentionOrderId);
-    console.log("[Paymob Checkout] Updated order with Paymob accept order ID:", intention.intentionOrderId);
+    // SEC-06: Removed debug console.log with Paymob order ID
 
-    if (inserted.id) {
-      console.log("[Paymob Checkout] Scheduling order confirmation notification for:", inserted.id);
-      scheduleOrderConfirmed(inserted.id);
-    }
+    // PAY-04: Removed pre-payment scheduleOrderConfirmed
+    // Order confirmation should only happen on webhook payment success, not when creating the intention
 
     try {
-      console.log("[Paymob Checkout] Marking abandoned cart as recovered");
+      // SEC-06: Removed debug console.log
       await markAbandonedCartRecovered({
         userId: dbUserId,
         email: billing.rawEmail ?? null,
       });
       if (isRecoveryPromo && appliedPromoCode) {
-        console.log("[Paymob Checkout] Marking recovery discount as used:", appliedPromoCode);
+        // SEC-06: Removed debug console.log with promo code
         const supabase = createSupabaseAdminClient();
         await markRecoveryDiscountUsed(supabase, appliedPromoCode);
       }
@@ -588,26 +619,19 @@ export async function POST(req: Request) {
 
     if (billing.rawEmail) {
       try {
-        console.log("[Paymob Checkout] Triggering order created email for:", billing.rawEmail);
+        // SEC-06: Removed debug console.log with email
         await onOrderCreated({
           email: billing.rawEmail,
           userId: dbUserId,
-          userName: billing.name,
-          orderId: specialReference,
-          orderItems: [
-            ...resolved.map((line) => `${line.name} x${line.quantity}`),
-            ...(giftBox ? [`Custom Gift Box (${giftBox.totalItems} items)`] : []),
-          ].join(", "),
+          orderId: inserted.id,
+          orderItems: resolved.map((line) => line.name).join(", "),
           totalPrice: total.toFixed(2),
         });
-        console.log("[Paymob Checkout] Order created email triggered successfully");
       } catch (eventError) {
         console.error("[Paymob Checkout] Order created email trigger failed (non-fatal):", eventError);
       }
     }
 
-    console.log("[Paymob Checkout] Checkout flow completed successfully, returning payment URL");
-    
     return Response.json({
       ok: true,
       configured: true,

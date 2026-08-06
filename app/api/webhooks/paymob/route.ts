@@ -1,7 +1,7 @@
 import { verifyPaymobTransactionHmac } from "@/lib/paymob/hmac";
 import { resolvePaymobHmacSecret } from "@/lib/paymob/env";
 import { resolvePaymobPaymentOutcome } from "@/lib/paymob/outcome";
-import { updateOrderPaymentByPaymobAcceptOrderId } from "@/lib/db/orders";
+import { updateOrderPaymentByPaymobAcceptOrderId, releaseStockForOrder, recordPayment } from "@/lib/db/orders";
 import { schedulePaymentConfirmed } from "@/lib/notifications/schedule";
 import { awardLoyaltyPointsForPaidOrder } from "@/lib/loyalty/award-order-points";
 import { notifyStoreOrderEvent } from "@/lib/notifications/store-order-events";
@@ -47,16 +47,52 @@ export async function POST(req: Request) {
   }
 
   const order = (transaction.order ?? {}) as Record<string, unknown>;
-  const paymobOrderId = typeof order.id === "number" ? order.id : Number(order.id);
+  const paymobOrderId = Number((transaction.order as Record<string, unknown>)?.id || transaction.order_id);
   if (!Number.isFinite(paymobOrderId)) {
     return Response.json({ ok: false, reason: "no order id" }, { status: 400 });
   }
 
   const rawTxId = transaction.id;
-  const paymobTransactionId =
-    rawTxId == null || rawTxId === "" ? null : String(rawTxId);
-
+  const paymobTransactionId = String(transaction.id || "");
   const resolved = resolvePaymobPaymentOutcome(transaction);
+
+  // PAY-01: Verify critical transaction fields before processing
+  const amountCents = typeof transaction.amount_cents === "number" 
+    ? transaction.amount_cents 
+    : Number(transaction.amount_cents);
+  const currency = String(transaction.currency || "").toUpperCase();
+  const integrationId = Number(transaction.integration_id || 0);
+  const isVoided = Boolean(transaction.is_voided || transaction.is_void === true);
+  const isRefunded = Boolean(transaction.is_refunded || transaction.is_refund === true);
+
+  // Reject voided or refunded transactions (they should not mark orders as paid)
+  if (isVoided || isRefunded) {
+    console.warn("Paymob webhook: transaction is voided or refunded, skipping", {
+      paymobOrderId,
+      paymobTransactionId,
+      isVoided,
+      isRefunded,
+    });
+    return new Response("Transaction voided or refunded - ignored", { status: 200 });
+  }
+
+  // Verify currency is EGP
+  if (currency !== "EGP") {
+    console.error("Paymob webhook: invalid currency", { currency, paymobOrderId });
+    return new Response("Invalid currency", { status: 400 });
+  }
+
+  // Verify integration_id matches expected value (prevent cross-environment callbacks)
+  const { resolvePaymobIntegrationId } = await import("@/lib/paymob/config");
+  const expectedIntegrationId = resolvePaymobIntegrationId("card"); // Default to card for now
+  if (expectedIntegrationId && integrationId !== expectedIntegrationId) {
+    console.error("Paymob webhook: integration_id mismatch", { 
+      received: integrationId, 
+      expected: expectedIntegrationId,
+      paymobOrderId,
+    });
+    return new Response("Integration ID mismatch", { status: 400 });
+  }
 
   const updated = await updateOrderPaymentByPaymobAcceptOrderId(
     paymobOrderId,
@@ -67,13 +103,43 @@ export async function POST(req: Request) {
     paymobTransactionId,
   );
 
+  // WH-04: Log webhook event to dead-letter table for debugging
+  const supabase = (await import("@/lib/supabase/admin")).createSupabaseAdminClient();
+  void supabase
+    .from("paymob_webhook_events")
+    .insert({
+      paymob_order_id: paymobOrderId,
+      paymob_transaction_id: paymobTransactionId || null,
+      hmac_verified: true,
+      payload: transaction,
+      processed: updated.ok,
+      matched_order_id: updated.ok ? updated.orderId : null,
+      error_message: updated.ok ? null : "Order not found",
+    })
+    .catch((err) => console.error("Failed to log webhook event", err));
+
   if (updated.ok) {
     if (resolved.outcome === "paid" && updated.becamePaid) {
+      // Record payment in ledger (PAY-02)
+      void recordPayment(
+        updated.orderId,
+        paymobTransactionId || "",
+        amountCents,
+        currency,
+        "paymob",
+        { paymob_order_id: paymobOrderId, raw_transaction: transaction },
+      ).catch((err) => console.error("payment record after paymob", err));
+      
       schedulePaymentConfirmed(updated.orderId);
       void awardLoyaltyPointsForPaidOrder(updated.orderId).catch((err) =>
         console.error("loyalty award after paymob", err),
       );
     } else if (resolved.outcome === "failed") {
+      // Release stock for failed payments (DB-01)
+      void releaseStockForOrder(updated.orderId).catch((err) =>
+        console.error("stock release after payment failed", err),
+      );
+      
       void notifyStoreOrderEvent({
         orderId: updated.orderId,
         event: "payment_failed",

@@ -35,6 +35,7 @@ import type { AppliedPromo } from "@/components/checkout/promo-code-field";
 
 const STORAGE_KEY = "cb-cart-v1";
 const PROMO_STORAGE_KEY = "cb-promo-v1";
+const IDEMPOTENCY_KEY_STORAGE_KEY = "cb-idempotency-v1";
 
 type CartContextValue = {
   lines: CartLine[];
@@ -79,6 +80,8 @@ type CartContextValue = {
   discountEgp: number;
   applyPromo: (promo: AppliedPromo) => void;
   clearPromo: () => void;
+  /** Idempotency key for checkout - prevents duplicate orders on retry (ORD-01) */
+  checkoutIdempotencyKey: string;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -182,6 +185,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lastUpsellSourceProductId, setLastUpsellSourceProductId] = useState<string | null>(
     null,
   );
+  const [checkoutIdempotencyKey, setCheckoutIdempotencyKey] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -197,6 +201,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       setLines(initial);
       setPromo(loadPromo());
+      
+      // Load or generate idempotency key for checkout (ORD-01)
+      let idemKey = "";
+      if (typeof window !== "undefined") {
+        try {
+          const stored = localStorage.getItem(IDEMPOTENCY_KEY_STORAGE_KEY);
+          if (stored) {
+            idemKey = stored;
+          } else {
+            // Generate new UUID for idempotency
+            idemKey = crypto.randomUUID();
+            localStorage.setItem(IDEMPOTENCY_KEY_STORAGE_KEY, idemKey);
+          }
+        } catch {
+          // Fallback if crypto.randomUUID not available
+          idemKey = Date.now().toString(36) + Math.random().toString(36).substring(2);
+        }
+      }
+      setCheckoutIdempotencyKey(idemKey);
+      
       setHydrated(true);
     });
     return () => {
@@ -421,6 +445,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       discountEgp,
       applyPromo,
       clearPromo,
+      checkoutIdempotencyKey,
     }),
     [
       lines,
@@ -443,6 +468,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       discountEgp,
       applyPromo,
       clearPromo,
+      checkoutIdempotencyKey,
     ],
   );
 

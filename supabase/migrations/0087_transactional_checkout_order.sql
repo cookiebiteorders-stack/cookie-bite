@@ -216,15 +216,29 @@ BEGIN
       now()
     );
 
-    -- Decrement stock atomically (only if product lookup was done)
+    -- Decrement stock atomically (ORD-02: handle both products and product_variants)
     IF v_product_id IS NOT NULL THEN
-      UPDATE public.products
-      SET stock = stock - v_quantity
-      WHERE id = v_product_id AND stock >= v_quantity;
+      -- Check if this is a variant order
+      IF v_variant_id IS NOT NULL THEN
+        -- Decrement from product_variants table
+        UPDATE public.product_variants
+        SET stock = stock - v_quantity
+        WHERE id = v_variant_id AND stock >= v_quantity;
 
-      IF NOT FOUND THEN
-        -- Stock became insufficient between check and decrement
-        RAISE EXCEPTION 'stock_race_condition:%', v_slug;
+        IF NOT FOUND THEN
+          -- Variant stock became insufficient between check and decrement
+          RAISE EXCEPTION 'variant_stock_race_condition:%', v_slug;
+        END IF;
+      ELSE
+        -- Decrement from products table (standard product)
+        UPDATE public.products
+        SET stock = stock - v_quantity
+        WHERE id = v_product_id AND stock >= v_quantity;
+
+        IF NOT FOUND THEN
+          -- Stock became insufficient between check and decrement
+          RAISE EXCEPTION 'stock_race_condition:%', v_slug;
+        END IF;
       END IF;
     END IF;
   END LOOP;

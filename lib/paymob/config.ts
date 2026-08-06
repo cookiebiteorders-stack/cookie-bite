@@ -97,6 +97,47 @@ export function getPaymobConfigStatus(): PaymobConfigStatus {
   };
 }
 
+/**
+ * PAY-05: Validate Paymob environment consistency.
+ * Ensures all credentials are from the same environment (test vs live).
+ * Returns null if valid, or an error message describing the inconsistency.
+ */
+export function validatePaymobEnvConsistency(): string | null {
+  const secretKey = resolvePaymobSecretKey();
+  const publicKey = resolvePaymobPublicKey();
+  
+  if (!secretKey || !publicKey) {
+    return "Missing PAYMOB_SECRET_KEY or PAYMOB_PUBLIC_KEY";
+  }
+
+  // Check if keys are from the same environment
+  const isTestSecret = secretKey.startsWith("sk_test_");
+  const isLiveSecret = secretKey.startsWith("sk_live_");
+  const isTestPublic = publicKey.startsWith("pk_test_");
+  const isLivePublic = publicKey.startsWith("pk_live_");
+
+  if (isTestSecret && isLivePublic) {
+    return "PAYMOB_SECRET_KEY is test mode but PAYMOB_PUBLIC_KEY is live mode";
+  }
+  if (isLiveSecret && isTestPublic) {
+    return "PAYMOB_SECRET_KEY is live mode but PAYMOB_PUBLIC_KEY is test mode";
+  }
+
+  // Check if base URL matches environment
+  const baseUrl = paymobOrigin();
+  const isTestUrl = baseUrl.includes("accept.paymob.com") && !baseUrl.includes("live");
+  const isLiveUrl = baseUrl.includes("live") || baseUrl.includes("production");
+
+  if (isTestSecret && isLiveUrl) {
+    return "PAYMOB_SECRET_KEY is test mode but PAYMOB_API_URL points to live environment";
+  }
+  if (isLiveSecret && isTestUrl) {
+    return "PAYMOB_SECRET_KEY is live mode but PAYMOB_API_URL points to test environment";
+  }
+
+  return null; // All checks passed
+}
+
 export function resolvePaymobIntegrationId(paymentMethod: "card" | "wallet"): number | null {
   const id = paymentMethod === "wallet"
     ? resolvePaymobIntegrationIdWallet()

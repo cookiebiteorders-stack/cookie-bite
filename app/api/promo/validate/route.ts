@@ -11,7 +11,55 @@ import {
   validateRecoveryDiscountForCart,
 } from "@/lib/cart/recovery-discount";
 
+// SEC-03: Simple in-memory rate limiter for promo validation
+// Limits to 10 requests per minute per IP
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+  
+  if (!record || now > record.resetTime) {
+    // Reset or create new record
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  
+  if (record.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+}
+
+// Clean up old entries periodically (every 5 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of rateLimitMap.entries()) {
+    if (now > record.resetTime) {
+      rateLimitMap.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
+
 export async function POST(req: NextRequest) {
+  // SEC-03: Rate limiting
+  const ip = req.headers.get("x-forwarded-for") || 
+             req.headers.get("x-real-ip") || 
+             "unknown";
+  
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json(
+      {
+        valid: false,
+        ...bilingualError("Too many requests", "طلبات كثيرة جداً"),
+      },
+      { status: 429 },
+    );
+  }
   let json: unknown;
   try {
     json = await req.json();
