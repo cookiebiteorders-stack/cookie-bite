@@ -1,16 +1,20 @@
 -- =============================================================================
--- Cookie Bite — Migration 0114: Fix order_code ambiguity in checkout function
+-- Cookie Bite — Migration 0115: Fix variant_id JSON conversion in checkout function
 -- =============================================================================
--- This migration fixes "column reference order_code is ambiguous" error
--- by explicitly qualifying the order_code column reference in the 
--- create_checkout_order_transactional function to avoid conflicts with
--- the RETURNS TABLE order_code column.
+-- This migration fixes "invalid input syntax for type json" error caused by
+-- unsafe variant_id UUID conversion from JSON. The error occurred when trying
+-- to convert an empty string or invalid UUID string to UUID type.
+-- 
+-- Root cause: Direct (v_item->>'variant_id')::uuid conversion failed when
+-- variant_id was empty string or invalid UUID format.
+-- 
+-- Fix: Use CASE WHEN to safely check for NULL and empty string before conversion.
 -- =============================================================================
 
--- Drop and recreate the function with explicit table qualifications
+-- Drop and recreate the function with safe variant_id conversion
 DROP FUNCTION IF EXISTS public.create_checkout_order_transactional CASCADE;
 
--- Create the transactional checkout function with fixed order_number and order_code references
+-- Create the transactional checkout function with safe variant_id handling
 CREATE OR REPLACE FUNCTION public.create_checkout_order_transactional(
   p_user_id uuid,
   p_guest_email text,
@@ -208,7 +212,7 @@ BEGIN
       COALESCE((v_item->>'addons_total_unit_price')::numeric, 0),
       COALESCE((v_item->>'final_unit_price')::numeric, v_unit_price * v_quantity),
       COALESCE(v_item->'product_snapshot', '{}'::jsonb),
-      (v_item->>'variant_id')::uuid,
+      CASE WHEN (v_item->>'variant_id') IS NOT NULL AND (v_item->>'variant_id') != '' THEN (v_item->>'variant_id')::uuid ELSE NULL END,
       COALESCE(v_item->'variant_snapshot', '{}'::jsonb),
       COALESCE(v_item->'selected_addons', '[]'::jsonb),
       now()
@@ -258,4 +262,4 @@ GRANT EXECUTE ON FUNCTION public.create_checkout_order_transactional(
 
 -- Add comment
 COMMENT ON FUNCTION public.create_checkout_order_transactional IS 
-'Transactional checkout order creation with sequence-based order_number allocation, atomic stock reservation, and idempotency handling. Fixed order_number and order_code ambiguity by explicitly qualifying table references (public.orders.order_number, public.orders.order_code).';
+'Transactional checkout order creation with sequence-based order_number allocation, atomic stock reservation, and idempotency handling. Fixed order_number and order_code ambiguity by explicitly qualifying table references. Fixed variant_id JSON conversion with safe NULL handling to prevent invalid input syntax for type json errors.';

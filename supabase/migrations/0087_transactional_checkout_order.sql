@@ -210,7 +210,7 @@ BEGIN
       (v_item->>'addons_total_unit_price')::numeric,
       COALESCE((v_item->>'final_unit_price')::numeric, v_unit_price),
       v_item->'product_snapshot',
-      v_item->>'variant_id',
+      CASE WHEN (v_item->>'variant_id') IS NOT NULL AND (v_item->>'variant_id') != '' THEN (v_item->>'variant_id')::uuid ELSE NULL END,
       v_item->'variant_snapshot',
       v_item->'selected_addons',
       now()

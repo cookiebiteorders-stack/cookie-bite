@@ -204,7 +204,7 @@ BEGIN
       (v_item->>'addons_total_unit_price')::numeric,
       COALESCE((v_item->>'final_unit_price')::numeric, v_unit_price),
       COALESCE(v_item->'product_snapshot', '{}'::jsonb),
-      CASE WHEN (v_item->>'variant_id') IS NOT NULL AND (v_item->>'variant_id') != '' THEN (v_item->>'variant_id')::uuid ELSE NULL END,
+      (v_item->>'variant_id')::uuid,
       COALESCE(v_item->'variant_snapshot', '{}'::jsonb),
       COALESCE(v_item->'selected_addons', '[]'::jsonb),
       now()
