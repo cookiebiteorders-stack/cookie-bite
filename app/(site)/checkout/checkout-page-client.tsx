@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { redirect, useSearchParams } from "next/navigation";
 import { Loader2, MapPin, Phone, User, CreditCard, Truck, Lock, ArrowRight, Info, Calendar } from "lucide-react";
 import { AddressMapPicker, type AddressMapHint } from "@/components/account/address-map-picker";
@@ -14,26 +14,6 @@ import type { AbandonedCartSnapshot } from "@/lib/cart/abandoned";
 import type { CartLine } from "@/lib/cart/types";
 
 export default function CheckoutPageClient() {
-  return (
-    <Suspense fallback={<CheckoutLoading />}>
-      <CheckoutContent />
-    </Suspense>
-  );
-}
-
-function CheckoutLoading() {
-  return (
-    <div className="bg-cb-cream pb-24 pt-10">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-cb-terracotta" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CheckoutContent() {
   const { t, formatPrice } = useLanguage();
   const { lines, subtotalEgp, discountEgp, itemCount, promo, applyPromo, clearPromo, restoreCart } = useCart();
   const { startCheckout, isLoading: checkoutLoading, error: checkoutError } = usePaymobCheckout();
