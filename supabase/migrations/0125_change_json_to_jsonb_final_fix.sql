@@ -1,18 +1,26 @@
 -- =============================================================================
--- Cookie Bite — Migration 0087: Transactional checkout order placement
--- =============================================================================
--- This migration creates a PostgreSQL function to handle the entire checkout
--- process as a single atomic transaction. This ensures:
--- 1. Stock is reserved/decremented atomically (no race conditions)
--- 2. Order and order items are inserted together (all-or-nothing)
--- 3. Idempotency is handled at the database level
--- 4. No partial states where order exists but items fail, or vice versa
+-- Cookie Bite — Final Fix: Change JSON columns to JSONB and fix function
 -- =============================================================================
 
--- Drop existing function if it exists (for idempotent migration)
+-- Change JSON columns to JSONB to avoid type conversion issues
+ALTER TABLE public.order_items 
+ALTER COLUMN product_snapshot TYPE jsonb USING product_snapshot::jsonb;
+
+ALTER TABLE public.order_items 
+ALTER COLUMN variant_snapshot TYPE jsonb USING variant_snapshot::jsonb;
+
+ALTER TABLE public.order_items 
+ALTER COLUMN selected_addons TYPE jsonb USING selected_addons::jsonb;
+
+ALTER TABLE public.orders 
+ALTER COLUMN shipping_address TYPE jsonb USING shipping_address::jsonb;
+
+ALTER TABLE public.orders 
+ALTER COLUMN gift_box_snapshot TYPE jsonb USING gift_box_snapshot::jsonb;
+
+-- Recreate the function with proper JSONB handling
 DROP FUNCTION IF EXISTS public.create_checkout_order_transactional CASCADE;
 
--- Create the transactional checkout function
 CREATE OR REPLACE FUNCTION public.create_checkout_order_transactional(
   p_user_id uuid,
   p_guest_email text,
@@ -30,7 +38,7 @@ CREATE OR REPLACE FUNCTION public.create_checkout_order_transactional(
   p_order_type text,
   p_gift_box_snapshot jsonb,
   p_checkout_idempotency_key text,
-  p_items jsonb  -- Array of {slug, name, unit_price, quantity, product_snapshot, variant_id, variant_snapshot, addons_total_unit_price, final_unit_price}
+  p_items jsonb
 )
 RETURNS TABLE (
   order_id uuid,
@@ -55,6 +63,7 @@ DECLARE
   v_quantity integer;
   v_unit_price numeric;
   v_variant_id uuid;
+  v_error_detail text;
 BEGIN
   -- Validate required fields
   IF p_items IS NULL OR jsonb_array_length(p_items) = 0 THEN
@@ -113,62 +122,69 @@ BEGIN
   v_order_code := 'CB-' || upper(substr(md5(random()::text), 1, 6));
 
   -- Insert order
-  INSERT INTO public.orders (
-    user_id,
-    guest_email,
-    status,
-    payment_status,
-    payment_method,
-    subtotal_egp,
-    delivery_fee_egp,
-    total_egp,
-    shipping_address,
-    notes,
-    promo_code,
-    promo_id,
-    discount_amount_egp,
-    gift_wrapping_fee_egp,
-    order_type,
-    gift_box_snapshot,
-    checkout_idempotency_key,
-    order_code,
-    currency,
-    full_name,
-    phone,
-    email,
-    created_at,
-    updated_at
-  )
-  VALUES (
-    p_user_id,
-    p_guest_email,
-    'pending',
-    p_payment_status,
-    p_payment_method,
-    p_subtotal_egp,
-    p_delivery_fee_egp,
-    p_total_egp,
-    p_shipping_address,
-    p_notes,
-    p_promo_code,
-    p_promo_id,
-    p_discount_amount_egp,
-    p_gift_wrapping_fee_egp,
-    p_order_type,
-    p_gift_box_snapshot,
-    p_checkout_idempotency_key,
-    v_order_code,
-    'EGP',
-    COALESCE((p_shipping_address->>'name'), 'Guest Customer'),
-    COALESCE((p_shipping_address->>'phone'), '+201000000000'),
-    COALESCE(p_guest_email, (p_shipping_address->>'email'), ''),
-    now(),
-    now()
-  )
-  RETURNING id, public.orders.order_number
-  INTO v_order_id, v_order_number;
+  BEGIN
+    INSERT INTO public.orders (
+      user_id,
+      guest_email,
+      status,
+      payment_status,
+      payment_method,
+      subtotal_egp,
+      delivery_fee_egp,
+      total_egp,
+      shipping_address,
+      notes,
+      promo_code,
+      promo_id,
+      discount_amount_egp,
+      gift_wrapping_fee_egp,
+      order_type,
+      gift_box_snapshot,
+      checkout_idempotency_key,
+      order_code,
+      currency,
+      full_name,
+      phone,
+      email,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      p_user_id,
+      p_guest_email,
+      'pending',
+      p_payment_status,
+      p_payment_method,
+      p_subtotal_egp,
+      p_delivery_fee_egp,
+      p_total_egp,
+      p_shipping_address,
+      p_notes,
+      p_promo_code,
+      p_promo_id,
+      p_discount_amount_egp,
+      p_gift_wrapping_fee_egp,
+      p_order_type,
+      p_gift_box_snapshot,
+      p_checkout_idempotency_key,
+      v_order_code,
+      'EGP',
+      COALESCE((p_shipping_address->>'name'), 'Guest Customer'),
+      COALESCE((p_shipping_address->>'phone'), '+201000000000'),
+      COALESCE(p_guest_email, (p_shipping_address->>'email'), ''),
+      now(),
+      now()
+    )
+    RETURNING id, public.orders.order_number
+    INTO v_order_id, v_order_number;
+  EXCEPTION
+    WHEN OTHERS THEN
+      v_error_detail := SQLERRM;
+      RETURN QUERY SELECT NULL::uuid, NULL::text, NULL::text, false, ('order_insert_failed:' || v_error_detail)::text;
+      RETURN;
+  END;
 
-  -- Insert order items and decrement stock atomically
+  -- Insert order items with direct JSONB extraction
   FOR v_item_idx IN 0..jsonb_array_length(p_items)-1 LOOP
     v_item := p_items->v_item_idx;
     v_slug := v_item->>'slug';
@@ -192,59 +208,59 @@ BEGIN
       v_variant_id := NULL;
     END IF;
 
-    -- Insert order item
-    INSERT INTO public.order_items (
-      order_id,
-      product_id,
-      slug,
-      product_name,
-      quantity,
-      unit_price_egp,
-      addons_total_egp,
-      final_total_egp,
-      product_snapshot,
-      variant_id,
-      variant_snapshot,
-      selected_addons,
-      created_at
-    )
-    VALUES (
-      v_order_id,
-      v_product_id,
-      v_slug,
-      v_item->>'name',
-      v_quantity,
-      v_unit_price,
-      (v_item->>'addons_total_unit_price')::numeric,
-      COALESCE((v_item->>'final_unit_price')::numeric, v_unit_price),
-      v_item->'product_snapshot',
-      CASE WHEN (v_item->>'variant_id') IS NOT NULL AND (v_item->>'variant_id') != '' THEN (v_item->>'variant_id')::uuid ELSE NULL END,
-      v_item->'variant_snapshot',
-      v_item->'selected_addons',
-      now()
-    );
+    -- Insert order item - use direct JSONB extraction in VALUES clause
+    BEGIN
+      INSERT INTO public.order_items (
+        order_id,
+        product_id,
+        slug,
+        product_name,
+        quantity,
+        unit_price_egp,
+        addons_total_egp,
+        final_total_egp,
+        product_snapshot,
+        variant_id,
+        variant_snapshot,
+        selected_addons,
+        created_at
+      )
+      VALUES (
+        v_order_id,
+        v_product_id,
+        v_slug,
+        v_item->>'name',
+        v_quantity,
+        v_unit_price,
+        (v_item->>'addons_total_unit_price')::numeric,
+        COALESCE((v_item->>'final_unit_price')::numeric, v_unit_price),
+        v_item->'product_snapshot',           -- Direct JSONB extraction
+        CASE WHEN (v_item->>'variant_id') IS NOT NULL AND (v_item->>'variant_id') != '' THEN (v_item->>'variant_id')::uuid ELSE NULL END,
+        v_item->'variant_snapshot',           -- Direct JSONB extraction
+        v_item->'selected_addons',            -- Direct JSONB extraction
+        now()
+      );
+    EXCEPTION
+      WHEN OTHERS THEN
+        v_error_detail := SQLERRM;
+        RETURN QUERY SELECT NULL::uuid, NULL::text, NULL::text, false, ('order_item_insert_failed:' || v_slug || ':' || v_error_detail)::text;
+        RETURN;
+    END;
 
-    -- Decrement stock atomically (ORD-02: handle both products and product_variants)
+    -- Decrement stock atomically
     IF v_product_id IS NOT NULL THEN
-      -- Check if this is a variant order
       IF v_variant_id IS NOT NULL THEN
-        -- Decrement from product_variants table
         UPDATE public.product_variants
         SET stock = stock - v_quantity
         WHERE id = v_variant_id AND stock >= v_quantity;
-
         IF NOT FOUND THEN
-          -- Variant stock became insufficient between check and decrement
           RAISE EXCEPTION 'variant_stock_race_condition:%', v_slug;
         END IF;
       ELSE
-        -- Decrement from products table (standard product)
         UPDATE public.products
         SET stock = stock - v_quantity
         WHERE id = v_product_id AND stock >= v_quantity;
-
         IF NOT FOUND THEN
-          -- Stock became insufficient between check and decrement
           RAISE EXCEPTION 'stock_race_condition:%', v_slug;
         END IF;
       END IF;
@@ -262,18 +278,15 @@ BEGIN
 
 EXCEPTION
   WHEN OTHERS THEN
-    -- Log the error and return failure
-    RETURN QUERY SELECT NULL::uuid, NULL::text, NULL::text, false, SQLERRM::text;
+    v_error_detail := SQLERRM;
+    RETURN QUERY SELECT NULL::uuid, NULL::text, NULL::text, false, ('checkout_failed:' || v_error_detail)::text;
 END;
 $$;
 
--- Grant execute permission to service_role only
+-- Grant permissions
 REVOKE ALL ON FUNCTION public.create_checkout_order_transactional(
   uuid, text, text, text, numeric, numeric, numeric, jsonb, text, text, uuid, numeric, numeric, text, jsonb, text, jsonb
 ) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_checkout_order_transactional(
   uuid, text, text, text, numeric, numeric, numeric, jsonb, text, text, uuid, numeric, numeric, text, jsonb, text, jsonb
 ) TO service_role;
-
-COMMENT ON FUNCTION public.create_checkout_order_transactional IS
-'Atomic transactional checkout: validates stock, reserves inventory, inserts order and items in a single transaction. Returns order_id, order_number, order_code, success flag, and error_message if failed.';

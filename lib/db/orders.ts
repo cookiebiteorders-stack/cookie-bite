@@ -655,13 +655,13 @@ export async function insertCheckoutOrderTransactional(
     name: line.name,
     unit_price: line.unitPrice,
     quantity: line.quantity,
-    product_snapshot: line.productSnapshot,
-    variant_id: line.variantId,
-    variant_snapshot: line.variantSnapshot,
-    selected_addons: line.selectedAddons,
-    addons_total_unit_price: line.addonsTotalUnitPrice,
+    product_snapshot: line.productSnapshot ?? null,
+    variant_id: line.variantId ?? null,
+    variant_snapshot: line.variantSnapshot ?? null,
+    selected_addons: line.selectedAddons ?? null,
+    addons_total_unit_price: line.addonsTotalUnitPrice ?? 0,
     final_unit_price: line.finalUnitPrice,
-    skip_product_lookup: line.skipProductLookup,
+    skip_product_lookup: line.skipProductLookup ?? false,
   }));
 
   // Build shipping address JSONB (pass as object, not stringified)
@@ -670,8 +670,52 @@ export async function insertCheckoutOrderTransactional(
   // Build gift box snapshot JSONB if present (pass as object, not stringified)
   const giftBoxSnapshotJson = params.giftBoxSnapshot ?? null;
 
-  console.log("[Transactional Order Creation] Shipping address JSON:", JSON.stringify(shippingAddressJson, null, 2));
-  console.log("[Transactional Order Creation] Items JSON:", JSON.stringify(itemsJson, null, 2));
+  // Debug: Log each JSON field with detailed type information
+  console.error("[CHECKOUT-JSON-DEBUG] shipping_address", {
+    table: "orders",
+    column: "shipping_address",
+    value: shippingAddressJson,
+    javascriptType: typeof shippingAddressJson,
+    isArray: Array.isArray(shippingAddressJson),
+    serialized: (() => {
+      try {
+        return JSON.stringify(shippingAddressJson);
+      } catch {
+        return "[JSON.stringify FAILED]";
+      }
+    })(),
+  });
+
+  console.error("[CHECKOUT-JSON-DEBUG] items", {
+    table: "order_items",
+    column: "items (via p_items)",
+    value: itemsJson,
+    javascriptType: typeof itemsJson,
+    isArray: Array.isArray(itemsJson),
+    serialized: (() => {
+      try {
+        return JSON.stringify(itemsJson);
+      } catch {
+        return "[JSON.stringify FAILED]";
+      }
+    })(),
+  });
+
+  console.error("[CHECKOUT-JSON-DEBUG] gift_box_snapshot", {
+    table: "orders",
+    column: "gift_box_snapshot",
+    value: giftBoxSnapshotJson,
+    javascriptType: typeof giftBoxSnapshotJson,
+    isArray: Array.isArray(giftBoxSnapshotJson),
+    serialized: (() => {
+      try {
+        return JSON.stringify(giftBoxSnapshotJson);
+      } catch {
+        return "[JSON.stringify FAILED]";
+      }
+    })(),
+  });
+
   console.log("[Transactional Order Creation] Calling RPC function");
 
   const { data, error } = await supabase.rpc("create_checkout_order_transactional", {
@@ -695,7 +739,14 @@ export async function insertCheckoutOrderTransactional(
   });
 
   if (error) {
-    console.error("[Transactional Order Creation] RPC error:", JSON.stringify(error, null, 2));
+    console.error("[CHECKOUT-DB-ERROR]", {
+      message: error instanceof Error ? error.message : error,
+      code: (error as any)?.code,
+      detail: (error as any)?.detail,
+      hint: (error as any)?.hint,
+      position: (error as any)?.position,
+      fullError: JSON.stringify(error, null, 2),
+    });
     throw new Error(`Failed to create order transactionally: ${error.message}`);
   }
 

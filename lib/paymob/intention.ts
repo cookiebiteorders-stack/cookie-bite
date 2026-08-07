@@ -65,6 +65,12 @@ export function buildPaymobIntentionBillingData(input: {
   phone: string;
   street: string;
   city: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  apartment?: string;
+  floor?: string;
+  building?: string;
 }): PaymobIntentionBillingData {
   const phone = input.phone.startsWith("+")
     ? input.phone
@@ -75,20 +81,27 @@ export function buildPaymobIntentionBillingData(input: {
   const first = sanitizeBillingField(parts[0], "Customer", 50);
   const last = sanitizeBillingField(parts.slice(1).join(" "), ".", 50);
   const city = sanitizeBillingField(input.city, "Cairo", 120);
+  const state = sanitizeBillingField(input.state, city, 120);
+  const country = sanitizeBillingField(input.country, "EG", 2);
+  const postalCode = sanitizeBillingField(input.postal_code, "", 10);
+  const apartment = sanitizeBillingField(input.apartment, "", 50);
+  const floor = sanitizeBillingField(input.floor, "", 10);
+  const building = sanitizeBillingField(input.building, "", 50);
+  
   return {
-    apartment: "NA",
+    apartment: apartment || "NA",
     email: sanitizeBillingField(input.email, "guest@cookiebite.local", 120),
-    floor: "NA",
+    floor: floor || "NA",
     first_name: first,
     last_name: last,
     street: sanitizeBillingField(input.street, "NA", 200),
-    building: "NA",
+    building: building || "NA",
     phone_number: phone,
-    shipping_method: "NA",
-    postal_code: "NA",
+    shipping_method: "delivery",
+    postal_code: postalCode || "NA",
     city,
-    state: city,
-    country: "EG",
+    state,
+    country,
   };
 }
 

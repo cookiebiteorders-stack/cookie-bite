@@ -18,6 +18,8 @@ export type ResolvedCheckoutLine = {
   selectedAddons: CartSelectedAddon[];
   variantId?: string | null;
   variantSnapshot?: CartVariantSnapshot | null;
+  productSnapshot?: Record<string, unknown> | null;
+  skipProductLookup?: boolean;
 };
 
 type DbRow = {
@@ -174,6 +176,15 @@ export async function resolveCheckoutLineItems(
       selectedAddons,
       variantId,
       variantSnapshot,
+      productSnapshot: {
+        id: p.id,
+        slug: p.slug,
+        name: p.name,
+        title_en: p.title_en,
+        price_egp: p.price_egp,
+        is_active: p.is_active,
+      },
+      skipProductLookup: false,
     });
     subtotal += finalUnitPrice * item.quantity;
   }

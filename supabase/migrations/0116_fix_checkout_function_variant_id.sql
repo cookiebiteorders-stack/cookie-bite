@@ -1,18 +1,11 @@
 -- =============================================================================
--- Cookie Bite — Migration 0087: Transactional checkout order placement
+-- Cookie Bite — Migration 0116: Fix checkout function variant_id variable
 -- =============================================================================
--- This migration creates a PostgreSQL function to handle the entire checkout
--- process as a single atomic transaction. This ensures:
--- 1. Stock is reserved/decremented atomically (no race conditions)
--- 2. Order and order items are inserted together (all-or-nothing)
--- 3. Idempotency is handled at the database level
--- 4. No partial states where order exists but items fail, or vice versa
+-- This migration fixes the create_checkout_order_transactional function
+-- to properly declare and use the v_variant_id variable for stock decrementing.
 -- =============================================================================
 
--- Drop existing function if it exists (for idempotent migration)
-DROP FUNCTION IF EXISTS public.create_checkout_order_transactional CASCADE;
-
--- Create the transactional checkout function
+-- Recreate the function with the missing v_variant_id variable
 CREATE OR REPLACE FUNCTION public.create_checkout_order_transactional(
   p_user_id uuid,
   p_guest_email text,
@@ -274,6 +267,3 @@ REVOKE ALL ON FUNCTION public.create_checkout_order_transactional(
 GRANT EXECUTE ON FUNCTION public.create_checkout_order_transactional(
   uuid, text, text, text, numeric, numeric, numeric, jsonb, text, text, uuid, numeric, numeric, text, jsonb, text, jsonb
 ) TO service_role;
-
-COMMENT ON FUNCTION public.create_checkout_order_transactional IS
-'Atomic transactional checkout: validates stock, reserves inventory, inserts order and items in a single transaction. Returns order_id, order_number, order_code, success flag, and error_message if failed.';

@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth/supabase-auth";
 import { z } from "zod";
 import { logStructuredError } from "@/lib/logger";
+import { randomUUID } from "crypto";
 import {
   getCheckoutOrderByIdempotencyKey,
   insertCheckoutOrder,
@@ -249,7 +250,7 @@ export async function POST(req: Request) {
     promo_code: promoCodeRaw,
     gift_box: giftBox,
     bundle_offers: bundleOffers = [],
-    idempotency_key: idempotencyKey,
+    idempotency_key: originalIdempotencyKey,
     payment_method: paymentMethodParam,
   } = parsed.data;
 
@@ -433,8 +434,9 @@ export async function POST(req: Request) {
   }
 
   // Idempotency check
-  if (idempotencyKey) {
-    const existing = await getCheckoutOrderByIdempotencyKey(idempotencyKey);
+  let idempotencyKey = originalIdempotencyKey;
+  if (originalIdempotencyKey) {
+    const existing = await getCheckoutOrderByIdempotencyKey(originalIdempotencyKey);
     if (existing) {
       if (existing.payment_status === "paid") {
         return Response.json({
@@ -448,27 +450,13 @@ export async function POST(req: Request) {
         });
       }
       
-      // For unpaid orders, check if we can reuse the existing Paymob intention
-      if (existing.payment_status === "unpaid" && existing.paymob_accept_order_id && paymentMethod !== "cash_on_delivery") {
-        // Return the existing payment URL if it exists (would need to fetch from Paymob or store in DB)
-        // For now, cancel the existing order and allow recreation
-        console.log("[Paymob Intention] Unpaid order exists for idempotency key, cancelling and recreating:", existing.id);
-        const { releaseStockForOrder } = await import("@/lib/db/orders");
-        await releaseStockForOrder(existing.id).catch((err) => 
-          console.error("[Paymob Intention] Failed to release stock for existing unpaid order:", existing.id, err)
-        );
-        
-        const supabase = createSupabaseAdminClient();
-        const { error: cancelError } = await supabase
-          .from("orders")
-          .update({ status: "cancelled" })
-          .eq("id", existing.id);
-        
-        if (cancelError) {
-          console.error("[Paymob Intention] Failed to cancel existing unpaid order:", existing.id, cancelError);
-        }
-      }
+      // For unpaid orders, generate a new idempotency key to avoid Paymob conflicts
+      console.log("[Paymob Intention] Unpaid order exists for idempotency key, generating new key:", existing.id);
+      idempotencyKey = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
     }
+  } else {
+    // Generate new idempotency key if not provided
+    idempotencyKey = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
   }
 
   const dbUserId = await resolveSupabaseUserId();
@@ -505,6 +493,8 @@ export async function POST(req: Request) {
       finalUnitPrice: l.finalUnitPrice,
       variantId: l.variantId ?? null,
       variantSnapshot: l.variantSnapshot ?? null,
+      productSnapshot: l.productSnapshot ?? null,
+      skipProductLookup: l.skipProductLookup ?? false,
     })),
     ...(verifiedGiftBox
       ? [
@@ -667,6 +657,12 @@ export async function POST(req: Request) {
       phone: billing.phone,
       street: billing.street,
       city: billing.city,
+      state: billing.governorate || billing.city,
+      country: "EG",
+      postal_code: "",
+      apartment: "",
+      floor: "",
+      building: "",
     });
 
     let intention;
