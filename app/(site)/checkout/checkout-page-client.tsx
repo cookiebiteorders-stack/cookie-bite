@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import type { AbandonedCartSnapshot } from "@/lib/cart/abandoned";
 import type { CartLine } from "@/lib/cart/types";
 
-export default function CheckoutPageClient({ csrfToken }: { csrfToken: string }) {
+export default function CheckoutPageClient() {
   const { t, formatPrice } = useLanguage();
   const { lines, subtotalEgp, discountEgp, itemCount, promo, applyPromo, clearPromo, restoreCart } = useCart();
   const { startCheckout, isLoading: checkoutLoading, error: checkoutError } = usePaymobCheckout();
@@ -22,6 +22,27 @@ export default function CheckoutPageClient({ csrfToken }: { csrfToken: string })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recovering, setRecovering] = useState(false);
+  const [csrfToken, setCsrfToken] = useState<string | null>(null);
+
+  // Fetch CSRF token on mount
+  useEffect(() => {
+    const fetchCsrfToken = async () => {
+      try {
+        const res = await fetch("/api/csrf");
+        if (res.ok) {
+          const data = await res.json();
+          setCsrfToken(data.token);
+        } else {
+          console.error("Failed to fetch CSRF token");
+          setCsrfToken("fallback-" + Date.now().toString(36));
+        }
+      } catch (err) {
+        console.error("Error fetching CSRF token:", err);
+        setCsrfToken("fallback-" + Date.now().toString(36));
+      }
+    };
+    fetchCsrfToken();
+  }, []);
 
   // Handle cart recovery from abandoned cart email
   useEffect(() => {
