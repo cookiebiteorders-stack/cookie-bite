@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { buildPageMetadata } from "@/lib/seo";
 import { getCsrfTokenForClient } from "@/lib/security/csrf";
-import CheckoutClient from "./checkout-client.tsx";
+import CheckoutClient from "./checkout-client";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Checkout",
