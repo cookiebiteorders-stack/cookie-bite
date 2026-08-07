@@ -1,7 +1,7 @@
-import { getCsrfToken } from "@/lib/security/csrf";
 import CheckoutPageClient from "./checkout-page-client";
 
-export default async function CheckoutPage() {
-  const csrfToken = await getCsrfToken();
-  return <CheckoutPageClient csrfToken={csrfToken} />;
+export default function CheckoutPage() {
+  // Don't generate CSRF token server-side to avoid SSR issues
+  // Client will fetch it from /api/csrf
+  return <CheckoutPageClient />;
 }
