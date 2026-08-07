@@ -10,11 +10,12 @@ export async function GET() {
       headerName: "x-csrf-token",
     });
     
-    // Set the cookie explicitly in the response
+    // Set the cookie with the same attributes as the server-side function
+    // This ensures consistency between the cookie set by getCsrfToken() and this endpoint
     response.cookies.set("csrf_token", token, {
-      httpOnly: false, // Allow JS access in dev for debugging
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      httpOnly: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       path: "/",
       maxAge: 60 * 60 * 24, // 24 hours
     });
