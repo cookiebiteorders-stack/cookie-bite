@@ -169,10 +169,6 @@ const nextConfig: NextConfig = {
             key: "Cache-Control",
             value: "private, no-store, max-age=0",
           },
-          {
-            key: "X-CSRF-Or-Any-Reason",
-            value: "disabled",
-          },
         ],
       },
       {

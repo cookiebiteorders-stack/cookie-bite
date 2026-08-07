@@ -12,6 +12,7 @@ import { useFreeShippingThreshold } from "@/components/providers/store-commerce-
 import { cn } from "@/lib/utils";
 import type { AbandonedCartSnapshot } from "@/lib/cart/abandoned";
 import type { CartLine } from "@/lib/cart/types";
+import { useCsrfToken } from "./checkout-client";
 
 export default function CheckoutPage() {
   const { t, formatPrice } = useLanguage();
@@ -19,6 +20,7 @@ export default function CheckoutPage() {
   const { startCheckout, isLoading: checkoutLoading, error: checkoutError } = usePaymobCheckout();
   const freeShippingThreshold = useFreeShippingThreshold();
   const searchParams = useSearchParams();
+  const csrfToken = useCsrfToken();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recovering, setRecovering] = useState(false);
@@ -161,7 +163,7 @@ export default function CheckoutPage() {
     };
 
     // Call checkout with selected payment method
-    const success = await startCheckout(checkoutData, formData.paymentMethod);
+    const success = await startCheckout(checkoutData, formData.paymentMethod, csrfToken);
     setLoading(false);
     if (!success) {
       console.error("Checkout failed:", checkoutError);

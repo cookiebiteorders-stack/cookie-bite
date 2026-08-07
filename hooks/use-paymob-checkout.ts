@@ -96,7 +96,7 @@ export function usePaymobCheckout() {
   const [status, setStatus] = useState<PaymobCheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
 
-  const startCheckout = useCallback(async (checkoutDetails?: CheckoutDetails, paymentMethod?: "card" | "wallet" | "cash_on_delivery") => {
+  const startCheckout = useCallback(async (checkoutDetails?: CheckoutDetails, paymentMethod?: "card" | "wallet" | "cash_on_delivery", csrfToken?: string | null) => {
     if (itemCount === 0 || status === "loading") return false;
 
     const { giftBoxSnapshot, body } = buildPaymobIntentionBody(lines, promo?.code, checkoutDetails, paymentMethod);
@@ -124,12 +124,18 @@ export function usePaymobCheckout() {
       if (process.env.NODE_ENV !== "production") {
         console.log("Sending checkout request:", JSON.stringify(body, null, 2));
       }
-      // Skip CSRF for checkout routes - handled by Next.js configuration
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (csrfToken) {
+        headers["x-csrf-token"] = csrfToken;
+      }
+
       const res = await fetch("/api/checkout/paymob/intention", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           ...body,
           idempotency_key: checkoutIdempotencyKey,
