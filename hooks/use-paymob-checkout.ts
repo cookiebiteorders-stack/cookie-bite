@@ -124,17 +124,11 @@ export function usePaymobCheckout() {
       if (process.env.NODE_ENV !== "production") {
         console.log("Sending checkout request:", JSON.stringify(body, null, 2));
       }
-      // Get CSRF token from cookie
-      const csrfToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('csrf_token='))
-        ?.split('=')[1];
-
+      // Skip CSRF for checkout routes - handled by Next.js configuration
       const res = await fetch("/api/checkout/paymob/intention", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          ...(csrfToken ? { "x-csrf-token": csrfToken } : {})
         },
         body: JSON.stringify({
           ...body,
