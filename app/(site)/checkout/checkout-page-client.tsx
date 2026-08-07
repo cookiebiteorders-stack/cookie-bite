@@ -181,6 +181,14 @@ export default function CheckoutPageClient() {
       placeLabel: addressHint?.placeLabel || undefined,
     };
 
+    // Debug: Check CSRF token
+    console.log("CSRF token before checkout:", csrfToken);
+    if (!csrfToken) {
+      setError("CSRF token not loaded. Please refresh the page and try again.");
+      setLoading(false);
+      return;
+    }
+
     // Call checkout with selected payment method
     const success = await startCheckout(checkoutData, formData.paymentMethod, csrfToken);
     setLoading(false);
