@@ -1,16 +1,16 @@
 -- =============================================================================
--- Cookie Bite — Migration 0113: Fix order_number ambiguity in checkout function
+-- Cookie Bite — Migration 0114: Fix order_code ambiguity in checkout function
 -- =============================================================================
--- This migration fixes the "column reference order_number is ambiguous" error
--- by explicitly qualifying the order_number column references in the 
+-- This migration fixes "column reference order_code is ambiguous" error
+-- by explicitly qualifying the order_code column reference in the 
 -- create_checkout_order_transactional function to avoid conflicts with
--- the RETURNS TABLE order_number column.
+-- the RETURNS TABLE order_code column.
 -- =============================================================================
 
 -- Drop and recreate the function with explicit table qualifications
 DROP FUNCTION IF EXISTS public.create_checkout_order_transactional CASCADE;
 
--- Create the transactional checkout function with fixed order_number references
+-- Create the transactional checkout function with fixed order_number and order_code references
 CREATE OR REPLACE FUNCTION public.create_checkout_order_transactional(
   p_user_id uuid,
   p_guest_email text,
@@ -64,9 +64,9 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Check idempotency key if provided (FIXED: qualified order_number)
+  -- Check idempotency key if provided (FIXED: qualified order_number and order_code)
   IF p_checkout_idempotency_key IS NOT NULL THEN
-    SELECT id, public.orders.order_number, order_code
+    SELECT id, public.orders.order_number, public.orders.order_code
     INTO v_order_id, v_order_number, v_order_code
     FROM public.orders
     WHERE checkout_idempotency_key = p_checkout_idempotency_key
@@ -258,4 +258,4 @@ GRANT EXECUTE ON FUNCTION public.create_checkout_order_transactional(
 
 -- Add comment
 COMMENT ON FUNCTION public.create_checkout_order_transactional IS 
-'Transactional checkout order creation with sequence-based order_number allocation, atomic stock reservation, and idempotency handling. Fixed order_number ambiguity by explicitly qualifying table references.';
+'Transactional checkout order creation with sequence-based order_number allocation, atomic stock reservation, and idempotency handling. Fixed order_number and order_code ambiguity by explicitly qualifying table references (public.orders.order_number, public.orders.order_code).';

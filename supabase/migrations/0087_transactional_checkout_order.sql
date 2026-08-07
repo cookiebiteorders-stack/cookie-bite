@@ -68,7 +68,7 @@ BEGIN
 
   -- Check idempotency key if provided
   IF p_checkout_idempotency_key IS NOT NULL THEN
-    SELECT id, public.orders.order_number, order_code
+    SELECT id, public.orders.order_number, public.orders.order_code
     INTO v_order_id, v_order_number, v_order_code
     FROM public.orders
     WHERE checkout_idempotency_key = p_checkout_idempotency_key
