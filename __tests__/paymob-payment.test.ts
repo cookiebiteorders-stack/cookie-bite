@@ -51,7 +51,7 @@ describe("Paymob payment outcome", () => {
   it("marks paid when success=true", () => {
     expect(resolvePaymobPaymentOutcome({ success: true, pending: false })).toEqual({
       payment_status: "paid",
-      status: "processing",
+      status: "confirmed",
       outcome: "paid",
     });
   });

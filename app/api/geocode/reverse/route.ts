@@ -27,7 +27,15 @@ export async function GET(req: NextRequest) {
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) {
-      return NextResponse.json({ error: "Reverse geocoder unavailable" }, { status: 502 });
+      console.error("[geocode/reverse] Nominatim API error:", res.status, res.statusText);
+      // Return graceful fallback instead of error
+      return NextResponse.json({
+        label: null,
+        street: null,
+        city: null,
+        governorate: null,
+        error: "geocoding_unavailable"
+      });
     }
     const raw = (await res.json()) as {
       display_name?: string;
@@ -52,7 +60,14 @@ export async function GET(req: NextRequest) {
       governorate,
     });
   } catch (e) {
-    console.error("[geocode/reverse]", e);
-    return NextResponse.json({ error: "Reverse failed" }, { status: 500 });
+    console.error("[geocode/reverse] Error:", e);
+    // Return graceful fallback instead of error - map still works, just no auto-fill
+    return NextResponse.json({
+      label: null,
+      street: null,
+      city: null,
+      governorate: null,
+      error: "geocoding_failed"
+    });
   }
 }

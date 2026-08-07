@@ -34,7 +34,7 @@ function buildPaymobIntentionBody(
   lines: CartLine[],
   promoCode?: string,
   checkoutDetails?: CheckoutDetails,
-  paymentMethod?: "card" | "wallet",
+  paymentMethod?: "card" | "wallet" | "cash_on_delivery",
 ) {
   const giftBoxLine = lines.find((l) => Boolean(l.giftBox));
   const bundleOfferLines = lines.filter((l) => Boolean(l.bundleOffer));
@@ -96,7 +96,7 @@ export function usePaymobCheckout() {
   const [status, setStatus] = useState<PaymobCheckoutStatus>("idle");
   const [error, setError] = useState<string | null>(null);
 
-  const startCheckout = useCallback(async (checkoutDetails?: CheckoutDetails, paymentMethod?: "card" | "wallet") => {
+  const startCheckout = useCallback(async (checkoutDetails?: CheckoutDetails, paymentMethod?: "card" | "wallet" | "cash_on_delivery") => {
     if (itemCount === 0 || status === "loading") return false;
 
     const { giftBoxSnapshot, body } = buildPaymobIntentionBody(lines, promo?.code, checkoutDetails, paymentMethod);
@@ -148,6 +148,9 @@ export function usePaymobCheckout() {
         message?: string;
         configured?: boolean;
         paymentUrl?: string;
+        paymentMethod?: string;
+        redirectUrl?: string;
+        orderCode?: string;
       };
 
       if (process.env.NODE_ENV !== "production") {
@@ -162,6 +165,18 @@ export function usePaymobCheckout() {
         return false;
       }
 
+      // Handle COD response - redirect to order confirmation
+      if (data.paymentMethod === "cash_on_delivery" && data.redirectUrl) {
+        stashPendingPurchaseEvents(
+          lines
+            .filter((l) => l.productUuid)
+            .map((l) => ({ product_id: l.productUuid!, quantity: l.quantity })),
+        );
+        window.location.href = data.redirectUrl;
+        return true;
+      }
+
+      // Handle Paymob response - redirect to hosted checkout
       if (data.configured && data.paymentUrl) {
         stashPendingPurchaseEvents(
           lines

@@ -129,7 +129,7 @@ export function CartDrawer() {
                 <button type="button" className={buttonClassName("outline", "rounded-md")} onClick={closeDrawer}>
                   Continue
                 </button>
-                <Link href="/cart" className={buttonClassName("primary", "rounded-md text-center")} onClick={closeDrawer}>
+                <Link href="/checkout" className={buttonClassName("primary", "rounded-md text-center")} onClick={closeDrawer}>
                   Checkout
                 </Link>
               </div>

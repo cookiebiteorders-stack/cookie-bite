@@ -13,13 +13,14 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 type Props = {
-  searchParams: Promise<{ ref?: string; order?: string; status?: string }>;
+  searchParams: Promise<{ ref?: string; order?: string; status?: string; payment_method?: string }>;
 };
 
 export default async function ThankYouPage({ searchParams }: Props) {
-  const { ref, order, status } = await searchParams;
+  const { ref, order, status, payment_method } = await searchParams;
   const isFailed = status === "failed";
   const isPending = status === "pending";
+  const isCod = payment_method === "cash_on_delivery";
   const orderLabel = order ?? (ref === "demo" ? "demo" : null);
   const isDemo = orderLabel === "demo";
   const clearCart = !isFailed;
@@ -27,10 +28,11 @@ export default async function ThankYouPage({ searchParams }: Props) {
   return (
     <>
       <ClearCartOnce when={clearCart} />
-      <PurchaseEventsTracker enabled={!isFailed && !isPending} />
+      <PurchaseEventsTracker enabled={!isFailed && !isPending && !isCod} />
       <ThankYouContent
         isFailed={isFailed}
         isPending={isPending}
+        isCod={isCod}
         orderLabel={orderLabel}
         isDemo={isDemo}
       />

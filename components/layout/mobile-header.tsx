@@ -49,7 +49,7 @@ function getTitle(pathname: string): string {
   if (pathname.startsWith("/our-story")) return "Our Story";
   if (pathname.startsWith("/account")) return "My Account";
   if (pathname.startsWith("/gift-box")) return "Gift Box";
-  if (pathname.startsWith("/cart")) return "My Cart";
+  if (pathname.startsWith("/checkout")) return "Checkout";
   if (pathname.startsWith("/contact")) return "Contact";
   if (pathname.startsWith("/admin")) return "Admin Console";
   return "";
@@ -97,8 +97,8 @@ export function MobileHeader() {
               ? t("mobileHeader.myAccount")
               : title === "Gift Box"
                 ? t("mobileHeader.giftBox")
-                : title === "My Cart"
-                  ? t("mobileHeader.myCart")
+                : title === "Checkout"
+                  ? t("mobileHeader.checkout")
                   : title === "Contact"
                     ? t("mobileHeader.contact")
                     : title === "Admin Console"

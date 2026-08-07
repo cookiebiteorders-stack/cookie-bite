@@ -75,6 +75,7 @@ export type ProductMediaLink = {
 export type OrderStatus =
   | "pending"
   | "processing"
+  | "confirmed"
   | "shipped"
   | "delivered"
   | "cancelled"

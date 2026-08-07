@@ -61,7 +61,7 @@ export function ProductDetailPageClient({ slug }: { slug: string }) {
             >
               Add to Cart
             </button>
-            <Link href="/cart" className={buttonClassName("outline", "rounded-md px-6")}>
+            <Link href="/checkout" className={buttonClassName("outline", "rounded-md px-6")}>
               Go to Cart
             </Link>
           </div>

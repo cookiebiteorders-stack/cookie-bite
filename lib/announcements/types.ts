@@ -7,7 +7,6 @@ export type InlineVariant = "success" | "warning" | "error" | "info";
 export type TargetPage =
   | "home"
   | "product"
-  | "cart"
   | "shop"
   | "account"
   | "all";

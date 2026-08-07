@@ -82,13 +82,17 @@ export async function POST(req: Request) {
     return new Response("Invalid currency", { status: 400 });
   }
 
-  // Verify integration_id matches expected value (prevent cross-environment callbacks)
+  // Verify integration_id matches expected values (card or wallet)
   const { resolvePaymobIntegrationId } = await import("@/lib/paymob/config");
-  const expectedIntegrationId = resolvePaymobIntegrationId("card"); // Default to card for now
-  if (expectedIntegrationId && integrationId !== expectedIntegrationId) {
+  const allowedIntegrationIds = [
+    resolvePaymobIntegrationId("card"),
+    resolvePaymobIntegrationId("wallet"),
+  ].filter(Boolean) as number[];
+
+  if (allowedIntegrationIds.length > 0 && !allowedIntegrationIds.includes(integrationId)) {
     console.error("Paymob webhook: integration_id mismatch", { 
       received: integrationId, 
-      expected: expectedIntegrationId,
+      expected: allowedIntegrationIds,
       paymobOrderId,
     });
     return new Response("Integration ID mismatch", { status: 400 });
@@ -105,18 +109,23 @@ export async function POST(req: Request) {
 
   // WH-04: Log webhook event to dead-letter table for debugging
   const supabase = (await import("@/lib/supabase/admin")).createSupabaseAdminClient();
-  void supabase
-    .from("paymob_webhook_events")
-    .insert({
-      paymob_order_id: paymobOrderId,
-      paymob_transaction_id: paymobTransactionId || null,
-      hmac_verified: true,
-      payload: transaction,
-      processed: updated.ok,
-      matched_order_id: updated.ok ? updated.orderId : null,
-      error_message: updated.ok ? null : "Order not found",
-    })
-    .catch((err) => console.error("Failed to log webhook event", err));
+  void (async () => {
+    try {
+      await supabase
+        .from("paymob_webhook_events")
+        .insert({
+          paymob_order_id: paymobOrderId,
+          paymob_transaction_id: paymobTransactionId || null,
+          hmac_verified: true,
+          payload: transaction,
+          processed: updated.ok,
+          matched_order_id: updated.ok ? updated.orderId : null,
+          error_message: updated.ok ? null : "Order not found",
+        });
+    } catch (err) {
+      console.error("Failed to log webhook event", err);
+    }
+  })();
 
   if (updated.ok) {
     if (resolved.outcome === "paid" && updated.becamePaid) {

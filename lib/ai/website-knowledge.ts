@@ -80,7 +80,7 @@ function buildStaticWebsiteSnapshot(
     { path: "/gift-box/build", label: "Gift box builder", purpose: "Build custom gift box from catalog items" },
     { path: "/our-cookies", label: "Our cookies", purpose: "Collections by flavor category" },
     { path: "/mystery-box", label: "Mystery box", purpose: "Surprise cookie box experience" },
-    { path: "/cart", label: "Cart", purpose: "Review cart and proceed to Paymob payment" },
+    { path: "/checkout", label: "Checkout", purpose: "Complete order details and Paymob payment" },
     { path: "/account", label: "Account", purpose: "Orders, loyalty, profile (signed-in)" },
     { path: "/help", label: "Help center", purpose: "FAQ, delivery, returns, allergens" },
     { path: "/search", label: "Search", purpose: "Find products by keyword" },

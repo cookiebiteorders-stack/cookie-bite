@@ -439,7 +439,7 @@ export function HelpCenterBody() {
         <ul className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { id: "account", href: "/account", Icon: UserRound },
-            { id: "cart", href: "/cart", Icon: ShoppingCart },
+            { id: "checkout", href: "/checkout", Icon: ShoppingCart },
             { id: "shop", href: "/shop", Icon: ShoppingBag },
             { id: "giftBoxes", href: "/gift-box", Icon: Gift },
           ].map((action) => (

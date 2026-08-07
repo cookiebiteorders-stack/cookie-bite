@@ -13,19 +13,19 @@ function toBool(value: unknown): boolean {
 
 /**
  * pending=true → unpaid (do not mark failed)
- * success=true → paid
+ * success=true → paid with confirmed status
  * success=false && pending=false → failed
  */
 export function resolvePaymobPaymentOutcome(transaction: Record<string, unknown>): {
   payment_status: "paid" | "failed" | "unpaid";
-  status: "processing" | "pending";
+  status: "confirmed" | "pending";
   outcome: "paid" | "failed" | "pending";
 } {
   const pending = toBool(transaction.pending);
   const success = toBool(transaction.success);
 
   if (success) {
-    return { payment_status: "paid", status: "processing", outcome: "paid" };
+    return { payment_status: "paid", status: "confirmed", outcome: "paid" };
   }
   if (pending) {
     return { payment_status: "unpaid", status: "pending", outcome: "pending" };

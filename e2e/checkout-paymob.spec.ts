@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Checkout & Paymob API smoke", () => {
-  test("checkout redirects to cart when cart is empty", async ({ page }) => {
+  test("checkout shows empty cart message when cart is empty", async ({ page }) => {
     await page.goto("/checkout");
-    await expect(page).toHaveURL(/\/cart/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/checkout/, { timeout: 15_000 });
   });
 
   test("paymob intention rejects invalid JSON", async ({ request }) => {

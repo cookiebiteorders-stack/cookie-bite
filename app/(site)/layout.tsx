@@ -1,6 +1,7 @@
 import { PageShell } from "@/components/layout/page-shell";
 import { getServerT } from "@/lib/i18n/server-translate";
 import { getLangFromCookies } from "@/lib/seo/server";
+import { StoreCommerceSettingsProvider } from "@/components/providers/store-commerce-settings-provider";
 
 export default async function SiteLayout({
   children,
@@ -10,5 +11,9 @@ export default async function SiteLayout({
   const lang = await getLangFromCookies();
   const skipToMainLabel = getServerT(lang)("actions.skipToMain");
 
-  return <PageShell skipToMainLabel={skipToMainLabel}>{children}</PageShell>;
+  return (
+    <StoreCommerceSettingsProvider>
+      <PageShell skipToMainLabel={skipToMainLabel}>{children}</PageShell>
+    </StoreCommerceSettingsProvider>
+  );
 }

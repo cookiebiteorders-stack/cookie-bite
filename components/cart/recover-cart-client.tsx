@@ -33,7 +33,7 @@ export function RecoverCartClient({ token, cartSnapshot, discountCode }: Props) 
         return;
       }
       await restoreCart(lines, discountCode);
-      router.push("/cart");
+      router.push("/checkout");
     } catch {
       setStatus("error");
     }

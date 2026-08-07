@@ -39,7 +39,7 @@ async function sendAbandonedCartEmail(
 
   const snapshot = cart.cart_snapshot;
   const lang: "en" | "ar" = "ar";
-  const recoveryUrl = `${APP_URL.replace(/\/$/, "")}/cart/recover/${cart.recovery_token}`;
+  const recoveryUrl = `${APP_URL.replace(/\/$/, "")}/checkout?recover=${cart.recovery_token}`;
   const firstName = cart.email.split("@")[0] ?? "there";
   const offerExpiry = discountCode ? "48 ساعة" : "24 ساعة";
 

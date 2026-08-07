@@ -201,7 +201,7 @@ export const abandonedCartTemplate: TemplateBuilder = {
       promo_code: "COMEBACK5",
       discount: 5,
       offer_expiry: "24 hours",
-      cart_url: "https://cookie-bite.com/cart",
+      cart_url: "https://cookie-bite.com/checkout",
       company_address: "Fifth Settlement, New Cairo, Egypt",
       unsubscribe_url: "#",
       privacy_url: "https://cookie-bite.com/privacy",

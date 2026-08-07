@@ -271,7 +271,7 @@ export function CartDrawer() {
                   {t("pages.cart.shippingNote")}
                 </p>
                 <Link
-                  href="/cart#proceed-to-payment-btn"
+                  href="/checkout"
                   onClick={closeDrawer}
                   className={buttonClassName(
                     "primary",
@@ -279,13 +279,6 @@ export function CartDrawer() {
                   )}
                 >
                   {t("pages.cart.proceedToPayment")}
-                </Link>
-                <Link
-                  href="/cart"
-                  onClick={closeDrawer}
-                  className="block text-center text-sm font-semibold text-cb-brand-600 underline-offset-2 transition hover:text-cb-brand-700 hover:underline"
-                >
-                  {t("pages.cart.viewFullCart")}
                 </Link>
               </div>
             ) : null}
