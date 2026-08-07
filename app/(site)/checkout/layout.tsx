@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { buildPageMetadata } from "@/lib/seo";
-import { getCsrfTokenForClient } from "@/lib/security/csrf";
-import CheckoutClient from "./checkout-client";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Checkout",
@@ -12,12 +10,11 @@ export const metadata: Metadata = buildPageMetadata({
   noIndex: true,
 });
 
-export default async function CheckoutLayout({
+export default function CheckoutLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const csrfData = await getCsrfTokenForClient();
-  return <CheckoutClient csrfToken={csrfData.token}>{children}</CheckoutClient>;
+  return children;
 }
 

@@ -1,10 +1,27 @@
-import { getCsrfTokenForClient } from "@/lib/security/csrf";
-import CheckoutPageClient from "./checkout-page-client";
+"use client";
 
-export default async function CheckoutPage() {
-  const csrfData = await getCsrfTokenForClient();
-  return <CheckoutPageClient csrfToken={csrfData.token} />;
-}
+import { useState, useEffect } from "react";
+import { redirect, useSearchParams } from "next/navigation";
+import { Loader2, MapPin, Phone, User, CreditCard, Truck, Lock, ArrowRight, Info, Calendar } from "lucide-react";
+import { AddressMapPicker, type AddressMapHint } from "@/components/account/address-map-picker";
+import { buttonClassName } from "@/components/ui/button";
+import { useCart } from "@/components/providers/cart-provider";
+import { useLanguage } from "@/components/providers/language-provider";
+import { usePaymobCheckout, type CheckoutDetails } from "@/hooks/use-paymob-checkout";
+import { useFreeShippingThreshold } from "@/components/providers/store-commerce-settings-provider";
+import { cn } from "@/lib/utils";
+import type { AbandonedCartSnapshot } from "@/lib/cart/abandoned";
+import type { CartLine } from "@/lib/cart/types";
+
+export default function CheckoutPageClient({ csrfToken }: { csrfToken: string }) {
+  const { t, formatPrice } = useLanguage();
+  const { lines, subtotalEgp, discountEgp, itemCount, promo, applyPromo, clearPromo, restoreCart } = useCart();
+  const { startCheckout, isLoading: checkoutLoading, error: checkoutError } = usePaymobCheckout();
+  const freeShippingThreshold = useFreeShippingThreshold();
+  const searchParams = useSearchParams();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [recovering, setRecovering] = useState(false);
 
   // Handle cart recovery from abandoned cart email
   useEffect(() => {
