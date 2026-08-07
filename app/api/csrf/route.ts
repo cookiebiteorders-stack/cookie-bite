@@ -3,24 +3,14 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
+    // getCsrfToken() already sets the cookie with the correct attributes
+    // We just need to return the token value to the client
     const token = await getCsrfToken();
     
-    const response = NextResponse.json({
+    return NextResponse.json({
       token,
       headerName: "x-csrf-token",
     });
-    
-    // Set the cookie with the same attributes as the server-side function
-    // This ensures consistency between the cookie set by getCsrfToken() and this endpoint
-    response.cookies.set("csrf_token", token, {
-      httpOnly: process.env.NODE_ENV === 'production',
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      path: "/",
-      maxAge: 60 * 60 * 24, // 24 hours
-    });
-    
-    return response;
   } catch (error) {
     console.error("Failed to generate CSRF token:", error);
     return NextResponse.json(

@@ -48,9 +48,9 @@ export async function getCsrfToken(): Promise<string> {
   cookieStore.set({
     name: CSRF_COOKIE_NAME,
     value: newToken,
-    httpOnly: process.env.NODE_ENV === 'production', // Allow JS access in dev
+    httpOnly: false, // Allow JS access so client can read and send the token
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    sameSite: 'lax', // Use lax to allow same-site requests
     path: '/',
     maxAge: 60 * 60 * 24, // 24 hours
   });
