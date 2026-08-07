@@ -6,6 +6,7 @@ import {
   insertCheckoutOrder,
   insertCheckoutOrderTransactional,
   updatePaymobAcceptOrderId,
+  markOrderGatewayInitFailed,
 } from "@/lib/db/orders";
 import { getUserBySupabaseId } from "@/lib/db/users";
 import { resolveCheckoutLineItems, type ResolvedCheckoutLine } from "@/lib/checkout/resolve-line-items";
@@ -77,7 +78,7 @@ const BodySchema = z
         name: z.string().min(2),
         phone: z.string().regex(/^01[0125][0-9]{8}$/),
         phone_secondary: z.union([z.string().regex(/^01[0125][0-9]{8}$/), z.null()]).optional(),
-        address: z.string().min(5),
+        address: z.string().min(3),
         city: z.string().min(2),
         governorate: z.union([z.string(), z.null()]).optional(),
         notes: z.union([z.string(), z.null()]).optional(),
@@ -93,7 +94,7 @@ const BodySchema = z
     gift_box: giftBoxOrderSnapshotSchema.optional(),
     bundle_offers: z.array(bundleOfferOrderSnapshotSchema).optional(),
     idempotency_key: z.string().uuid().optional(),
-    payment_method: z.enum(["card", "wallet"]).optional(),
+    payment_method: z.enum(["card", "wallet", "cash_on_delivery"]),
   })
   .refine((d) => d.items.length > 0 || d.gift_box || (d.bundle_offers?.length ?? 0) > 0, {
     message: "Cart must include products, a gift box, or bundle offers",
@@ -203,13 +204,13 @@ async function resolveBillingData(
 }
 
 /**
- * Single-step Paymob checkout:
+ * Single-step checkout:
  * - Validates cart items and promo code server-side.
  * - Creates the order in the database.
- * - Creates a Paymob payment intention.
- * - Returns the Paymob hosted checkout URL.
+ * - For Paymob (card/wallet): Creates a Paymob payment intention and returns the hosted checkout URL.
+ * - For COD: Creates order without payment intention and returns order confirmation.
  *
- * Shipping/billing info is optional — Paymob collects it on their hosted page.
+ * Shipping/billing info is optional — Paymob collects it on their hosted page for Paymob payments.
  */
 export async function POST(req: Request) {
   // Validate CSRF token for state-changing operation (payment initiation)
@@ -381,51 +382,54 @@ export async function POST(req: Request) {
 
   const total = Math.max(0, subtotal - discountAmount + deliveryFee + giftWrappingFee);
 
-  // Verify Paymob is configured
   const paymentMethod = paymentMethodParam ?? "card";
-  const paymobConfig = getPaymobConfigStatus();
-  const integrationId = resolvePaymobIntegrationId(paymentMethod);
-  const hasPaymobOnline = hasPaymobOnlineCheckout(paymentMethod);
 
-  // PAY-05: Validate environment consistency
-  const envError = validatePaymobEnvConsistency();
-  if (envError) {
-    console.error("[Paymob Intention] Environment inconsistency:", envError);
-    return Response.json(
-      {
-        ok: false,
-        error: `Paymob configuration error: ${envError}`,
-        error_ar: `خطأ في إعدادات Paymob: ${envError}`,
-      },
-      { status: 500 },
-    );
-  }
+  // For COD, skip Paymob configuration checks
+  if (paymentMethod !== "cash_on_delivery") {
+    const paymobConfig = getPaymobConfigStatus();
+    const integrationId = resolvePaymobIntegrationId(paymentMethod);
+    const hasPaymobOnline = hasPaymobOnlineCheckout(paymentMethod);
 
-  if (!hasPaymobOnline) {
-    const missing: string[] = [];
-    if (!paymobConfig.secretKey) missing.push("PAYMOB_SECRET_KEY or PAYMOB_API_KEY");
-    if (!paymobConfig.publicKey) missing.push("PAYMOB_PUBLIC_KEY");
-    if (!paymobConfig.hmacSecret) missing.push("PAYMOB_HMAC_SECRET");
-    if (paymentMethod === "card" && !paymobConfig.integrationCard) missing.push("PAYMOB_INTEGRATION_ID_CARD");
-    if (paymentMethod === "wallet" && !paymobConfig.integrationWallet) missing.push("PAYMOB_INTEGRATION_ID_WALLET");
-    return Response.json(
-      {
-        ok: false,
-        error:
-          missing.length > 0
-            ? `Paymob configuration incomplete: ${missing.join(", ")}`
-            : "Paymob integration ID missing.",
-        error_ar:
-          missing.length > 0
-            ? `إعداد Paymob غير مكتمل: ${missing.join("، ")}`
-            : "معرف تكامل Paymob غير موجود.",
-      },
-      { status: 503 },
-    );
-  }
+    // PAY-05: Validate environment consistency
+    const envError = validatePaymobEnvConsistency();
+    if (envError) {
+      console.error("[Paymob Intention] Environment inconsistency:", envError);
+      return Response.json(
+        {
+          ok: false,
+          error: `Paymob configuration error: ${envError}`,
+          error_ar: `خطأ في إعدادات Paymob: ${envError}`,
+        },
+        { status: 500 },
+      );
+    }
 
-  if (!integrationId) {
-    return Response.json({ ok: false, error: "Invalid Paymob integration" }, { status: 400 });
+    if (!hasPaymobOnline) {
+      const missing: string[] = [];
+      if (!paymobConfig.secretKey) missing.push("PAYMOB_SECRET_KEY or PAYMOB_API_KEY");
+      if (!paymobConfig.publicKey) missing.push("PAYMOB_PUBLIC_KEY");
+      if (!paymobConfig.hmacSecret) missing.push("PAYMOB_HMAC_SECRET");
+      if (paymentMethod === "card" && !paymobConfig.integrationCard) missing.push("PAYMOB_INTEGRATION_ID_CARD");
+      if (paymentMethod === "wallet" && !paymobConfig.integrationWallet) missing.push("PAYMOB_INTEGRATION_ID_WALLET");
+      return Response.json(
+        {
+          ok: false,
+          error:
+            missing.length > 0
+              ? `Paymob configuration incomplete: ${missing.join(", ")}`
+              : "Paymob integration ID missing.",
+          error_ar:
+            missing.length > 0
+              ? `إعداد Paymob غير مكتمل: ${missing.join("، ")}`
+              : "معرف تكامل Paymob غير موجود.",
+        },
+        { status: 503 },
+      );
+    }
+
+    if (!integrationId) {
+      return Response.json({ ok: false, error: "Invalid Paymob integration" }, { status: 400 });
+    }
   }
 
   // Idempotency check
@@ -442,6 +446,27 @@ export async function POST(req: Request) {
           totalEgp: Number(existing.total_egp),
           message: "Order already paid.",
         });
+      }
+      
+      // For unpaid orders, check if we can reuse the existing Paymob intention
+      if (existing.payment_status === "unpaid" && existing.paymob_accept_order_id && paymentMethod !== "cash_on_delivery") {
+        // Return the existing payment URL if it exists (would need to fetch from Paymob or store in DB)
+        // For now, cancel the existing order and allow recreation
+        console.log("[Paymob Intention] Unpaid order exists for idempotency key, cancelling and recreating:", existing.id);
+        const { releaseStockForOrder } = await import("@/lib/db/orders");
+        await releaseStockForOrder(existing.id).catch((err) => 
+          console.error("[Paymob Intention] Failed to release stock for existing unpaid order:", existing.id, err)
+        );
+        
+        const supabase = createSupabaseAdminClient();
+        const { error: cancelError } = await supabase
+          .from("orders")
+          .update({ status: "cancelled" })
+          .eq("id", existing.id);
+        
+        if (cancelError) {
+          console.error("[Paymob Intention] Failed to cancel existing unpaid order:", existing.id, cancelError);
+        }
       }
     }
   }
@@ -551,8 +576,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    // SEC-06: Removed debug console.log
-    const inserted = await insertCheckoutOrder({
+    const inserted = await insertCheckoutOrderTransactional({
       userId: dbUserId,
       lines: orderLines,
       subtotalEgp: subtotal,
@@ -564,7 +588,7 @@ export async function POST(req: Request) {
       paymentMethod,
       paymentStatus: "unpaid",
       shippingAddress,
-      notes: billing.notes && billing.notes.trim() ? billing.notes : "Paymob checkout",
+      notes: billing.notes && billing.notes.trim() ? billing.notes : (paymentMethod === "cash_on_delivery" ? "Cash on delivery" : "Paymob checkout"),
       guestEmail: billing.rawEmail ?? null,
       giftWrappingFeeEgp: giftWrappingFee,
       orderType: giftBox ? "gift_box" : "standard",
@@ -572,10 +596,70 @@ export async function POST(req: Request) {
       checkoutIdempotencyKey: idempotencyKey ?? null,
     });
 
-    // SEC-06: Removed debug console.log with order ID
-
     const specialReference = String(inserted.orderNumber);
-    // SEC-06: Removed debug console.log with reference
+
+    // COD: Return order confirmation without Paymob intention
+    if (paymentMethod === "cash_on_delivery") {
+      try {
+        // Trigger order creation email for COD
+        if (billing.rawEmail) {
+          await onOrderCreated({
+            email: billing.rawEmail,
+            userId: dbUserId,
+            orderId: inserted.id,
+            orderItems: resolved.map((line) => line.name).join(", "),
+            totalPrice: total.toFixed(2),
+          });
+        }
+
+        // Mark abandoned cart as recovered
+        try {
+          await markAbandonedCartRecovered({
+            userId: dbUserId,
+            email: billing.rawEmail ?? null,
+          });
+          if (isRecoveryPromo && appliedPromoCode) {
+            const supabase = createSupabaseAdminClient();
+            await markRecoveryDiscountUsed(supabase, appliedPromoCode);
+          }
+        } catch (recoveryErr) {
+          console.error("[COD Checkout] Abandoned cart recovery cleanup failed (non-fatal):", recoveryErr);
+        }
+
+        return Response.json({
+          ok: true,
+          configured: false,
+          paymentMethod: "cash_on_delivery",
+          orderId: specialReference,
+          orderCode: inserted.orderCode,
+          redirectUrl: `/checkout/thank-you?order=${inserted.orderCode}&status=success&payment_method=cash_on_delivery`,
+          subtotalEgp: subtotal,
+          deliveryFeeEgp: deliveryFee,
+          discountAmountEgp: discountAmount,
+          promoCode: appliedPromoCode,
+          promoId: appliedPromoId,
+          totalEgp: total,
+          lines: resolved,
+        });
+      } catch (codErr) {
+        console.error("[COD Checkout] Error:", codErr);
+        return Response.json(
+          {
+            ok: false,
+            error: "Something went wrong while processing your COD order — please try again.",
+            error_ar: "حدث خطأ أثناء معالجة طلب الدفع عند الاستلام — يرجى المحاولة مرة أخرى.",
+            error_type: "cod_processing",
+          },
+          { status: 500 },
+        );
+      }
+    }
+    
+    // Paymob flow: Create intention and return hosted checkout URL
+    const integrationId = resolvePaymobIntegrationId(paymentMethod);
+    if (!integrationId) {
+      return Response.json({ ok: false, error: "Invalid Paymob integration" }, { status: 400 });
+    }
     
     const paymobBilling = buildPaymobIntentionBillingData({
       name: billing.name,
@@ -585,16 +669,39 @@ export async function POST(req: Request) {
       city: billing.city,
     });
 
-    const intention = await createPaymobIntention({
-      amountCents,
-      integrationId,
-      items: paymobItems,
-      billingData: paymobBilling,
-      specialReference,
-      extras: { order_id: inserted.id },
-    });
-
-    // SEC-06: Removed debug console.log with intention ID
+    let intention;
+    try {
+      intention = await createPaymobIntention({
+        amountCents,
+        integrationId,
+        items: paymobItems,
+        billingData: paymobBilling,
+        specialReference,
+        extras: { order_id: inserted.id },
+      });
+    } catch (intentionErr) {
+      console.error("[Paymob Intention] Failed to create payment intention, marking order as gateway_init_failed:", inserted.id, intentionErr);
+      
+      // Mark order as gateway_init_failed to prevent orphaned unpaid orders
+      await markOrderGatewayInitFailed(inserted.id);
+      
+      // Release stock for the failed order
+      const { releaseStockForOrder } = await import("@/lib/db/orders");
+      await releaseStockForOrder(inserted.id).catch((relErr) =>
+        console.error("[Paymob Intention] Stock release failed for failed order:", inserted.id, relErr)
+      );
+      
+      // Return a specific error response
+      return Response.json(
+        {
+          ok: false,
+          error: "Payment gateway initialization failed. Please try again or contact support.",
+          error_ar: "فشل تهيئة بوابة الدفع. يرجى المحاولة مرة أخرى أو الاتصال بالدعم.",
+          error_type: "payment_gateway_init_failed",
+        },
+        { status: 502 }
+      );
+    }
 
     await updatePaymobAcceptOrderId(inserted.id, intention.intentionOrderId);
     // SEC-06: Removed debug console.log with Paymob order ID

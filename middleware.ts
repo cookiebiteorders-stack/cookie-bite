@@ -34,7 +34,7 @@ const isMaintenanceBypass = (pathname: string) =>
   pathname.startsWith("/sign-up") ||
   pathname.startsWith("/forgot-password") ||
   pathname.startsWith("/reset-password") ||
-  pathname.startsWith("/api/") ||
+  pathname.startsWith("/api/webhooks") || // Webhooks need to work even during maintenance
   pathname.startsWith("/_next/") ||
   pathname === "/favicon.ico" ||
   pathname === "/icon.png" ||
@@ -98,7 +98,7 @@ export default async function middleware(request: NextRequest) {
     // Session refresh still runs below, but no redirect / 403 rewrite.
     const isRouteHandler = path.startsWith("/api/");
 
-    if (!isMaintenanceBypass(path)) {
+    if (!isMaintenanceBypass(request.nextUrl.pathname)) {
       try {
         const flags = await getOwnerFlags();
         if (flags.maintenance_mode && path !== "/maintenance") {
@@ -114,7 +114,16 @@ export default async function middleware(request: NextRequest) {
           console.error(error.stack);
         }
         console.error({ url: request.url, method: request.method, env: process.env.NODE_ENV });
-        // fail open but log the error
+        // In production, fail closed on maintenance check errors for non-public routes
+        if (process.env.NODE_ENV === "production" && (isAdminRoute(path) || isAccountRoute(path))) {
+          const errorResponse = NextResponse.json(
+            { ok: false, error: "Service unavailable" },
+            { status: 503 }
+          );
+          errorResponse.headers.set(requestIdHeader, requestId);
+          return errorResponse;
+        }
+        // For public routes, fail open but log the error
       }
     }
 
@@ -284,10 +293,28 @@ export default async function middleware(request: NextRequest) {
   return response;
   } catch (error) {
     console.error("[middleware] Unexpected error:", error);
-    // Allow request to proceed even if middleware fails
-    const response = NextResponse.next();
     const requestId = getRequestId(request.headers);
     const requestIdHeader = getRequestIdHeader();
+    const requestPath = request.nextUrl.pathname;
+    
+    // Fail closed for protected routes in production
+    const isProtectedRoute = 
+      isAdminRoute(requestPath) || 
+      isAccountRoute(requestPath) || 
+      requestPath.startsWith("/api/admin/") || 
+      requestPath.startsWith("/api/account/");
+    
+    if (isProtectedRoute && process.env.NODE_ENV === "production") {
+      const errorResponse = NextResponse.json(
+        { ok: false, error: "Middleware failure - service unavailable" },
+        { status: 503 }
+      );
+      errorResponse.headers.set(requestIdHeader, requestId);
+      return errorResponse;
+    }
+    
+    // Fail open for public/static pages in development or non-protected routes
+    const response = NextResponse.next();
     response.headers.set(requestIdHeader, requestId);
     return response;
   }

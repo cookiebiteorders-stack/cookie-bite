@@ -82,7 +82,7 @@ export function getBundleStats(name: string): {
  * Get all bundle statistics
  */
 export function getAllBundleStats(): Record<string, ReturnType<typeof getBundleStats>> {
-  const result: Record<string, any> = {};
+  const result: Record<string, ReturnType<typeof getBundleStats>> = {};
   
   for (const [name] of bundleMetrics) {
     const stats = getBundleStats(name);

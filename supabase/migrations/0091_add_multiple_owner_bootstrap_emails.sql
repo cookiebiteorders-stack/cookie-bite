@@ -41,10 +41,10 @@ UPDATE public.users
 SET 
   role = 'owner',
   updated_at = now()
-WHERE email IN (
+WHERE lower(trim(email)) IN (
   'bitecookie532@gmail.com',
   'cookie.bite.orders@gmail.com',
-  'fatmaelbeshawy75@gmail.com  ',
+  'fatmaelbeshawy75@gmail.com',
   'mohamedabbasyounis@gmail.com',
   'mohamedalwardani1@gmail.com'
 )

@@ -37,6 +37,7 @@ export type InsertCheckoutOrderInput = {
   orderType?: "standard" | "gift_box";
   giftBoxSnapshot?: Record<string, unknown> | null;
   checkoutIdempotencyKey?: string | null;
+  shippingMethod?: string | null;
 };
 
 export type CheckoutOrderIdempotencyRow = {
@@ -51,7 +52,7 @@ export type CheckoutOrderIdempotencyRow = {
 /** حفظ طلب + البنود؛ يرمي خطأ مفصّل في حال الفشل. */
 export async function insertCheckoutOrder(
   params: InsertCheckoutOrderInput,
-): Promise<{ id: string; orderNumber: string }> {
+): Promise<{ id: string; orderNumber: string; orderCode: string | null }> {
   console.log("[Order Creation] Starting order creation with payload:", JSON.stringify(params, null, 2));
 
   // Validate required fields before attempting database insert
@@ -134,7 +135,7 @@ export async function insertCheckoutOrder(
     // Build map for quick lookup
     for (const prod of (products ?? [])) {
       if (prod.slug) {
-        productsMap.set(prod.slug, prod as any);
+        productsMap.set(prod.slug, prod as { id: string; slug: string; name: string; title_en: string; price_egp: number });
       }
     }
   }
@@ -248,6 +249,9 @@ export async function insertCheckoutOrder(
   if (params.checkoutIdempotencyKey) {
     insertRow.checkout_idempotency_key = params.checkoutIdempotencyKey;
   }
+  if (params.shippingMethod) {
+    insertRow.shipping_method = params.shippingMethod;
+  }
 
   console.log("[Order Creation] Inserting order row:", JSON.stringify(insertRow, null, 2));
 
@@ -264,7 +268,7 @@ export async function insertCheckoutOrder(
       const existing = await getCheckoutOrderByIdempotencyKey(params.checkoutIdempotencyKey);
       if (existing) {
         console.log("[Order Creation] Returning existing order:", existing.id);
-        return { id: existing.id, orderNumber: String(existing.order_code || existing.id) };
+        return { id: existing.id, orderNumber: String(existing.order_code || existing.id), orderCode: existing.order_code };
       }
     }
     console.error("[Order Creation] Order insert error:", JSON.stringify(orderErr, null, 2));
@@ -333,7 +337,7 @@ export async function insertCheckoutOrder(
   }
 
   console.log("[Order Creation] Order creation completed successfully:", { id: orderId, orderNumber });
-  return { id: orderId, orderNumber };
+  return { id: orderId, orderNumber, orderCode: orderRow.order_code as string | null };
 }
 
 export async function getCheckoutOrderByIdempotencyKey(
@@ -370,6 +374,24 @@ export async function updatePaymobAcceptOrderId(
     .eq("id", orderId);
   if (error) {
     console.error("updatePaymobAcceptOrderId", error);
+    return false;
+  }
+  return true;
+}
+
+export async function markOrderGatewayInitFailed(
+  orderId: string,
+): Promise<boolean> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    return false;
+  }
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("orders")
+    .update({ status: "gateway_init_failed" })
+    .eq("id", orderId);
+  if (error) {
+    console.error("markOrderGatewayInitFailed", error);
     return false;
   }
   return true;
@@ -622,7 +644,7 @@ export async function getOrderItems(orderId: string) {
  */
 export async function insertCheckoutOrderTransactional(
   params: InsertCheckoutOrderInput,
-): Promise<{ id: string; orderNumber: string }> {
+): Promise<{ id: string; orderNumber: string; orderCode: string | null }> {
   console.log("[Transactional Order Creation] Starting with payload:", JSON.stringify(params, null, 2));
 
   const supabase = createSupabaseAdminClient();
@@ -696,6 +718,10 @@ export async function insertCheckoutOrderTransactional(
   }
 
   console.log("[Transactional Order Creation] Order created successfully:", result.order_id);
-  return { id: result.order_id, orderNumber: result.order_code || result.order_number };
+  return {
+    id: result.order_id,
+    orderNumber: result.order_code || result.order_number,
+    orderCode: result.order_code || null,
+  };
 }
 

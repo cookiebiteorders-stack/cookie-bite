@@ -4,12 +4,12 @@
  * Uses in-memory Map with TTL for simplicity
  */
 
-type PendingRequest = {
+type PendingRequest<T = unknown> = {
   timestamp: number;
-  promise: Promise<any>;
+  promise: Promise<T>;
 };
 
-const pendingRequests = new Map<string, PendingRequest>();
+const pendingRequests = new Map<string, PendingRequest<unknown>>();
 const REQUEST_TTL_MS = 5000; // 5 seconds
 
 /**

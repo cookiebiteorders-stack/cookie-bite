@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireAdminAccess } from "@/lib/admin/require-admin";
 import { roleMatrix } from "@/lib/admin/rbac";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { writeAuditLog } from "@/lib/admin/audit";
 import { bilingualError } from "@/lib/validations";
 
 const assignRoleSchema = z.object({
@@ -98,30 +97,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data: updated, error } = await supabase
-    .from("users")
-    .update({ role: nextRole })
-    .eq("id", existing.id)
-    .select("id, email, role, full_name")
-    .single();
+  // Use invariant-enforcing RPC to prevent last-owner demotion
+  const { data: result, error: rpcError } = await supabase.rpc("change_user_role", {
+    p_target_user_id: existing.id,
+    p_new_role: nextRole,
+    p_reason: `Role assigned by ${actor.email}`,
+  });
 
-  if (error) {
+  if (rpcError || !result?.[0]?.success) {
+    const errorMessage = result?.[0]?.error_message || rpcError?.message || "Failed to assign role";
     return NextResponse.json(
-      bilingualError("Failed to assign role", "فشل تعيين الدور"),
-      { status: 500 },
+      bilingualError(errorMessage, errorMessage),
+      { status: 400 },
     );
   }
 
-  await writeAuditLog({
-    actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
-    action: "role.assign",
-    module: "roles",
-    entity_id: existing.id,
-    before: { role: existing.role },
-    after: { role: updated.role },
-    metadata: { target_email: existing.email },
-    request: req,
-  });
+  const { data: updated } = await supabase
+    .from("users")
+    .select("id, email, role, full_name")
+    .eq("id", existing.id)
+    .single();
 
   return NextResponse.json({ ok: true, assignment: updated });
 }
@@ -167,28 +162,27 @@ export async function PATCH(req: NextRequest) {
       { status: 409 },
     );
   }
-  const { data: updated, error: updateError } = await supabase
-    .from("users")
-    .update({ role: parsed.data.role })
-    .eq("id", existing.id)
-    .select("id, email, role, full_name, avatar_url")
-    .single();
-  if (updateError) {
+  // Use invariant-enforcing RPC to prevent last-owner demotion
+  const { data: result, error: rpcError } = await supabase.rpc("change_user_role", {
+    p_target_user_id: existing.id,
+    p_new_role: parsed.data.role,
+    p_reason: `Role updated by ${actor.email}`,
+  });
+
+  if (rpcError || !result?.[0]?.success) {
+    const errorMessage = result?.[0]?.error_message || rpcError?.message || "Failed to update role";
     return NextResponse.json(
-      bilingualError("Failed to update role", "فشل تحديث الدور"),
-      { status: 500 },
+      bilingualError(errorMessage, errorMessage),
+      { status: 400 },
     );
   }
-  await writeAuditLog({
-    actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
-    action: "role.update",
-    module: "roles",
-    entity_id: existing.id,
-    before: { role: existing.role },
-    after: { role: updated.role },
-    metadata: { target_email: existing.email },
-    request: req,
-  });
+
+  const { data: updated } = await supabase
+    .from("users")
+    .select("id, email, role, full_name, avatar_url")
+    .eq("id", existing.id)
+    .single();
+
   return NextResponse.json({ ok: true, assignment: updated });
 }
 
@@ -232,28 +226,27 @@ export async function DELETE(req: NextRequest) {
       { status: 409 },
     );
   }
-  const { data: updated, error: updateError } = await supabase
-    .from("users")
-    .update({ role: "customer" })
-    .eq("id", userId)
-    .select("id, email, role, full_name, avatar_url")
-    .single();
-  if (updateError) {
+  // Use invariant-enforcing RPC to prevent last-owner demotion
+  const { data: result, error: rpcError } = await supabase.rpc("change_user_role", {
+    p_target_user_id: userId,
+    p_new_role: "customer",
+    p_reason: `Role removed by ${actor.email}`,
+  });
+
+  if (rpcError || !result?.[0]?.success) {
+    const errorMessage = result?.[0]?.error_message || rpcError?.message || "Failed to remove role";
     return NextResponse.json(
-      bilingualError("Failed to remove role", "فشل إزالة الدور"),
-      { status: 500 },
+      bilingualError(errorMessage, errorMessage),
+      { status: 400 },
     );
   }
-  await writeAuditLog({
-    actor: { user_id: actor.user_id, email: actor.email, role: actor.role },
-    action: "role.remove",
-    module: "roles",
-    entity_id: userId,
-    before: { role: existing.role },
-    after: { role: "customer" },
-    metadata: { target_email: existing.email },
-    request: req,
-  });
+
+  const { data: updated } = await supabase
+    .from("users")
+    .select("id, email, role, full_name, avatar_url")
+    .eq("id", userId)
+    .single();
+
   return NextResponse.json({ ok: true, assignment: updated });
 }
 

@@ -6,8 +6,6 @@ import { notifyStoreOrderEvent } from "@/lib/notifications/store-order-events";
 import { bilingualError } from "@/lib/validations";
 import { requireCsrfProtection } from "@/lib/security/csrf";
 
-const CANCELLABLE = new Set(["pending", "processing"]);
-
 export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
@@ -39,39 +37,19 @@ export async function POST(
   }
 
   const supabase = createSupabaseAdminClient();
-  const { data: order } = await supabase
-    .from("orders")
-    .select("id, status, user_id")
-    .eq("id", id)
-    .maybeSingle();
+  
+  // Use safe cancellation RPC that enforces payment_status and stock reconciliation
+  const { data: result, error: rpcError } = await supabase.rpc("cancel_unpaid_order_transactional", {
+    p_order_id: id,
+    p_user_id: profile.id,
+  });
 
-  if (!order || order.user_id !== profile.id) {
+  if (rpcError || !result?.[0]?.success) {
+    const errorMessage = result?.[0]?.error_message || rpcError?.message || "Failed to cancel order";
+    console.error("Order cancellation error:", errorMessage);
     return NextResponse.json(
-      bilingualError("Order not found", "الطلب غير موجود"),
-      { status: 404 },
-    );
-  }
-
-  if (!CANCELLABLE.has(order.status as string)) {
-    return NextResponse.json(
-      bilingualError(
-        "Order cannot be cancelled at this stage",
-        "لا يمكن إلغاء الطلب في هذه المرحلة",
-      ),
+      bilingualError(errorMessage, errorMessage),
       { status: 400 },
-    );
-  }
-
-  const { error } = await supabase
-    .from("orders")
-    .update({ status: "cancelled" })
-    .eq("id", id);
-
-  if (error) {
-    console.error("orders cancel error", error);
-    return NextResponse.json(
-      bilingualError("Database error", "خطأ في قاعدة البيانات"),
-      { status: 500 },
     );
   }
 

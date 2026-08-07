@@ -160,7 +160,7 @@ export async function scanForMalware(buffer: Buffer): Promise<{ clean: boolean; 
   
   try {
     // Import ClamAV client dynamically (optional dependency)
-    // @ts-ignore - clamav.js is an optional dependency
+    // @ts-expect-error - clamav.js is an optional dependency
     const clamavModule = await import('clamav.js');
     const { createClient } = clamavModule;
     const client = createClient(clamavHost, parseInt(clamavPort, 10));

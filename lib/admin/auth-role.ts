@@ -55,7 +55,13 @@ export async function resolveStaffRole(params: {
 
   const supabase = tryCreateSupabaseAdminClient();
   if (!supabase) {
-    console.warn("[auth-role] Database client unavailable, resolving role from email fallback");
+    console.warn("[auth-role] Database client unavailable");
+    // In production: fail closed by returning customer (no privilege escalation)
+    // In development: allow fallback for easier setup
+    if (process.env.NODE_ENV === "production") {
+      return "customer";
+    }
+    console.warn("[auth-role] Development mode: using email fallback");
     return resolveStaffRoleFromEmail(normalizedEmail || params.email);
   }
 
@@ -78,7 +84,14 @@ export async function resolveStaffRole(params: {
     }
   } catch (err) {
     console.error("[auth-role] Database lookup failed:", err instanceof Error ? err.message : String(err));
+    // In production: fail closed by returning customer (no privilege escalation)
+    // In development: allow fallback for easier setup
+    if (process.env.NODE_ENV === "production") {
+      return "customer";
+    }
+    console.warn("[auth-role] Development mode: using email fallback after DB error");
+    return resolveStaffRoleFromEmail(normalizedEmail || params.email);
   }
 
-  return resolveStaffRoleFromEmail(normalizedEmail || params.email);
+  return "customer";
 }
