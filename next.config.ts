@@ -68,17 +68,6 @@ const nextConfig: NextConfig = {
       dynamic: 30,
       static: 300,
     },
-    // Disable CSRF protection for checkout routes
-    csrf: {
-      // Disable CSRF for checkout API routes
-      cookieName: 'next-csrf-token',
-      cookieOptions: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-      },
-    },
   },
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   turbopack: {},
