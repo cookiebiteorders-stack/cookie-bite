@@ -185,10 +185,14 @@ export async function createPaymobIntention(
     throw new PaymobApiError("Paymob secret key missing", 503);
   }
 
+  // Paymob requires both Card and Wallet Integration IDs in payment_methods array
+  // for Wallet option to appear during checkout
+  const paymentMethods = [5777362, 5777363];
+
   const payload = {
     amount: input.amountCents,
     currency: input.currency ?? "EGP",
-    payment_methods: [input.integrationId],
+    payment_methods: paymentMethods,
     items: input.items,
     billing_data: input.billingData,
     special_reference: input.specialReference,
