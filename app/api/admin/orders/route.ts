@@ -56,24 +56,26 @@ async function loadOrderStats(
     { count: orders_yesterday },
     { data: paidTodayRows },
   ] = await Promise.all([
-    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "processing"),
-    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "shipped"),
-    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "delivered"),
-    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "cancelled"),
-    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "refunded"),
-    supabase.from("orders").select("id", { count: "exact", head: true }).eq("payment_status", "failed"),
-    supabase.from("orders").select("id", { count: "exact", head: true }).gte("created_at", startToday),
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending").is("deleted_at", null),
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "processing").is("deleted_at", null),
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "shipped").is("deleted_at", null),
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "delivered").is("deleted_at", null),
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "cancelled").is("deleted_at", null),
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "refunded").is("deleted_at", null),
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("payment_status", "failed").is("deleted_at", null),
+    supabase.from("orders").select("id", { count: "exact", head: true }).gte("created_at", startToday).is("deleted_at", null),
     supabase
       .from("orders")
       .select("id", { count: "exact", head: true })
       .gte("created_at", startYesterdayIso)
-      .lt("created_at", startToday),
+      .lt("created_at", startToday)
+      .is("deleted_at", null),
     supabase
       .from("orders")
       .select("total_egp")
       .eq("payment_status", "paid")
       .gte("created_at", startToday)
+      .is("deleted_at", null)
       .limit(8000),
   ]);
 
@@ -110,6 +112,7 @@ export async function GET(req: NextRequest) {
   let db = supabase
     .from("orders")
     .select("*, order_items(count)", { count: "exact" })
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (q.status) db = db.eq("status", q.status);
