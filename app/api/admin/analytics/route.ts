@@ -23,13 +23,14 @@ export async function GET() {
 
   const sel = "id,total_egp,status,created_at";
   const [rAll, rToday, rYesterday] = await Promise.all([
-    supabase.from("orders").select(sel),
-    supabase.from("orders").select(sel).gte("created_at", today.toISOString()),
+    supabase.from("orders").select(sel).is("deleted_at", null),
+    supabase.from("orders").select(sel).gte("created_at", today.toISOString()).is("deleted_at", null),
     supabase
       .from("orders")
       .select(sel)
       .gte("created_at", yesterday.toISOString())
-      .lt("created_at", today.toISOString()),
+      .lt("created_at", today.toISOString())
+      .is("deleted_at", null),
   ]);
 
   const pickErr = rAll.error ?? rToday.error ?? rYesterday.error;

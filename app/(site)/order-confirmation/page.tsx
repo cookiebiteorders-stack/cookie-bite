@@ -32,6 +32,7 @@ export default async function OrderConfirmationPage({ searchParams }: Props) {
         .from("orders")
         .select("payment_status, status")
         .eq("order_code", orderLabel)
+        .is("deleted_at", null)
         .maybeSingle();
       
       if (orderData) {

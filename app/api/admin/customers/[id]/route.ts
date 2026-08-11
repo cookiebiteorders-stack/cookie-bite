@@ -45,10 +45,11 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .from("orders")
       .select("id,order_code,total_egp,status,payment_status,created_at")
       .eq("user_id", id)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(40),
-    supabase.from("orders").select("total_egp,created_at").eq("user_id", id).limit(5000),
-    supabase.from("orders").select("id", { count: "exact", head: true }).eq("user_id", id),
+    supabase.from("orders").select("total_egp,created_at").eq("user_id", id).is("deleted_at", null).limit(5000),
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("user_id", id).is("deleted_at", null),
     supabase
       .from("addresses")
       .select("id,label,recipient,phone,street,city,governorate,is_default")

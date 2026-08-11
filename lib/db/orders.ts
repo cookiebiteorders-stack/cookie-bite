@@ -587,6 +587,7 @@ export async function listOrdersForUser(userId: string, limit = 100) {
     .from("orders")
     .select("*")
     .eq("user_id", userId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) {
@@ -602,7 +603,8 @@ export async function countOrdersForUser(userId: string): Promise<number> {
   const { count, error } = await supabase
     .from("orders")
     .select("id", { count: "exact", head: true })
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .is("deleted_at", null);
   if (error) {
     console.error("countOrdersForUser error", error);
     return 0;
@@ -615,6 +617,7 @@ export async function listAllOrders(limit = 50) {
   const { data, error } = await supabase
     .from("orders")
     .select("*")
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) {

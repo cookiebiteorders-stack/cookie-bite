@@ -27,9 +27,9 @@ export async function fetchAdminAnalyticsSnapshot(): Promise<AdminAnalyticsSnaps
 
   const [{ count: pendingOrders }, { data: todayRows, error: e1 }, { data: weekOrderRows, error: e2 }] =
     await Promise.all([
-      supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("orders").select("total_egp").gte("created_at", dayIso),
-      supabase.from("orders").select("id, total_egp").gte("created_at", weekIso),
+      supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending").is("deleted_at", null),
+      supabase.from("orders").select("total_egp").gte("created_at", dayIso).is("deleted_at", null),
+      supabase.from("orders").select("id, total_egp").gte("created_at", weekIso).is("deleted_at", null),
     ]);
 
   if (e1 || e2) {

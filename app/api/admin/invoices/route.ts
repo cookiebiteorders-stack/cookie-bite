@@ -415,7 +415,7 @@ export async function POST(req: NextRequest) {
     const orderId = payload.order_id ?? document.reference_order_id ?? null;
 
     if (orderId) {
-      const { data: orderRow } = await supabase.from("orders").select("id").eq("id", orderId).maybeSingle();
+      const { data: orderRow } = await supabase.from("orders").select("id").eq("id", orderId).is("deleted_at", null).maybeSingle();
       if (!orderRow) {
         return NextResponse.json(bilingualError("Order not found", "الطلب غير موجود"), { status: 404 });
       }
@@ -517,6 +517,7 @@ export async function POST(req: NextRequest) {
       .from("orders")
       .select("id")
       .eq("id", parsed.data.order_id)
+      .is("deleted_at", null)
       .maybeSingle();
     if (!orderRow) {
       return NextResponse.json(bilingualError("Order not found", "الطلب غير موجود"), {

@@ -23,6 +23,7 @@ export async function GET() {
         .from("orders")
         .select("id,order_code,status,payment_status,total_egp,created_at")
         .eq("user_id", uid)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(500);
       orders = data ?? [];

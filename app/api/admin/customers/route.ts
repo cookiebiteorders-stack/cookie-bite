@@ -68,7 +68,7 @@ async function loadCrmStats(
       .eq("role", "customer")
       .lte("points", 100)
       .lt("created_at", d60),
-    supabase.from("orders").select("user_id,total_egp,created_at").not("user_id", "is", null).limit(8000),
+    supabase.from("orders").select("user_id,total_egp,created_at").not("user_id", "is", null).is("deleted_at", null).limit(8000),
   ]);
 
   const byUserSpend = new Map<string, number>();
@@ -174,7 +174,8 @@ export async function GET(req: NextRequest) {
     const { data: orders } = await supabase
       .from("orders")
       .select("user_id,total_egp,created_at")
-      .in("user_id", customerIds);
+      .in("user_id", customerIds)
+      .is("deleted_at", null);
 
     for (const row of (orders ?? []) as OrderLite[]) {
       if (!row.user_id) continue;
