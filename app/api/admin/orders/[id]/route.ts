@@ -20,6 +20,7 @@ import { ORDER_STATUS_VALUES, PAYMENT_STATUS_VALUES } from "@/lib/domain/order-e
 import { awardLoyaltyPointsForPaidOrder } from "@/lib/loyalty/award-order-points";
 import { syncOrderFinancialRecords } from "@/lib/orders/sync-order-financials";
 import { schedulePaymentConfirmed, scheduleReviewRequest } from "@/lib/notifications/schedule";
+import { releaseStockForOrder } from "@/lib/db/orders";
 
 const schema = z
   .object({
@@ -122,6 +123,13 @@ export async function PATCH(
     return NextResponse.json(
       bilingualError("Failed to update order", "فشل تحديث الطلب"),
       { status: 500 },
+    );
+  }
+
+  // Release stock when cancelling unpaid orders
+  if (parsed.data.status === "cancelled" && (order.payment_status ?? "").toLowerCase() === "unpaid") {
+    void releaseStockForOrder(id).catch((err) =>
+      console.error("[admin/orders] stock release on cancel failed", err),
     );
   }
 
@@ -248,6 +256,13 @@ export async function DELETE(
     return NextResponse.json(bilingualError("Failed to delete order", "فشل حذف الطلب"), {
       status: 500,
     });
+  }
+
+  // Release stock for unpaid orders when deleting
+  if (result && (before.payment_status ?? "").toLowerCase() === "unpaid") {
+    void releaseStockForOrder(id).catch((err) =>
+      console.error("[admin/orders] stock release on delete failed", err),
+    );
   }
 
   if (!result) {
