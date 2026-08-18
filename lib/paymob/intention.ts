@@ -187,7 +187,8 @@ export async function createPaymobIntention(
 
   // Paymob requires both Card and Wallet Integration IDs in payment_methods array
   // for Wallet option to appear during checkout
-  const paymentMethods = [5777362, 5777363];
+  // LIVE Integration IDs
+  const paymentMethods = [5765742, 5765741];
 
   const payload = {
     amount: input.amountCents,
