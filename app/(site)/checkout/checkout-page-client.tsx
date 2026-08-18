@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { redirect, useSearchParams } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Loader2, MapPin, Phone, User, CreditCard, Truck, Lock, ArrowRight, Info, Calendar } from "lucide-react";
 import { AddressMapPicker, type AddressMapHint } from "@/components/account/address-map-picker";
 import { buttonClassName } from "@/components/ui/button";
@@ -9,9 +10,9 @@ import { useCart } from "@/components/providers/cart-provider";
 import { useLanguage } from "@/components/providers/language-provider";
 import { usePaymobCheckout, type CheckoutDetails } from "@/hooks/use-paymob-checkout";
 import { useFreeShippingThreshold } from "@/components/providers/store-commerce-settings-provider";
-import { cn } from "@/lib/utils";
-import type { AbandonedCartSnapshot } from "@/lib/cart/abandoned";
 import type { CartLine } from "@/lib/cart/types";
+import { EGYPT_GOVERNORATES, EGYPT_CITIES_BY_GOVERNORATE } from "@/lib/data/egyptLocations";
+import { matchGovernorate, matchCity, getAutoDetectMessage } from "@/lib/data/nominatimMapping";
 
 export default function CheckoutPageClient() {
   const { t, formatPrice } = useLanguage();
@@ -26,29 +27,37 @@ export default function CheckoutPageClient() {
 
   // Fetch CSRF token from API on mount
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchCsrfToken = async () => {
       try {
         const res = await fetch("/api/csrf");
         if (res.ok) {
           const data = await res.json();
-          setCsrfToken(data.token);
+          if (isMounted) setCsrfToken(data.token);
         } else {
-          setCsrfToken("fallback-" + Date.now().toString(36));
+          if (isMounted) setCsrfToken("fallback-" + Date.now().toString(36));
         }
       } catch (err) {
-        setCsrfToken("fallback-" + Date.now().toString(36));
+        if (isMounted) setCsrfToken("fallback-" + Date.now().toString(36));
       }
     };
     fetchCsrfToken();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Handle cart recovery from abandoned cart email
   useEffect(() => {
+    let isMounted = true;
+    
     const recoverToken = searchParams.get("recover");
     if (!recoverToken) return;
 
     const recoverCart = async () => {
-      setRecovering(true);
+      if (isMounted) setRecovering(true);
       try {
         const res = await fetch(`/api/cart/recover/${encodeURIComponent(recoverToken)}`, {
           method: "POST",
@@ -64,11 +73,15 @@ export default function CheckoutPageClient() {
       } catch (err) {
         console.error("Error recovering cart:", err);
       } finally {
-        setRecovering(false);
+        if (isMounted) setRecovering(false);
       }
     };
 
     recoverCart();
+
+    return () => {
+      isMounted = false;
+    };
   }, [searchParams, restoreCart]);
 
   // Form state
@@ -78,7 +91,9 @@ export default function CheckoutPageClient() {
     email: "",
     address: "",
     area: "",
+    customArea: "", // For when user selects "أخرى" for area
     governorate: "",
+    customGovernorate: "", // For when user selects "أخرى" for governorate
     notes: "",
     deliveryDate: "",
     paymentMethod: "card" as "card" | "wallet" | "cash_on_delivery",
@@ -89,16 +104,78 @@ export default function CheckoutPageClient() {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [addressHint, setAddressHint] = useState<AddressMapHint | null>(null);
+  const [autoDetectMessage, setAutoDetectMessage] = useState<string | null>(null);
+  
+  // Delivery fee state
+  const [deliveryFee, setDeliveryFee] = useState<number>(50);
+  const [deliveryFeeLoading, setDeliveryFeeLoading] = useState(false);
 
   // Set default delivery date to tomorrow
-  useEffect(() => {
+  const defaultDeliveryDate = useMemo(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  }, []);
+
+  // Calculate minimum delivery date for the date input
+  const minDeliveryDate = useMemo(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  }, []);
+
+  useEffect(() => {
     setFormData((prev) => ({
       ...prev,
-      deliveryDate: tomorrow.toISOString().split("T")[0],
+      deliveryDate: defaultDeliveryDate,
     }));
-  }, []);
+  }, [defaultDeliveryDate]);
+
+  // Fetch delivery fee based on city/governorate
+  useEffect(() => {
+    let isMounted = true;
+    
+    const fetchDeliveryFee = async () => {
+      const location = formData.governorate || formData.area;
+      if (!location) {
+        if (isMounted) setDeliveryFee(50); // Default fee
+        return;
+      }
+
+      if (isMounted) setDeliveryFeeLoading(true);
+      try {
+        const params = new URLSearchParams();
+        // Use custom values if "أخرى" is selected, otherwise use the selected values
+        const govValue = formData.governorate === "أخرى" ? formData.customGovernorate : formData.governorate;
+        const areaValue = formData.area === "أخرى" ? formData.customArea : formData.area;
+        
+        if (govValue) {
+          params.set("governorate", govValue);
+        } else if (areaValue) {
+          params.set("city", areaValue);
+        }
+
+        const res = await fetch(`/api/shipping/fee?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) setDeliveryFee(data.fee);
+        } else {
+          if (isMounted) setDeliveryFee(50); // Fallback to default
+        }
+      } catch (err) {
+        console.error("Failed to fetch delivery fee:", err);
+        if (isMounted) setDeliveryFee(50); // Fallback to default
+      } finally {
+        if (isMounted) setDeliveryFeeLoading(false);
+      }
+    };
+
+    fetchDeliveryFee();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [formData.governorate, formData.area, formData.customGovernorate, formData.customArea]);
 
   const handleLocationChange = (lat: number, lng: number) => {
     setLatitude(lat);
@@ -107,11 +184,44 @@ export default function CheckoutPageClient() {
 
   const handleAddressHint = (hint: AddressMapHint) => {
     setAddressHint(hint);
+    
+    // Match governorate and city using the mapping system
+    const matchedGovernorate = hint.governorate ? matchGovernorate(hint.governorate) : null;
+    const matchedCity = hint.city ? matchCity(hint.city, hint.governorate || undefined) : null;
+    
+    // Show message if auto-detection didn't find exact matches
+    if (!matchedGovernorate || !matchedCity) {
+      setAutoDetectMessage(getAutoDetectMessage());
+    } else {
+      setAutoDetectMessage(null);
+    }
+    
     setFormData((prev) => ({
       ...prev,
       address: hint.street || prev.address,
-      area: hint.city || prev.area,
+      governorate: matchedGovernorate || prev.governorate,
+      area: matchedCity || prev.area,
     }));
+  };
+
+  const handleGovernorateChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      governorate: value,
+      area: "", // Reset area when governorate changes
+      customArea: "", // Reset custom area when governorate changes
+      customGovernorate: value === "أخرى" ? prev.customGovernorate : "", // Clear custom governorate unless "أخرى" is selected
+    }));
+    setAutoDetectMessage(null); // Clear auto-detect message when user manually selects
+  };
+
+  const handleAreaChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      area: value,
+      customArea: value === "أخرى" ? prev.customArea : "", // Clear custom area unless "أخرى" is selected
+    }));
+    setAutoDetectMessage(null); // Clear auto-detect message when user manually selects
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -127,6 +237,10 @@ export default function CheckoutPageClient() {
       setError("رقم الهاتف مطلوب - يرجى إدخال رقم هاتف صحيح");
       return;
     }
+    if (!formData.email.trim()) {
+      setError("البريد الإلكتروني مطلوب - يرجى إدخال بريد إلكتروني صحيح");
+      return;
+    }
     if (!formData.address.trim()) {
       setError("العنوان مطلوب - يرجى إدخال العنوان الكامل");
       return;
@@ -135,8 +249,22 @@ export default function CheckoutPageClient() {
       setError("العنوان قصير جداً - يجب أن يحتوي على 3 أحرف على الأقل");
       return;
     }
-    if (!formData.area.trim()) {
-      setError("المنطقة/المدينة مطلوبة - يرجى إدخال اسم المنطقة");
+    if (!formData.governorate.trim()) {
+      setError("المحافظة مطلوبة - يرجى اختيار المحافظة من القائمة");
+      return;
+    }
+    if (formData.governorate === "أخرى" && !formData.customGovernorate.trim()) {
+      setError("يرجى كتابة اسم المحافظة المطلوبة في الحقل المخصص");
+      return;
+    }
+    // Area is only required if governorate is not "أخرى"
+    if (formData.governorate !== "أخرى" && !formData.area.trim()) {
+      setError("المنطقة/المدينة مطلوبة - يرجى اختيار المنطقة من القائمة");
+      return;
+    }
+    // If area is "أخرى", custom area is required
+    if (formData.area === "أخرى" && !formData.customArea.trim()) {
+      setError("يرجى كتابة اسم المنطقة المطلوبة في الحقل المخصص");
       return;
     }
     if (!formData.deliveryDate) {
@@ -148,6 +276,13 @@ export default function CheckoutPageClient() {
     const phoneRegex = /^01[0125][0-9]{8}$/;
     if (!phoneRegex.test(formData.phone)) {
       setError("رقم الهاتف غير صحيح - يجب أن يبدأ بـ 01 ويتكون من 11 رقم (مثال: 01234567890)");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("البريد الإلكتروني غير صحيح - يرجى إدخال بريد إلكتروني صحيح");
       return;
     }
 
@@ -164,13 +299,16 @@ export default function CheckoutPageClient() {
     setLoading(true);
 
     // Create checkout details object
+    const finalCity = formData.area === "أخرى" ? formData.customArea : formData.area;
+    const finalGovernorate = formData.governorate === "أخرى" ? formData.customGovernorate : formData.governorate;
+    
     const checkoutData: CheckoutDetails = {
       name: formData.name,
       phonePrimary: formData.phone,
       phoneSecondary: undefined,
       address: formData.address,
-      city: formData.area,
-      governorate: formData.governorate || undefined,
+      city: finalCity || "غير محدد", // Fallback to ensure city is always a string
+      governorate: finalGovernorate || undefined,
       notes: formData.notes || undefined,
       deliveryDate: formData.deliveryDate,
       deliveryTime: undefined,
@@ -213,12 +351,12 @@ export default function CheckoutPageClient() {
                 <h1 className="font-serif text-2xl font-semibold text-cb-text-strong">
                   {t("pages.cart.empty")}
                 </h1>
-                <a
+                <Link
                   href="/shop"
                   className={buttonClassName("primary", "mt-6 inline-flex rounded-full px-8")}
                 >
                   {t("pages.cart.shopCookies")}
-                </a>
+                </Link>
               </>
             )}
           </div>
@@ -227,7 +365,7 @@ export default function CheckoutPageClient() {
     );
   }
 
-  const shipping = subtotalEgp >= freeShippingThreshold ? 0 : 50;
+  const shipping = subtotalEgp >= freeShippingThreshold ? 0 : deliveryFee;
   const total = Math.max(0, subtotalEgp - discountEgp + shipping);
 
   return (
@@ -286,7 +424,7 @@ export default function CheckoutPageClient() {
 
                 <div>
                   <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
-                    Email (Optional)
+                    Email <span className="text-red-500">*</span>
                   </label>
                   <input
                     id="email"
@@ -295,6 +433,7 @@ export default function CheckoutPageClient() {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="your@email.com"
                     className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
+                    required
                   />
                 </div>
               </div>
@@ -315,6 +454,12 @@ export default function CheckoutPageClient() {
                   onAddressHint={handleAddressHint}
                 />
 
+                {autoDetectMessage && (
+                  <div className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
+                    {autoDetectMessage}
+                  </div>
+                )}
+
                 <div>
                   <label htmlFor="address" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
                     Full Address <span className="text-red-500">*</span>
@@ -331,33 +476,80 @@ export default function CheckoutPageClient() {
                 </div>
 
                 <div>
-                  <label htmlFor="area" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
-                    Area/City <span className="text-red-500">*</span>
+                  <label htmlFor="governorate" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
+                    Governorate <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    id="area"
-                    type="text"
-                    value={formData.area}
-                    onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                    placeholder="المنطقة/المدينة (مثال: مدينة نصر، المعادي، وسط البلد)"
+                  <select
+                    id="governorate"
+                    value={formData.governorate}
+                    onChange={(e) => handleGovernorateChange(e.target.value)}
                     className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
                     required
-                  />
+                  >
+                    <option value="">اختر المحافظة</option>
+                    {EGYPT_GOVERNORATES.map((gov) => (
+                      <option key={gov} value={gov}>
+                        {gov}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <div>
-                  <label htmlFor="governorate" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
-                    Governorate
-                  </label>
-                  <input
-                    id="governorate"
-                    type="text"
-                    value={formData.governorate}
-                    onChange={(e) => setFormData({ ...formData, governorate: e.target.value })}
-                    placeholder="المحافظة (مثال: القاهرة، الجيزة، الإسكندرية)"
-                    className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
-                  />
-                </div>
+                {formData.governorate === "أخرى" && (
+                  <div>
+                    <label htmlFor="customGovernorate" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
+                      اسم المحافظة المطلوبة <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="customGovernorate"
+                      type="text"
+                      value={formData.customGovernorate}
+                      onChange={(e) => setFormData({ ...formData, customGovernorate: e.target.value })}
+                      placeholder="اكتب اسم المحافظة بالتفصيل"
+                      className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
+                      required
+                    />
+                  </div>
+                )}
+
+                {formData.governorate && formData.governorate !== "أخرى" && (
+                  <div>
+                    <label htmlFor="area" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
+                      Area/City <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="area"
+                      value={formData.area}
+                      onChange={(e) => handleAreaChange(e.target.value)}
+                      className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
+                      required
+                    >
+                      <option value="">اختر المنطقة/المدينة</option>
+                      {EGYPT_CITIES_BY_GOVERNORATE[formData.governorate]?.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {formData.area === "أخرى" && (
+                  <div>
+                    <label htmlFor="customArea" className="mb-1.5 block text-sm font-medium text-cb-text-strong">
+                      اسم المنطقة المطلوبة <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="customArea"
+                      type="text"
+                      value={formData.customArea}
+                      onChange={(e) => setFormData({ ...formData, customArea: e.target.value })}
+                      placeholder="اكتب اسم المنطقة/المدينة بالتفصيل"
+                      className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
+                      required
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label htmlFor="deliveryDate" className="mb-1.5 flex items-center gap-2 text-sm font-medium text-cb-text-strong">
@@ -369,7 +561,7 @@ export default function CheckoutPageClient() {
                     type="date"
                     value={formData.deliveryDate}
                     onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
-                    min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                    min={minDeliveryDate}
                     className="w-full rounded-xl border border-cb-border bg-cb-surface-2 px-4 py-3 text-sm text-cb-text-strong outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
                     required
                   />
@@ -392,7 +584,7 @@ export default function CheckoutPageClient() {
                     name="shippingMethod"
                     value="standard"
                     checked={formData.shippingMethod === "standard"}
-                    onChange={(e) => setFormData({ ...formData, shippingMethod: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, shippingMethod: e.target.value })}
                     className="h-4 w-4 text-amber-600"
                   />
                   <div className="flex-1">
@@ -400,7 +592,13 @@ export default function CheckoutPageClient() {
                     <p className="text-sm text-cb-text-muted">3-5 business days</p>
                   </div>
                   <span className="font-semibold text-cb-text-strong">
-                    {shipping === 0 ? "Free" : formatPrice(shipping)}
+                    {deliveryFeeLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : shipping === 0 ? (
+                      "Free"
+                    ) : (
+                      formatPrice(shipping)
+                    )}
                   </span>
                 </label>
               </div>
@@ -420,7 +618,7 @@ export default function CheckoutPageClient() {
                     name="paymentMethod"
                     value="card"
                     checked={formData.paymentMethod === "card"}
-                    onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value as "card" | "wallet" | "cash_on_delivery" })}
                     className="h-4 w-4 text-amber-600"
                   />
                   <div className="flex-1">
@@ -436,7 +634,7 @@ export default function CheckoutPageClient() {
                     name="paymentMethod"
                     value="cash_on_delivery"
                     checked={formData.paymentMethod === "cash_on_delivery"}
-                    onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value as "card" | "wallet" | "cash_on_delivery" })}
                     className="h-4 w-4 text-amber-600"
                   />
                   <div className="flex-1">
@@ -480,6 +678,14 @@ export default function CheckoutPageClient() {
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
+                  <span className="mt-1 h-5 w-5 rounded-full bg-amber-200 text-center text-xs font-bold leading-5">1.5</span>
+                  <div>
+                    <p className="font-semibold">Email Address</p>
+                    <p className="text-xs">Valid email address is required</p>
+                    <p className="text-xs">Example: your@email.com</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
                   <span className="mt-1 h-5 w-5 rounded-full bg-amber-200 text-center text-xs font-bold leading-5">2</span>
                   <div>
                     <p className="font-semibold">Address Details</p>
@@ -490,9 +696,9 @@ export default function CheckoutPageClient() {
                 <div className="flex items-start gap-2">
                   <span className="mt-1 h-5 w-5 rounded-full bg-amber-200 text-center text-xs font-bold leading-5">3</span>
                   <div>
-                    <p className="font-semibold">City & Governorate</p>
-                    <p className="text-xs">Enter your area/city and governorate</p>
-                    <p className="text-xs">Example: Nasr City, Cairo</p>
+                    <p className="font-semibold">Governorate & Area/City</p>
+                    <p className="text-xs">Select governorate first, then area/city</p>
+                    <p className="text-xs">Both fields are required</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
