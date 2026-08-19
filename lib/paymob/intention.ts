@@ -9,6 +9,8 @@ import {
   paymobRedirectionUrl,
   paymobUnifiedCheckoutUrl,
   resolvePaymobSecretKey,
+  resolvePaymobIntegrationIdCard,
+  resolvePaymobIntegrationIdWallet,
 } from "@/lib/paymob/config";
 
 export type PaymobIntentionItem = {
@@ -187,8 +189,9 @@ export async function createPaymobIntention(
 
   // Paymob requires both Card and Wallet Integration IDs in payment_methods array
   // for Wallet option to appear during checkout
-  // LIVE Integration IDs
-  const paymentMethods = [5765742, 5765741];
+  const cardIntegrationId = resolvePaymobIntegrationIdCard();
+  const walletIntegrationId = resolvePaymobIntegrationIdWallet();
+  const paymentMethods = [cardIntegrationId, walletIntegrationId].filter(id => id > 0);
 
   const payload = {
     amount: input.amountCents,
