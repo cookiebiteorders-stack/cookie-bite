@@ -143,6 +143,13 @@ export async function POST(req: Request) {
       void awardLoyaltyPointsForPaidOrder(updated.orderId).catch((err) =>
         console.error("loyalty award after paymob", err),
       );
+      
+      // Notify store admins/owners about successful payment
+      void notifyStoreOrderEvent({
+        orderId: updated.orderId,
+        event: "paid",
+        note: "Paymob payment completed successfully",
+      }).catch((err) => console.error("store paymob paid alert", err));
     } else if (resolved.outcome === "failed") {
       // Release stock for failed payments (DB-01)
       void releaseStockForOrder(updated.orderId).catch((err) =>
