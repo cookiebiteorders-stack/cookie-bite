@@ -13,6 +13,7 @@ import { getUserBySupabaseId } from "@/lib/db/users";
 import { resolveCheckoutLineItems, type ResolvedCheckoutLine } from "@/lib/checkout/resolve-line-items";
 import { onOrderCreated } from "@/lib/email/automation/triggers";
 import { scheduleOrderConfirmed } from "@/lib/notifications/schedule";
+import { notifyStoreOrderEvent } from "@/lib/notifications/store-order-events";
 import {
   buildPaymobIntentionBillingData,
   buildPaymobIntentionItems,
@@ -602,6 +603,13 @@ export async function POST(req: Request) {
           });
         }
 
+        // Notify store owners/admins about new COD order creation
+        void notifyStoreOrderEvent({
+          orderId: inserted.id,
+          event: "created",
+          note: "New COD order created",
+        }).catch((err) => console.error("Store COD order creation alert failed:", err));
+
         // Mark abandoned cart as recovered
         try {
           await markAbandonedCartRecovered({
@@ -701,6 +709,13 @@ export async function POST(req: Request) {
 
     await updatePaymobAcceptOrderId(inserted.id, intention.intentionOrderId);
     // SEC-06: Removed debug console.log with Paymob order ID
+
+    // Notify store owners/admins about new order creation
+    void notifyStoreOrderEvent({
+      orderId: inserted.id,
+      event: "created",
+      note: "New order created via Paymob checkout",
+    }).catch((err) => console.error("Store order creation alert failed:", err));
 
     // PAY-04: Removed pre-payment scheduleOrderConfirmed
     // Order confirmation should only happen on webhook payment success, not when creating the intention
